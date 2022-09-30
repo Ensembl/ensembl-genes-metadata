@@ -2,8 +2,9 @@ import re
 import sys
 import argparse
 from Bio import Entrez
+Entrez.email = 'do1@ebi.ac.uk'
 
-def get_ncbi_tax(taxon):
+def get_ncbi_tax(taxon,rpt):
   '''Getn NCBI taxonomy'''
   # If the input is a string
   if not re.match(r'\d+', taxon):
@@ -26,13 +27,16 @@ def get_ncbi_tax(taxon):
   # Entrez.efetch will give you various information
   handle2 = Entrez.efetch(db='taxonomy', id=tax_id, retmode='xml')
   record2 = Entrez.read(handle2, validate=False)
+  #print(record2)
   handle2.close()
   report = ''
   if ('OtherNames' in record2[0]):
     common_name = record2[0]['OtherNames']
     if ('GenbankCommonName' in common_name):
       report = 'common_name:' + common_name['GenbankCommonName'] + ':' + record2[0]['ScientificName'] +'\n'
-    elif('CommonName' in common_name):
+    elif(('CommonName' in common_name) and (not common_name['CommonName'])):
+      report = 'common_name:' + '' + ':' + record2[0]['ScientificName'] +'\n'
+    else:
       report = 'common_name:' + common_name['CommonName'][0] + ':' + record2[0]['ScientificName'] +'\n'
   else:
     report = 'common_name:' + '' + ':' + record2[0]['ScientificName'] +'\n'
@@ -40,14 +44,16 @@ def get_ncbi_tax(taxon):
   for tax_element in tax_list:
     report = report + ('{}: {}: {}'.format(
     tax_element['Rank'], tax_element['ScientificName'],  tax_element['TaxId'])) + "\n"
-  with open('taxonomy_report.txt', 'a') as writer:
+  with open(rpt, 'a') as writer:
     writer.write(report)
-
+  writer.close()
 if __name__ == '__main__':
   parser = argparse.ArgumentParser()
   parser.add_argument('-tid','--taxon_id', help='Taxonomy id to fetch information about', required=True)           
+  parser.add_argument('-rpt','--taxonomy_report', help='File to write taxonomy info to', required=True)
   args = parser.parse_args()
   taxon_id = args.taxon_id
+  rpt = args.taxonomy_report
   # Now call the function
-  get_ncbi_tax(taxon_id)  # Using tax ID
+  get_ncbi_tax(taxon_id,rpt)  # Using tax ID
   #get_ncbi_tax('Lentinula edodes')  # Using tax name
