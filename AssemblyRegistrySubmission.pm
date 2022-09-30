@@ -43,13 +43,11 @@ use feature 'say';
 
 use Net::FTP;
 use Getopt::Long qw(:config no_ignore_case);
-use Bio::EnsEMBL::Taxonomy::DBSQL::TaxonomyDBAdaptor;
 use Bio::EnsEMBL::DBSQL::DBConnection;
 use Bio::EnsEMBL::Analysis::Hive::DBSQL::AssemblyRegistryAdaptor;
 use POSIX qw(strftime);
 use List::MoreUtils qw(any);
 use LWP::UserAgent;
-use Bio::EnsEMBL::Analysis::Tools::Utilities qw(locate_executable execute_with_wait);
 
 use parent ('Bio::EnsEMBL::Analysis::Hive::RunnableDB::HiveBaseRunnableDB');
 
@@ -170,6 +168,7 @@ sub run {
   my $ftpuser = "anonymous";
   my $ftppassword = "";
   my $general_hash;
+  my $search_term = "";
 
   open(IN,$self->param('config_file')) || die("Could not open $self->param('config_file')");
   while (<IN>){
@@ -206,6 +205,9 @@ sub run {
       if($key eq 'taxonomy_db_port') {
         $general_hash->{$key} = $value;
       }
+      if($key eq 'import_type') {
+        $general_hash->{$key} = $value;
+      }
       else{
         $general_hash->{$key} = $value;
       }
@@ -216,14 +218,14 @@ sub run {
     }
   }
   close IN || die("Could not close ". $self->param('config_file'));
-  #unless($general_hash->{'output_path'}) {
-   # die("Could not find an output path setting in the config. Expected setting".
-    #    "output_path=/path/to/output/dir/");
-  #}
-  #my $output_path = $general_hash->{'output_path'};
-  #unless(-e $output_path) {
-  #  system("mkdir -p ".$general_hash->{'output_path'});
- # }
+  unless($general_hash->{'output_path'}) {
+    die("Could not find an output path setting in the config. Expected setting".
+        "output_path=/path/to/output/dir/");
+  }
+  my $output_path = $general_hash->{'output_path'};
+  unless(-e $output_path) {
+    system("mkdir -p ".$general_hash->{'output_path'});
+  }
   #Attempting to register each assembly
   #Create registry adaptor
   my $assembly_registry = new Bio::EnsEMBL::Analysis::Hive::DBSQL::AssemblyRegistryAdaptor(
@@ -234,23 +236,16 @@ sub run {
     -dbname  => $general_hash->{'registry_dbname'}
   );
   
-  #Create taxonomy adaptor
-  my $taxonomy_adaptor = new Bio::EnsEMBL::Taxonomy::DBSQL::TaxonomyDBAdaptor(
-    -host    => $general_hash->{'taxonomy_db_host'},
-    -port    => $general_hash->{'taxonomy_db_port'},
-    -user    => $general_hash->{'user_r'},
-    -dbname  => $general_hash->{'taxonomy_dbname'}
-  );
-
   #Get record of all existing assemblies
-  my $sql = "SELECT species_prefix, concat(chain,'.', version), taxonomy FROM assembly order by chain,version";
+  my $sql = "SELECT species_prefix, concat(chain,'.', version), taxonomy, annotated_status FROM assembly order by chain,version";
   my $sth = $assembly_registry->dbc->prepare($sql);
   $sth->execute();
-  while (my ($species_prefix,$accession,$taxonomy) = $sth->fetchrow_array()) {
+  while (my ($species_prefix,$accession,$taxonomy,$annotated_status) = $sth->fetchrow_array()) {
     unless($accession =~ /^GCA\_(\d){9}/) {
       next;
     }
-    $existing_assemblies{$accession} = 1;
+    $search_term = $accession . '_' . $annotated_status;
+    $existing_assemblies{$search_term} = 1;
     $existing_species_prefix{$taxonomy} = $species_prefix;
     $existing_species_id{$taxonomy} = 1;
   }
@@ -295,7 +290,7 @@ sub run {
     my @assembly_report = parse_assembly_report($ftp,$accession,$assembly_name,$full_assembly_path);
     my ($taxon_id,$assembly_level,$refseq_accession,$wgs_id,$bioproject,$genome_rep,$total_length,$scaffold_cnt,$contig_cnt,$contig_N50,$scaffold_N50,$total_gap_length,$top_level_cnt,$assembly_type,$date,$assembly_ftp,$submitter,$common_name) = @assembly_report;
     #Retrieve taxon id related info from taxonomy db
-    my ($parent_id,$clade,$subspecies_name,$species_common_name,$species_name) = $self->get_clade($taxon_id,$taxonomy_adaptor);
+    my ($parent_id,$clade,$subspecies_name,$species_common_name,$species_name) = $self->get_clade($taxon_id,$output_path);
     #Prioritise common name from taxonomy db over assembly report file entry
     if ((!defined($species_common_name)) && (defined($common_name))){
       $species_common_name = $common_name;
@@ -329,7 +324,7 @@ sub run {
               }
               else {#filtering unwanted read types
                 next if ($line =~ / infected | [iIu]mmune| challenge |tomi[zs]ed/);
-                next if ($line =~ /[Mm]i\w{0,3}RNA|lncRNA|circRNA|small RNA/);
+                next if ($line =~ /[Mm]is\w{0,2}RNA|lncRNA|circRNA|small RNA/);
                 $rna_cnt++;
               }
             }
@@ -340,9 +335,9 @@ sub run {
         }
       }
     }
-    
+    $search_term = $accession . '_' . $general_hash->{'import_type'};
     #Check if assembly already registered 
-    if (!exists $existing_assemblies{$accession}){
+    if (!exists $existing_assemblies{$search_term}){
       say "Registration in progress for assembly $accession";
       #Assign assembly to the specific project (i.e., DToL, EBP, VGP, etc) it belongs to 
       my $assembly_group = &get_bio($bioproject);
@@ -356,21 +351,8 @@ sub run {
           #Registering assembly for an existing species using current trascriptomic data status
           register_assembly($chain, $version, $parent_id, $species_prefix, $clade, $taxon_id, $assembly_name, $assembly_level, $wgs_id, $scaffold_N50, $contig_N50, $contig_cnt, $scaffold_cnt, $assembly_type, $refseq_accession, $date, $top_level_cnt, $total_length, $total_gap_length, $assembly_ftp, $subspecies_name, $species_common_name, $genome_rep, $assembly_group, $species_name, $rnaseq_status, $submitter,$assembly_registry);
         }
-        #else{
-          #Registering assembly for an existing species using new trascriptomic data status
-         # register_assembly($chain, $version, $parent_id, $species_prefix, $clade, $taxon_id, $assembly_name, $assembly_level, $wgs_id, $scaffold_N50, $contig_N50, $contig_cnt, $scaffold_cnt, $assembly_type, $refseq_accession, $date, $top_level_cnt, $total_length,$total_gap_length, $assembly_ftp, $subspecies_name, $species_common_name, $genome_rep, $assembly_group, $species_name, $rnaseq_status, $submitter,$assembly_registry);
-       # }
       }
       else{
-        #Does species exists in the taxonomy db
-        #if not, species is new and local taxonomy db needs updating
-        my $node_adaptor = $taxonomy_adaptor->get_TaxonomyNodeAdaptor();
-        my $taxon_node = $node_adaptor->fetch_by_taxon_id($taxon_id);
-        if (!$taxon_node){
-          die('Species does not exist in Taxonomy db, kindly update taxonomy db before adding assembly');
-          #Instead of throw, we should update taxonomy db here
-        }
-        
         #generate new stable id prefix for species being registered for the first time
         #split species name to find out if it is binomial or trinomial
         my @s_name = split(' ', $species_name);
@@ -557,6 +539,11 @@ sub register_assembly{
   my $sth = $assembly_registry->dbc->prepare($sql);
   $sth->execute();
   my $current_space = $sth->fetchrow_array();
+  my $anno_flag = $general_hash->{'import_type'};
+  chomp($anno_flag);
+  if ($anno_flag !~ /import_refseq|import_flybase|import_community|import_genbank|import_wormbase/){
+    $anno_flag = "unannotated";
+  }
   
   if ($current_space){
     #get existing versions for assembly chain
@@ -567,10 +554,10 @@ sub register_assembly{
       $max_version =  $version if ($max_version < $version);
     }
     if ($max_version){
-      if ($max_version < $_[1]){
+      if (($max_version < $_[1]) || ($anno_flag =~ /import_refseq|import_flybase|import_community|import_genbank|import_wormbase/)){
         $flag = 2; #Assembly version update required so we re-use same stable id space
         $report = $_[0] . "." . $_[1] . "\t" . $_[4] . "\t" . $_[20] . "\t" . $_[21] . "\t" . $_[7] . "\t" . $_[6] . "\t" . $_[1] . "\t" . $_[25];
-        &update_registry_db($flag, $_[0], $_[1], $current_space, $_[3], 0, $_[4], 'unannotated', $_[2], $_[5], $_[1], $_[6], $_[7], $_[8], $_[9], $_[10], $_[11], $_[12], $_[13], $_[14], $_[15], $_[16],
+        &update_registry_db($flag, $_[0], $_[1], $current_space, $_[3], 0, $_[4], $anno_flag, $_[2], $_[5], $_[1], $_[6], $_[7], $_[8], $_[9], $_[10], $_[11], $_[12], $_[13], $_[14], $_[15], $_[16],
         $_[17], $_[18], $_[19], $_[20], $_[21], $_[22], $_[23], $_[25], $_[26], 'not started',$assembly_registry);
       }
       else{
@@ -595,14 +582,14 @@ sub register_assembly{
         #new stable id is being inserted into the stable id space table
         $flag = 3;
         $report =  $_[0] . "." . $_[1] . "\t" . $_[4] . "\t" . $_[20] . "\t" . $_[21] . "\t" . $_[7] . "\t" . $_[6] . "\t" . $_[26];
-        &update_registry_db($flag, $stable_id_space_start, $stable_id_space_end, $_[0], $_[1], $new_space_id, $_[3], 0, $_[4], 'unannotated', $_[2], $_[5], $_[6], $_[7], $_[8], $_[9], $_[10], $_[11], 
+        &update_registry_db($flag, $stable_id_space_start, $stable_id_space_end, $_[0], $_[1], $new_space_id, $_[3], 0, $_[4], $anno_flag, $_[2], $_[5], $_[6], $_[7], $_[8], $_[9], $_[10], $_[11], 
         $_[12], $_[13], $_[14], $_[15], $_[16], $_[17], $_[18], $_[19], $_[20], $_[21], $_[22], $_[23],$_[25],$_[26], 'not started',$assembly_registry);
        
       }
       else{
         $flag = 4;
         $report =  $_[0] . "." . $_[1] . "\t" . $_[4] . "\t" . $_[20] . "\t" . $_[21] . "\t" . $_[7] . "\t" . $_[6] . "\t" . $_[26];
-        &update_registry_db($flag, $_[0], $_[1], $new_space_id, $_[3], 0, $_[4], 'unannotated', $_[2], $_[5], $_[6], $_[7], $_[8], $_[9], $_[10], $_[11], $_[12], $_[13], $_[14], $_[15], $_[16], $_[17],
+        &update_registry_db($flag, $_[0], $_[1], $new_space_id, $_[3], 0, $_[4], $anno_flag, $_[2], $_[5], $_[6], $_[7], $_[8], $_[9], $_[10], $_[11], $_[12], $_[13], $_[14], $_[15], $_[16], $_[17],
         $_[18], $_[19], $_[20], $_[21], $_[22], $_[23], $_[25], $_[26],'not started',$assembly_registry);
       }
     }
@@ -610,7 +597,7 @@ sub register_assembly{
   else{#Performing first time registration
     my $stable_id_space = 1;
     $flag = 1;
-    &update_registry_db($flag, $_[0], $_[1], $stable_id_space, $_[3], 0, $_[4], 'unannotated', $_[2], $_[5], $_[6], $_[7], $_[8], $_[9], $_[10], $_[11], $_[12], $_[13], $_[14], $_[15], $_[16], $_[17], 
+    &update_registry_db($flag, $_[0], $_[1], $stable_id_space, $_[3], 0, $_[4], $anno_flag, $_[2], $_[5], $_[6], $_[7], $_[8], $_[9], $_[10], $_[11], $_[12], $_[13], $_[14], $_[15], $_[16], $_[17], 
     $_[18], $_[19], $_[20], $_[21], $_[22], $_[23], $_[24],$_[25], $_[26], 'not started',$assembly_registry);
   }
   push @rep, ($flag,$report);
@@ -633,10 +620,9 @@ sub update_registry_db{
   #Register assembly for the first time
   if ($_[0] == 1){
     $assembly_registry->dbc->do("insert into species_space_log values (?,?,?)", undef, $_[9], $_[3], $_[24]);
-    $assembly_registry->dbc->do("insert into assembly (chain, version, stable_id_space_id, species_prefix, is_current, clade, annotated_status, species_id, taxonomy, assembly_path, genome_rep, rnaseq_data) values (?,?,?,?,?,?,?,?,?,?,?,?)", undef, $_[1], $_[2], $_[3], $_[4], $_[5], 
-             $_[6], $_[7], $_[8], $_[9], $_[23], $_[26], $_[29]);
+    $assembly_registry->dbc->do("insert into assembly (chain, version, stable_id_space_id, species_prefix, is_current, clade, annotated_status, species_id, taxonomy, assembly_path, genome_rep, rnaseq_data) values (?,?,?,?,?,?,?,?,?,?,?,?)", undef, $_[1], $_[2], $_[3], $_[4], $_[5], $_[6], $_[7], $_[8], $_[9], $_[23], $_[26], $_[29]);
     #Store meta data using assembly id value just generated
-    my $sql = "SELECT assembly_id from assembly WHERE chain = '$_[1]' and version = $_[2]";
+    my $sql = "SELECT assembly_id from assembly WHERE chain = '$_[1]' and version = $_[2] and annotated_status = '$_[7]'";
     my $sth = $assembly_registry->dbc->prepare($sql);
     $sth->execute();
     my $assembly_id = $sth->fetchrow();
@@ -652,7 +638,7 @@ sub update_registry_db{
       $assembly_registry->dbc->do("insert into assembly (chain, version, stable_id_space_id, species_prefix, is_current, clade, annotated_status, species_id, taxonomy, assembly_path, genome_rep, rnaseq_data) values (?,?,?,?,?,?,?,?,?,?,?,?)", undef, $_[1], $_[2], $_[3], $_[4], $_[5],$_[6], $_[7], $_[8], $_[9], $_[24], $_[27], $_[29]);
     }
     #Store meta data using assembly id value just generated
-    my $sql = "SELECT assembly_id from assembly WHERE chain = '$_[1]' and version = $_[2]";
+    my $sql = "SELECT assembly_id from assembly WHERE chain = '$_[1]' and version = $_[2] and annotated_status = '$_[7]'";
     my $sth = $assembly_registry->dbc->prepare($sql);
     $sth->execute();
     my $assembly_id = $sth->fetchrow();
@@ -669,7 +655,7 @@ sub update_registry_db{
       $assembly_registry->dbc->do("insert into assembly (chain, version, stable_id_space_id, species_prefix, is_current, clade, annotated_status, species_id, taxonomy, assembly_path, genome_rep, rnaseq_data) values (?,?,?,?,?,?,?,?,?,?,?,?)", undef, $_[3], $_[4], $_[5], $_[6], $_[7],$_[8], $_[9], $_[10], $_[11], $_[25], $_[28], $_[30]);
     }
     #Store meta data using assembly id value just generated
-    my $sql = "SELECT assembly_id from assembly WHERE chain = '$_[1]' and version = $_[2]";
+    my $sql = "SELECT assembly_id from assembly WHERE chain = '$_[1]' and version = $_[2] and annotated_status = '$_[7]'";
     my $sth = $assembly_registry->dbc->prepare($sql);
     $sth->execute();
     my $assembly_id = $sth->fetchrow();
@@ -686,7 +672,7 @@ sub update_registry_db{
       $assembly_registry->dbc->do("insert into assembly (chain, version, stable_id_space_id, species_prefix, is_current, clade, annotated_status, species_id, taxonomy, assembly_path, genome_rep, rnaseq_data) values (?,?,?,?,?,?,?,?,?,?,?,?)", undef, $_[1], $_[2], $_[3], $_[4], $_[5], $_[6], $_[7], $_[8], $_[9], $_[23], $_[26], $_[28]);
     }
     #Store meta data using assembly id value just generated
-    my $sql = "SELECT assembly_id from assembly WHERE chain = '$_[1]' and version = $_[2]";
+    my $sql = "SELECT assembly_id from assembly WHERE chain = '$_[1]' and version = $_[2] and annotated_status = '$_[7]'";
     my $sth = $assembly_registry->dbc->prepare($sql);
     $sth->execute();
     my $assembly_id = $sth->fetchrow();
@@ -836,11 +822,12 @@ sub get_bio{
   my $group = "";
   my $bio_proj = $_[0];
   #Get all Bioproject ids linked to major projects such as DToL, EBP and VGP 
-  my @ebp_main_bio_prj = `esearch -query 'PRJNA533106' -db bioproject | elink -related | efetch -format docsum | xtract -pattern DocumentSummary -element Project_Acc`;
-  my @dtol_main_bio_prj = `esearch -query 'PRJEB40665' -db bioproject | elink -related | efetch -format docsum | xtract -pattern DocumentSummary -element Project_Acc`;
-  my @vgp_main_bio_prj = `esearch -query 'PRJNA489243' -db bioproject | elink -related | efetch -format docsum | xtract -pattern DocumentSummary -element Project_Acc`;
+  my @ebp_main_bio_prj = `esearch -query 'PRJNA533106' -db bioproject | elink -related | efetch -format docsum | xtract -pattern DocumentSummary -element Project_Acc  `;
+  my @dtol_main_bio_prj = `esearch -query 'PRJEB40665' -db bioproject | elink -related | efetch -format docsum | xtract -pattern DocumentSummary -element Project_Acc  `;
+  my @vgp_main_bio_prj = `esearch -query 'PRJNA489243' -db bioproject | elink -related | efetch -format docsum | xtract -pattern DocumentSummary -element Project_Acc  `;
+  my @ergapp_main_bio_prj = `esearch -query 'PRJEB47820' -db bioproject | elink -related | efetch -format docsum | xtract -pattern DocumentSummary -element Project_Acc  `;
   #Get list of projects linked to the same bioproject as assembly being registered
-  my @pri_proj = `esearch -query '$bio_proj' -db bioproject | elink -related | efetch -format docsum | xtract -pattern DocumentSummary -element Project_Acc`;
+  my @pri_proj = `esearch -query '$bio_proj' -db bioproject | elink -related | efetch -format docsum | xtract -pattern DocumentSummary -element Project_Acc  `;
   if (@pri_proj){
     foreach $bio_proj (@pri_proj){
       chomp($bio_proj);
@@ -855,6 +842,9 @@ sub get_bio{
       }
       elsif (grep (/$bio_proj/,@ebp_main_bio_prj)) {
          return "ebp";
+      }
+      elsif (grep (/$bio_proj/,@ergapp_main_bio_prj)) {
+         return "ergap";
       }
       else{$group = "ungrouped";}
     }
@@ -874,19 +864,16 @@ sub get_bio{
 =cut
 
 sub get_clade{
-  my ($self,$taxon_id,$taxonomy_adaptor) = @_;
+  my ($self,$taxon_id,$output_path) = @_;
   my ($lineage,$rank,$species_id,$clade,$common_name,$species_name);
   my @result;
   my %clade_setting = ('Rodentia' => 'rodentia', 'Primates' => 'primates', 'Mammalia' => 'mammalia', 'Amphibia' => 'amphibians', 'Teleostei' => 'teleostei', 'Marsupialia' => 'marsupials', 'Aves' => 'aves', 'Sauropsida', => 'reptiles', 'Chondrichthyes' => 'sharks', 'Eukaryota' => 'non_vertebrates', 'Metazoa' => 'metazoa', 'Viral' => 'viral', 'Viruses' => 'viral', 'Viridiplantae' => 'plants', 'Arthropoda' => 'arthropods', 'Lepidoptera' => 'lepidoptera', 'Insecta' => 'insects', 'Hymenoptera' => 'hymenoptera', 'Hemiptera' => 'hemiptera', 'Coleoptera' => 'coleoptera', 'Diptera' => 'diptera', 'Mollusca' => 'mollusca', 'Vertebrata' => 'vertebrates', 'Alveolata' => 'protists', 'Amoebozoa' => 'protists', 'Choanoflagellida' => 'protists', 'Cryptophyta' => 'protists', 'Euglenozoa' => 'protists', 'Fornicata' => 'protists', 'Heterolobosea' => 'protists', 'Parabasalia' => 'protists', 'Rhizaria' => 'protists', 'Stramenopiles' => 'protists', 'Fungi' => 'fungi');
 
   #Fetching taxonomy info from  NCBI
-  my $input = "taxonomy_report.txt";
-  if (-e $input){
-    system("rm $input");
-  }
-  system("python3 taxon.py --taxon_id $taxon_id");
-  #my $input = "taxonomy_report.txt";
-  open(my $dbcore, '<:encoding(UTF-8)', $input) or die "Could not open file '$input' $!";
+  my $taxonomy_report = $output_path."/taxonomy_report.txt";
+  #call python script to query NCBI taxonomy db for taxonomy report
+  system("python3 taxon.py --taxon_id $taxon_id --taxonomy_report $taxonomy_report");
+  open(my $dbcore, '<:encoding(UTF-8)', $taxonomy_report) or die "Could not open file '$taxonomy_report' $!";
   my @dblist = <$dbcore>;
   if ($dblist[scalar((@dblist)-1)] =~ /species/){#the species being processed is a subspecies
     my @parent = split(/:/,$dblist[scalar((@dblist)-1)]);
@@ -917,55 +904,11 @@ sub get_clade{
     }
   }
 
-  #initialise taxonomy adaptor
-  #my $node_adaptor = $taxonomy_adaptor->get_TaxonomyNodeAdaptor();
-  #my $taxon_node = $node_adaptor->fetch_by_taxon_id($taxon_id);
-  #if rank is subspecies, get parent node id in order to process assemblies at species level
- # if ($taxon_node->rank() eq 'subspecies'){
-  #  $species_id = $taxon_node->parent_id();
-   # $subspecies_name = $taxon_node->names()->{'scientific name'}->[0];
-   # my $parent_taxon_node = $node_adaptor->fetch_by_taxon_id($taxon_node->parent_id());
-   # $species_name = $parent_taxon_node->names()->{'scientific name'}->[0];
-   # if ($taxon_node->names()->{'genbank common name'}->[0]){
-    #  $common_name = $taxon_node->names()->{'genbank common name'}->[0];
-   # }
- # }
-  #if rank is species, do nothing, just get species details directly
- # elsif ($taxon_node->rank() eq 'species'){
-  #  $species_id = $taxon_node->taxon_id;
-   # $species_name = $taxon_node->names()->{'scientific name'}->[0];
-   # if ($taxon_node->names()->{'genbank common name'}->[0]){
-   #   $common_name = $taxon_node->names()->{'genbank common name'}->[0];
-   # }
-   # $subspecies_name = $species_name;#Where taxonomy's rank is species, we assign species name as subspecies
-  #}
-  #else{#in the wierd scenario, flag up
-   # $species_id = $taxon_node->parent_id();
-   # $subspecies_name = $taxon_node->names()->{'scientific name'}->[0];
-    #$taxon_node = $node_adaptor->fetch_by_taxon_id($species_id);
-    #if ($taxon_node->names()->{'genbank common name'}->[0]){
-     # $common_name = $taxon_node->names()->{'genbank common name'}->[0];
-    #}
-    #$subspecies_name = $species_name;
-  #}
-  #next, we retrieve the taxonomy tree in order to categorise the species
-  #foreach my $ancestor ( @{ $node_adaptor->fetch_ancestors($taxon_node)}){
-   # if (exists ($clade_setting{$ancestor->names()->{'scientific name'}->[0]})) {
-    #  if ($species_id == 9606){#specific clade for homo sapiens 
-     #   $clade = "humans";
-      #  last;
-      #}
-      #else{
-       # $clade = $clade_setting{$ancestor->names()->{'scientific name'}->[0]};
-        #last;
-      #}
-    #}
- # }
   if (!defined($clade)){
     $clade = "non_vertebrates";
   }
   push @result, ($species_id,$clade,$species_name,$common_name,$species_name);
-  `rm $input`;
+  `rm $taxonomy_report`;
   return @result; 
     
 }
@@ -973,7 +916,7 @@ sub get_clade{
 =head2 write_output
 
  Arg [1]    : None
- Description: Store the splice site as DnaDnaAlignFeature
+ Description: None
  Returntype : None
  Exceptions : None
 
