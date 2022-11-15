@@ -27,7 +27,7 @@ def get_ncbi_tax(taxon,rpt):
   # Entrez.efetch will give you various information
   handle2 = Entrez.efetch(db='taxonomy', id=tax_id, retmode='xml')
   record2 = Entrez.read(handle2, validate=False)
-  #print(record2)
+#  print(record2)
   handle2.close()
   report = ''
   if ('OtherNames' in record2[0]):
