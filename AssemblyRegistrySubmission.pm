@@ -553,9 +553,9 @@ sub register_assembly{
   $sth->execute();
   my $current_space = $sth->fetchrow_array();
   chomp($anno_flag);
-  #if ($anno_flag !~ /import_veupathdb|import_refseq|import_flybase|import_community|import_genbank|import_wormbase/){
-   #$anno_flag = "unannotated";
- # }
+  if ($anno_flag !~ /import_veupathdb|import_refseq|import_flybase|import_community|import_genbank|import_wormbase/){
+   $anno_flag = "unannotated";
+  }
   say "Anno flag is $anno_flag";
   if ($current_space){
     #get existing versions for assembly chain
@@ -637,6 +637,7 @@ sub update_registry_db{
   my $assembly_registry = $_[scalar(@_)-1];
   #Register assembly for the first time
   if ($_[0] == 1){
+    say "Annotated status is $_[7]";
     $assembly_registry->dbc->do("insert into species_space_log values (?,?,?)", undef, $_[9], $_[3], $_[24]);
     $assembly_registry->dbc->do("insert into assembly (chain, version, stable_id_space_id, species_prefix, is_current, clade, annotated_status, species_id, taxonomy, assembly_path, genome_rep, rnaseq_data) values (?,?,?,?,?,?,?,?,?,?,?,?)", undef, $_[1], $_[2], $_[3], $_[4], $_[5], $_[6], $_[7], $_[8], $_[9], $_[23], $_[26], $_[29]);
     #Store meta data using assembly id value just generated
@@ -684,9 +685,11 @@ sub update_registry_db{
   }
   elsif ($_[0] == 4){#this handles the case when a new assembly for an existing species is being registered
     if ($_[28] =~ /null/i){
+      say "Annotated status is $_[7]";
       $assembly_registry->dbc->do("insert into assembly (chain, version, stable_id_space_id, species_prefix, is_current, clade, annotated_status, species_id, taxonomy, assembly_path, genome_rep) values (?,?,?,?,?,?,?,?,?,?,?)", undef, $_[1], $_[2], $_[3], $_[4], $_[5], $_[6], $_[7],$_[8], $_[9], $_[23], $_[26]);
     }
     else{
+      say "Annotated status is $_[7]";
       $assembly_registry->dbc->do("insert into assembly (chain, version, stable_id_space_id, species_prefix, is_current, clade, annotated_status, species_id, taxonomy, assembly_path, genome_rep, rnaseq_data) values (?,?,?,?,?,?,?,?,?,?,?,?)", undef, $_[1], $_[2], $_[3], $_[4], $_[5], $_[6], $_[7], $_[8], $_[9], $_[23], $_[26], $_[28]);
     }
     #Store meta data using assembly id value just generated

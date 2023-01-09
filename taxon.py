@@ -2,7 +2,7 @@ import re
 import sys
 import argparse
 from Bio import Entrez
-Entrez.email = 'do1@ebi.ac.uk'
+Entrez.email = 'ensembl-genebuild@ebi.ac.uk'
 
 def get_ncbi_tax(taxon,rpt):
   '''Getn NCBI taxonomy'''
@@ -27,7 +27,7 @@ def get_ncbi_tax(taxon,rpt):
   # Entrez.efetch will give you various information
   handle2 = Entrez.efetch(db='taxonomy', id=tax_id, retmode='xml')
   record2 = Entrez.read(handle2, validate=False)
-#  print(record2)
+  print(record2)
   handle2.close()
   report = ''
   if ('OtherNames' in record2[0]):
@@ -40,6 +40,7 @@ def get_ncbi_tax(taxon,rpt):
       report = 'common_name:' + common_name['CommonName'][0] + ':' + record2[0]['ScientificName'] +'\n'
   else:
     report = 'common_name:' + '' + ':' + record2[0]['ScientificName'] +'\n'
+  print('Report is '+report)
   tax_list = record2[0]['LineageEx']
   for tax_element in tax_list:
     report = report + ('{}: {}: {}'.format(
@@ -47,6 +48,10 @@ def get_ncbi_tax(taxon,rpt):
   with open(rpt, 'a') as writer:
     writer.write(report)
   writer.close()
+  name = 0
+  c_name = report.split(':')
+  if c_name[1]:
+    print(c_name[1])
 if __name__ == '__main__':
   parser = argparse.ArgumentParser()
   parser.add_argument('-tid','--taxon_id', help='Taxonomy id to fetch information about', required=True)           
