@@ -251,7 +251,11 @@ class Register_Asm(eHive.BaseRunnable):
             #Create a list of all registered assemblies for reporting purposes via Slack
             assemblies_existing_species[records[1]] = records[1] + '\t' + records[30] + '\t' + records[7] + '\t' + records[22] + '\t' + records[6] + '\t' + records[4] + '\t' + records[9]
             self.param('ea',assemblies_existing_species)
+<<<<<<< HEAD
         return [new_assemblies,updated_assemblies,assemblies_existing_species,'0']
+=======
+        return [new_assemblies,updated_assemblies,assemblies_existing_species,'1']
+>>>>>>> 6cd4049d606c791f286c8c26976adfa462d085fe
     def slack_reporting(self,new,updates,diff,imp):
         #Reporting assembly registration in categories
         if len(imp) > 0:
@@ -262,7 +266,11 @@ class Register_Asm(eHive.BaseRunnable):
                 cnt+=1
                 asm_meta = asm_meta + entry + '\n'
             report = 'Total number of imported annotations = ' + str(cnt) + '\n' + report + str(asm_meta)
+<<<<<<< HEAD
             payload="{\"channel\": \"#genebuildregistry\", \"username\": \"registry_messenger\", \"text\": \"" + report  +"\"}"
+=======
+            payload="{\"channel\": \"@denye\", \"username\": \"registry_messenger\", \"text\": \"" + report  +"\"}"
+>>>>>>> 6cd4049d606c791f286c8c26976adfa462d085fe
             url = os.getenv('slack_token')
             headers = {'content-type': 'application/json', 'Accept-Charset': 'UTF-8'}
             r = requests.post(url, data=payload, headers=headers)
@@ -358,7 +366,11 @@ class Register_Asm(eHive.BaseRunnable):
             existing_prefix[row[0]] = row[2]
         ecnt = len(existing_prefix)
         self.param('existing_prefix',existing_prefix)
+<<<<<<< HEAD
         sql = "SELECT assembly_accession, annotation_source FROM genebuild_status"
+=======
+        sql = "SELECT assembly_accession, annotation_method FROM genebuild_status"
+>>>>>>> 6cd4049d606c791f286c8c26976adfa462d085fe
         annotations = self.fetch_data(sql,registry_settings['registry_dbname'],registry_settings['registry_db_host'],int(registry_settings['registry_db_port']),\
                                       registry_settings['user_w'],registry_settings['password'])
         #Create a disctionary of existing annotations.
@@ -401,7 +413,11 @@ class Register_Asm(eHive.BaseRunnable):
             for accession in acc_list:
                 if (accession in existing_gca):
                     #Check that assembly with same annotation source does exist in the annotation/genebuild status table
+<<<<<<< HEAD
                     sql = "SELECT DISTINCT(annotation_source) FROM genebuild_status WHERE assembly_accession = '" + accession + "'"
+=======
+                    sql = "SELECT DISTINCT(annotation_method) FROM genebuild_status WHERE assembly_accession = '" + accession + "'"
+>>>>>>> 6cd4049d606c791f286c8c26976adfa462d085fe
                     results = self.fetch_data(sql,registry_settings['registry_dbname'],registry_settings['registry_db_host'],int(registry_settings['registry_db_port']),\
                                               registry_settings['user_w'],registry_settings['password'])
                     if registry_settings['import_type'] in str(results):
@@ -433,7 +449,11 @@ class Register_Asm(eHive.BaseRunnable):
                                 try:
                                     with con.cursor() as cur:
                                         cur.execute('INSERT INTO genebuild_status (assembly_accession, progress_status, date_started, date_completed, genebuilder, \
+<<<<<<< HEAD
                                                      assembly_id,is_current, annotation_source) VALUES (%s,%s,%s,%s,%s,%s,%s,%s)',(accession, 'completed', \
+=======
+                                                     assembly_id,is_current, annotation_method) VALUES (%s,%s,%s,%s,%s,%s,%s,%s)',(accession, 'completed', \
+>>>>>>> 6cd4049d606c791f286c8c26976adfa462d085fe
                                                      datetime.today().strftime('%Y-%m-%d'),datetime.today().strftime('%Y-%m-%d'), getpass.getuser(), assembly_id[accession],\
                                                      1, registry_settings['import_type']))
                                 except Exception as error:
@@ -446,7 +466,12 @@ class Register_Asm(eHive.BaseRunnable):
                             else:
                                  continue
                         else:
+<<<<<<< HEAD
                             #Add assembly import to the annotation status table for the first time as no entry exists for the assembly yet
+=======
+                            print('No genebuild entry for assembly '+str(accession))
+                            #Add assembly import to the annotation status table
+>>>>>>> 6cd4049d606c791f286c8c26976adfa462d085fe
                             con = pymysql.connect(
                                                   host=registry_settings['registry_db_host'], user=registry_settings['user_w'], passwd=registry_settings['password'], \
                                                   port=int(registry_settings['registry_db_port']), database=registry_settings['registry_dbname'].strip(), charset='utf8mb4',\
@@ -454,7 +479,11 @@ class Register_Asm(eHive.BaseRunnable):
                             try:
                                 with con.cursor() as cur:
                                     cur.execute('INSERT INTO genebuild_status (assembly_accession, progress_status, date_started, date_completed, genebuilder, assembly_id,\
+<<<<<<< HEAD
                                                 is_current, annotation_source) VALUES (%s,%s,%s,%s,%s,%s,%s,%s)',(accession, 'completed', datetime.today().strftime('%Y-%m-%d'),\
+=======
+                                                is_current, annotation_method) VALUES (%s,%s,%s,%s,%s,%s,%s,%s)',(accession, 'completed', datetime.today().strftime('%Y-%m-%d'),\
+>>>>>>> 6cd4049d606c791f286c8c26976adfa462d085fe
                                                 datetime.today().strftime('%Y-%m-%d'), getpass.getuser(), assembly_id[accession], 1, registry_settings['import_type']))
                             except Exception as error:
                                 raise eHive.CompleteEarlyException('Error updating the genebuild status of this assembly. Kindly check below\n'+str(error))
@@ -484,7 +513,11 @@ class Register_Asm(eHive.BaseRunnable):
                     try:
                         with con.cursor() as cur:
                             cur.execute('INSERT INTO genebuild_status (assembly_accession, progress_status, date_started, date_completed, genebuilder, assembly_id,\
+<<<<<<< HEAD
                                         is_current, annotation_source) VALUES (%s,%s,%s,%s,%s,%s,%s,%s)',(accession, 'completed', datetime.today().strftime('%Y-%m-%d'),\
+=======
+                                        is_current, annotation_method) VALUES (%s,%s,%s,%s,%s,%s,%s,%s)',(accession, 'completed', datetime.today().strftime('%Y-%m-%d'),\
+>>>>>>> 6cd4049d606c791f286c8c26976adfa462d085fe
                                         datetime.today().strftime('%Y-%m-%d'), getpass.getuser(), assembly_id[accession], 1, registry_settings['import_type']))
                     except Exception as error:
                         raise eHive.CompleteEarlyException('Error updating the genebuild status of this assembly. Kindly check below\n'+str(error))
@@ -497,9 +530,18 @@ class Register_Asm(eHive.BaseRunnable):
                     existing_gca[accession] = self.param('metadata')[26]
                     existing_taxons[self.param('metadata')[11]] = self.param('metadata')[26]
                     self.param('existing_species',existing_taxons)
+<<<<<<< HEAD
                   
         else: 
             #Registration being performed by genebuild
+=======
+                    new_record = 2
+                  
+            self.param('write', new_record)
+        else: 
+            #Registration being performed by genebuild
+            new_record = 0
+>>>>>>> 6cd4049d606c791f286c8c26976adfa462d085fe
             res = []
             #Get a list of new assemblies to register and check against existing entries
             for accession in acc_list:
@@ -517,12 +559,31 @@ class Register_Asm(eHive.BaseRunnable):
                     existing_gca[accession] = self.param('metadata')[26]
                     existing_taxons[self.param('metadata')[11]] = self.param('metadata')[26]
                     self.param('existing_species',existing_taxons)
+<<<<<<< HEAD
+=======
+                    new_record = 1
+            self.param('write', new_record)
+>>>>>>> 6cd4049d606c791f286c8c26976adfa462d085fe
         self.param('records', registry_update)
         if res:
             self.slack_reporting(res[0],res[1],res[2],res[3])
         else:
             raise eHive.CompleteEarlyException('No new assembly or update at this time.\n')
     
+<<<<<<< HEAD
+=======
+    def write_output(self):
+        write_flag = self.param('write')
+        if write_flag == 1:
+            registry_settings = self.param('registry')
+            #self.store_assembly(registry_settings['registry_dbname'],registry_settings['registry_db_host'],int(registry_settings['registry_db_port']),\
+                                #registry_settings['user_w'],registry_settings['password'],self.param('records'))
+        elif write_flag == 2:
+            registry_settings = self.param('registry')
+            #self.store_assembly(registry_settings['registry_dbname'],registry_settings['registry_db_host'],int(registry_settings['registry_db_port']),\
+                                #registry_settings['user_w'],registry_settings['password'],self.param('records'))
+            #Update annotation status as this is a metazoa import
+>>>>>>> 6cd4049d606c791f286c8c26976adfa462d085fe
 
     #For linked assemblies, find the id associated with the assembly of interest
     def get_ids(self,term):
