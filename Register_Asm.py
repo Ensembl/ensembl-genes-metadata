@@ -32,7 +32,7 @@ import sqlalchemy as db
 from pathlib import Path
 import argparse
 from Bio import Entrez
-Entrez.email = 'ensembl-genebuild@ebi.ac.uk'
+Entrez.email = os.getenv('genebuild_email')
 import sys
 import logging
 import urllib.request,json
@@ -143,7 +143,7 @@ class Register_Asm(eHive.BaseRunnable):
                 else:
                     con.commit()
             #If we get here, it means new assembly registration completed without error
-            #Create a list of all newly registered assemblies for reporting purposes via Slack
+            #Create a list of all newly registered assemblies for reporting purposes via slack
             new_assemblies[records[1]] = records[1] + '\t' + records[30] + '\t' + records[7] + '\t' + records[22] + '\t' + records[6] + '\t' + records[4] + '\t' + records[9]
             self.param('na',new_assemblies)
         elif int(records[27][1]) == 2:
