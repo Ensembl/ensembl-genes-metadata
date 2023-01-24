@@ -525,18 +525,6 @@ class Register_Asm(eHive.BaseRunnable):
         else:
             raise eHive.CompleteEarlyException('No new assembly or update at this time.\n')
     
-    def write_output(self):
-        write_flag = self.param('write')
-        if write_flag == 1:
-            registry_settings = self.param('registry')
-            #self.store_assembly(registry_settings['registry_dbname'],registry_settings['registry_db_host'],int(registry_settings['registry_db_port']),\
-                                #registry_settings['user_w'],registry_settings['password'],self.param('records'))
-        elif write_flag == 2:
-            registry_settings = self.param('registry')
-            #self.store_assembly(registry_settings['registry_dbname'],registry_settings['registry_db_host'],int(registry_settings['registry_db_port']),\
-                                #registry_settings['user_w'],registry_settings['password'],self.param('records'))
-            #Update annotation status as this is a metazoa import
-
     #For linked assemblies, find the id associated with the assembly of interest
     def get_ids(self,term):
         ids = []
