@@ -254,7 +254,7 @@ class Register_Asm(eHive.BaseRunnable):
         return [new_assemblies,updated_assemblies,assemblies_existing_species,'0']
     def slack_reporting(self,new,updates,diff,imp):
         #Reporting assembly registration in categories
-        if len(imp) > 0:
+        if int(imp) > 0:
             cnt = 0
             asm_meta = ''
             report = "Accession\tImporter\tAnnotation method\n"
@@ -274,7 +274,7 @@ class Register_Asm(eHive.BaseRunnable):
                 cnt+=1
                 asm_meta = asm_meta + entry + '\n'
             report = 'Total number of new species registered = ' + str(cnt) + '\n' + report + str(asm_meta)
-            payload="{\"channel\": \"@denye\", \"username\": \"registry_messenger\", \"text\": \"" + report  +"\"}"
+            payload="{\"channel\": \"#genebuildregistry\", \"username\": \"registry_messenger\", \"text\": \"" + report  +"\"}"
             url = os.getenv('slack_token')
             headers = {'content-type': 'application/json', 'Accept-Charset': 'UTF-8'}
             r = requests.post(url, data=payload, headers=headers)
@@ -286,7 +286,7 @@ class Register_Asm(eHive.BaseRunnable):
                 cnt+=1
                 asm_meta = asm_meta + entry + '\n'
             report = 'Total number of assembly updates on existing species  = ' + str(cnt) + '\n' + report + str(asm_meta)
-            payload="{\"channel\": \"@denye\", \"username\": \"registry_messenger\", \"text\": \"" + report  +"\"}"
+            payload="{\"channel\": \"#genebuildregistry\", \"username\": \"registry_messenger\", \"text\": \"" + report  +"\"}"
             url = os.getenv('slack_token')
             headers = {'content-type': 'application/json', 'Accept-Charset': 'UTF-8'}
             r = requests.post(url, data=payload, headers=headers)
@@ -298,7 +298,7 @@ class Register_Asm(eHive.BaseRunnable):
                 cnt+=1
                 asm_meta = asm_meta + entry + '\n'
             report = 'Total number of new assemblies on existing species = ' + str(cnt) + '\n' + report + str(asm_meta)
-            payload="{\"channel\": \"@denye\", \"username\": \"registry_messenger\", \"text\": \"" + report  +"\"}"
+            payload="{\"channel\": \"#genebuildregistry\", \"username\": \"registry_messenger\", \"text\": \"" + report  +"\"}"
             url = os.getenv('slack_token')
             headers = {'content-type': 'application/json', 'Accept-Charset': 'UTF-8'}
             r = requests.post(url, data=payload, headers=headers)
