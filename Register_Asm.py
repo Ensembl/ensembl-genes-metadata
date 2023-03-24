@@ -112,8 +112,8 @@ class Register_Asm(eHive.BaseRunnable):
                 with con.cursor() as cur:
                     cur.execute('INSERT INTO species_space_log  VALUES (%s,%s,%s)',  (records[11], records[27][0], records[7]))
                     cur.execute('INSERT INTO assembly (chain, version, stable_id_space_id, species_prefix, pri_asm_group, clade, species_id, taxonomy, assembly_path, \
-                                genome_rep, rnaseq_data) values (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)',  (chain_version[0], chain_version[1], records[27][0], \
-                                records[26], records[24], records[30], records[31], records[11], records[8], records[10], records[23]))
+                                genome_rep, rnaseq_data, is_current) values (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)',  (chain_version[0], chain_version[1], records[27][0], \
+                                records[26], records[24], records[30], records[31], records[11], records[8], records[10], records[23], 1))
             except Exception as error:
                 raise eHive.CompleteEarlyException('Looks like something did not go down well. Kindly check below\n'+str(error))
             else:
@@ -150,8 +150,10 @@ class Register_Asm(eHive.BaseRunnable):
             try:
                 with con.cursor() as cur:
                     cur.execute('INSERT INTO assembly (chain, version, stable_id_space_id, species_prefix, pri_asm_group, clade, species_id, taxonomy, assembly_path,\
-                                genome_rep, rnaseq_data) values (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)',  (chain_version[0], chain_version[1], records[27][0], records[26],\
-                                records[24],records[30],records[31], records[11], records[8], records[10], records[23]))
+                                genome_rep, rnaseq_data, is_current) values (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)',  (chain_version[0], chain_version[1], records[27][0], records[26],\
+                                records[24],records[30],records[31], records[11], records[8], records[10], records[23], 1))
+                    #Set previous assembly versions to outdated
+                    cur.execute("UPDATE assembly set is_current = 0 WHERE chain =  '" + chain_version[0] +"' AND version < " + chain_version[1])
             except Exception as error:
                 raise eHive.CompleteEarlyException('Looks like something did not go down well. Kindly check below\n'+str(error))
             else:
@@ -179,13 +181,14 @@ class Register_Asm(eHive.BaseRunnable):
             self.param('ua',updated_assemblies)
         #Updating existing assembly with a newer version whilst maintaining same stable space range
         elif int(records[27][1]) == 3:
+            print ("In 3")
             try:
                 with con.cursor() as cur:
                     cur.execute('INSERT INTO stable_id_space  VALUES (%s,%s,%s)',  (records[27][0], records[28], records[29]))
                     cur.execute('UPDATE species_space_log SET current_space = %s WHERE species_id = %s',  (records[27][0], records[11]))
                     cur.execute('INSERT INTO assembly (chain, version, stable_id_space_id, species_prefix, pri_asm_group, clade, species_id, taxonomy, assembly_path, \
-                                genome_rep,rnaseq_data) values (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)', (chain_version[0], chain_version[1], records[27][0], records[26],\
-                                records[24], records[30],records[31], records[11], records[8], records[10], records[23]))
+                                genome_rep,rnaseq_data, is_current) values (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)', (chain_version[0], chain_version[1], records[27][0], records[26],\
+                                records[24], records[30],records[31], records[11], records[8], records[10], records[23], 1))
             except Exception as error:
                 raise eHive.CompleteEarlyException('Looks like something did not go down well. Kindly check below\n'+str(error))
             else:
@@ -216,13 +219,14 @@ class Register_Asm(eHive.BaseRunnable):
             self.param('ea',assemblies_existing_species)
         #Registering a new assembly on a different chain for an existing species. A new stable space range is required here
         elif int(records[27][1]) == 4:
+            print ("In 4")
             #Re-use existing stable space range where assembly is of different chain from existing ones belonging to same species
             try:
                 with con.cursor() as cur:
                     cur.execute('UPDATE species_space_log SET current_space = %s WHERE species_id = %s',  (records[27][0], records[11]))
                     cur.execute('INSERT INTO assembly (chain, version, stable_id_space_id, species_prefix, pri_asm_group, clade, species_id, taxonomy, assembly_path, \
-                                genome_rep, rnaseq_data) values (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)',  (chain_version[0], chain_version[1], records[27][0], records[26], \
-                                records[24], records[30],records[31], records[11], records[8], records[10], records[23]))
+                                genome_rep, rnaseq_data, is_current) values (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)',  (chain_version[0], chain_version[1], records[27][0], records[26], \
+                                records[24], records[30],records[31], records[11], records[8], records[10], records[23], 1))
             except Exception as error:
                 raise eHive.CompleteEarlyException('Looks like something did not go down well. Kindly check below\n'+str(error))
             else:
@@ -327,8 +331,7 @@ class Register_Asm(eHive.BaseRunnable):
         registry_settings = self.param('registry')
         #query to fetch records of all existing assemblies
         sql = "SELECT species_prefix, concat(chain,'.', version), taxonomy FROM assembly order by chain,version"
-        info = self.fetch_data(sql,registry_settings['registry_dbname'],registry_settings['registry_db_host'],int(registry_settings['registry_db_port']),\
-                               registry_settings['user_w'],registry_settings['password'])
+        info = self.fetch_data(sql,registry_settings['registry_dbname'],registry_settings['registry_db_host'],int(registry_settings['registry_db_port']),registry_settings['user_w'],registry_settings['password'])
         existing_gca = {}
         existing_prefix = {}
         existing_taxons = {}
@@ -410,8 +413,7 @@ class Register_Asm(eHive.BaseRunnable):
                     else:
                         #Retrieve all annotation records for the assembly from the genebuild_status table
                         sql = "SELECT * FROM genebuild_status WHERE assembly_accession = '" + accession + "'"
-                        annotation_record = self.fetch_data(sql,registry_settings['registry_dbname'],registry_settings['registry_db_host'],\
-                                                            int(registry_settings['registry_db_port']),registry_settings['user_w'],registry_settings['password'])
+                        annotation_record = self.fetch_data(sql,registry_settings['registry_dbname'],registry_settings['registry_db_host'],int(registry_settings['registry_db_port']),registry_settings['user_w'],registry_settings['password'])
                         if annotation_record:
                             print('The following annotation(s) exists for this assembly')
                             for record in annotation_record:
@@ -540,7 +542,7 @@ class Register_Asm(eHive.BaseRunnable):
         registry_settings = self.param('registry')
         existing_taxons = self.param('existing_species')
         existing_space_range = self.param('stable_id_space_range')
-        asm_group_dict = {'genomes25' : 'ebp', 'ebp' : 'None', 'abp' : 'ebp', 'asg' : 'ebp', 'b10k' : 'ebp', 'dtol' : 'erga ebp', 'erga' : 'ebp', 'ergapp' : 'erga', \
+        asm_group_dict = {'argp' : 'ebp', 'genomes25' : 'ebp', 'ebp' : 'None', 'abp' : 'ebp', 'asg' : 'ebp', 'b10k' : 'ebp', 'dtol' : 'erga ebp', 'erga' : 'ebp', 'ergapp' : 'erga', \
                           'g10k' : 'erga  ebp', 'tol': 'None', 'ungrouped' : 'None', 'vgp' : 'ebp'} 
         for id in self.get_ids(accession):
             if len(id) > 1: #Assembly is linked to other assembly(ies)
@@ -582,6 +584,11 @@ class Register_Asm(eHive.BaseRunnable):
             #Check if new prefix is unique
             self.generate_species_prefix(species_name,species_prefix,assembly_metadata[11])
             species_prefix = self.param('unique_prefix')
+        #Because in the past, both dog species and subspecies genomes have been annotated with same stable prefix,
+        #to maintain that order especially as it relates to stable id mapping, we decide to force any future updates to 
+        #to the particular dog assembly gets the same stable prefix.
+        if assembly_metadata[11] == 9612 and re.search(r"GCA_905319855",assembly_metadata[1]):
+            species_prefix = 'ENSCAF'
         #Get stable space range for assembly
         stable_space_id = self.get_stable_space_id(assembly_metadata[11],accession).split('\t')
         stable_id_start_end = []
@@ -636,7 +643,7 @@ class Register_Asm(eHive.BaseRunnable):
         existing_stable_id_assignment = self.param('species_space_id')
         chain = accession.split('.')
         if taxon_id in existing_stable_id_assignment.keys():
-            #for entry in existing_stable_id_assignment.keys():
+            #query to find the highest versioned assembly for accession:
             sql = "SELECT MAX(version), stable_id_space_id FROM assembly WHERE chain = '" + chain[0] + "'"
             info = self.fetch_data(sql,registry_settings['registry_dbname'],registry_settings['registry_db_host'],int(registry_settings['registry_db_port']),\
                                    registry_settings['user_w'],registry_settings['password'])
@@ -655,8 +662,10 @@ class Register_Asm(eHive.BaseRunnable):
                                 rgn_flag = 3
                                 return str(stable_id_space_id) + '\t' + str(rgn_flag)
                 elif row[0] >= int(chain[1]):
-                    print('Only a new/updated assembly can be registered. Check database for existing assembly information')
-                    return 0
+                   #print('Only a new/updated assembly can be registered. Check database for existing assembly information')
+                   raise eHive.CompleteEarlyException('A higher versioned assembly '+str(chain[0]+'.'+str(row[0]))+' already exists for this accession. Check database for existing assembly information')
+                    #return 0
+                   
                 else:
                     print('Re-using same space')
                     rgn_flag = 2
@@ -691,7 +700,7 @@ class Register_Asm(eHive.BaseRunnable):
         handle2.close()
         report = ''
         clade = ''
-        lineage_rpt = {'Rodentia': 'rodentia','Primates': 'primates','Mammalia': 'mammalia','Amphibia': 'amphibians','Teleostei': 'teleostei','Marsupialia': 'marsupials',\
+        lineage_rpt = {'Mucoromycota': 'mucoromycota', 'Lophotrochozoa': 'lophotrochozoa','Eudicotyledons': 'eudicotyledons','Orthoptera': 'orthoptera','Perniciosus': 'perniciosus', 'Atroparvus': 'atroparvus','Rodentia': 'rodentia','Primates': 'primates','Mammalia': 'mammalia','Amphibia': 'amphibians','Teleostei': 'teleostei','Marsupialia': 'marsupials',\
                        'Aves': 'aves','Sauropsida': 'reptiles','Chondrichthyes': 'sharks','Eukaryota': 'non_vertebrates','Metazoa': 'metazoa','Viral': 'viral',\
                        'Viruses': 'viral','Viridiplantae': 'plants','Arthropoda': 'arthropods','Lepidoptera': 'lepidoptera','Insecta': 'insects','Hymenoptera': 'hymenoptera',\
                        'Hemiptera': 'hemiptera','Coleoptera': 'coleoptera','Diptera': 'diptera','Mollusca': 'mollusca','Vertebrata': 'vertebrates','Alveolata': 'protists',\
@@ -710,7 +719,15 @@ class Register_Asm(eHive.BaseRunnable):
             report = self.get_common_name_gbif(record2[0]['ScientificName'].replace(' ','%20'))
         #Check if common name was retrieved via gbif, else try using assembly report file
         common_name = report.split(':')
-        if common_name[1] == '':
+        if common_name[1] == '' and accession == 'GCA_948455875.1':
+            report = 'Common name:Bugs:' + record2[0]['ScientificName']
+        elif common_name[1] == '' and accession == 'GCA_947579085.1':
+            report = 'Common name:Moths:' + record2[0]['ScientificName']
+        elif common_name[1] == '' and accession == 'GCA_947389915.1':
+            report = 'Common name:Flies:' + record2[0]['ScientificName']
+        elif common_name[1] == '' and accession == 'GCA_944470385.2':
+            report = 'Common name:Flatworms:' + record2[0]['ScientificName']
+        elif common_name[1] == '':
             report = self.get_common_name_via_report_file(assembly_path,assembly_name,accession,record2[0]['ScientificName'])
         #Reverse the dictionary entry returned by API so we have lowere ancestors before higher up ones
         tax_list = record2[0]['LineageEx']
@@ -735,14 +752,21 @@ class Register_Asm(eHive.BaseRunnable):
         assembly_name = assembly_name.replace(' ','_')
         url = assembly_path +'/' + accession+'_' + assembly_name + '_assembly_stats.txt'
         report = ""
-        for line in urllib.request.urlopen(url):
-            if (re.search(r'Organism name',str(line))):
-                res = re.findall('\((.*?)\)', line.decode('utf-8'))
-                if res[0]:
-                    report = 'common_name:' + res[0].capitalize() + ':' + species_name
-                    break
-                else:
-                    report = 'common_name:' + '' + ':' + species_name
+        try:
+            for line in urllib.request.urlopen(url):
+                if (re.search(r'Organism name',str(line))):
+                    res = re.findall('\((.*?)\)', line.decode('utf-8'))
+                    if res[0]:
+                        report = 'common_name:' + res[0].capitalize() + ':' + species_name
+                        break
+                    else:
+                        report = 'common_name:' + '' + ':' + species_name
+        except urllib.error.HTTPError as e:
+            if e.code == 404:
+                print('No response was received. Possibly missing report file.\n')
+                if accession == 'GCA_009617715.1':
+                    report = 'common_name:' + 'Caddisflies' + ':' + species_name
+              #  raise eHive.CompleteEarlyException('No response was received. Possibly missing report file.\n')
         if not report:
             print('Common name could not be determined for this species')
             report = 'common_name:' + '' + ':' + species_name
@@ -751,6 +775,13 @@ class Register_Asm(eHive.BaseRunnable):
     def get_common_name_gbif(self,species_name):
         """ Fetch common name from alternative sources where it cannot be retrieved via NCBI """
         url = "https://api.gbif.org/v1/species/match?name="+species_name
+        #Whilst using the Global Biodiversity Information Facility (GBIF) from Great Britain and the Northern Ireland, the common name entry for the speccies
+        #Cydia splendana is not reported in the standard format which then breaks the retrieval script, hence we assign it the expected value.
+        print('Species_name = '+species_name)
+        if (re.search(r'Cydia%20splendana',species_name)):
+            report = 'common_name:' + 'Acorn moth' + ':' + species_name
+            print('Common name set is '+report)
+            return report
         with urllib.request.urlopen(url) as response:
             data = json.loads(response.read())
             url = "https://api.gbif.org/v1/species/"+str(data['usageKey'])+"/vernacularNames"
@@ -825,7 +856,7 @@ class Register_Asm(eHive.BaseRunnable):
         """ Function to retrieve assembly meta information from the public archives """
         try:
             handle = Entrez.esummary(db="assembly",id=id,report="full")
-            record = Entrez.read(handle)
+            record = Entrez.read(handle, validate=False)
             meta_data = record['DocumentSummarySet']['DocumentSummary'][0]['Meta']
             bioproject_id = (record['DocumentSummarySet']['DocumentSummary'][0]['GB_BioProjects'][0]['BioprojectAccn']).strip() #This will return the bioproject id
             assembly_name = (record['DocumentSummarySet']['DocumentSummary'][0]['AssemblyName']).strip()
@@ -891,6 +922,7 @@ class Register_Asm(eHive.BaseRunnable):
         record = Entrez.read(handle)
         ids = record['IdList']
         ebp_dict = {}
+        argp_dict = {}
         dtol_dict = {}
         vgp_dict = {}
         erga_dict = {}
@@ -908,6 +940,11 @@ class Register_Asm(eHive.BaseRunnable):
             for id in ebp.readlines():
                 count += 1
                 ebp_dict[id] = count
+        #Find all bioprojects under the Anopheles Genome  Project
+        with os.popen("esearch -query 'PRJEB51768' -db bioproject | elink -related | efetch -format docsum | xtract -pattern DocumentSummary -element Project_Acc ") as argp:
+            for id in argp.readlines():
+                count += 1
+                argp_dict[id] = count
         #Find all bioprojects under the G10K Project
         with os.popen("esearch -query 'PRJNA566188' -db bioproject | elink -related | efetch -format docsum | xtract -pattern DocumentSummary -element Project_Acc ") as g10k:
             count = 0
@@ -976,7 +1013,10 @@ class Register_Asm(eHive.BaseRunnable):
         #Find linked projects for assembly being registered. Sometimes, assembly could be linked to multiple (related) projects
         with os.popen("esearch -query '"+bioproject.strip()+"' -db bioproject | elink -related | efetch -format docsum | xtract -pattern DocumentSummary -element Project_Acc ") as bioproject:
             for id in bioproject.readlines():
-                if id in b10k_dict.keys():
+                if id in argp_dict.keys():
+                    pri_asm_group = 'argp'
+                    return pri_asm_group
+                elif id in b10k_dict.keys():
                     pri_asm_group = 'b10k'
                     return pri_asm_group
                 elif id in dtol_dict.keys():
