@@ -76,7 +76,7 @@ class Register_Asm(eHive.BaseRunnable):
         """ It fetches the input parameters and checks that they are correct. """
         cfg_path = Path(self.param('config_file'))
         registry_settings = {} 
-        metazoa_import_types = ['import_community','import_flybase','import_genbank','import_refseq','import_veupathdb','import_wormbase']
+        metazoa_import_types = ['import_community','import_flybase','import_genbank','import_noninsdc','import_refseq','import_veupathdb','import_wormbase']
         #make sure config file exists before attempting to process it
         if cfg_path.is_file():
             with open(cfg_path) as file:
@@ -542,7 +542,7 @@ class Register_Asm(eHive.BaseRunnable):
         registry_settings = self.param('registry')
         existing_taxons = self.param('existing_species')
         existing_space_range = self.param('stable_id_space_range')
-        asm_group_dict = {'argp' : 'ebp', 'genomes25' : 'ebp', 'ebp' : 'None', 'abp' : 'ebp', 'asg' : 'ebp', 'b10k' : 'ebp', 'dtol' : 'erga ebp', 'erga' : 'ebp', 'ergapp' : 'erga', \
+        asm_group_dict = {'cbp' : 'ebp', 'argp' : 'ebp', 'genomes25' : 'ebp', 'ebp' : 'None', 'abp' : 'ebp', 'asg' : 'ebp', 'b10k' : 'ebp', 'dtol' : 'erga ebp', 'erga' : 'ebp', 'ergapp' : 'erga', \
                           'g10k' : 'erga  ebp', 'tol': 'None', 'ungrouped' : 'None', 'vgp' : 'ebp'} 
         for id in self.get_ids(accession):
             if len(id) > 1: #Assembly is linked to other assembly(ies)
@@ -700,7 +700,7 @@ class Register_Asm(eHive.BaseRunnable):
         handle2.close()
         report = ''
         clade = ''
-        lineage_rpt = {'Mucoromycota': 'mucoromycota', 'Lophotrochozoa': 'lophotrochozoa','Eudicotyledons': 'eudicotyledons','Orthoptera': 'orthoptera','Perniciosus': 'perniciosus', 'Atroparvus': 'atroparvus','Rodentia': 'rodentia','Primates': 'primates','Mammalia': 'mammalia','Amphibia': 'amphibians','Teleostei': 'teleostei','Marsupialia': 'marsupials',\
+        lineage_rpt = {'Cnidaria': 'cnidaria', 'Mucoromycota': 'mucoromycota', 'Lophotrochozoa': 'lophotrochozoa','Eudicotyledons': 'eudicotyledons','Orthoptera': 'orthoptera','Perniciosus': 'perniciosus', 'Atroparvus': 'atroparvus','Rodentia': 'rodentia','Primates': 'primates','Mammalia': 'mammalia','Amphibia': 'amphibians','Teleostei': 'teleostei','Marsupialia': 'marsupials',\
                        'Aves': 'aves','Sauropsida': 'reptiles','Chondrichthyes': 'sharks','Eukaryota': 'non_vertebrates','Metazoa': 'metazoa','Viral': 'viral',\
                        'Viruses': 'viral','Viridiplantae': 'plants','Arthropoda': 'arthropods','Lepidoptera': 'lepidoptera','Insecta': 'insects','Hymenoptera': 'hymenoptera',\
                        'Hemiptera': 'hemiptera','Coleoptera': 'coleoptera','Diptera': 'diptera','Mollusca': 'mollusca','Vertebrata': 'vertebrates','Alveolata': 'protists',\
@@ -933,8 +933,14 @@ class Register_Asm(eHive.BaseRunnable):
         asg_dict = {}
         b10k_dict = {}
         g10k_dict = {}
+        cbp_dict = {}
         count = 0
         pri_asm_group = 'ungrouped' #default group status for new assemblies
+        #Find all bioprojects under the Canadian BioGenome  Project
+        with os.popen("esearch -query 'PRJNA813333' -db bioproject | elink -related | efetch -format docsum | xtract -pattern DocumentSummary -element Project_Acc ") as cbp:
+            for id in cbp.readlines():
+                count += 1
+                cbp_dict[id] = count
         #Find all bioprojects under the Earth Genome  Project
         with os.popen("esearch -query 'PRJNA533106' -db bioproject | elink -related | efetch -format docsum | xtract -pattern DocumentSummary -element Project_Acc ") as ebp:
             for id in ebp.readlines():
@@ -1018,6 +1024,9 @@ class Register_Asm(eHive.BaseRunnable):
                     return pri_asm_group
                 elif id in b10k_dict.keys():
                     pri_asm_group = 'b10k'
+                    return pri_asm_group
+                elif id in cbp_dict.keys():
+                    pri_asm_group = 'cbp'
                     return pri_asm_group
                 elif id in dtol_dict.keys():
                     pri_asm_group = 'dtol'

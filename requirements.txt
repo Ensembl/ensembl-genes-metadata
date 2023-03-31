@@ -6,3 +6,4 @@ sqlalchemy==1.4.9
 json
 requests
 biopython
+argschema
