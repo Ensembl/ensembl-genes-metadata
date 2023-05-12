@@ -32,7 +32,7 @@ import sqlalchemy as db
 from pathlib import Path
 import argparse
 from Bio import Entrez
-Entrez.email = os.getenv('genebuild_email')
+Entrez.email = 'ensembl-genebuild@ebi.ac.uk'
 import sys
 import logging
 import urllib.request,json
@@ -143,7 +143,7 @@ class Register_Asm(eHive.BaseRunnable):
                 else:
                     con.commit()
             #If we get here, it means new assembly registration completed without error
-            #Create a list of all newly registered assemblies for reporting purposes via slack
+            #Create a list of all newly registered assemblies for reporting purposes via Slack
             new_assemblies[records[1]] = records[1] + '\t' + records[30] + '\t' + records[7] + '\t' + records[22] + '\t' + records[6] + '\t' + records[4] + '\t' + records[9]
             self.param('na',new_assemblies)
         elif int(records[27][1]) == 2:
@@ -179,9 +179,7 @@ class Register_Asm(eHive.BaseRunnable):
             #Create a list of all updated assemblies for reporting purposes via Slack
             updated_assemblies[records[1]] = records[1] + '\t' + records[30] + '\t' + records[7] + '\t' + records[22] + '\t' + records[6] + '\t' + records[4] + '\t' + chain_version[1] + '\t' + records[9]
             self.param('ua',updated_assemblies)
-        #Updating existing assembly with a newer version whilst maintaining same stable space range
         elif int(records[27][1]) == 3:
-            print ("In 3")
             try:
                 with con.cursor() as cur:
                     cur.execute('INSERT INTO stable_id_space  VALUES (%s,%s,%s)',  (records[27][0], records[28], records[29]))
@@ -219,7 +217,6 @@ class Register_Asm(eHive.BaseRunnable):
             self.param('ea',assemblies_existing_species)
         #Registering a new assembly on a different chain for an existing species. A new stable space range is required here
         elif int(records[27][1]) == 4:
-            print ("In 4")
             #Re-use existing stable space range where assembly is of different chain from existing ones belonging to same species
             try:
                 with con.cursor() as cur:
@@ -586,7 +583,7 @@ class Register_Asm(eHive.BaseRunnable):
             species_prefix = self.param('unique_prefix')
         #Because in the past, both dog species and subspecies genomes have been annotated with same stable prefix,
         #to maintain that order especially as it relates to stable id mapping, we decide to force any future updates to 
-        #to the particular dog assembly gets the same stable prefix.
+        #this particular dog assembly gets the same stable prefix.
         if assembly_metadata[11] == 9612 and re.search(r"GCA_905319855",assembly_metadata[1]):
             species_prefix = 'ENSCAF'
         #Get stable space range for assembly
@@ -596,6 +593,7 @@ class Register_Asm(eHive.BaseRunnable):
             #This requires generating a new stable space range
             current_space_id = int(stable_space_id[0]) - 1
             space_range = existing_space_range[current_space_id].split('\t')
+            #For certain species we assign a non-standard range due to the potential number of genomic features that can be present
             if (assembly_metadata[11] == 7955):
                 stable_id_start_end.append(int(space_range[1]) + 1)
                 stable_id_start_end.append(int(space_range[1]) + 15000000)
@@ -644,17 +642,19 @@ class Register_Asm(eHive.BaseRunnable):
         chain = accession.split('.')
         if taxon_id in existing_stable_id_assignment.keys():
             #query to find the highest versioned assembly for accession:
-            sql = "SELECT MAX(version), stable_id_space_id FROM assembly WHERE chain = '" + chain[0] + "'"
+            sql = "SELECT MAX(version) FROM assembly WHERE chain = '" + chain[0] + "'"
             info = self.fetch_data(sql,registry_settings['registry_dbname'],registry_settings['registry_db_host'],int(registry_settings['registry_db_port']),\
                                    registry_settings['user_w'],registry_settings['password'])
             #Check if this is a valid update
             for row in info:
-                if row[0] is None:
-                    print('Registering a different chain '+str(accession))
-                    #Assembly has a different chain from other species related assemblies, therefore assign a new stable id space range
+                if row[0] is None or row[0] < int(chain[1]):
+                    print('Registering a different chain or a version update '+str(accession))
+                    #Assembly has a different chain from other species related assemblies or it is a higher version of an existing assembly,
+                    # therefore assign a new stable id space range
                     for key, val in existing_stable_id_assignment.items():
                         if str(key) == str(taxon_id):
                             stable_id_space_id = val + 1 #val + 1
+                            #Checking if the new space range exists already or it needs to be added to the stable id space table 
                             if str(stable_id_space_id) in str(existing_stable_space_range.keys()):
                                 rgn_flag = 4
                                 return str(stable_id_space_id) + '\t' + str(rgn_flag)
@@ -664,13 +664,7 @@ class Register_Asm(eHive.BaseRunnable):
                 elif row[0] >= int(chain[1]):
                    #print('Only a new/updated assembly can be registered. Check database for existing assembly information')
                    raise eHive.CompleteEarlyException('A higher versioned assembly '+str(chain[0]+'.'+str(row[0]))+' already exists for this accession. Check database for existing assembly information')
-                    #return 0
                    
-                else:
-                    print('Re-using same space')
-                    rgn_flag = 2
-                    #Perform version update by re-using same stable is space range
-                    return str(row[1]) + '\t' + str(rgn_flag)
         else:
              #Assembly/species is being registered for the first time
             stable_id_space_id = 1
