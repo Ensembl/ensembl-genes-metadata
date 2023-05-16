@@ -9,9 +9,10 @@ import sqlalchemy as db
 import string
 import re
 import errno
+import os
 from urllib.error import HTTPError
 from Bio import Entrez
-Entrez.email = 'ensembl-genebuild@ebi.ac.uk'
+Entrez.email = os.getenv('genebuild_email')
 
 
 def get_candidate_assembly(db,host,port,user,output_file):
