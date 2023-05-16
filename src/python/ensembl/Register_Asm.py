@@ -179,7 +179,9 @@ class Register_Asm(eHive.BaseRunnable):
             #Create a list of all updated assemblies for reporting purposes via Slack
             updated_assemblies[records[1]] = records[1] + '\t' + records[30] + '\t' + records[7] + '\t' + records[22] + '\t' + records[6] + '\t' + records[4] + '\t' + chain_version[1] + '\t' + records[9]
             self.param('ua',updated_assemblies)
+        #Updating existing assembly with a newer version whilst maintaining same stable space range
         elif int(records[27][1]) == 3:
+            print ("In 3")
             try:
                 with con.cursor() as cur:
                     cur.execute('INSERT INTO stable_id_space  VALUES (%s,%s,%s)',  (records[27][0], records[28], records[29]))
@@ -217,6 +219,7 @@ class Register_Asm(eHive.BaseRunnable):
             self.param('ea',assemblies_existing_species)
         #Registering a new assembly on a different chain for an existing species. A new stable space range is required here
         elif int(records[27][1]) == 4:
+            print ("In 4")
             #Re-use existing stable space range where assembly is of different chain from existing ones belonging to same species
             try:
                 with con.cursor() as cur:
@@ -434,7 +437,7 @@ class Register_Asm(eHive.BaseRunnable):
                                         cur.execute('INSERT INTO genebuild_status (assembly_accession, progress_status, date_started, date_completed, genebuilder, \
                                                      assembly_id,is_current, annotation_source) VALUES (%s,%s,%s,%s,%s,%s,%s,%s)',(accession, 'completed', \
                                                      datetime.today().strftime('%Y-%m-%d'),datetime.today().strftime('%Y-%m-%d'), getpass.getuser(), assembly_id[accession],\
-                                                     1, registry_settings['import_type']))
+                                                     0, registry_settings['import_type']))
                                 except Exception as error:
                                     raise eHive.CompleteEarlyException('Looks like something did not go down well. Kindly check below\n'+str(error))
                                 else:
@@ -456,7 +459,7 @@ class Register_Asm(eHive.BaseRunnable):
                                 with con.cursor() as cur:
                                     cur.execute('INSERT INTO genebuild_status (assembly_accession, progress_status, date_started, date_completed, genebuilder, assembly_id,\
                                                 is_current, annotation_source) VALUES (%s,%s,%s,%s,%s,%s,%s,%s)',(accession, 'completed', datetime.today().strftime('%Y-%m-%d'),\
-                                                datetime.today().strftime('%Y-%m-%d'), getpass.getuser(), assembly_id[accession], 1, registry_settings['import_type']))
+                                                datetime.today().strftime('%Y-%m-%d'), getpass.getuser(), assembly_id[accession], 0, registry_settings['import_type']))
                             except Exception as error:
                                 raise eHive.CompleteEarlyException('Error updating the genebuild status of this assembly. Kindly check below\n'+str(error))
                             else:
@@ -486,7 +489,7 @@ class Register_Asm(eHive.BaseRunnable):
                         with con.cursor() as cur:
                             cur.execute('INSERT INTO genebuild_status (assembly_accession, progress_status, date_started, date_completed, genebuilder, assembly_id,\
                                         is_current, annotation_source) VALUES (%s,%s,%s,%s,%s,%s,%s,%s)',(accession, 'completed', datetime.today().strftime('%Y-%m-%d'),\
-                                        datetime.today().strftime('%Y-%m-%d'), getpass.getuser(), assembly_id[accession], 1, registry_settings['import_type']))
+                                        datetime.today().strftime('%Y-%m-%d'), getpass.getuser(), assembly_id[accession], 0, registry_settings['import_type']))
                     except Exception as error:
                         raise eHive.CompleteEarlyException('Error updating the genebuild status of this assembly. Kindly check below\n'+str(error))
                     else:
@@ -569,7 +572,7 @@ class Register_Asm(eHive.BaseRunnable):
             species_prefix= existing_taxons[assembly_metadata[11]]
         else:
             #Generate initial species prefix for new species
-            pattern = "[\n|\r|\r\n|\s+|\d+]" #pattern to remove new line character, whitespace and digits from species name
+            pattern = "[\n|\r|\r\n|\d+]" #pattern to remove new line character, whitespace and digits from species name
             species_name = re.sub(pattern, '', assembly_metadata[7] )
             # Create a regex pattern to replace all non letters or special characters in string with empty string
             species_name = re.sub("[^A-Z]", "", species_name,0,re.IGNORECASE)
@@ -774,6 +777,18 @@ class Register_Asm(eHive.BaseRunnable):
         print('Species_name = '+species_name)
         if (re.search(r'Cydia%20splendana',species_name)):
             report = 'common_name:' + 'Acorn moth' + ':' + species_name
+            print('Common name set is '+report)
+            return report
+        if (re.search(r'Crithidia%20mellificae',species_name)):
+            report = 'common_name:' + 'Kinetoplastids' + ':' + species_name
+            print('Common name set is '+report)
+            return report
+        if (re.search(r'Saccharomyces%20cerevisiae%20x%20Saccharomyces%20kudriavzevii',species_name)):
+            report = 'common_name:' + 'Budding yeast' + ':' + species_name
+            print('Common name set is '+report)
+            return report
+        if (re.search(r'Raphanus%20raphanistrum%20x%20Raphanus%20sativus',species_name)):
+            report = 'common_name:' + 'Eudicots' + ':' + species_name
             print('Common name set is '+report)
             return report
         with urllib.request.urlopen(url) as response:
