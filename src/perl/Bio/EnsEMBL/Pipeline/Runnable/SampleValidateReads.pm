@@ -24,20 +24,18 @@ Questions may also be sent to the Ensembl help desk at
 
 =head1 NAME
 
-Bio::EnsEMBL::Analysis::Hive::RunnableDB::HiveLoadSequences
+Bio::EnsEMBL::Pipeline::Runnable::SampleValidateReads
 
 =head1 SYNOPSIS
 
 
 =head1 DESCRIPTION
 
-Base module to load data into Hive custom tables. Modules should override
-create_row_data which will be called before loading data into the table.
-the accession field will be return in an arrayref on branch 2
+Module utilises a fastq validator program to check fastq file meets the requirement of standard fastq files
 
 =cut
 
-package SampleValidateReads;
+package Bio::EnsEMBL::Pipeline::Runnable::SampleValidateReads;
 
 use strict;
 use warnings;
@@ -72,9 +70,15 @@ sub fetch_input {
 
 sub run {
   my ($self) = @_;
-  
+  my $cmd = '';
+  my $subsample = catfile('/nfs/production/flicek/ensembl/genebuild/do1/non_transcriptomic_registry/',$self->param('species'),'fastq',$self->param('iid'));  
   #command to validate read format
-  my $cmd = $self->param('validator') . " --file " . $self->param('input_dir') . $self->param('iid');
+  if (-e $subsample){
+      $cmd = $self->param('validator') . " --file " . $subsample;
+  }
+  else{
+    $cmd = $self->param('validator') . " --file " . $self->param('input_dir') . $self->param('iid');
+  }
   my $validation_result = system($cmd);
   
   #check if file meets fastq formatting standards

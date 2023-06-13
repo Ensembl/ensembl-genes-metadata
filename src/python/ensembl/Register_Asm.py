@@ -32,7 +32,7 @@ import sqlalchemy as db
 from pathlib import Path
 import argparse
 from Bio import Entrez
-Entrez.email = 'ensembl-genebuild@ebi.ac.uk'
+Entrez.email = os.getenv('genebuild_email')
 import sys
 import logging
 import urllib.request,json
@@ -98,7 +98,7 @@ class Register_Asm(eHive.BaseRunnable):
     def store_assembly(self, database, host, port, user, password, records):
         con = pymysql.connect(
                 host=host, user=user, passwd=password, port=port, database=database.strip(), charset='utf8mb4', cursorclass=pymysql.cursors.DictCursor
-            )
+        )
         chain_version = records[1].split('.')
         new_assemblies = self.param('na')
         updated_assemblies = self.param('ua')

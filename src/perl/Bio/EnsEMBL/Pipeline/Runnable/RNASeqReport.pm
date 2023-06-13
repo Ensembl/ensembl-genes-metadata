@@ -1,4 +1,4 @@
-package RNASeqReport;
+package Bio::EnsEMBL::Pipeline::Runnable::RNASeqReport;
 
 use strict;
 use warnings;

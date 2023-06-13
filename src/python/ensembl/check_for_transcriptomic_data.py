@@ -5,6 +5,7 @@ import argparse
 import re
 import requests
 
+""" Use taxon_id to check for the existence of short reads (paired ended) or long reads from the ENA """
 def transcriptomic_status(taxon_id,output_path):
     """ Check status of transcriptomic data both in the registry for exisiting species and publicly for new species """
     ena_base_url = 'https://www.ebi.ac.uk/ena/portal/api/search?display=report'
@@ -40,7 +41,7 @@ def transcriptomic_status(taxon_id,output_path):
             status = 'available'
     return status
 
-
+""" Main method to handle arguments """
 if __name__ == '__main__':
     """Main script entry-point."""
     parser = argparse.ArgumentParser()
