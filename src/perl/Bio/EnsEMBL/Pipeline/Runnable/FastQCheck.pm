@@ -26,13 +26,16 @@ Questions may also be sent to the Ensembl help desk at
 
 =head1 NAME
 
-Bio::EnsEMBL::Pipeline::Runnable::FastQCheck
+Bio::EnsEMBL::Analysis::Hive::RunnableDB::HiveLoadSequences
+
 =head1 SYNOPSIS
 
 
 =head1 DESCRIPTION
 
-Module to assess the quality of the fastq file using fastqc
+Base module to load data into Hive custom tables. Modules should override
+create_row_data which will be called before loading data into the table.
+the accession field will be return in an arrayref on branch 2
 
 =cut
 
@@ -51,7 +54,7 @@ use parent ('Bio::EnsEMBL::Analysis::Hive::RunnableDB::HiveBaseRunnableDB');
 =head2 fetch_input
 
  Arg [1]    : None
- Description: Check that sequence_file. Load the module
+ Description: Check that sequence_file and table_name exists. Load the module
               needed to parse the file
  Returntype :
  Exceptions :
@@ -66,6 +69,7 @@ sub fetch_input {
   $self->param_required('iid');
   $self->param_required('is_paired');
   $self->param_required('species');
+  $self->param('source_id',7215);
     
   
 }
@@ -124,13 +128,13 @@ sub write_output {
   my $registry_adaptor = new TranscriptomicRegistryAdaptor(
         -user   => $ENV{GBUSER},
         -dbname => $ENV{REG_DB},#$self->param('pipe_db'),
-        -host   => $ENV{GBS1},#$self->param('pipe_host'),
-        -port   => $ENV{GBP1},#$self->parma('pipe_port'),
+        -host   => $ENV{GBS2},#$self->param('pipe_host'),
+        -port   => $ENV{GBP2},#$self->parma('pipe_port'),
         -pass   => $ENV{GBPASS},#$ENV{GBPASS},
         -driver => 'mysql',#$ENV{GBDRIVER},
     );
    my ($qc_rep,$rep_line);
-   my $sth = $registry_adaptor->dbc->prepare("insert into fastqc values (?,?,?,?,?,?,?,?,?,?,?,?)");
+   my $sth = $registry_adaptor->dbc->prepare("insert ignore into fastqc values (?,?,?,?,?,?,?,?,?,?,?,?)");
    $sth->bind_param(1,$self->param('taxon_id'));
    while (($rep_line, $qc_rep) = each ($self->param('db_report'))){
     @report = split(/\t/,$qc_rep);
