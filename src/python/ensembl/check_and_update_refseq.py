@@ -65,8 +65,8 @@ def update_refseq_records(host,user,password,port,database,user_r):
                 if line[17] in existing_accessions:#RefSeq entry exists in database
                     if assemblies_to_update[existing_accessions[line[17]]] == 1:
                         #RefSeq accession requires updating
-                       # with con.cursor() as cur:
-                            #cur.execute('UPDATE meta SET refseq_accession = %s WHERE assembly_id = %s',  (line[0], existing_accessions[line[17]]))
+                        with con.cursor() as cur:
+                            cur.execute('UPDATE meta SET refseq_accession = %s WHERE assembly_id = %s',  (line[0], existing_accessions[line[17]]))
                             #con.commit()
                         total_read += 1
                         #Store each update for reporting purposes
@@ -75,21 +75,21 @@ def update_refseq_records(host,user,password,port,database,user_r):
                         #Assembly name requires updating
                         with con.cursor() as cur:
                             cur.execute('UPDATE meta SET assembly_name = %s WHERE assembly_id = %s',  (line[15], existing_accessions[line[17]]))
-                            con.commit()
+                            #con.commit()
                         name_cnt += 1
                         name_update_rpt[line[17]] = line[17] + '\t' + name_update[line[17]] + '\t' + line[15] + '\n'
     except urllib.error.HTTPError as e:
         if e.code == 404:
             print('No response was received. Possibly missing report file.\n')
     else:
-        print('Nothing to execute')#con.commit()
+        con.commit()
     slack_reporting(refseq_update_rpt,name_update_rpt)
     return
 
 """ Report update status if any to the respective slack channel """
 def slack_reporting(refseq_update_rpt,name_update_rpt):
-    name_rpt = os.path.join(os.getenv('HOME'),'name_update.txt')
-    rpt = os.path.join(os.getenv('HOME'),'refseq_summary_update.txt')
+    name_rpt = os.path.join(os.getenv('meta_database_dir'),'name_update.txt')
+    rpt = os.path.join(os.getenv('meta_database_dir'),'refseq_summary_update.txt')
     refseq_report_line = "Genome accession\tAssembly name\tRefseq accession\n"
     name_report_line = "Genome accession\tOld assembly name\tNew assembly name\n"
     ref_cnt = 0
@@ -118,6 +118,8 @@ def slack_reporting(refseq_update_rpt,name_update_rpt):
         summary_report = refseq_report_line
     elif ref_cnt == 0 and asm_cnt > 0:
         summary_report = name_report_line
+    else:
+        summary_report = 'No update to refseq or assembly name this time'
 
     #Set message token for reporting
     payload="{\"channel\": \"@denye\", \"username\": \"registry_messenger\", \"text\": \"" + summary_report  +"\"}"

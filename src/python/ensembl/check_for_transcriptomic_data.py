@@ -1,3 +1,18 @@
+# Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+# Copyright [2016-2022] EMBL-European Bioinformatics Institute
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """ Script to check for the availability of transcriptomic data when provided with the taxon_id """
 
 import sys
@@ -45,8 +60,8 @@ def transcriptomic_status(taxon_id,output_path):
 if __name__ == '__main__':
     """Main script entry-point."""
     parser = argparse.ArgumentParser()
-    parser.add_argument('-out','--output_path', help='Path to store transcriptomic data report', required=True)
-    parser.add_argument('-tid','--taxon_id', help='Taxonomy id to fetch information about', required=True)
+    parser.add_argument('--output_path', help='Path to store transcriptomic data report', required=True)
+    parser.add_argument('--taxon_id', help='Taxonomy id to fetch information about', required=True)
     args = parser.parse_args()
     taxon_id = args.taxon_id
     output_path = args.output_path

@@ -15,27 +15,19 @@
 
 """ Script to backup the meta database """
 
-import os
 import argparse
+import os
+import requests
 
-def copy_db(backup_file,host,db,user,port):
-    host = host.split('.')
-    mysql_dump = host[0] + ' mysqldump --databases '+ db + ' > ' + backup_file 
-    os.system(mysql_dump)
-    
+def slack_reporting(report):
+    payload="{\"channel\": \"@denye\", \"username\": \"registry_messenger\", \"text\": \"" + report  +"\"}"
+    url = os.getenv('slack_token')
+    headers = {'content-type': 'application/json', 'Accept-Charset': 'UTF-8'}
+    r = requests.post(url, data=payload, headers=headers)
 
 if __name__ == '__main__':
   parser = argparse.ArgumentParser()
-  parser.add_argument('-p','--port', help='Port number for host', required=True)
-  parser.add_argument('-u','--user', help='Mysql user', required=True)
-  parser.add_argument('-db','--dbname', help='Database to be backed up', required=True)
-  parser.add_argument('-host','--server', help='Host server for database', required=True)
-  parser.add_argument('-bkup','--backup_file', help='File name to hold db backup', required=True)
+  parser.add_argument('--msg', help='Message to report', required=True)
   args = parser.parse_args()
-  bkup_file = args.backup_file
-  server = args.server
-  db = args.dbname
-  user = args.user
-  port = args.port
-  port.strip
-  copy_db(bkup_file,server,db,user,port)
+  msg = args.msg
+  slack_reporting(msg)
