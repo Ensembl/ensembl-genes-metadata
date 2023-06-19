@@ -63,9 +63,9 @@ We currently use MySQL databases to store our data. To avoid having to do many c
 
 There is a main configuration file, `Bio::EnsEMBL::Pipeline::PipeConfig::AssemblyRegistrationConf`, which will generate a set of analyses to:
 - sync genebuild entries between the meta database and the production portal
-- check for new eukaryote genomes
+- check for new eukaryotic genomes
 - check and update assembly names and refseq accessions
-- backup meta database when new new eukaryote genomes become available
+- backup meta database when new eukaryotic genomes become available
 - register new genomes
 - copy and restore updated database across fail-safe servers
 The whole system is explained in more details below
