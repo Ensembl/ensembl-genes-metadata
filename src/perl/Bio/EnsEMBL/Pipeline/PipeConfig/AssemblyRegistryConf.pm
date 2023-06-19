@@ -55,7 +55,7 @@ sub default_options {
        -driver => 'mysql',
     },
     
-    'output_path' => $ENV(meta_database_dir},
+    'output_path' => $self->param('output_path') || $ENV(meta_database_dir},
       
   }
 }
