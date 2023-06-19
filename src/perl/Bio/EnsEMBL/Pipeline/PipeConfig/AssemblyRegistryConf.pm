@@ -55,7 +55,7 @@ sub default_options {
        -driver => 'mysql',
     },
     
-    'output_path' => $ENV{meta_database_dir},
+    'output_path' => $self->param('output_path') || $ENV{meta_database_dir},
       
   }
 }
@@ -163,10 +163,11 @@ sub pipeline_wide_parameters {
 	return {
   	};
 }
- 
+
 sub pipeline_create_commands {
 	my ($self) = @_;
 	return [
+	       'mkdir -p '.$self->param('output_path').'/registry_db_bak',
     # inheriting database and hive tables' creation
 		@{$self->SUPER::pipeline_create_commands},
 	];
