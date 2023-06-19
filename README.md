@@ -2,9 +2,11 @@
 
 The EnsEMBL Genebuild Meta Database System
 
-This repo contains modules and scripts for maintaning the Ensembl genebuild metadatabase
+This repo contains modules and scripts for maintaning the Ensembl genebuild meta database.
+
 Currently, this repo contains both Perl and Python modules and/or scripts for adding assembly records to the database
-To add a new assembly to the database, you have to ensure that you have the required PERL5LIB for running the genebuild annotation pipeline in your path
+
+To add a new assembly to the database, you need to have the required PERL5LIB for running the genebuild annotation pipeline in your path
 
 ## Requirements
 In addition to the listed python packages (see requirements.txt), you will need to have biopython installed either locally or centrally and set in your path, 
