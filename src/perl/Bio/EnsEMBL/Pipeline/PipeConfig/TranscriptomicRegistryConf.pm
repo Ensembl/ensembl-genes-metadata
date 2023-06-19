@@ -36,7 +36,7 @@ sub default_options {
     user => $ENV{'GBUSER_R'},
     password => $ENV{'GBPASS'},
     user_w => $ENV{'GBUSER'},
-    'pipe_db_name' => 'transcriptomic_assessment_reptiles',
+    'pipe_db_name' => 'transcriptomic_assessment_pipeline',
     #hash to hold pipeline db settings
     'pipeline_db' => {
                        -dbname => $self->o('pipe_db_name'),
