@@ -53,7 +53,7 @@ If you are not part of the Ensembl Genebuild team, you will need to set some she
 | ENSCODE | $HOME | -enscode\_root\_dir | Directory path where you cloned all the Perl repositories |
 | ENSEMBL\_SOFTWARE\_HOME | $HOME | -software\_base\_path | Directory where pyenv, plenv and linuxbrew are installed |
 | LINUXBREW\_HOME | $HOME/.linuxbrew | -linuxbrew\_home\_path | Base directory for your Linuxbrew installation |
-| PYTHONPATH | $HOME/ensembl-genes/ensembl\_genes:$HOME/ensembl-hive/wrappers/python3/ | | It needs to be set until the package can be installed properly |
+| PYTHONPATH | $HOME/ensembl-genes/ensembl\_genes\_metadata:$HOME/ensembl-genes/ensembl\_genes:$HOME/ensembl-hive/wrappers/python3/ | | It needs to be set until the package can be installed properly |
 
 ### MySQL
 
