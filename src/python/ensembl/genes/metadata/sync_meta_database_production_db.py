@@ -127,7 +127,7 @@ def get_pending_genebuilds_for_update():
     #Get all current genebuild entries from the meta database that can be updated
     existing_accessions = {}
     sql = "SELECT assembly_accession, annotation_source, date_completed FROM genebuild_status WHERE is_current = 1 AND annotation_source = 'pending'"
-    results = fetch_data(sql,os.getenv('REG_DB'),os.getenv('GBS5'),int(os.getenv('GBP5')),os.getenv('GBUSER_R'),'')
+    results = fetch_data(sql,os.getenv('REG_DB'),os.getenv('GBS1'),int(os.getenv('GBP1')),os.getenv('GBUSER_R'),'')
     for row in results:
         existing_accessions[row[0]] = row[1]
     print('Pending genebuilds = '+str(len(existing_accessions)))
@@ -328,7 +328,7 @@ if __name__ == '__main__':
         rapid_meta = get_rapid_dbs(version[2])
         main_meta = get_main_dbs(version[0])
         existing_assemblies = get_pending_genebuilds_for_update()
-        update_genebuild_status(existing_assemblies,rapid_meta,main_meta,version[2],version[3],os.getenv('GBS5'),os.getenv('REG_DB'),os.getenv('GBUSER'),int(os.getenv('GBP5')),os.getenv('GBPASS'))
+        update_genebuild_status(existing_assemblies,rapid_meta,main_meta,version[2],version[3],os.getenv('GBS1'),os.getenv('REG_DB'),os.getenv('GBUSER'),int(os.getenv('GBP1')),os.getenv('GBPASS'))
 
     else:
         print('Could not determine current release version. Check that access to production meta server is good.\n')
