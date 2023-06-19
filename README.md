@@ -93,7 +93,7 @@ perl $ENSCODE/ensembl-hive/scripts/init_pipeline.pl $ENSCODE/ensembl-genes-metad
 
 ### Running the Assembly registry pipeline
 
-To start the pipeline you need the URL to your pipeline database which will be provided when running the init\_Pipeline.pl script. If you initialised the pipeline automatically, you need to look at the command file created in your `working_dir` directory to retrieve the information.
+To start the pipeline you need the URL to your pipeline database which will be provided when running the init\_Pipeline.pl script. If you initialised the pipeline automatically, you need to look at the commands displayed on screen at the end of the initialisation.
 ```
 export EHIVE_URL=mysql://readwrite_user:password@host:port/dbname
 ```
