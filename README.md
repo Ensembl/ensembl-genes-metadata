@@ -68,6 +68,7 @@ There is a main configuration file, `Bio::EnsEMBL::Pipeline::PipeConfig::Assembl
 - backup meta database when new eukaryotic genomes become available
 - register new genomes
 - copy and restore updated database across fail-safe servers
+
 The whole system is explained in more details below
 
 ### Initialising the pipeline
@@ -83,7 +84,7 @@ If you are operating within an environment prepared for Ensembl with the assembl
 
 You would need to edit `$ENSCODE/ensembl-genes-metadata/config/registry.ini`
 
-Note: The registry.ini file is the configuration file that contains the genbank accessions for custom registration and the database connection settings. 
+Note: The registry.ini file is the configuration file that contains the genbank accessions and the database connection settings. 
 
 Then you can run
 ```
