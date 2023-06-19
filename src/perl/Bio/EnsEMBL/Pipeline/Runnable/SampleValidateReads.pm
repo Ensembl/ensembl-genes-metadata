@@ -24,7 +24,7 @@ Questions may also be sent to the Ensembl help desk at
 
 =head1 NAME
 
-Bio::EnsEMBL::Analysis::Hive::RunnableDB::HiveLoadSequences
+Bio::EnsEMBL::Pipeline::Runnable::SampleValidateReads
 
 =head1 SYNOPSIS
 
@@ -37,7 +37,7 @@ the accession field will be return in an arrayref on branch 2
 
 =cut
 
-package SampleValidateReads;
+package Bio::EnsEMBL::Pipeline::Runnable::SampleValidateReads;
 
 use strict;
 use warnings;
@@ -72,9 +72,16 @@ sub fetch_input {
 
 sub run {
   my ($self) = @_;
-  
+  my $cmd = '';
+  #my $subsample = catfile($self->param('input_dir'),$self->param('species'),'fastq',$self->param('iid'));  
+  my $subsample = catfile($self->param('input_dir'),$self->param('iid'));
   #command to validate read format
-  my $cmd = $self->param('validator') . " --file " . $self->param('input_dir') . $self->param('iid');
+  if (-e $subsample){
+      $cmd = $self->param('validator') . " --file " . $subsample;
+  }
+  else{
+    $cmd = $self->param('validator') . " --file " . $self->param('input_dir') . $self->param('iid');
+  }
   my $validation_result = system($cmd);
   
   #check if file meets fastq formatting standards
