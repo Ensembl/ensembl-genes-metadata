@@ -530,7 +530,8 @@ def generate_species_prefix(species_name,species_prefix,taxon_id,existing_prefix
     pcnt = len(existing_prefix)
     if species_prefix in existing_prefix.keys():
         #Regenerate another species prefix
-        species_prefix = ''.join(random.choice(species_name) for i in range(3)).upper()
+        letters = string.ascii_uppercase
+        species_prefix = ''.join(random.choice(letters) for i in range(3))
         species_prefix = 'ENS' + species_prefix
         return generate_species_prefix(species_name,species_prefix,taxon_id,existing_prefix)
     else:
@@ -842,8 +843,7 @@ def slack_reporting(new,updates,diff,imp):
             cnt+=1
             asm_meta = asm_meta + entry + '\n'
         report = 'Number of imported annotations = ' + str(cnt) + '\n' + report + str(asm_meta)
-        #payload="{\"channel\": \"#genebuildregistry\", \"username\": \"registry_messenger\", \"text\": \"" + report  +"\"}"
-        payload="{\"channel\": \"@denye\", \"username\": \"registry_messenger\", \"text\": \"" + report  +"\"}"
+        payload="{\"channel\": \"#genebuildregistry\", \"username\": \"registry_messenger\", \"text\": \"" + report  +"\"}"
         url = os.getenv('slack_token')
         headers = {'content-type': 'application/json', 'Accept-Charset': 'UTF-8'}
         r = requests.post(url, data=payload, headers=headers)
@@ -855,8 +855,7 @@ def slack_reporting(new,updates,diff,imp):
             cnt+=1
             asm_meta = asm_meta + entry + '\n'
         report = 'Number of assemblies registered for new species  = ' + str(cnt) + '\n' + report + str(asm_meta)
-        #payload="{\"channel\": \"#genebuildregistry\", \"username\": \"registry_messenger\", \"text\": \"" + report  +"\"}"
-        payload="{\"channel\": \"@denye\", \"username\": \"registry_messenger\", \"text\": \"" + report  +"\"}"
+        payload="{\"channel\": \"#genebuildregistry\", \"username\": \"registry_messenger\", \"text\": \"" + report  +"\"}"
         url = os.getenv('slack_token')
         headers = {'content-type': 'application/json', 'Accept-Charset': 'UTF-8'}
         r = requests.post(url, data=payload, headers=headers)
@@ -868,8 +867,7 @@ def slack_reporting(new,updates,diff,imp):
             cnt+=1
             asm_meta = asm_meta + entry + '\n'
         report = 'Number of assembly updates on existing species  = ' + str(cnt) + '\n' + report + str(asm_meta)
-        payload="{\"channel\": \"@denye\", \"username\": \"registry_messenger\", \"text\": \"" + report  +"\"}"
-        #payload="{\"channel\": \"#genebuildregistry\", \"username\": \"registry_messenger\", \"text\": \"" + report  +"\"}"
+        payload="{\"channel\": \"#genebuildregistry\", \"username\": \"registry_messenger\", \"text\": \"" + report  +"\"}"
         url = os.getenv('slack_token')
         headers = {'content-type': 'application/json', 'Accept-Charset': 'UTF-8'}
         r = requests.post(url, data=payload, headers=headers)
