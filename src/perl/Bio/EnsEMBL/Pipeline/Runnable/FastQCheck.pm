@@ -39,7 +39,7 @@ the accession field will be return in an arrayref on branch 2
 
 =cut
 
-package FastQCheck;
+package Bio::EnsEMBL::Pipeline::Runnable::FastQCheck;
 
 use strict;
 use warnings;
@@ -69,6 +69,7 @@ sub fetch_input {
   $self->param_required('iid');
   $self->param_required('is_paired');
   $self->param_required('species');
+  $self->param('source_id',7215);
     
   
 }
@@ -126,14 +127,14 @@ sub write_output {
   my @report;
   my $registry_adaptor = new TranscriptomicRegistryAdaptor(
         -user   => $ENV{GBUSER},
-        -dbname => $ENV{REG_DB},#$self->param('pipe_db'),
-        -host   => $ENV{GBS2},#$self->param('pipe_host'),
-        -port   => $ENV{GBP2},#$self->parma('pipe_port'),
-        -pass   => $ENV{GBPASS},#$ENV{GBPASS},
-        -driver => 'mysql',#$ENV{GBDRIVER},
+        -dbname => $ENV{REG_DB},
+        -host   => $ENV{GBS1},
+        -port   => $ENV{GBP1},
+        -pass   => $ENV{GBPASS},
+        -driver => 'mysql',
     );
    my ($qc_rep,$rep_line);
-   my $sth = $registry_adaptor->dbc->prepare("insert into fastqc values (?,?,?,?,?,?,?,?,?,?,?,?)");
+   my $sth = $registry_adaptor->dbc->prepare("insert ignore into fastqc values (?,?,?,?,?,?,?,?,?,?,?,?)");
    $sth->bind_param(1,$self->param('taxon_id'));
    while (($rep_line, $qc_rep) = each ($self->param('db_report'))){
     @report = split(/\t/,$qc_rep);

@@ -19,7 +19,7 @@
 #Once classification is complete, the results are stored in the database
 
 #
-package ClassifyIsoseqData;
+package Bio::EnsEMBL::Pipeline::Runnable::ClassifyIsoseqData;
 
 
 use strict;
@@ -27,10 +27,13 @@ use warnings;
 use Getopt::Long;
 use feature 'say';
 use POSIX;
+use TranscriptomicRegistryAdaptor;
 use List::Util qw( min max );
 use Bio::EnsEMBL::Utils::Exception qw(throw warning);
 use Bio::EnsEMBL::DBSQL::DBConnection;
+use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Bio::EnsEMBL::Taxonomy::DBSQL::TaxonomyDBAdaptor;
+use Bio::EnsEMBL::Analysis::Hive::DBSQL::AssemblyRegistryAdaptor;
 use File::Basename;
 use Data::Dumper;
 use parent ('Bio::EnsEMBL::Analysis::Hive::RunnableDB::HiveBaseRunnableDB');
@@ -39,29 +42,39 @@ use parent ('Bio::EnsEMBL::Analysis::Hive::RunnableDB::HiveBaseRunnableDB');
 sub fetch_input{
 	my ($self) = @_;
 	
-	$self->param_required('flagstats');
-	$self->param_required('csv_file');
-	$self->param_required('read_length_file');
-	$self->param_required('fastq_report_file');
+	#$self->param_required('flagstats');
+#	$self->param_required('csv_file');
+#	$self->param_required('read_length_file');
+#	$self->param_required('fastq_report_file');
 	$self->param_required('sp_id');
+        $self->param_required('accession');
         $self->param_required('pipe_db');
   	$self->param_required('ass_id');
-	
+        say "Values are ",$self->param('ass_id');
+        say "Values are ",$self->param('accession');
+	$self->param('acc',$self->param('accession'));
 }
 
 sub run{
   my ($self) = @_;
- 
+  my $registry_dba = new Bio::EnsEMBL::Analysis::Hive::DBSQL::AssemblyRegistryAdaptor(
+  -host    => 'mysql-ens-genebuild-prod-1',
+  -port    => 4527,
+  -user    => 'ensro',
+  -dbname  => 'gb_assembly_registry',
+  -pass    => '',
+  -driver  => 'mysql',);
+   my $ass = $self->param('ass_id');
+
+  #my $sql = `gb2 gb_assembly_registry -e "SELECT CONCAT(chain,'.',version) FROM assembly WHERE assembly_id=$ass"`;
+  #my @ass_id = split(/\n/,$sql);
+  #my $accession = $self->param('ass_id');
   my $species = $self->param('sp_id');
   my $ass = $self->param('ass_id');
-  my $csv = $self->param('csv_file');
-  my $flagstats = $self->param('flagstats');
-  my $readl = $self->param('read_length_file');
-  my $fastq_report = $self->param('fastq_report_file');
   my $db = $self->param('pipe_db'); 
-  say "DB details are $db";
+  my $accession = $self->param('accession');
   #call function to retrieve alignment and stores details
-  &store_alignment_details($csv,$flagstats,$readl,$ass,$species,$fastq_report,$db);
+  &store_alignment_details($ass,$species,$db,$accession);
  
   #begin classification of data
   
@@ -70,19 +83,18 @@ sub run{
     my $dba = new Bio::EnsEMBL::DBSQL::DBAdaptor(
         -user   => $ENV{GBUSER},
         -dbname => $ENV{REG_DB},
-        -host   => $ENV{GBS2},
-        -port   => $ENV{GBP2},
+        -host   => $ENV{GBS1},
+        -port   => $ENV{GBP1},
         -pass   => $ENV{GBPASS},
         -driver => $ENV{GBDRIVER},
     );
     my $status = ""; my %readcount;
     my $gcnt = 0; my $acnt = 0; my $ass_id = ""; my $sum_readcnt = 0;
     my $sth_summary = $dba->dbc->prepare("insert ignore into isoseq_data_summary (species_id, SM, total_read_count, avg_mapped_identity, status) values (?, ?, ? , ?, ?)");
-    my $sth_assembly = $dba->dbc->prepare("update assembly set rnaseq_data = ? where taxonomy = ? and assembly_id = ?");
-    my $sth_csv = $dba->dbc->prepare("insert ignore into isoseq_csv_data (species_id, ID, SM, filename, DS, url, md5sum, data_level) values (?,?,?,?,?,?,?,?)");
+    #my $sth_assembly = $dba->dbc->prepare("update assembly set rnaseq_data = ? where taxonomy = ? and assembly_id = ?");
+    my $sth_csv = $dba->dbc->prepare("insert ignore into long_read_data (species_id, ID, SM, filename, url, md5sum, data_source, read_length) values (?,?,?,?,?,?,?,?)");
     #For long reads, we check for both read quality and mapping percentage to determine the sample classification
-    my $sql = `mysql -h $ENV{GBS2} -P $ENV{GBP2} -u $ENV{GBUSER} -p$ENV{GBPASS} $ENV{REG_DB} -e \"select SM, round(sum(perc_mapped)/count(*),0) as avg_perc_mapped, isoseq_data_extra.data_quality, sum(read_count) as number_of_reads, isoseq_data_extra.assembly_id from isoseq_data_extra, isoseq_data_run_stats where project_id in (select project_id from rnaseq_info1 where species_id = $_[0]) and isoseq_data_extra.ID = isoseq_data_run_stats.ID and isoseq_data_extra.species_id = $_[0] and isoseq_data_extra.data_quality != 'fail' group by SM\"`;
-   
+    my $sql = `mysql -h $ENV{GBS1} -P $ENV{GBP1} -u $ENV{GBUSER} -p$ENV{GBPASS} $ENV{REG_DB} -e \"select SM, round(sum(perc_mapped)/count(*),0) as avg_perc_mapped, isoseq_data_extra.data_quality, sum(read_count) as number_of_reads, isoseq_data_extra.assembly_id from isoseq_data_extra, isoseq_data_run_stats where project_id in (select project_id from rnaseq_info where species_id = $_[0]) and isoseq_data_extra.ID = isoseq_data_run_stats.ID and isoseq_data_extra.species_id = $_[0] and isoseq_data_extra.data_quality != 'fail' group by SM\"`;
     my @row = split (/\n/, $sql);
     for (my $y = 1; $y < @row; $y+=1){
       my @entry = split(/\t/,$row[$y]);
@@ -94,17 +106,16 @@ sub run{
         $status = "good";
         $gcnt++;
         $readcount{$entry[0]} = $entry[3];#adding read count by sample name
-        my $sql = `mysql -h $ENV{GBS2} -P $ENV{GBP2} -u $ENV{GBUSER} -p$ENV{GBPASS} $ENV{REG_DB} -e \"select ID,DS,url,md5sum,data_level from isoseq_data_extra where species_id = $_[0] and SM = '$entry[0]'\"`;
+        my $sql = `mysql -h $ENV{GBS1} -P $ENV{GBP1} -u $ENV{GBUSER} -p$ENV{GBPASS} $ENV{REG_DB} -e \"select ID,url,md5sum,data_source,calc_read_length from isoseq_data_extra where species_id = $_[0] and SM = '$entry[0]'\"`;
         my @record = split (/\n/, $sql);
         say "Total read retrieved is ",scalar(@record); 
-        for (my $n = 0; $n < @record; $n+=1){
+        for (my $n = 1; $n < @record; $n+=1){
           my @line = split(/\t/,$record[$n]); 
-          my $output_file_basename = basename($line[2]);
             #here we deal with long reads
             $sth_csv->bind_param(1,$_[0]);
             $sth_csv->bind_param(2,$line[0]);
             $sth_csv->bind_param(3,$entry[0]);
-            $sth_csv->bind_param(4,$output_file_basename);
+            $sth_csv->bind_param(4,basename($line[1]));
             $sth_csv->bind_param(5,$line[1]);
             $sth_csv->bind_param(6,$line[2]);
             $sth_csv->bind_param(7,$line[3]);
@@ -125,17 +136,16 @@ sub run{
         $status = "weak";
         $acnt++;
         $readcount{$entry[0]} = $entry[3];#adding read count by sample name
-        my $sql = `mysql -h $ENV{GBS2} -P $ENV{GBP2} -u $ENV{GBUSER} -p$ENV{GBPASS} $ENV{REG_DB} -e \"select ID,DS,url,md5sum,data_level from isoseq_data_extra where species_id = $_[0] and SM = '$entry[0]'\"`;
+        my $sql = `mysql -h $ENV{GBS1} -P $ENV{GBP1} -u $ENV{GBUSER} -p$ENV{GBPASS} $ENV{REG_DB} -e \"select ID,url,md5sum,data_source,calc_read_length from isoseq_data_extra where species_id = $_[0] and SM = '$entry[0]'\"`;
         my @record = split (/\n/, $sql);
-
+        say "Total read retrieved is ",scalar(@record);
         for (my $n = 0; $n < @record; $n+=1){
           my @line = split(/\t/,$record[$n]);
-            my $output_file_basename = basename($line[2]);
             #here we deal with long ended reads
             $sth_csv->bind_param(1,$_[0]);
             $sth_csv->bind_param(2,$line[0]);
             $sth_csv->bind_param(3,$entry[0]);
-            $sth_csv->bind_param(4,$output_file_basename);
+            $sth_csv->bind_param(4,basename($line[1]));
             $sth_csv->bind_param(5,$line[1]);
             $sth_csv->bind_param(6,$line[2]);
             $sth_csv->bind_param(7,$line[3]);
@@ -169,36 +179,6 @@ sub run{
       }
          
     }
-   
-    if ($gcnt >= 5){#if  5 or more samples meet the good criteria, then set species green - automate annotation
-      $sth_assembly->bind_param(1,'green');
-      $sth_assembly->bind_param(2,$_[0]);
-      $sth_assembly->bind_param(3,$self->param('ass_id'));
-    }
-    elsif ($gcnt < 5){#if not enough good samples, get read counts for all good and weak samples
-      while( my( $key, $value ) = each %readcount){
-        $sum_readcnt += $value;#summing up read counts for all species specific good and weak samples
-        $acnt++;
-      }
-      #checking to see that all amber reads sum up to at least 100,000,000 reads;
-      if (($acnt > 1) && ($sum_readcnt >= 100000000)){#if sum of all good and weeak samples > 100,000,000 and there are > 1 samples, then assign sample group amber
-        $sth_assembly->bind_param(1,'amber');
-        $sth_assembly->bind_param(2,$_[0]);
-        $sth_assembly->bind_param(3,$self->param('ass_id'));
-      }
-      else{#otherwise assign red
-        $sth_assembly->bind_param(1,'red');
-        $sth_assembly->bind_param(2,$_[0]);
-        $sth_assembly->bind_param(3,$self->param('ass_id'));
-      }
-    }
-    else{}
-    if ($sth_assembly->execute){
-      say "Rnaseq classification successfully entered";	  
-    }
-    else{
-      throw("Could not write to assembly table");
-    }
   }
 
 
@@ -207,15 +187,15 @@ sub run{
     my $dba = new Bio::EnsEMBL::DBSQL::DBAdaptor(
         -user   => $ENV{GBUSER},
         -dbname => $ENV{REG_DB},
-        -host   => $ENV{GBS2},
-        -port   => $ENV{GBP2},
+        -host   => $ENV{GBS1},
+        -port   => $ENV{GBP1},
         -pass   => $ENV{GBPASS},
         -driver => $ENV{GBDRIVER},
    );
    
    my $pipe_db = new Bio::EnsEMBL::DBSQL::DBAdaptor(
         -user   => $ENV{GBUSER},
-        -dbname => $_[6],
+        -dbname => $_[2],
         -host   => $ENV{GBS1},
         -port   => $ENV{GBP1},
         -pass   => $ENV{GBPASS},
@@ -230,10 +210,13 @@ sub run{
               -port   => 4240#$ENV{GBP1}
              );
     my $node_adaptor = $taxonomy_adaptor->get_TaxonomyNodeAdaptor();
-    my $taxon_node = $node_adaptor->fetch_by_taxon_id($_[4]);
+    my $taxon_node = $node_adaptor->fetch_by_taxon_id($_[1]);
     my $rank = $taxon_node->rank();
     say "Taxonomy passed into alignment is ",$taxon_node->rank();
-    if ($rank eq 'subspecies'){ 
+    #if ($rank eq 'subspecies'){
+    #This is to allow for cases where rank could be anything other than a species
+    #The query that normally fetches data from ENA would always fetch data from subordinate taxa where available 
+    if ($rank ne 'species'){
       foreach my $ancestor ( @{ $node_adaptor->fetch_ancestors($taxon_node)}){
         if ($ancestor->rank eq 'species'){
           say "My rank is Species";    
@@ -247,85 +230,101 @@ sub run{
     my %calc;
     my %proj;
     my %readcnt;
+    my %readlength;
     my %fqrep;
-    my %rnaseq_info1;
-    my $species_id = $_[4];
-    open CSV, ("<$_[0]");#csv file
-    open FLG, ("<$_[1]");#flagstats
-    open LG, ("<$_[2]");#readlength
-    open FQREP, ("<$_[5]") or $self->complete_early("No fastq report for this species");#readlength
-   
-    #reading fastq read length file and storing all entries in a hash
-    while (<LG>){
-      my @val = split(/\t/,$_);
-      if ($val[0] =~ /_/){
-        my @id = split(/_/, $val[0]);
-        $readcnt{$id[0]} = $val[1];
-      }
-      else{
-        my @id = split(/\./, $val[0]);
-        $readcnt{$id[0]} = $val[1];
-      }
-    }
-    #reading flagstat file and storing all entries in a hash
-    while (<FLG>){
-        my @values = split(/\t/,$_);
-        chomp($values[0]);chomp($values[1]);
-        $mapped{$values[0]} = $values[1];
-    }
-    #reading fastq report file and storing all entries in a hash
-    while (<FQREP>){
-        my @values = split(/\t/,$_);
-        if ($values[0] =~ m/_/){
-          my @d = split(/_/, $values[0]);
-          $fqrep{$d[0]} = lc($values[1]);
-          say "Fastq report is ",$fqrep{$d[0]};
-        }
-        else{
-          chomp($values[0]);
-          $fqrep{$values[0]} = lc($values[1]);
-          say "Fastq report is ",$fqrep{$values[0]};
-        }
-    }
-
+    my %rnaseq_info;
+    my $species_id = $_[1];
+   my $registry_adaptor = new TranscriptomicRegistryAdaptor(
+        -user   => $ENV{GBUSER},
+        -dbname => $db,
+        -host   => $ENV{GBS1},#$self->param('pipe_host'),
+        -port   => $ENV{GBP1},#$self->parma('pipe_port'),
+        -pass   => $ENV{GBPASS},#$ENV{GBPASS},
+        -driver => 'mysql',#$ENV{GBDRIVER},
+    );
+   say "Species id fed to long read is $species_id";
    #Retrieve metrics from pipe db and store in transcriptomic registry tables
-   my $csv_entry = $dba->dbc->prepare("select * from csv_long_read");
-   my $fastqc_entry = $pipe_db->dbc->prepare("select * from fastqc where species_id = ?");
-   my $read_count_entry = $pipe_db->dbc->prepare("select * from read_count");
+   my $csv_entry = $pipe_db->dbc->prepare("select * from csv_long_read where taxon_id=?");
+   my $fastqc_entry = $dba->dbc->prepare("select * from fastqc where species_id = ?");
+   my $read_count_entry = $pipe_db->dbc->prepare("select * from read_count where species_id = ?");
    my $alignment_stats = $pipe_db->dbc->prepare("select * from alignment_stats where accession = ?");
  
-       my $sth_info = $dba->dbc->prepare("select project_id,species_id from rnaseq_info1");
-       my $sth_rnaseq = $dba->dbc->prepare("insert into rnaseq_info1 (species_id, project_id, data_level) values (?, ?, ?)");
-       my $sth_extra = $dba->dbc->prepare("insert ignore into isoseq_data_extra values (?,?,?,?,?,?,?,?,?,?,?)");
+       my $sth_info = $dba->dbc->prepare("select project_id,species_id from rnaseq_info");
+       my $sth_rnaseq = $dba->dbc->prepare("insert into rnaseq_info (species_id, project_id, data_source) values (?, ?, ?)");
+       my $sth_extra = $dba->dbc->prepare("insert ignore into isoseq_data_extra values (?,?,?,?,?,?,?,?,?,?,?,?)");
        my $sth_stats = $dba->dbc->prepare("insert ignore into isoseq_data_run_stats values (?, ?, ?, ?)");
        if ($sth_info->execute){
           while (my @entry = $sth_info->fetchrow_array()){
-            $rnaseq_info1{$entry[0] . '_' . $entry[1]} = $entry[1];
+            $rnaseq_info{$entry[0] . '_' . $entry[1]} = $entry[1];
           }
         }
-    my %csv = {};
-    open FT, (">>readcount.txt");
-    #reading csv file and processing all entries
-    while (<CSV>){
-      say "analysing line $_";
-      $_ =~ s/[^[:ascii:]|[:alnum:]]//g;
-      say "New line is now $_";
-      my @line = split(/\t/,$_);
-      $csv{$line[1]} = $_;
+    my $run_id;
+    $read_count_entry->bind_param(1,$species_id);
+    if ($read_count_entry->execute){
+          while (my @entry = $read_count_entry->fetchrow_array()){
+            if ($entry[0] =~ m/_/){
+               my @val = split(/_/,$entry[0]);
+               $run_id = $val[0];
+            }
+            else{
+               my @val = split(/\./,$entry[0]);
+               $run_id = $val[0];
+            }
+            $readcnt{$run_id} = $entry[1];
+            $readlength{$run_id} = $entry[3];
+         }
     }
-    foreach my $read (keys %csv){
-      say "read is $read";
-      my @line = split(/\t/,$csv{$read});
-      my @tem = split(/,/,$line[4]);
+    $fastqc_entry->bind_param(1,$species_id);
+    if ($fastqc_entry->execute){
+          while (my @entry = $fastqc_entry->fetchrow_array()){
+            if ($entry[1] =~ m/_/){
+               my @val = split(/_/,$entry[1]);
+               $run_id = $val[0];
+            }
+            $fqrep{$run_id} = lc($entry[2]);
+         }
+    }
+    say "Accession is ",$_[3];
+    my $accession = $_[3];
+    $alignment_stats->bind_param(1,$accession);
+    if ($alignment_stats->execute){
+          while (my @entry = $alignment_stats->fetchrow_array()){
+            say "Alignment here is $entry[1]";
+            $mapped{$entry[1]} = $entry[2];
+         }
+    }
+    #get read entry from csv table
+    my %csv;
+    my @results;
+    $csv_entry->bind_param(1,$species_id);
+    if ($csv_entry->execute){
+      say "CSV record retrieval successful";
+    }
+    #Loop through each record and register accordingly
+    while (my @entry = $csv_entry->fetchrow_array()){
+      push @results, join("\t ", @entry);
+    }
+   foreach my $result (@results) {
+      $result =~ s/[^[:ascii:]|[:alnum:]]//g;
+      my @arr = split(/\t/,$result);
+      $arr[1] =~ s/fastq.gz/fq/;
+      $arr[1] =~ s/^\s+|\s+$//g;
+      $csv{$arr[1]} = $result;
+      say "read is $arr[1]";
+      my @tem = split(/,/,$arr[3]);
       my $run_id = "";
-      say "species id is ", length($line[3]) . " " . $line[1];
-      if ($line[1] =~ m/_/){
-        my @val = split(/_/,$line[1]);
+      say "species id is ", length($arr[2]) . " " . $arr[1];
+      if ($arr[1] =~ m/_/){
+        my @val = split(/_/,$arr[1]);
         $run_id = $val[0];
       }
       else{
-        my @val = split(/\./,$line[1]);
+        my @val = split(/\./,$arr[1]);
         $run_id = $val[0];
+      }
+      #If read was not tested in alignment, skip
+      if (!exists $fqrep{$run_id}){
+        next;
       }
       if (!exists $runs{$run_id}){
         my $read_source = "";
@@ -333,17 +332,16 @@ sub run{
         say "Readcount is ",$readcnt{$run_id};
         if ($readcnt{$run_id} !~ /\d+/){
           say "run does not exist";
-          print FT $run_id . "\n";
           next;
         }
-        my $proj_spec_id = $tem[0] . '_' . $_[4];
+        my $proj_spec_id = $tem[0] . '_' . $_[1];
         say "Combined primary id is $proj_spec_id";
-        if ((exists($rnaseq_info1{$proj_spec_id}) && ($rnaseq_info1{$proj_spec_id} !~ m/$_[4]/)) or (!exists($rnaseq_info1{$proj_spec_id}))){
-          $sth_rnaseq->bind_param(1,$_[4]);
-          say "Species tested is $_[4]";
+        if ((exists($rnaseq_info{$proj_spec_id}) && ($rnaseq_info{$proj_spec_id} !~ m/$_[1]/)) or (!exists($rnaseq_info{$proj_spec_id}))){
+          $sth_rnaseq->bind_param(1,$_[1]);
+          say "Species tested is $_[1]";
           $sth_rnaseq->bind_param(2,$tem[0]);
         }
-        if ($species_id != $line[3]){#where species id differs with entry in csv file, check that species is subspecies. If so, data level remains species
+        if ($species_id != $arr[7]){#where species id differs with entry in csv file, check that species is subspecies. If so, data level remains species
           if ($rank eq 'subspecies'){
             $sth_rnaseq->bind_param(3,'species');
             $read_source = 'species';
@@ -359,38 +357,41 @@ sub run{
         }
         $sth_rnaseq->bind_param(3,$read_source);
         say "Project tested is $tem[0]";
-        if (!exists $rnaseq_info1{$proj_spec_id}){
+        if (!exists $rnaseq_info{$proj_spec_id}){
            say "Species again tested is $species_id";
            if ($sth_rnaseq->execute){
-            $rnaseq_info1{$proj_spec_id} = $species_id;
+            $rnaseq_info{$proj_spec_id} = $species_id;
           }
           else{
             throw("Could not write mapped data to rnaseq info table");
           }
         }
-        $line[4] = substr($line[4],0,250);
-        $line[4] =~ tr/:\t/ /;
-        $line[0] = substr($line[0],0,50);
+        $arr[3] = substr($arr[3],0,250);
+        $arr[3] =~ tr/:\t/ /;
+        $arr[0] = substr($arr[0],0,50);
         my $is_mate_1 = 0;
+        say "Run id being used is $run_id";
+        say "length of read is ",$readlength{$run_id};
         chomp($fqrep{$run_id});
         $sth_extra->bind_param(1,$tem[0]);
         $sth_extra->bind_param(2,$run_id);
-        $sth_extra->bind_param(3,$_[3]);
-        $sth_extra->bind_param(4,$line[0]);
+        $sth_extra->bind_param(3,$_[0]);
+        $sth_extra->bind_param(4,$arr[0]);
         $sth_extra->bind_param(5,$readcnt{$run_id});
-        $sth_extra->bind_param(6,$line[4]);
+        $sth_extra->bind_param(6,$arr[3]);
         $sth_extra->bind_param(7,$species_id);
         $sth_extra->bind_param(8,$fqrep{$run_id});
-        $sth_extra->bind_param(9,$line[5]);
-        $sth_extra->bind_param(10,$line[6]);
+        $sth_extra->bind_param(9,$arr[4]);
+        $sth_extra->bind_param(10,$arr[5]);
         $sth_extra->bind_param(11,$read_source);
+        $sth_extra->bind_param(12,$readlength{$run_id});
         if ($sth_extra->execute){
           
         }
         else{
           throw("Could not write mapped to rnaseq extra table");
         }
-        $sth_stats->bind_param(1,$_[3]);
+        $sth_stats->bind_param(1,$_[0]);
         $sth_stats->bind_param(2,'test');
         say "Run ID is $run_id";
         say "Value from mapped hash is ",$mapped{$run_id};
