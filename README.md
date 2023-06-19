@@ -143,7 +143,7 @@ Using a higher value for `-debug` is usually not useful as it is mostly seen as 
 
 #### What it does
 
-It will reference the production portal to identify all live databases linked to the current Ensembl release. These databases are the queried to obtain meta information such as the genebuild method, genebuild completion date and genome accession. The retrieved meta data is checked against all pending genebuilds and when a match is found, the pending genebuild status is updated. 
+It will reference the production portal to identify all live databases linked to the current Ensembl release. These databases are then queried to obtain meta information such as the genebuild method, genebuild completion date and genome accession. The retrieved meta data is checked against all pending genebuilds and when a match is found, the pending genebuild status is updated. 
 
 #### Notifications
 
@@ -185,7 +185,7 @@ None
 
 #### What it does
 
-All new assemblies obtained earlier are recorded in the database. 
+All new assemblies obtained earlier are processed for storage in the database. 
 
 #### Notifications
 
@@ -193,9 +193,9 @@ All new assemblies are reported via Slack
 
 #### Caveats
 
-Depending on whether the new assembly comes from an already existing species or not, there may be need to create and assign a unique prefix and stable id space range to the assembly record.
+Depending on whether the new assembly comes from an already existing species or not, there may be need to create and assign or reuse a unique prefix and stable id space range to the assembly record.
 
-### Meta database sync
+### Sync meta database
 
 #### What it does
 
@@ -231,7 +231,7 @@ perl $ENSCODE/ensembl-hive/scripts/beekeeper.pl -url $EHIVE_URL -loop -analyses_
 
 #### What it does
 
-It queries the meta database to retrieve all assemblies with contig_N50 > 100000 with total gap length less than 30% of the genome. 
+It queries the meta database to retrieve all assemblies with contig_N50 > 100000, having total gap length that is less than 30% of the genome. 
 
 #### Notifications
 
@@ -255,11 +255,13 @@ It returns a list of species with available data and those without
 
 When no data is found at species level, it retries at the genus level
 
+This check excludes single ended reads for short reads. 
+
 ### Fetch reads
 
 #### What it does
 
-It downloads both short read and long read data where available per species
+It downloads both short and long read data where available per species
 
 #### Notifications
 
@@ -275,6 +277,8 @@ None
 
 The genomes of all assemblies earlier identified are downloaded and indexed, ready for alignment
 
+Genomes are indexed using both Star and Minimap
+
 #### Notifications
 
 None
@@ -287,7 +291,7 @@ None
 
 #### What it does
 
-All fastq files are subsampled randomly to a size of 50000 reads and the initial large files are erased.
+All fastq files are subsampled randomly to a size of 50000 reads.
 
 #### Notifications
 
@@ -301,8 +305,9 @@ None
 
 #### What it does
 
-The subsampled files are validated to ensure the files confrom to standard fastq requirements. 
-Also, the per base sequence quality is tested using Fastqc
+The subsampled read files are validated to ensure they confrom to standard fastq file requirements. 
+
+Also, the per base sequence quality is tested using Fastqc.
 
 #### Notifications
 
@@ -310,7 +315,7 @@ None
 
 #### Caveats
 
-Reads not meeting the validation criteria or failing the per base sequence quality tests are discarded
+Reads not meeting the validation criteria or failing the per base sequence quality tests are discarded.
 
 ### Read alignment
 
@@ -330,9 +335,12 @@ None
 
 #### What it does
 
-Using arbitrary criteria such as percentage mapping quality, per base sequence quality, total read count per sample, the samples are classed as good, weak and unusable.
+Using arbitrary criteria such as percentage mapping quality, per base sequence quality, total read count per sample, the samples are classed as good, weak or unusable.
+
 An assembly with five or more good samples gets a green status.
+
 An assembly with more than one good or weak sample, with total read count greater than 100000000 gets an amber status.
+
 An assembly not meeting either of the above gets a red status.
 
 #### Notifications
