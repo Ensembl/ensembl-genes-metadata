@@ -38,7 +38,7 @@ sub default_options {
     user_w => $ENV{'GBUSER'},
     #hash to hold pipeline db settings
     'pipeline_db' => {
-       -dbname => 'registry_assembly_pipe_team_test',
+       -dbname => 'registry_assembly_pipe',
        -host   => $ENV{GBS1},
        -port   => $ENV{GBP1},
        -user   => $self->o('user_w'),
@@ -55,7 +55,7 @@ sub default_options {
        -driver => 'mysql',
     },
     
-    'output_path' => '',
+    'output_path' => $ENV(meta_database_dir},
       
   }
 }
@@ -68,7 +68,7 @@ sub pipeline_analyses {
       -logic_name => 'sync_meta_database_with_production',
       -module     => 'Bio::EnsEMBL::Hive::RunnableDB::SystemCmd',
       -parameters => {
-         cmd => 'python3 ' . $ENV{ENSEMBL_GENES_META} . 'src/python/ensembl/sync_meta_database_production_db.py',
+         cmd => 'python3 ' . $ENV{ENSEMBL_GENES_META} . 'src/python/ensembl/genes/metadata/sync_meta_database_production_db.py',
       },
       -rc_name => 'default',
       -flow_into => { 1 => ['check_for_updates_to_meta_database'],},  
@@ -78,7 +78,7 @@ sub pipeline_analyses {
       -logic_name => 'check_for_updates_to_meta_database',
       -module     => 'Bio::EnsEMBL::Hive::RunnableDB::SystemCmd',
       -parameters => {
-         cmd => 'python3 ' . $ENV{ENSEMBL_GENES_META} . 'src/python/ensembl/check_for_new_assemblies.py --reg_path '.$self->o('output_path'),
+         cmd => 'python3 ' . $ENV{ENSEMBL_GENES_META} . 'src/python/ensembl/genes/metadata/check_for_new_assemblies.py --reg_path '.$self->o('output_path'),
       },
       -rc_name    => 'default',
       -flow_into => {
@@ -89,7 +89,7 @@ sub pipeline_analyses {
       -logic_name => 'refseq_accession_assembly_name_update',
       -module => 'Bio::EnsEMBL::Hive::RunnableDB::SystemCmd',
       -parameters => {
-         cmd => 'python3 ' . $ENV{ENSEMBL_GENES_META} . 'src/python/ensembl/check_and_update_refseq.py',
+         cmd => 'python3 ' . $ENV{ENSEMBL_GENES_META} . 'src/python/ensembl/genes/metadata/check_and_update_refseq.py',
       },
       -rc_name => 'default',
       -flow_into => {
@@ -117,7 +117,7 @@ sub pipeline_analyses {
       -logic_name => 'backup_db',
       -module     => 'Bio::EnsEMBL::Hive::RunnableDB::SystemCmd',
       -parameters => {
-        cmd => 'python3 ' . $ENV{ENSEMBL_GENES_META} . 'src/python/ensembl/registry_backup.py --backup_file #output_file# --port '.$ENV{GBP1}. ' --server '. $ENV{GBS1} . ' --dbname '. $ENV{REG_DB} . ' --user '. $ENV{GBUSER_R},
+        cmd => 'python3 ' . $ENV{ENSEMBL_GENES_META} . 'src/python/ensembl/genes/metadata/registry_backup.py --backup_file #output_file# --port '.$ENV{GBP1}. ' --server '. $ENV{GBS1} . ' --dbname '. $ENV{REG_DB} . ' --user '. $ENV{GBUSER_R},
         output_file => $self->o('output_path') . '/registry_db_bak/' . 'registry_bkup_'.strftime('%Y-%m-%d',localtime),
 
       },
@@ -127,7 +127,7 @@ sub pipeline_analyses {
       -logic_name => 'register_assembly',
       -module => 'Bio::EnsEMBL::Hive::RunnableDB::SystemCmd',
       -parameters => {
-        cmd => 'standaloneJob.pl ' . $ENV{ENSEMBL_GENES_META} . 'src/python/ensembl/Register_Asm.py --config_file #config_file# --language python3',
+        cmd => 'python ' . $ENV{ENSEMBL_GENES_META} . 'src/python/ensembl/genes/metadata/register_assembly.py --config_file #config_file#,
         'config_file' => $self->o('output_path') . 'assemblies_to_register.ini',      
       },
       -rc_name => 'default',
@@ -137,7 +137,7 @@ sub pipeline_analyses {
        -logic_name => 'sync_db',
        -module => 'Bio::EnsEMBL::Hive::RunnableDB::SystemCmd',
        -parameters => {
-        cmd => 'python3 ' . $ENV{ENSEMBL_GENES_META} . 'src/python/ensembl/sync_db.py --backup_file #output_file# --port '.$ENV{GBP1}. ' --server '. $ENV{GBS1} . ' --dbname '. $ENV{REG_DB} . ' --user '. $ENV{GBUSER_R},
+        cmd => 'python3 ' . $ENV{ENSEMBL_GENES_META} . 'src/python/ensembl/genes/metadata/sync_db.py --backup_file #output_file# --port '.$ENV{GBP1}. ' --server '. $ENV{GBS1} . ' --dbname '. $ENV{REG_DB} . ' --user '. $ENV{GBUSER_R},
         output_file => $self->o('output_path') . 'registry_dump.sql',
       
       },
