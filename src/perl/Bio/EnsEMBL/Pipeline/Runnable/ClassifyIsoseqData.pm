@@ -27,7 +27,7 @@ use warnings;
 use Getopt::Long;
 use feature 'say';
 use POSIX;
-use TranscriptomicRegistryAdaptor;
+use Bio::EnsEMBL::Pipeline::Runnable::TranscriptomicRegistryAdaptor;
 use List::Util qw( min max );
 use Bio::EnsEMBL::Utils::Exception qw(throw warning);
 use Bio::EnsEMBL::DBSQL::DBConnection;
@@ -41,34 +41,25 @@ use parent ('Bio::EnsEMBL::Analysis::Hive::RunnableDB::HiveBaseRunnableDB');
 
 sub fetch_input{
 	my ($self) = @_;
-	
-	#$self->param_required('flagstats');
-#	$self->param_required('csv_file');
-#	$self->param_required('read_length_file');
-#	$self->param_required('fastq_report_file');
 	$self->param_required('sp_id');
         $self->param_required('accession');
         $self->param_required('pipe_db');
   	$self->param_required('ass_id');
-        say "Values are ",$self->param('ass_id');
-        say "Values are ",$self->param('accession');
 	$self->param('acc',$self->param('accession'));
 }
 
 sub run{
   my ($self) = @_;
   my $registry_dba = new Bio::EnsEMBL::Analysis::Hive::DBSQL::AssemblyRegistryAdaptor(
-  -host    => 'mysql-ens-genebuild-prod-1',
-  -port    => 4527,
-  -user    => 'ensro',
-  -dbname  => 'gb_assembly_registry',
+  -host    => $ENV{'GBS1'},
+  -port    => ENV{GBP1},
+  -user    => $ENV{GBUSER_R},
+  -dbname  => $ENV{REG_DB},
   -pass    => '',
   -driver  => 'mysql',);
+  
    my $ass = $self->param('ass_id');
 
-  #my $sql = `gb2 gb_assembly_registry -e "SELECT CONCAT(chain,'.',version) FROM assembly WHERE assembly_id=$ass"`;
-  #my @ass_id = split(/\n/,$sql);
-  #my $accession = $self->param('ass_id');
   my $species = $self->param('sp_id');
   my $ass = $self->param('ass_id');
   my $db = $self->param('pipe_db'); 
@@ -91,7 +82,6 @@ sub run{
     my $status = ""; my %readcount;
     my $gcnt = 0; my $acnt = 0; my $ass_id = ""; my $sum_readcnt = 0;
     my $sth_summary = $dba->dbc->prepare("insert ignore into isoseq_data_summary (species_id, SM, total_read_count, avg_mapped_identity, status) values (?, ?, ? , ?, ?)");
-    #my $sth_assembly = $dba->dbc->prepare("update assembly set rnaseq_data = ? where taxonomy = ? and assembly_id = ?");
     my $sth_csv = $dba->dbc->prepare("insert ignore into long_read_data (species_id, ID, SM, filename, url, md5sum, data_source, read_length) values (?,?,?,?,?,?,?,?)");
     #For long reads, we check for both read quality and mapping percentage to determine the sample classification
     my $sql = `mysql -h $ENV{GBS1} -P $ENV{GBP1} -u $ENV{GBUSER} -p$ENV{GBPASS} $ENV{REG_DB} -e \"select SM, round(sum(perc_mapped)/count(*),0) as avg_perc_mapped, isoseq_data_extra.data_quality, sum(read_count) as number_of_reads, isoseq_data_extra.assembly_id from isoseq_data_extra, isoseq_data_run_stats where project_id in (select project_id from rnaseq_info where species_id = $_[0]) and isoseq_data_extra.ID = isoseq_data_run_stats.ID and isoseq_data_extra.species_id = $_[0] and isoseq_data_extra.data_quality != 'fail' group by SM\"`;
@@ -205,15 +195,14 @@ sub run{
     my $taxonomy_adaptor = Bio::EnsEMBL::Taxonomy::DBSQL::TaxonomyDBAdaptor->new(
               -user   => $ENV{GBUSER_R},
               -pass   => '',
-              -dbname => 'ncbi_taxonomy_109',#$ENV{TAX_DB},
-              -host   => 'mysql-ens-mirror-1',#$ENV{GBS1},
-              -port   => 4240#$ENV{GBP1}
+              -dbname => 'ncbi_taxonomy_109',
+              -host   => $ENV{MIRROR},
+              -port   => $ENV{MPORT},
              );
     my $node_adaptor = $taxonomy_adaptor->get_TaxonomyNodeAdaptor();
     my $taxon_node = $node_adaptor->fetch_by_taxon_id($_[1]);
     my $rank = $taxon_node->rank();
     say "Taxonomy passed into alignment is ",$taxon_node->rank();
-    #if ($rank eq 'subspecies'){
     #This is to allow for cases where rank could be anything other than a species
     #The query that normally fetches data from ENA would always fetch data from subordinate taxa where available 
     if ($rank ne 'species'){
@@ -234,13 +223,13 @@ sub run{
     my %fqrep;
     my %rnaseq_info;
     my $species_id = $_[1];
-   my $registry_adaptor = new TranscriptomicRegistryAdaptor(
+   my $registry_adaptor = new Bio::EnsEMBL::Pipeline::Runnable::TranscriptomicRegistryAdaptor(
         -user   => $ENV{GBUSER},
         -dbname => $db,
-        -host   => $ENV{GBS1},#$self->param('pipe_host'),
-        -port   => $ENV{GBP1},#$self->parma('pipe_port'),
-        -pass   => $ENV{GBPASS},#$ENV{GBPASS},
-        -driver => 'mysql',#$ENV{GBDRIVER},
+        -host   => $ENV{GBS1},
+        -port   => $ENV{GBP1},
+        -pass   => $ENV{GBPASS},
+        -driver => 'mysql',
     );
    say "Species id fed to long read is $species_id";
    #Retrieve metrics from pipe db and store in transcriptomic registry tables
@@ -370,8 +359,6 @@ sub run{
         $arr[3] =~ tr/:\t/ /;
         $arr[0] = substr($arr[0],0,50);
         my $is_mate_1 = 0;
-        say "Run id being used is $run_id";
-        say "length of read is ",$readlength{$run_id};
         chomp($fqrep{$run_id});
         $sth_extra->bind_param(1,$tem[0]);
         $sth_extra->bind_param(2,$run_id);
