@@ -80,7 +80,7 @@ sub default_options {
      validator_prog             => '/hps/software/users/ensembl/genebuild/fastQValidator/bin/fastQValidator',
     'rnaseq_dir'                => catdir($self->o('output_path'), 'genomes'),
     'rnaseq_ftp_base'           => 'ftp://ftp.sra.ebi.ac.uk/vol1/fastq/',
-    'get_assembly_script_path'  => $ENV{ENS_GENES_META} . '/src/perl/scripts/get_assembly.pl',
+    'get_assembly_script_path'  => $ENV{ENSEMBL_GENES_META} . '/src/perl/scripts/get_assembly.pl',
     'tissue_dict_path'          => '/nfs/production/flicek/ensembl/genebuild/meta_database/',
     'minimap2_path'             => catfile($self->o('binary_base'), 'minimap2'),
     'species_list'                => catdir($self->o('output_path'), 'species.csv'),
