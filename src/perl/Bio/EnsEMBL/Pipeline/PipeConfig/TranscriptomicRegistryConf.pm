@@ -36,7 +36,11 @@ sub default_options {
     user => $ENV{'GBUSER_R'},
     password => $ENV{'GBPASS'},
     user_w => $ENV{'GBUSER'},
+<<<<<<< HEAD
     'pipe_db_name' => 'transcriptomic_assessment_eudicotyledons',
+=======
+    'pipe_db_name' => 'transcriptomic_assessment_pipeline',
+>>>>>>> 284ee6241cf20086429446c86061ea116830f681
     #hash to hold pipeline db settings
     'pipeline_db' => {
                        -dbname => $self->o('pipe_db_name'),
@@ -80,7 +84,11 @@ sub default_options {
      validator_prog             => '/hps/software/users/ensembl/genebuild/fastQValidator/bin/fastQValidator',
     'rnaseq_dir'                => catdir($self->o('output_path'), 'genomes'),
     'rnaseq_ftp_base'           => 'ftp://ftp.sra.ebi.ac.uk/vol1/fastq/',
+<<<<<<< HEAD
     'get_assembly_script_path'  => $ENV{ENSEMBL_GENES_META} . '/src/perl/scripts/get_assembly.pl',
+=======
+    'get_assembly_script_path'  => $ENV{ENS_GENES_META} . '/src/perl/scripts/get_assembly.pl',
+>>>>>>> 284ee6241cf20086429446c86061ea116830f681
     'tissue_dict_path'          => '/nfs/production/flicek/ensembl/genebuild/meta_database/',
     'minimap2_path'             => catfile($self->o('binary_base'), 'minimap2'),
     'species_list'                => catdir($self->o('output_path'), 'species.csv'),
