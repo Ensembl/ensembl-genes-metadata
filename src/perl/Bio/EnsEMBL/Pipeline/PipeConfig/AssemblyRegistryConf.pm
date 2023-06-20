@@ -68,7 +68,7 @@ sub pipeline_analyses {
       -logic_name => 'sync_meta_database_with_production',
       -module     => 'Bio::EnsEMBL::Hive::RunnableDB::SystemCmd',
       -parameters => {
-         cmd => 'python '.$ENV{ENSCODE} . 'ensembl-genes-metadata/src/python/ensembl/sync_meta_database_production_db.py',
+         cmd => 'python '.$ENV{ENS_GENES_META} . 'src/python/ensembl/genes/metadata/sync_meta_database_production_db.py',
       },
       -rc_name => 'default',
       -flow_into => { 1 => ['check_for_updates_to_meta_database'],},  
@@ -78,7 +78,7 @@ sub pipeline_analyses {
       -logic_name => 'check_for_updates_to_meta_database',
       -module     => 'Bio::EnsEMBL::Hive::RunnableDB::SystemCmd',
       -parameters => {
-         cmd => 'python ' . $ENV{ENSCODE} . 'ensembl-genes-metadata/src/python/ensembl/check_for_new_assemblies.py --reg_path '.$self->o('output_path'),
+         cmd => 'python ' . $ENV{ENS_GENES_META} . 'src/python/ensembl/genes/metadata/check_for_new_assemblies.py --reg_path '.$self->o('output_path'),
       },
       -rc_name    => 'default',
       -flow_into => {
@@ -89,7 +89,7 @@ sub pipeline_analyses {
       -logic_name => 'refseq_accession_assembly_name_update',
       -module => 'Bio::EnsEMBL::Hive::RunnableDB::SystemCmd',
       -parameters => {
-         cmd => 'python ' . $ENV{ENSCODE} . 'ensembl-genes-metadata/src/python/ensembl/check_and_update_refseq.py',
+         cmd => 'python ' . $ENV{ENS_GENES_META} . 'src/python/ensembl/genes/metadata/check_and_update_refseq.py',
       },
       -rc_name => 'default',
       -flow_into => {
@@ -112,7 +112,7 @@ sub pipeline_analyses {
       -logic_name => 'no_update',
       -module     => 'Bio::EnsEMBL::Hive::RunnableDB::SystemCmd',
       -parameters => {
-        cmd => 'python ' . $ENV{ENSCODE} . 'ensembl-genes-metadata/src/python/ensembl/no_update.py --msg #msg# ',
+        cmd => 'python ' . $ENV{ENS_GENES_META} . 'src/python/ensembl/genes/metadata/no_update.py --msg #msg# ',
         msg => 'Nothing to update at this time ' .strftime('%Y-%m-%d',localtime),
 
       },
@@ -121,8 +121,8 @@ sub pipeline_analyses {
       -logic_name => 'backup_db',
       -module     => 'Bio::EnsEMBL::Hive::RunnableDB::SystemCmd',
       -parameters => {
-        cmd => 'python ' . $ENV{ENSCODE} . 'ensembl-genes-metadata/src/python/ensembl/registry_backup.py --backup_file #output_file# --port '.$ENV{GBP1}. ' --server '. $ENV{GBS1} . ' --dbname '. $ENV{REG_DB} . ' --user '. $ENV{GBUSER_R},
-        output_file => $self->o('output_path') . '/registry_db_bak/' . 'registry_bkup_'.strftime('%Y-%m-%d',localtime),
+        cmd => 'python ' . $ENV{ENS_GENES_META} . 'src/python/ensembl/genes/metadata/registry_backup.py --backup_file #output_file# --port '.$ENV{GBP1}. ' --server '. $ENV{GBS1} . ' --dbname '. $ENV{REG_DB} . ' --user '. $ENV{GBUSER_R},
+        output_file => $self->o('output_path') . '/registry_db_bak/' . 'registry_bkup_'.strftime('%Y-%m-%d',localtime), . '.sql'
 
       },
       -flow_into => { 1 => ['register_assembly'],},
@@ -131,7 +131,7 @@ sub pipeline_analyses {
       -logic_name => 'register_assembly',
       -module => 'Bio::EnsEMBL::Hive::RunnableDB::SystemCmd',
       -parameters => {
-        cmd => 'python ' . $ENV{ENSCODE} . 'ensembl-genes-metadata/src/python/ensembl/register_assembly.py --config_file #config_file#',
+        cmd => 'python ' . $ENV{ENS_GENES_META} . 'src/python/ensembl/genes/metadata/register_assembly.py --config_file #config_file#',
         'config_file' => $self->o('output_path') . 'assemblies_to_register.ini',      
       },
       -rc_name => 'default',
@@ -141,7 +141,7 @@ sub pipeline_analyses {
        -logic_name => 'sync_db',
        -module => 'Bio::EnsEMBL::Hive::RunnableDB::SystemCmd',
        -parameters => {
-        cmd => 'python ' . $ENV{ENSCODE} . 'ensembl-genes-metadata/src/python/ensembl/sync_db.py --backup_file #output_file# --port '.$ENV{GBP1}. ' --server '. $ENV{GBS1} . ' --dbname '. $ENV{REG_DB} . ' --user '. $ENV{GBUSER} . ' --p '. $ENV{GBPASS},
+        cmd => 'python ' . $ENV{ENS_GENES_META} . 'src/python/ensembl/genes/metadata/sync_db.py --backup_file #output_file# --port '.$ENV{GBP1}. ' --server '. $ENV{GBS1} . ' --dbname '. $ENV{REG_DB} . ' --user '. $ENV{GBUSER} . ' --p '. $ENV{GBPASS},
         output_file => $self->o('output_path') . 'registry_dump.sql',
       
       },
