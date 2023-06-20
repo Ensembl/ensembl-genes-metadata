@@ -19,7 +19,7 @@
 #Once classification is complete, the results are stored in the database
 
 #
-package ClassifyTranscriptomicData;
+package Bio::EnsEMBL::Pipeline::Runnable::ClassifyTranscriptomicData;
 
 use strict;
 use warnings;
@@ -52,10 +52,6 @@ sub run{
  
   my $species = $self->param('sp_id');
   my $ass = $self->param('ass_id');
-  my $csv = $self->param('csv_file');
-  my $flagstats = $self->param('flagstats');
-  my $readl = $self->param('read_length_file');
-  my $fastq_report = $self->param('fastq_report_file');
   
   #call function to retrieve alignment and stores details
   &store_alignment_details($csv,$flagstats,$readl,$ass,$species,$fastq_report);
@@ -137,7 +133,7 @@ sub run{
         $status = "weak";
         $acnt++;
         $readcount{$entry[1]} = $entry[0];#adding read count by sample name
-        my $sql = `mysql -h $ENV{GBS2} -P $ENV{GBP2} -u $ENV{GBUSER} -p$ENV{GBPASS} $ENV{REG_DB} -e \"select ID,is_paired,calc_read_length,is_mate_1,CN,PL,DS,url,md5sum,data_level from rnaseq_data_extra1 where species_id = $_[0] and SM = '$entry[1]'\"`;
+        my $sql = `mysql -h $ENV{GBS1} -P $ENV{GBP1} -u $ENV{GBUSER} -p$ENV{GBPASS} $ENV{REG_DB} -e \"select ID,is_paired,calc_read_length,is_mate_1,CN,PL,DS,url,md5sum,data_level from rnaseq_data_extra1 where species_id = $_[0] and SM = '$entry[1]'\"`;
         my @record = split (/\n/, $sql);
         say "Record is ",@record;
         for (my $n = 1; $n < @record; $n+=1){
@@ -240,9 +236,9 @@ sub run{
     my $taxonomy_adaptor = Bio::EnsEMBL::Taxonomy::DBSQL::TaxonomyDBAdaptor->new(
               -user   => $ENV{GBUSER_R},
               -pass   => '',
-              -dbname => 'ncbi_taxonomy_109',#$ENV{TAX_DB},
-              -host   => 'mysql-ens-mirror-1',#$ENV{GBS1},
-              -port   => 4240#$ENV{GBP1}
+              -dbname => 'ncbi_taxonomy_109',
+              -host   => $ENV{MIRROR},
+              -port   => $ENV{MPORT}
              );
     my $node_adaptor = $taxonomy_adaptor->get_TaxonomyNodeAdaptor();
     my $taxon_node = $node_adaptor->fetch_by_taxon_id($_[4]);
@@ -256,10 +252,6 @@ sub run{
     my %fqrep;
     my %rnaseq_info1;
     my $species_id = $_[4];
-    open CSV, ("<$_[0]");#csv file
-    open FLG, ("<$_[1]");#flagstats
-    open LG, ("<$_[2]");#readlength
-    open FQREP, ("<$_[5]") or $self->complete_early("No fastq report for this species");#readlength
    
     #not taking readcount from rnaseq meta file because entry is not consistent
     #reading fastq read length file and storing all entries in a hash
