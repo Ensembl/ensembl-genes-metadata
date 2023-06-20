@@ -26,7 +26,7 @@ Questions may also be sent to the Ensembl help desk at
 
 =head1 NAME
 
-Bio::EnsEMBL::Analysis::Hive::RunnableDB::HiveLoadSequences
+Bio::EnsEMBL::Pipeline::Runnable::FastQCheck
 
 =head1 SYNOPSIS
 
@@ -47,7 +47,7 @@ use feature 'say';
 use File::Spec::Functions;
 use File::Basename;
 use POSIX;
-use TranscriptomicRegistryAdaptor;
+use Bio::EnsEMBL::Pipeline::Runnable::TranscriptomicRegistryAdaptor;
 
 use parent ('Bio::EnsEMBL::Analysis::Hive::RunnableDB::HiveBaseRunnableDB');
 
@@ -69,8 +69,7 @@ sub fetch_input {
   $self->param_required('iid');
   $self->param_required('is_paired');
   $self->param_required('species');
-  $self->param('source_id',7215);
-    
+  $self->param_required('source_id'); 
   
 }
 
@@ -125,7 +124,7 @@ sub write_output {
   }
   open QC, (">>$fqcrep");
   my @report;
-  my $registry_adaptor = new TranscriptomicRegistryAdaptor(
+  my $registry_adaptor = new Bio::EnsEMBL::Pipeline::Runnable::TranscriptomicRegistryAdaptor(
         -user   => $ENV{GBUSER},
         -dbname => $ENV{REG_DB},
         -host   => $ENV{GBS1},

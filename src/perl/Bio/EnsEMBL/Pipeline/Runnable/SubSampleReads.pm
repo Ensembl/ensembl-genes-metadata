@@ -59,7 +59,6 @@ sub fetch_input {
   my $self = shift;
 
   $self->param_required('subsample_size');
-  #$self->param_required('rnaseq_summary_file');
   $self->param_required('input_dir');
   $self->param_required('iid');
   $self->param_required('is_paired');
@@ -77,27 +76,13 @@ sub run {
         -driver => $ENV{GBDRIVER},
     );
   my $sth = $dba->dbc->prepare("insert into read_count values(?,?,?,?)");
-  my $fastq_read_length = $self->param('input_dir') . "/fastq_read_count.csv";
-  open(DH, ">>$fastq_read_length");
   my $fastq_file_name = $self->param('iid');
   my $sample_size = $self->param('subsample_size');
   (my $subsample_name = $fastq_file_name) =~ s/fastq.gz/fq/;
-  say "Subsample name is $subsample_name";
   $self->param('renamed_file', $subsample_name);
-  #my $subsample = catfile('/nfs/production/flicek/ensembl/genebuild/do1/non_transcriptomic_registry/',$self->param('species'),'fastq',$subsample_name);
-  #`mkdir $temp_path -p`;
   my $subsample = catfile($self->param('input_dir'),$subsample_name);
   my $fastq_file = catfile($self->param('input_dir'),$fastq_file_name);
-  #unless(-e $fastq_file)  {
-   #$self->complete_early("Transcriptomic data has been tested before so I will not download again");
-   #$fastq_file = catfile($temp_path,$fastq_file_name);
-   #$subsample = $subs;
-   #$self->throw("Could not find fastq file on path. Path:\n".$fastq_file);
-  #}
   say "Counting the reads in ".$fastq_file_name;
-#  my $count_cmd = 'zcat '.$fastq_file.' | echo $((`wc -l`/4))';
- # my $count_reads = `$count_cmd`;
-  #chomp($count_reads);
 
   my $read_length = 0;
   my $count = 0;
@@ -137,37 +122,6 @@ sub run {
     `zcat $fastq_file > $subsample`;
     $subsample =~ s/fastq.gz/fq/;
    }
-  # check if read is paired ended or not
-  if ($self->param('is_paired')){
-    #for paired ended reads, process both reads together when you find the first pair by substituting the suffix to 2
-     #if ($subsample_name =~ m/_1/){
-      # say "Subsample name is $subsample_name";
-        # (my $mate = $subsample_name) =~ s/_1/_2/;
-        # $subsample_name = $subsample_name ."\t$mate";
-         #$self->param('paired',$subsample_name);
-         #$self->param('flag',1); #flag to indicate the pair has now been processed, so best to skip it next time
-       # 
-      # }
-      # my @csv = split(/_/,$subsample_name);
-       #$subsample_name = $csv[0] . '_new.csv';
-       #$subsample_name = catfile($self->param('input_dir'),$subsample_name);
-       #$self->param('csv',$subsample_name);
-  }
-  else{
-    #deal with single ended reads
-    #$subsample_name = $subsample_name ."\t0";#set the pair to 0
-    #$self->param('single',$subsample_name);
-    #$self->param('flag',2);#this is to indicate single ended read processed
-    #my @csv = split(/\./,$subsample_name);#extract read id from file name
-   # $subsample_name = $csv[0] . '_new.csv';
-   # $subsample_name = catfile($self->param('input_dir'),$subsample_name);
-   # $self->param('csv',$subsample_name);
-  }
-  # say "Subsample name is $subsample_name";
-  # my @csv = split(/_/,$subsample_name);
-   #$subsample_name = $csv[0] . '_new.csv';
-   #$subsample_name = catfile($self->param('input_dir'),$subsample_name);
-   #remove downloaded fastq file
    `rm $fastq_file`;
 }
 
@@ -195,24 +149,6 @@ sub write_output {
   	  $self->create_faidx($path,$fastq);
   }
   $self->dataflow_output_id({iid=>$self->param('renamed_file'),species=>$self->param('species'),is_paired=>$self->param('is_paired')}, "2");
-  #my $output_file = $self->param('csv');
-  #my $single_file = $self->param('single_csv');
-  
-  #if ($self->param('flag') == 1){
-     #unless(open(PAIRED,">".$output_file)) {
-    #   $self->throw("Failed to open the csv file for writing paired entries. Path used:\n".$output_file);
-   #  }
-   #  say PAIRED $self->param('paired');
-   #  close PAIRED;
- #  }
- #  elsif ($self->param('flag') == 2){
-   #  unless(open(SINGLE,">".$output_file)) {
-    #   $self->throw("Failed to open the csv file for writing single entries. Path used:\n".$output_file);
-     #}
-     #say SINGLE $self->param('single');
-    # close SINGLE;
-   #}
-  # else{}
 }
 
 1;

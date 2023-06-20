@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-#package Bio::EnsEMBL::Analysis::Hive::DBSQL::TranscriptomicRegistryAdaptor;
 
 package Bio::EnsEMBL::Pipeline::Runnable::TranscriptomicRegistryAdaptor;
 

@@ -36,7 +36,7 @@ sub default_options {
     user => $ENV{'GBUSER_R'},
     password => $ENV{'GBPASS'},
     user_w => $ENV{'GBUSER'},
-    'pipe_db_name' => 'transcriptomic_assessment_pipeline',
+    'pipe_db_name' => 'transcriptomic_assessment_eudicotyledons',
     #hash to hold pipeline db settings
     'pipeline_db' => {
                        -dbname => $self->o('pipe_db_name'),
@@ -735,9 +735,6 @@ sub pipeline_analyses {
 		   	-parameters => {
 			  pipe_db => $self->o('pipe_db_name'),
 			  },
-			  -flow_into => {
-		       1 => ['delete_output_files'],
-		     },
 		    -rc_name => '5GB',
 		  },
 		  {
@@ -748,7 +745,6 @@ sub pipeline_analyses {
                      },
               -rc_name    => 'default',
                -max_retry_count => 1,
-               -wait_for => ['classify_isoseq_data','classify_rnaseq_data'],
 		  
           },
 

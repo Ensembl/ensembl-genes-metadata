@@ -38,7 +38,7 @@ sub default_options {
     user_w => $ENV{'GBUSER'},
     #hash to hold pipeline db settings
     'pipeline_db' => {
-       -dbname => 'registry_assembly_pipe',
+       -dbname => 'registry_assembly_team_pipe',
        -host   => $ENV{GBS1},
        -port   => $ENV{GBP1},
        -user   => $self->o('user_w'),
