@@ -28,8 +28,8 @@ my $taxonomy_adaptor = Bio::EnsEMBL::Taxonomy::DBSQL::TaxonomyDBAdaptor->new(
 						-user   => $ENV{GBUSER_R},
 						-pass   => '',
 						-dbname => 'ncbi_taxonomy_109',
-						-host   => 'mysql-ens-mirror-1',
-						-port   => 4240
+						-host   => $ENV{MIRROR},
+						-port   => $ENV{MPORT}
 					 );
 my $registry_adaptor = new Bio::EnsEMBL::DBSQL::DBAdaptor(
 	-user   => $ENV{GBUSER},
@@ -40,9 +40,7 @@ my $registry_adaptor = new Bio::EnsEMBL::DBSQL::DBAdaptor(
 	-driver => $ENV{GBDRIVER},
 );
 
-#Process all non vert assemblies in registry per species
-#my $sth = $registry_adaptor->dbc->prepare("select taxonomy, assembly.assembly_id, chain, version, clade, contig_N50, assembly_level, assembly_name, replace(trim(lcase(species_name)), ' ', '_') as species from assembly join meta using (assembly_id)  where genome_rep = ?  and contig_N50 > ? and (rnaseq_data in (?,?,?,?)) and round((30*total_length)/100) > total_gap_length and is_current = 1 and clade not in ('reptiles','mammalia','teleostei','rodentia','teleostei','teleostei','humans','marsupials','teleostei','vertebrates','teleostei','non_vertebrates')");
-my $sth = $registry_adaptor->dbc->prepare("select taxonomy, assembly.assembly_id, chain, version, clade, contig_N50, assembly_level, assembly_name, replace(trim(lcase(species_name)), ' ', '_') as species from assembly join meta using (assembly_id)  where genome_rep = ?  and contig_N50 > ? and (rnaseq_data in (?,?,?,?)) and round((30*total_length)/100) > total_gap_length and is_current = 1 and clade = 'teleostei'");
+my $sth = $registry_adaptor->dbc->prepare("select taxonomy, assembly.assembly_id, chain, version, clade, contig_N50, assembly_level, assembly_name, replace(trim(lcase(species_name)), ' ', '_') as species from assembly join meta using (assembly_id)  where genome_rep = ?  and contig_N50 > ? and (rnaseq_data in (?,?,?,?)) and round((30*total_length)/100) > total_gap_length and is_current = 1 and clade = 'eudicotyledons'");
 #setting filters for candidate assemblies
 $sth->bind_param(1,'full');
 $sth->bind_param(2,100000);

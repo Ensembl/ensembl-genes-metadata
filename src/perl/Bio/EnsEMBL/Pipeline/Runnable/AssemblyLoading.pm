@@ -153,10 +153,19 @@ sub fetch_input {
   if (!-d $report_dir) {
     make_path($report_dir);
   }
+  else{
+    my @file = glob("$report_dir/$assembly_accession*");
+    if (grep ({ $_ =~ /\.fasta/ } @file) && grep ({ $_ =~ /\.amb/ } @file) && grep ({ $_ =~ /\.ann/ } @file) && grep ({ $_ =~ /\.pac/ } @file) && grep ({ $_ =~ /\.bwt/ } @file) && grep ({ $_ =~ /\.sa/ } @file) && grep ({ $_ =~ /\.mmi/ } @file)){
+      if (scalar(@file) >= 7){
+    	$self->complete_early('Genome file already exists, will not download');
+      }
+    }
+  }
+  say "Before download it was $report_dir";
   if (-e $report_dir){
     #`rm -r $report_dir`;
   }
-  my $query = "cd $report_dir; /nfs/production/flicek/ensembl/genebuild/do1/datasets download genome accession " . $assembly_accession;
+  my $query = "cd $report_dir; $ENV{meta_database_tools}/datasets download genome accession " . $assembly_accession;
  
   if(system($query)){
   #  `rm -r $report_dir`;

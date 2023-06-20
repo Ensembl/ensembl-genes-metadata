@@ -27,12 +27,12 @@ use warnings;
 use Getopt::Long;
 use feature 'say';
 use POSIX;
-use Bio::EnsEMBL::Pipeline::Runnable::TranscriptomicRegistryAdaptor;
 use List::Util qw( min max );
 use Bio::EnsEMBL::Utils::Exception qw(throw warning);
 use Bio::EnsEMBL::DBSQL::DBConnection;
 use Bio::EnsEMBL::DBSQL::DBAdaptor;
 use Bio::EnsEMBL::Taxonomy::DBSQL::TaxonomyDBAdaptor;
+use Bio::EnsEMBL::Pipeline::Runnable::TranscriptomicRegistryAdaptor;
 use Bio::EnsEMBL::Analysis::Hive::DBSQL::AssemblyRegistryAdaptor;
 use File::Basename;
 use Data::Dumper;
@@ -41,6 +41,7 @@ use parent ('Bio::EnsEMBL::Analysis::Hive::RunnableDB::HiveBaseRunnableDB');
 
 sub fetch_input{
 	my ($self) = @_;
+	
 	$self->param_required('sp_id');
         $self->param_required('accession');
         $self->param_required('pipe_db');
@@ -51,13 +52,13 @@ sub fetch_input{
 sub run{
   my ($self) = @_;
   my $registry_dba = new Bio::EnsEMBL::Analysis::Hive::DBSQL::AssemblyRegistryAdaptor(
-  -host    => $ENV{'GBS1'},
-  -port    => ENV{GBP1},
+  -host    => $ENV{GBS1},
+  -port    => $ENV{GBP1},
   -user    => $ENV{GBUSER_R},
   -dbname  => $ENV{REG_DB},
   -pass    => '',
   -driver  => 'mysql',);
-  
+
    my $ass = $self->param('ass_id');
 
   my $species = $self->param('sp_id');
@@ -197,7 +198,8 @@ sub run{
               -pass   => '',
               -dbname => 'ncbi_taxonomy_109',
               -host   => $ENV{MIRROR},
-              -port   => $ENV{MPORT},
+              -port   => $ENV{MPORT}
+
              );
     my $node_adaptor = $taxonomy_adaptor->get_TaxonomyNodeAdaptor();
     my $taxon_node = $node_adaptor->fetch_by_taxon_id($_[1]);
@@ -273,12 +275,10 @@ sub run{
             $fqrep{$run_id} = lc($entry[2]);
          }
     }
-    say "Accession is ",$_[3];
     my $accession = $_[3];
     $alignment_stats->bind_param(1,$accession);
     if ($alignment_stats->execute){
           while (my @entry = $alignment_stats->fetchrow_array()){
-            say "Alignment here is $entry[1]";
             $mapped{$entry[1]} = $entry[2];
          }
     }
@@ -299,10 +299,8 @@ sub run{
       $arr[1] =~ s/fastq.gz/fq/;
       $arr[1] =~ s/^\s+|\s+$//g;
       $csv{$arr[1]} = $result;
-      say "read is $arr[1]";
       my @tem = split(/,/,$arr[3]);
       my $run_id = "";
-      say "species id is ", length($arr[2]) . " " . $arr[1];
       if ($arr[1] =~ m/_/){
         my @val = split(/_/,$arr[1]);
         $run_id = $val[0];
@@ -318,16 +316,13 @@ sub run{
       if (!exists $runs{$run_id}){
         my $read_source = "";
         $runs{$run_id} = 1;
-        say "Readcount is ",$readcnt{$run_id};
         if ($readcnt{$run_id} !~ /\d+/){
           say "run does not exist";
           next;
         }
         my $proj_spec_id = $tem[0] . '_' . $_[1];
-        say "Combined primary id is $proj_spec_id";
         if ((exists($rnaseq_info{$proj_spec_id}) && ($rnaseq_info{$proj_spec_id} !~ m/$_[1]/)) or (!exists($rnaseq_info{$proj_spec_id}))){
           $sth_rnaseq->bind_param(1,$_[1]);
-          say "Species tested is $_[1]";
           $sth_rnaseq->bind_param(2,$tem[0]);
         }
         if ($species_id != $arr[7]){#where species id differs with entry in csv file, check that species is subspecies. If so, data level remains species
@@ -345,7 +340,6 @@ sub run{
           $read_source = 'species';
         }
         $sth_rnaseq->bind_param(3,$read_source);
-        say "Project tested is $tem[0]";
         if (!exists $rnaseq_info{$proj_spec_id}){
            say "Species again tested is $species_id";
            if ($sth_rnaseq->execute){
@@ -380,8 +374,6 @@ sub run{
         }
         $sth_stats->bind_param(1,$_[0]);
         $sth_stats->bind_param(2,'test');
-        say "Run ID is $run_id";
-        say "Value from mapped hash is ",$mapped{$run_id};
         #checks when percentage identity is not set, assign 0
         if ($mapped{$run_id} =~ m/N/ || $mapped{$run_id} eq ''){
           $sth_stats->bind_param(3,0);

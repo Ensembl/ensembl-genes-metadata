@@ -37,7 +37,7 @@ Bio::EnsEMBL::Pipeline::Runnable::FetchTranscriptomicData
 
 package Bio::EnsEMBL::Pipeline::Runnable::FetchTranscriptomicData;
 
-#use strict;
+use strict;
 use warnings;
 
 use JSON::PP;
@@ -125,8 +125,6 @@ sub fetch_input {
   else{
   	  $csv_file = $self->param('output_dir') . $dir . "/" . $dir . "_rnaseq.csv";
   }
-   say "csv file is ", $csv_file;
-   say "csv file is ", $csv_full;
   if (-e $csv_file) {
     `rm $csv_file $csv_full`;
     $self->_populate_query($self->param('sp_id'), 'tax_tree(%s) AND instrument_platform='.$self->param('instrument_platform').' AND library_source=TRANSCRIPTOMIC');
@@ -202,9 +200,7 @@ sub run {
     my $response = $ua->get($url);
     my $fastq_file = 'fastq_'.$self->param('download_method');
     if ($response->is_success) {
-     say "link found";
       my $content = $response->decoded_content(ref => 1);
-      say "Tax file is $tax";
       open M, (">$tax");
       print M Dumper($content);
       if ($content) {
@@ -214,13 +210,11 @@ sub run {
           if ($line =~ /^[a-z]/) {
             my $index = 0;
             %fields_index = map { $_ => $index++} split('\t', $line);
-            say "line from download is $line";
           }
           else {
             say "line does not match a-z and line is \t$line";
             # if these two checks below are removed, more time might be needed to prepare the CSV file
             next if ($line =~ / infected | [iIu]mmune| challenge |tomi[zs]ed/); # I do not want to do that but I don't think we have a choice
-            say "We did not miss this";
             if ($line =~ /([Mm]i\w{0,3}RNA)|lncRNA|circRNA|small RNA/){
             }
             if ($line =~ /([Mm]i\w{0,2}RNA)|lncRNA|circRNA|small RNA/){
@@ -247,15 +241,10 @@ sub run {
               $nominal_length = $row[$fields_index{nominal_length}];
               $read_length = $nominal_length;
             }
-            #if ($row[$fields_index{base_count}] and $row[$fields_index{read_count}]) {
-            #  $calculated_length = $row[$fields_index{base_count}]/$row[$fields_index{read_count}];
-             # $read_length = $calculated_length;
-            #}
             if ($nominal_length != $calculated_length and $nominal_length != 0 and $calculated_length != 0) {
               $self->warning("${row[$fields_index{run_accession}]} NOMINAL $nominal_length CALC $calculated_length");
             }
             if ($row[$fields_index{library_layout}] eq 'PAIRED') {
-              #$read_length /= 2;
               my @files = split(/;/,$row[$fields_index{$fastq_file}]);
               next if ($files[1] !~ /_2\.fastq\.gz/)
                 
@@ -263,7 +252,6 @@ sub run {
             }
             $read_length = POSIX::ceil($read_length);
             say "read length = $read_length";
-            #next if ($read_length < 75);
             my %line = (
               run_accession => $row[$fields_index{run_accession}],
               instrument_model => $row[$fields_index{instrument_model}],
@@ -533,7 +521,6 @@ sub run {
           }
           foreach my $tissue (@tissues){
             chomp($tissue);
-          #  my $file = lc($samples{$sample}->{sample_name});
             say "checking for tissue match $tissue\t",$samples{$sample}->{sample_name};
             if (index(lc($samples{$sample}->{sample_name}), lc($tissue)) != -1) {
               say "match found";
@@ -586,10 +573,7 @@ sub run {
           
           foreach my $tissue (@tissues){
             chomp($tissue);
-          #  my $file = lc($samples{$sample}->{sample_name});
-            say "checking for tissue match $tissue\t",$samples{$sample}->{sample_name};
             if (index(lc($samples{$sample}->{sample_name}), lc($tissue)) != -1) {
-              say "match found";
              
               $flag = 1;
               last;
@@ -665,7 +649,7 @@ sub write_output {
   my $data = $self->output;
   my $samples = $data->[1];
   my $download_method = $self->param('download_method');
-  my @output_ids;
+  my @output_ids; my $source = "";
   foreach my $study_accession (keys %{$data->[0]}) {
     my $study = $data->[0]->{$study_accession};
     foreach my $sample (keys %{$study}) {

@@ -68,13 +68,13 @@ sub param_defaults {
 
 sub fetch_input {
   my $self = shift;
-  my $registry_adaptor = new TranscriptomicRegistryAdaptor(
+  my $registry_adaptor = new Bio::EnsEMBL::Pipeline::Runnable::TranscriptomicRegistryAdaptor(
         -user   => $ENV{GBUSER},
         -dbname => $self->param('pipe_db'),
-        -host   => $ENV{GBS1},#$self->param('pipe_host'),
-        -port   => $ENV{GBP1},#$self->parma('pipe_port'),
-        -pass   => $ENV{GBPASS},#$ENV{GBPASS},
-        -driver => 'mysql',#$ENV{GBDRIVER},
+        -host   => $ENV{GBS1},
+        -port   => $ENV{GBP1},
+        -pass   => $ENV{GBPASS},
+        -driver => 'mysql',
     );
    my $dba = new Bio::EnsEMBL::DBSQL::DBAdaptor(
         -user   => $ENV{GBUSER},

@@ -74,8 +74,8 @@ sub is_rnaseq_classified{
     my $dba = new Bio::EnsEMBL::DBSQL::DBAdaptor(
         -user   => $ENV{GBUSER},
         -dbname => $ENV{REG_DB},
-        -host   => $ENV{GBS2},
-        -port   => $ENV{GBP2},
+        -host   => $ENV{GBS1},
+        -port   => $ENV{GBP1},
         -pass   => $ENV{GBPASS},
         -driver => $ENV{GBDRIVER},
     );
@@ -201,10 +201,10 @@ sub write_output {
   my $dba = new Bio::EnsEMBL::DBSQL::DBAdaptor(
         -user   => $ENV{GBUSER},
         -dbname => $self->param('pipe_db'),
-        -host   => $ENV{GBS1},#$self->param('pipe_host'),
-        -port   => $ENV{GBP1},#$self->parma('pipe_port'),
-        -pass   => $ENV{GBPASS},#$ENV{GBPASS},
-        -driver => 'mysql',#$ENV{GBDRIVER},
+        -host   => $ENV{GBS1},
+        -port   => $ENV{GBP1},
+        -pass   => $ENV{GBPASS},,
+        -driver => 'mysql',
     );
     my $sth;
     my ($pair) = $self->param('filename') =~ /\S+_(\d)\.\S+/;

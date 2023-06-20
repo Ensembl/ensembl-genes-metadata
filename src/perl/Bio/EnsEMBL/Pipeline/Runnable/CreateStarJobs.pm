@@ -72,16 +72,16 @@ sub fetch_input {
   my $registry_adaptor = new TranscriptomicRegistryAdaptor(
         -user   => $ENV{GBUSER},
         -dbname => $self->param('pipe_db'),
-        -host   => $ENV{GBS1},#$self->param('pipe_host'),
-        -port   => $ENV{GBP1},#$self->parma('pipe_port'),
-        -pass   => $ENV{GBPASS},#$ENV{GBPASS},
-        -driver => 'mysql',#$ENV{GBDRIVER},
+        -host   => $ENV{GBS1},
+        -port   => $ENV{GBP1},
+        -pass   => $ENV{GBPASS},
+        -driver => 'mysql',
     );
    my $dba = new Bio::EnsEMBL::DBSQL::DBAdaptor(
         -user   => $ENV{GBUSER},
         -dbname => $ENV{REG_DB},
-        -host   => $ENV{GBS2},
-        -port   => $ENV{GBP2},
+        -host   => $ENV{GBS1},
+        -port   => $ENV{GBP1},
         -pass   => $ENV{GBPASS},
         -driver => $ENV{GBDRIVER},
    );
@@ -102,8 +102,8 @@ sub fetch_input {
   my $samples_hash = {};
   foreach my $result (@results) {
     my @arr = split(/\t/,$result);
-    my $sample_id = $arr[1];#$result->{$self->param('sample_id_column')};
-    my $sample_name = $arr[0];#$result->{$self->param('sample_column')};
+    my $sample_id = $arr[1];
+    my $sample_name = $arr[0];
     $arr[4] =~ s/fastq.gz/fq/;
     $arr[4] =~ s/^\s+|\s+$//g;
     $arr[8] =~ s/^\s+|\s+$//g;

@@ -24,7 +24,6 @@ sub run{
 	
 	 my $genome_index = "";
          say "Genome file is ",$self->param('genome_file');
-#         if (-d($self->param('genome_file')))
 	 if (-e($self->param('genome_file') .'/'.$self->param('accession'). '.fasta.mmi'))
 	 {
 	   $genome_index = $self->param('genome_file'). '/'.$self->param('accession').'.fasta.mmi';
@@ -91,16 +90,14 @@ sub run{
        }
 	#generating flagstats values
 	my $sorted = $self->param('output_dir') . "/" . $sam . ".sorted.bam";
-	 say "generating flagstats values for file $sam";
 	my $mapped = "samtools flagstat $sorted | awk -F \"[(|\%]\"  'NR == 5 {print \$2}'";
 	$mapped = `$mapped`;
-	say "mapped is $mapped";
 	$sam = "basename " . $sorted ." .sorted.bam";
 	$sam = `$sam`;
 	chomp($sam);chomp($mapped);
 	$sam = $sam . "\t" . $mapped;
-	say "Sam is $sam";
 	$self->param('alignment', $sam);
+	$self->param('output', $sorted)
 	
 	 
 }
@@ -133,6 +130,8 @@ sub write_output{
 	  }
 	  if ($sth->execute){
             say "Mapping stats stored for alignment file $report[0]";
+	    #delete alignment file
+	    my $output_file = $self->param('output');
             `rm $output_file`;
           }
           else{
