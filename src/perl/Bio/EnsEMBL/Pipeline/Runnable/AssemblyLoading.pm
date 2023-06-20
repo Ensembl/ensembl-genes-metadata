@@ -153,20 +153,10 @@ sub fetch_input {
   if (!-d $report_dir) {
     make_path($report_dir);
   }
-  else{
-    my @file = glob("$report_dir/$assembly_accession*");
-    if (grep ({ $_ =~ /\.fasta/ } @file) && grep ({ $_ =~ /\.amb/ } @file) && grep ({ $_ =~ /\.ann/ } @file) && grep ({ $_ =~ /\.pac/ } @file) && grep ({ $_ =~ /\.bwt/ } @file) && grep ({ $_ =~ /\.sa/ } @file) && grep ({ $_ =~ /\.mmi/ } @file)){
-      if (scalar(@file) >= 7){
-    	$self->complete_early('Genome file already exists, will not download');
-      }
-    }
-  }
-  say "Before download it was $report_dir";
   if (-e $report_dir){
     #`rm -r $report_dir`;
   }
   my $query = "cd $report_dir; /nfs/production/flicek/ensembl/genebuild/do1/datasets download genome accession " . $assembly_accession;
-  #my $query = "wget -c ".$self->param_required('full_ftp_path').'/'.$self->param('_genome_file_name').$self->param('_genome_zip_ext')." -P ".$report_dir;
  
   if(system($query)){
   #  `rm -r $report_dir`;
@@ -174,7 +164,6 @@ sub fetch_input {
   }
   else{
     $self->param('genome_path', $report_dir);
-    say "report dir is $report_dir";
     say "Download succeeded for genome";
   }
   my $genome_extract = "cd $report_dir; unzip " . $report_dir . 'ncbi_dataset.zip';
@@ -210,23 +199,9 @@ sub run {
   my ($self) = @_;
   my $file = "";
   my $genome = $self->param('genome_path'); my $speciesn = $self->param('species_name');
-  if ($genome =~ /$speciesn/){
-    #$file = catfile($self->param('genome_path'), $self->param('_genome_file_name').$self->param('_genome_zip_ext'));
-  }
-  else{
-    #$file = catfile($self->param('genome_path'), $self->param('species_name'), $self->param('_genome_file_name').$self->param('_genome_zip_ext'));
-  }
-  #my ($output) = $file =~ /^(\S+)\.\w+$/;
-  #say "File is $file";say "Output is $output";
-  #gunzip $file => $output or die "gunzip failed: $GunzipError\n";
-  #unzip $file => $output or die "gunzip failed: $UnzipError\n";
-  #unlink $file;
 
   #index genome
   my $output = $self->param('genome_path').$self->param('assembly_accession').".fasta";
-  say "New output value is ",$output;
-  #my $input = $self->param('genome_path') . $self->param('_genome_file_name');
-  #`mv $input $output`;
   say "now indexing with STAR";
   my $query = $self->param('star_path') . ' --limitGenomeGenerateRAM 504273583712  --runThreadN 12 --runMode genomeGenerate --outFileNamePrefix ' . $self->param('genome_path') . ' --genomeDir '. $self->param('genome_path') . ' --genomeFastaFiles ' . $output;
   if(system($query)){
