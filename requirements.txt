@@ -3,7 +3,6 @@ pylint
 Sphinx
 pymysql==1.0.2
 sqlalchemy==1.4.9
-json
 requests
 biopython
 argschema
