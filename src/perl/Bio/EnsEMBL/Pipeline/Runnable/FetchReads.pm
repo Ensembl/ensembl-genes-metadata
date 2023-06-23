@@ -95,6 +95,7 @@ sub is_rnaseq_classified{
     #if short read data has been tested before for this species, set value = 1 and we don't re-download it again
     if ($sth->execute){
       while (my @result = $sth->fetchrow_array()){
+	say "File returned is ",@result;
         $status = 1;
       }
     }

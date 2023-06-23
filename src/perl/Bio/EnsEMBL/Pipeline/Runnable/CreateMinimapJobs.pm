@@ -100,6 +100,7 @@ sub fetch_input {
   $csv_long_read->bind_param(1,$self->param('sp_id'));
   if ($csv_long_read->execute){
     while (my @reads = $csv_long_read->fetchrow_array()){
+      $reads[0]  =~ s/fastq.gz/fq/;
       if (!exists $fqrep{$reads[0]}){
         next;
       }

@@ -143,7 +143,7 @@ sub fetch_input {
   
   my $report_dir;
   if ($self->param_is_defined('genome_path')) {
-    $report_dir = $self->param('genome_path') . "$species_name/$assembly_accession/";
+    $report_dir = $self->param('genome_path') . "/$species_name/$assembly_accession/";
     $self->param('genome_path', $report_dir);
   }
   else {
@@ -153,20 +153,12 @@ sub fetch_input {
   if (!-d $report_dir) {
     make_path($report_dir);
   }
-  else{
-    my @file = glob("$report_dir/$assembly_accession*");
-    if (grep ({ $_ =~ /\.fasta/ } @file) && grep ({ $_ =~ /\.amb/ } @file) && grep ({ $_ =~ /\.ann/ } @file) && grep ({ $_ =~ /\.pac/ } @file) && grep ({ $_ =~ /\.bwt/ } @file) && grep ({ $_ =~ /\.sa/ } @file) && grep ({ $_ =~ /\.mmi/ } @file)){
-      if (scalar(@file) >= 7){
-    	$self->complete_early('Genome file already exists, will not download');
-      }
-    }
-  }
   say "Before download it was $report_dir";
   if (-e $report_dir){
     #`rm -r $report_dir`;
   }
   my $query = "cd $report_dir; $ENV{meta_database_tools}/datasets download genome accession " . $assembly_accession;
- 
+  say "Command is $query"; 
   if(system($query)){
   #  `rm -r $report_dir`;
     say "Download failed";
@@ -218,7 +210,7 @@ sub run {
   }
   say "finished creating Star index";
   my $genome_index = $output . '.mmi';
-  my $minimap_index = $self->param('minimap2_path'). " -d $genome_index $output";
+  my $minimap_index = $self->param('minimap_path'). " -d $genome_index $output";
   say "command to run is $minimap_index";
  if(system($minimap_index)) {
     $self->throw("Error indexing genome via minimap2\nError code: $?\n");

@@ -37,7 +37,7 @@ Bio::EnsEMBL::Pipeline::Runnable::FetchTranscriptomicData
 
 package Bio::EnsEMBL::Pipeline::Runnable::FetchTranscriptomicData;
 
-use strict;
+#use strict;
 use warnings;
 
 use JSON::PP;
@@ -280,7 +280,6 @@ sub run {
         SAMPLE: foreach my $sample (@sample_names) {
           
           $url = join('&', $self->param('ena_base_url'), 'query="accession='.$sample.'"', $self->param('sample_domain'), 'fields='.$self->param('sample_fields'));
-          say "Sample URL is $url";
           $response = $ua->get($url);
           if ($response->is_success) {
             $content = $response->decoded_content();

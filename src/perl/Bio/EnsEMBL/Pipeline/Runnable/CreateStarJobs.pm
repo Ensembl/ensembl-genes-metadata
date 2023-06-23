@@ -69,7 +69,7 @@ sub param_defaults {
 
 sub fetch_input {
   my $self = shift;
-  my $registry_adaptor = new TranscriptomicRegistryAdaptor(
+  my $registry_adaptor = new Bio::EnsEMBL::Pipeline::Runnable::TranscriptomicRegistryAdaptor(
         -user   => $ENV{GBUSER},
         -dbname => $self->param('pipe_db'),
         -host   => $ENV{GBS1},

@@ -36,11 +36,7 @@ sub default_options {
     user => $ENV{'GBUSER_R'},
     password => $ENV{'GBPASS'},
     user_w => $ENV{'GBUSER'},
-<<<<<<< HEAD
-    'pipe_db_name' => 'transcriptomic_assessment_eudicotyledons',
-=======
-    'pipe_db_name' => 'transcriptomic_assessment_pipeline',
->>>>>>> 284ee6241cf20086429446c86061ea116830f681
+    'pipe_db_name' => 'transcriptomic_assessment_vertebrates',
     #hash to hold pipeline db settings
     'pipeline_db' => {
                        -dbname => $self->o('pipe_db_name'),
@@ -75,7 +71,7 @@ sub default_options {
     'pipe_db_port'              => $ENV{GBP1}, # port for pipeline host
     'registry_port'             => $self->o('pipe_db_port'), # port for general output db host
     'output_path'               => $ENV{meta_database_dir}, # Lustre output dir. This will be the primary dir to house the assembly info and various things from analyses
-    'genome_path'               => catfile($self->o('output_path'), 'genomes'),
+    'genome_path'               => catfile($self->o('output_path'), 'genomes/'),
     'assembly_registry_host'    => $self->o('registry_server'),
     'assembly_registry_port'    => $self->o('registry_port'),
      samtools_path              => catfile($self->o('binary_base'), 'samtools'), #You may need to specify the full path to the samtools binary
@@ -84,13 +80,9 @@ sub default_options {
      validator_prog             => '/hps/software/users/ensembl/genebuild/fastQValidator/bin/fastQValidator',
     'rnaseq_dir'                => catdir($self->o('output_path'), 'genomes'),
     'rnaseq_ftp_base'           => 'ftp://ftp.sra.ebi.ac.uk/vol1/fastq/',
-<<<<<<< HEAD
     'get_assembly_script_path'  => $ENV{ENSEMBL_GENES_META} . '/src/perl/scripts/get_assembly.pl',
-=======
-    'get_assembly_script_path'  => $ENV{ENS_GENES_META} . '/src/perl/scripts/get_assembly.pl',
->>>>>>> 284ee6241cf20086429446c86061ea116830f681
     'tissue_dict_path'          => '/nfs/production/flicek/ensembl/genebuild/meta_database/',
-    'minimap2_path'             => catfile($self->o('binary_base'), 'minimap2'),
+    'minimap_path'             => catfile($self->o('binary_base'), 'minimap2'),
     'species_list'                => catdir($self->o('output_path'), 'species.csv'),
     'species_list_nr'                => catdir($self->o('output_path'), 'nr_species.csv'),
     
@@ -254,20 +246,10 @@ sub pipeline_analyses {
 			},
 			-rc_name => 'default',
 			-flow_into => { 
-				         1      => ['backup_original_csv'],
 				        '2->A' => ['download_short_read_csv','download_long_read_csv'],
 					'A->1' => {'create_species_alignment_job' => {'inputfile' => $self->o('species_list')}},
 			}, 
 		},
-		{
-			-logic_name => 'backup_original_csv',
-			-module     => 'Bio::EnsEMBL::Hive::RunnableDB::SystemCmd',
-			-parameters => {
-				cmd => 'mv '.'#inputfile#'.' '.'#inputfile#'.'_orig_bak',
-			},
-                         -rc_name => 'default',
-        
-                },
 
 
 		 { 
@@ -367,7 +349,7 @@ sub pipeline_analyses {
 			 	 	 output_dir => $self->o('output_path'),
 			 	 	 'full_ftp_path' => $self->o('insdc_base_ftp'),
 			 	 	 'genome_path' => $self->o('genome_path'),
-			 	 	 minimap2_path => $self->o('minimap2_path'),
+			 	 	 minimap_path => $self->o('minimap_path'),
                                          star_path => $self->o('star_path'),
 			 	 },
 			 	 -rc_name => '10GB',
@@ -385,7 +367,7 @@ sub pipeline_analyses {
 			    output_dir => $self->o('output_path'),
 			    'full_ftp_path' => $self->o('insdc_base_ftp'),
 			    'genome_path' => $self->o('genome_path'),
-			    minimap2_path => $self->o('minimap2_path'),
+			    minimap_path => $self->o('minimap_path'),
                             star_path => $self->o('star_path'),
 			},
 			 -rc_name => '20GB',
@@ -403,7 +385,7 @@ sub pipeline_analyses {
 			    output_dir => $self->o('output_path'),
 			    'full_ftp_path' => $self->o('insdc_base_ftp'),
 			    'genome_path' => $self->o('genome_path'),
-			    minimap2_path => $self->o('minimap2_path'),
+			    minimap_path => $self->o('minimap_path'),
                             star_path => $self->o('star_path'),
 			},
 			 -rc_name => '15GB',
@@ -578,7 +560,6 @@ sub pipeline_analyses {
                         -logic_name => 'create_species_alignment_job',
                         -module     => 'Bio::EnsEMBL::Hive::RunnableDB::JobFactory',
                         -parameters => {
-                          inputfile => $self->o('species_list'),
                           column_names => $self->o('db_columns'),
                           delimiter => '\t',
                         },
@@ -616,7 +597,7 @@ sub pipeline_analyses {
                         },
         	-rc_name    => 'default',
                 -flow_into => {
-                            '1->A' => ['generate_minimap2_jobs'],
+                            '1->A' => ['generate_minimap_jobs'],
                              'A->1' =>['classify_isoseq_data'],
 
                           },
@@ -650,7 +631,7 @@ sub pipeline_analyses {
                       input_dir          => $self->o('output_path').'#species#'. "/fastq/",
                       output_dir         => $self->o('output_path').'#species#/#accession#'.'/alignment',
                       short_read_aligner => $self->o('star_path'),
-                      genome_dir         => catfile($self->o('output_path'),'#species#/#accession#/'),
+                      genome_dir         => catfile($self->o('genome_path'),'/#species#/#accession#/'),
                       num_threads        => $self->o('star_threads'),
                       species            => '#species#',
                       pipe_db => $self->o('pipe_db_name'),
@@ -669,7 +650,7 @@ sub pipeline_analyses {
                       input_dir          => $self->o('output_path').'#species#'. "/fastq/",
                       output_dir => $self->o('output_path').'#species#/#accession#'.'/alignment',
                       short_read_aligner => $self->o('star_path'),
-                      genome_dir         => catfile($self->o('output_path'),'#species#/#accession#/'),
+                      genome_dir         => catfile($self->o('genome_path'),'/#species#/#accession#/'),
                       num_threads        => $self->o('star_threads'),
                       species            => '#species#',
                       pipe_db => $self->o('pipe_db_name'),
@@ -679,7 +660,7 @@ sub pipeline_analyses {
 
 		  
 		  {
-		-logic_name => 'generate_minimap2_jobs',
+		-logic_name => 'generate_minimap_jobs',
                   -module     => 'Bio::EnsEMBL::Pipeline::Runnable::CreateMinimapJobs',
                   -parameters => {
                      pipe_db => $self->o('pipe_db_name'),
@@ -687,17 +668,17 @@ sub pipeline_analyses {
 		  },
 		    -rc_name => 'default',
 		    -flow_into => {
-                      2 => ['minimap2'],
+                      2 => ['minimap'],
 		    },
           },
 
 
           {
-          	  -logic_name => 'minimap2',
+          	  -logic_name => 'minimap',
           	  -module     => 'Bio::EnsEMBL::Pipeline::Runnable::Minimap',
           	  -parameters => {
-                         genome_file => catfile($self->o('output_path').'#species#/#accession#/'),
-                         minimap2_path => $self->o('minimap2_path'),
+                         genome_file => catfile($self->o('genome_path').'/#species#/#accession#/'),
+                         minimap_path => $self->o('minimap_path'),
                          input_dir => $self->o('output_path').'#species#'. "/fastq/",
                          output_dir => $self->o('output_path').'#species#/#accession#'.'/alignment',
                          pipe_db => $self->o('pipe_db_name'),
@@ -705,16 +686,16 @@ sub pipeline_analyses {
                        	},
               -rc_name => '15GB',
               -flow_into => {
-                           -1 => ['minimap2_himem'],
+                           -1 => ['minimap_himem'],
               },
           },
           
           {
-          	  -logic_name => 'minimap2_himem',
+          	  -logic_name => 'minimap_himem',
           	  -module     => 'Bio::EnsEMBL::Pipeline::Runnable::Minimap',
           	  -parameters => {
-                         genome_file => catfile($self->o('output_path').'#species#/#accession#/'),
-                         minimap2_path => $self->o('minimap2_path'),
+                         genome_file => catfile($self->o('genome_path').'/#species#/#accession#/'),
+                         minimap_path => $self->o('minimap_path'),
                          input_dir => $self->o('output_path').'#species#'. "/fastq/",
                          output_dir => $self->o('output_path').'#species#/#accession#'.'/alignment',
                          samtools => $self->o('samtools_path'),
@@ -753,6 +734,7 @@ sub pipeline_analyses {
                      },
               -rc_name    => 'default',
                -max_retry_count => 1,
+	       -wait_for => ['classify_isoseq_data'],
 		  
           },
 

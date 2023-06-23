@@ -77,6 +77,7 @@ sub run {
     );
   my $sth = $dba->dbc->prepare("insert into read_count values(?,?,?,?)");
   my $fastq_file_name = $self->param('iid');
+  my $readcount_file = catfile($self->param('input_dir'),'readcount.txt');
   my $sample_size = $self->param('subsample_size');
   (my $subsample_name = $fastq_file_name) =~ s/fastq.gz/fq/;
   $self->param('renamed_file', $subsample_name);
@@ -95,7 +96,7 @@ sub run {
     }
     ++$count;
   }
-
+  open(DH, ">>$readcount_file");
   unless($count) {
     $self->throw("Failed to count reads in the following file:\n".$fastq_file);
   }
@@ -107,11 +108,11 @@ sub run {
   $sth->bind_param(3,$self->param('taxon_id'));
   $sth->bind_param(4,$read_length);
   if ($sth->execute){
-    say "Read count for $fastq_file_name stored successfully";
+   say "Read count for $fastq_file_name stored successfully";
   }
   else{
     $self->throw("Failed to store read length for file $fastq_file_name");
- }
+  }
   #check if read count is more than subsample size
    if($count > $sample_size) {
     # #take a random sample of the reads. use same random seed to ensure same pairs are extracted
@@ -122,7 +123,7 @@ sub run {
     `zcat $fastq_file > $subsample`;
     $subsample =~ s/fastq.gz/fq/;
    }
-   `rm $fastq_file`;
+   #`rm $fastq_file`;
 }
 
 sub create_faidx {

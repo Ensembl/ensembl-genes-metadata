@@ -40,7 +40,7 @@ my $registry_adaptor = new Bio::EnsEMBL::DBSQL::DBAdaptor(
 	-driver => $ENV{GBDRIVER},
 );
 
-my $sth = $registry_adaptor->dbc->prepare("select taxonomy, assembly.assembly_id, chain, version, clade, contig_N50, assembly_level, assembly_name, replace(trim(lcase(species_name)), ' ', '_') as species from assembly join meta using (assembly_id)  where genome_rep = ?  and contig_N50 > ? and (rnaseq_data in (?,?,?,?)) and round((30*total_length)/100) > total_gap_length and is_current = 1 and clade = 'eudicotyledons'");
+my $sth = $registry_adaptor->dbc->prepare("select taxonomy, assembly.assembly_id, chain, version, clade, contig_N50, assembly_level, assembly_name, replace(trim(lcase(species_name)), ' ', '_') as species from assembly join meta using (assembly_id)  where genome_rep = ?  and contig_N50 > ? and (rnaseq_data in (?,?,?,?)) and round((30*total_length)/100) > total_gap_length and is_current = 1");
 #setting filters for candidate assemblies
 $sth->bind_param(1,'full');
 $sth->bind_param(2,100000);
@@ -85,7 +85,6 @@ my %unique_list;
 my $u = 0;
 (my $ulist = $candidate_assembly) =~ s/species.csv/nr_species.csv/;
 open FINAL, (">>$candidate_assembly");
-#open RUN_LIST, (">>$ulist");
 foreach my $assembly (values %final){
 	print FINAL $assembly, "\n";
         my @unique_species = split(/\t/,$assembly);

@@ -59,7 +59,7 @@ def fix_short_read_record(db,host,port,user,output_file,taxon_id,task,task_list)
     sql = "select ID,url,md5sum,species_id from short_read_data where url not like '%;%'"
     info = fetch_data(sql,db,host,int(port),user,'')
     con = pymysql.connect(
-            host=host, user='ensadmin', passwd='ensembl', port=int(port), db=db.strip(), charset='utf8mb4', cursorclass=pymysql.cursors.DictCursor
+            host=host, user=user, passwd=password, port=int(port), db=db.strip(), charset='utf8mb4', cursorclass=pymysql.cursors.DictCursor
     )
     results = 0
     url = ''
@@ -86,6 +86,27 @@ def fix_short_read_record(db,host,port,user,output_file,taxon_id,task,task_list)
         else:
             con.commit()
     print('Numer of records fixed = '+str(results))
+
+def update_sec_asm_group_for_faang(db,host,port,user,password,group,taxon_id):
+    #Update secondary assembly group for assemblies belonging to a particular species"
+    con = pymysql.connect(
+            host=host, user=user, passwd=password, port=int(port), db=db.strip(), charset='utf8mb4', cursorclass=pymysql.cursors.DictCursor
+    )
+    #get assembly id of entries matching species taxa
+    sql = "SELECT assembly_id FROM assembly WHERE taxonomy = "+taxon_id
+    info = fetch_data(sql,db,host,int(port),user,password)
+    results = 0
+    for row in info:
+        try:
+            with con.cursor() as cur:
+                cur.execute('UPDATE meta SET sec_asm_group = %s WHERE assembly_id = %s' ,  (group, row))
+        except Exception as error:
+            print ('Oops! Secondary assembly group update did not complete successfully. Kindly check the error below\n'+str(error))
+            break
+        else:
+            results += 1
+            con.commit()
+    print('Numer of assemblies with secondary group set to  '+group+' = '+str(results))
 
 def get_candidate_assembly(db,host,port,user,output_file):
     #query to fetch records of all existing assemblies
@@ -161,21 +182,26 @@ def fetch_data(query, database, host, port, user, password):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--port', help='Port number for host', required=True)
+    parser.add_argument('--password', help='Password for host', required=False)
     parser.add_argument('--user', help='Mysql user', required=True)
     parser.add_argument('--dbname', help='Database to be backed up', required=True)
     parser.add_argument('--server', help='Host server for database', required=True)
-    parser.add_argument('--asm_file', help='File name to hold short read data', required=True)
+    parser.add_argument('--report_file', help='File name to hold short read data', required=False)
     parser.add_argument('--taxon_id', help='Taxon_id to fetch data for', required=True)
     parser.add_argument('--task_dsc', help='Name of task to perform', required=True)
+    parser.add_argument('--asm_group', help='Assembly group', required=False)
     args = parser.parse_args()
     host = args.server
     db = args.dbname
     user = args.user
     port = args.port
-    output_file = args.asm_file
+    output_file = args.report_file
     taxon_id = args.taxon_id
+    group = args.asm_group
     task = args.task_dsc
+    password = args.password
     approved_tasks = {
+      'update_sec_asm_group_for_faang': 'Update secondary assembly group for FAANG related species',
       'get_short_read_at_species_level': 'Returns a tab-delimited of all annotation ready short read data at species level for the taxon_id given',
       'get_short_read_at_genus_level': 'Returns a tab-delimited of all annotation ready short read data at genus level for the taxon_id given',
       'get_all_short_reads': 'Returns a tab-delimited of all annotation ready short read data for the taxon_id given',
@@ -183,6 +209,9 @@ if __name__ == '__main__':
       'get_long_read_at_genus_level': 'Returns a tab-delimited of all annotation ready long read data at genus level for the taxon_id given',
       'get_all_long_reads': 'Returns a tab-delimited of all annotation ready long read data for the taxon_id given'
     }
-    #fix_short_read_record(db,host,port,user,output_file,taxon_id,task,approved_tasks)
-    records = generate_report(db,host,port,user,output_file,taxon_id,task,approved_tasks)
-    print(str(records) + ' entries exists as ready for use in annotation')
+    if task == 'update_sec_asm_group_for_faang':
+        update_sec_asm_group_for_faang(db,host,port,user,password,group,taxon_id)
+    else:
+        #fix_short_read_record(db,host,port,user,output_file,taxon_id,task,approved_tasks)
+        records = generate_report(db,host,port,user,output_file,taxon_id,task,approved_tasks)
+        print(str(records) + ' entries exists as ready for use in annotation')
