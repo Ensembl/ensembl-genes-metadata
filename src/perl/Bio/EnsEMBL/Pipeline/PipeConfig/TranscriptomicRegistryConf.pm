@@ -36,7 +36,7 @@ sub default_options {
     user => $ENV{'GBUSER_R'},
     password => $ENV{'GBPASS'},
     user_w => $ENV{'GBUSER'},
-    'pipe_db_name' => 'transcriptomic_assessment_vertebrates',
+    'pipe_db_name' => 'transcriptomic_assessment_mammalia',
     #hash to hold pipeline db settings
     'pipeline_db' => {
                        -dbname => $self->o('pipe_db_name'),
@@ -204,7 +204,7 @@ sub pipeline_create_commands {
         $self->db_cmd( 'CREATE TABLE ' . $self->o('long_csv_table') . " ($lr_tables)" ),
         $self->db_cmd( 'CREATE TABLE ' . $self->o('read_count_table') . ' (' .
         'fastq varchar(50) NOT NULL,' .
-        'read_count int(50) NOT NULL,' .
+        'read_count bigint NOT NULL,' .
         'species_id int(11) NOT NULL,' .
         'read_length int(11) NOT NULL,' .
         'PRIMARY KEY (fastq,species_id))' ),

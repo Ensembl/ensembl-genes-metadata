@@ -35,11 +35,8 @@ sub run{
 	 	 if (-e $output){
 	 	 	 $genome_index = $self->param('genome_file').'/'.$self->param('accession').'.fasta.mmi';
 	 	 }
-	 	 else{
-	 	 	 $output = $self->param('genome_file') . '_toplevel.fasta';
-	 	 	 $genome_index = $self->param('genome_file') . '_toplevel.fasta.mmi';
-	 	 }
 	 	my $minimap_index = $self->param('minimap2_path'). " -d $genome_index $output";
+		say "Minimap command is $minimap_index";
 	 	if(system($minimap_index)) {
 	  	  $self->throw("Error indexing genome via minimap2\nError code: $?\n");
 	  }
@@ -90,6 +87,7 @@ sub run{
        }
 	#generating flagstats values
 	my $sorted = $self->param('output_dir') . "/" . $sam . ".sorted.bam";
+	#Retrieve percentage quality alignment
 	my $mapped = "samtools flagstat $sorted | awk -F \"[(|\%]\"  'NR == 5 {print \$2}'";
 	$mapped = `$mapped`;
 	$sam = "basename " . $sorted ." .sorted.bam";
@@ -114,14 +112,10 @@ sub write_output{
     );
      my @report;
      my $sth = $dba->dbc->prepare("insert into alignment_stats values (?,?,?,?)");
-	  my $stats = $self->param('output_dir') . "/lr_flagstats.txt"; 
 	  if ($self->param('alignment') =~ m/N\/A/){
 	    $self->throw("Check alignment file. Percentage mapped cannot be empty");
 	  }
 	  else{
-	    open ID, (">>$stats");
-	    say "file opened for writing flagstat";
-	    print ID $self->param('alignment'), "\n";
 	    @report = split(/\t/,$self->param('alignment'));
             $sth->bind_param(1,$self->param('accession'));
             $sth->bind_param(2,$report[0]);

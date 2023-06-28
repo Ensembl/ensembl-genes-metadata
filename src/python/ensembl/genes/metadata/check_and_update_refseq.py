@@ -122,7 +122,7 @@ def slack_reporting(refseq_update_rpt,name_update_rpt):
         summary_report = 'No update to refseq or assembly name this time'
 
     #Set message token for reporting
-    payload="{\"channel\": \"@denye\", \"username\": \"registry_messenger\", \"text\": \"" + summary_report  +"\"}"
+    payload="{\"channel\": \"#genebuildregistry\", \"username\": \"registry_messenger\", \"text\": \"" + summary_report  +"\"}"
     url = os.getenv('slack_token')
     headers = {'content-type': 'application/json', 'Accept-Charset': 'UTF-8'}
     r = requests.post(url, data=payload, headers=headers)
