@@ -866,11 +866,11 @@ def process_accessions(registry_settings, metazoa_import_types):
                 updated_assemblies = res[1]
                 existing_assemblies = res[2]
         if res:
-            slack_reporting(res[0],res[1],res[2],res[3])
+            slack_reporting(res[0],res[1],res[2],res[3],config)
         else:
             raise ValueError('No new assembly or update at this time.\n')
 
-def slack_reporting(new,updates,diff,imp):
+def slack_reporting(new,updates,diff,imp,config):
     #Reporting assembly registration in categories
     if int(imp) > 0:
         cnt = 0
@@ -921,6 +921,8 @@ def slack_reporting(new,updates,diff,imp):
         url = os.getenv('slack_token')
         headers = {'content-type': 'application/json', 'Accept-Charset': 'UTF-8'}
         r = requests.post(url, data=payload, headers=headers)
+    #Delete accessions after registration
+    os.remove(config)
 
 #Method to write to database
 def store_assembly(database, host, port, user, password, records, new_assemblies, updated_assemblies, assemblies_existing_species):
