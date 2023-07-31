@@ -16,7 +16,7 @@
 """ This script will query the production meta database to find all Vertebrates and Metazoa division dbs associated with the current/most recent release
     The  meta table of each db returned is queried to obtain key annotation parameters to update the genebuild status  of the assembly in the meta database
 """
-
+from datetime import datetime,timedelta,date
 import re
 import os
 import urllib.request,json
@@ -175,13 +175,12 @@ def get_main_dbs(release):
             for ld in last_geneset_update:
                 last_date = ld[0]
         genebuild_start_date_query = "SELECT date_started FROM genebuild_status WHERE assembly_accession = '"+accession+"' AND is_current = 1"
-        genebuild_start_date = fetch_data(genebuild_start_date_query,os.getenv('REG_DB'),os.getenv('GBS1'),int(os.getenv('GBP5')),os.getenv('GBUSER_R'),'')
+        genebuild_start_date = fetch_data(genebuild_start_date_query,os.getenv('REG_DB'),os.getenv('GBS1'),int(os.getenv('GBP1')),os.getenv('GBUSER_R'),'')
         for gsd in genebuild_start_date:
             start_date = gsd[0]
 
         # Format the genebuild_start_date and end_dates to match database type
         # This is an estimate of 3 weeks since we dont actually store the day part in the meta table
-        start_date = re.sub('EnsemblMetazoa|Ensembl|WormBase|Plants', '01', start_date)
         if last_date:
             last_date = last_date + '-21'
         else:
@@ -249,7 +248,7 @@ def get_rapid_dbs(release):
                 for ld in last_geneset_update:
                     last_date = ld[0]
             genebuild_start_date_query = "SELECT date_started FROM genebuild_status WHERE assembly_accession = '"+accession+"' AND is_current = 1"
-            genebuild_start_date = fetch_data(genebuild_start_date_query,os.getenv('REG_DB'),os.getenv('GBS1'),int(os.getenv('GBP5')),os.getenv('GBUSER_R'),'')
+            genebuild_start_date = fetch_data(genebuild_start_date_query,os.getenv('REG_DB'),os.getenv('GBS1'),int(os.getenv('GBP1')),os.getenv('GBUSER_R'),'')
             for gsd in genebuild_start_date:
                 start_date = gsd[0]
         else:
@@ -270,7 +269,7 @@ def get_rapid_dbs(release):
                 for ld in last_geneset_update:
                     last_date = ld[0]
             genebuild_start_date_query = "SELECT date_started FROM genebuild_status WHERE assembly_accession = '"+accession+"' AND is_current = 1"
-            genebuild_start_date = fetch_data(genebuild_start_date_query,os.getenv('REG_DB'),os.getenv('GBS1'),int(os.getenv('GBP5')),os.getenv('GBUSER_R'),'')
+            genebuild_start_date = fetch_data(genebuild_start_date_query,os.getenv('REG_DB'),os.getenv('GBS1'),int(os.getenv('GBP1')),os.getenv('GBUSER_R'),'')
             for gsd in genebuild_start_date:
                 start_date = gsd[0]
         
@@ -324,7 +323,7 @@ if __name__ == '__main__':
         rapid_meta = get_rapid_dbs(version[2])
         main_meta = get_main_dbs(version[0])
         existing_assemblies = get_pending_genebuilds_for_update()
-        update_genebuild_status(existing_assemblies,rapid_meta,main_meta,version[2],version[3],version[0],version[1],os.getenv('GBS1'),os.getenv('REG_DB'),os.getenv('GBUSER'),int(os.getenv('GBP5')),os.getenv('GBPASS'))
+        update_genebuild_status(existing_assemblies,rapid_meta,main_meta,version[2],version[3],version[0],version[1],os.getenv('GBS1'),os.getenv('REG_DB'),os.getenv('GBUSER'),int(os.getenv('GBP1')),os.getenv('GBPASS'))
 
     else:
         print('Could not determine current release version. Check that access to production meta server is good.\n')
