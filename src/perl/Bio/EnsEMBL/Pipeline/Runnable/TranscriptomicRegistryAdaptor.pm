@@ -319,6 +319,22 @@ sub fetch_assembly_name_by_gca {
   return($assembly_name);
 }
 
+sub fetch_assembly_path_by_gca {
+  my ($self,$chain_version,$type) = @_;
+
+  my ($chain,$version) = $self->split_gca($chain_version);
+  my $sql = "SELECT assembly_path FROM assembly WHERE chain=? and version=?";
+  my $sth = $self->dbc->prepare($sql);
+  $sth->bind_param(1,$chain);
+  $sth->bind_param(2,$version);
+  $sth->execute();
+  my $assembly_path = $sth->fetchrow();
+  unless($assembly_path) {
+    $self->throw("Could not find assembly path for assembly with chain ".$chain." and version ".$version);
+  }
+
+  return($assembly_path);
+}
 
 sub fetch_stable_id_prefix_by_gca {
   my ($self,$chain_version,$type) = @_;

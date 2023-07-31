@@ -52,7 +52,7 @@ def get_candidate_assembly(db,host,port,user,output_file):
         unique_assemblies_per_species[row[0]] = str(row[0])+'\t'+str(row[1])+'\t'+row[2]+'\t'+str(row[3])+'\t'+row[4]+'\t'+str(row[5])+'\t'+row[6]+'\t'+assembly_name+'\t'+row[8]+'\t'+genus_id
 
     #Write all unique assemblies per species to file
-    unique_assemblies = output_file + '_uniq'
+    unique_assemblies = re.sub(r"assemblies.csv", 'uniq_assemblies.csv', output_file)
     for assembly in unique_assemblies_per_species:
         with open(unique_assemblies, 'a') as writer:
            writer.write(unique_assemblies_per_species[assembly]+'\n')

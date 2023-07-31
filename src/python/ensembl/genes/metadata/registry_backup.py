@@ -20,17 +20,17 @@ import argparse
 
 def copy_db(backup_file,host,db,user,port):
     host = host.split('.')
-    mysql_dump = host[0] + ' mysqldump --databases '+ db + ' > ' + backup_file 
+    mysql_dump = host[0] + ' mysqldump --databases '+ db + ' | gzip > ' + backup_file + '.gz' 
     os.system(mysql_dump)
     
 
 if __name__ == '__main__':
   parser = argparse.ArgumentParser()
-  parser.add_argument('-p','--port', help='Port number for host', required=True)
-  parser.add_argument('-u','--user', help='Mysql user', required=True)
-  parser.add_argument('-db','--dbname', help='Database to be backed up', required=True)
-  parser.add_argument('-host','--server', help='Host server for database', required=True)
-  parser.add_argument('-bkup','--backup_file', help='File name to hold db backup', required=True)
+  parser.add_argument('--port', help='Port number for host', required=True)
+  parser.add_argument('--user', help='Mysql user', required=True)
+  parser.add_argument('--dbname', help='Database to be backed up', required=True)
+  parser.add_argument('--server', help='Host server for database', required=True)
+  parser.add_argument('--backup_file', help='File name to hold db backup', required=True)
   args = parser.parse_args()
   bkup_file = args.backup_file
   server = args.server

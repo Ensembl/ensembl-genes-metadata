@@ -63,22 +63,24 @@ def fetch_genbank_records(reg_path):
         for entry in urllib.request.urlopen(ftp_path):
             if (re.search(r'#Organism/Name',str(entry))):
                 continue
-            entry = entry.decode()
-            line = entry.split('\t')
-            line[8].strip
+            if entry:
+                entry = entry.decode()
+                line = entry.split('\t')
+                line[8].strip
+                print('Accession is '+line[8])
             # We set a limit to retrieve data from 2017 upwards partly due to timing around which the major projects we collaborate with started. Also, most assemblies before 2017 were not of much higher quality either.
-            if (int(line[14][:4]) >= 2017):
-                date_val += 1
-                if not re.match(acc_format, line[8]):
-                    raise ValueError('Accession '+ line[8] + ' not in the right format ')
-                if line[8] not in existing_accessions:
-                    accessions_to_register[line[8]] = line[1]
-                    total_read += 1
-                    accessions = accessions + line[8] + ","
-        # Set the final output file format for printing
+                if (int(line[14][:4]) >= 2017):
+                    date_val += 1
+                    if not re.match(acc_format, line[8]):
+                        raise ValueError('Accession '+ line[8] + ' not in the right format ')
+                    if line[8] not in existing_accessions:
+                        accessions_to_register[line[8]] = line[1]
+                        total_read += 1
+                        accessions = accessions + line[8] + ","
+            # Set the final output file format for printing
         accessions = comma_replacement.join(accessions.rsplit(',',1)) + output_template
         with open(rpt, 'a') as writer:
-           writer.write(accessions)
+            writer.write(accessions)
         writer.close()
         print('New assembly count = '+ str(total_read))
     except urllib.error.HTTPError as e:

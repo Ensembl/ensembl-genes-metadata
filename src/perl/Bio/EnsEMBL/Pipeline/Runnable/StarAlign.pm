@@ -21,7 +21,7 @@ Bio::EnsEMBL::Pipeline::Runnable::StarAlign
 
 =head1 SYNOPSIS
 
-my $runnableDB =  Bio::EnsEMBL::Analysis::Hive::RunnableDB::HiveStar->new( );
+my $runnableDB =  Bio::EnsEMBL::Pipeline::Runnable::StarAlign->new( );
 
 $runnableDB->fetch_input();
 $runnableDB->run();

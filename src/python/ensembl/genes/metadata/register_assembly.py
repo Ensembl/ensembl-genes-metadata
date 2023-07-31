@@ -265,40 +265,40 @@ def set_assembly_group(bioproject):
         for id in bioproject.readlines():
             if id in argp_dict.keys():
                 pri_asm_group = 'argp'
-                return pri_asm_group
+                break
             elif id in b10k_dict.keys():
                 pri_asm_group = 'b10k'
-                return pri_asm_group
+                break
             elif id in cbp_dict.keys():
                 pri_asm_group = 'cbp'
-                return pri_asm_group
+                break
             elif id in dtol_dict.keys():
                 pri_asm_group = 'dtol'
-                return pri_asm_group
+                break
             elif id in erga_dict.keys():
                 pri_asm_group = 'erga'
-                return pri_asm_group
+                break
             elif id in vgp_dict.keys():
                 pri_asm_group = 'vgp'
-                return pri_asm_group
+                break
             elif id in abp_dict.keys():
                 pri_asm_group = 'abp'
-                return pri_asm_group
+                break
             elif id in ergapp_dict.keys():
                 pri_asm_group = 'ergapp'
-                return pri_asm_group
+                break
             elif id in genomes25_dict.keys():
                 pri_asm_group = 'genomes25'
-                return pri_asm_group
+                break
             elif id in tol_dict.keys():
                 pri_asm_group = 'tol'
-                return pri_asm_group
+                break
             elif id in asg_dict.keys():
                 pri_asm_group = 'asg'
-                return pri_asm_group
+                break
             elif id in ebp_dict.keys():
                 pri_asm_group = 'ebp'
-                return pri_asm_group
+                break
             else:
                 pri_asm_group = 'ungrouped'
                 return pri_asm_group
@@ -354,28 +354,41 @@ def transcriptomic_status(taxon_id,registry_settings):
 
 def get_common_name_gbif(species_name):
     """ Fetch common name from alternative sources where it cannot be retrieved via NCBI """
+    pattern = "[\n|\r|\r\n|\d+]" #pattern to remove new line character, whitespace and digits from species name
+    species_name = re.sub(pattern, '', species_name )
+    # Create a regex pattern to replace all non letters or special characters in string with empty string
+    species_name = re.sub("[^A-Z]", "", species_name,0,re.IGNORECASE)
+    pattern = r'[' + string.punctuation + ']' #replace punctuation
+    species_name = re.sub(pattern, '', species_name )
     url = "https://api.gbif.org/v1/species/match?name="+species_name
+    report = []
     #Whilst using the Global Biodiversity Information Facility (GBIF) from Great Britain and the Northern Ireland, the common name entry for the speccies
     #Cydia splendana is not reported in the standard format which then breaks the retrieval script, hence we assign it the expected value.
     if (re.search(r'Cydia%20splendana',species_name)):
-        report = 'common_name:' + 'Acorn moth' + ':' + species_name
-        print('Common name set is '+report)
+        #report = 'common_name:' + 'Acorn moth' + ':' + species_name
+        report.extend(['Acorn moth',species_name])
         return report
     if (re.search(r'Crithidia%20mellificae',species_name)):
-        report = 'common_name:' + 'Kinetoplastids' + ':' + species_name
-        print('Common name set is '+report)
+        #report = 'common_name:' + 'Kinetoplastids' + ':' + species_name
+        report.extend(['Kinetoplastids',species_name])
         return report
     if (re.search(r'Saccharomyces%20cerevisiae%20x%20Saccharomyces%20kudriavzevii',species_name)):
-        report = 'common_name:' + 'Budding yeast' + ':' + species_name
-        print('Common name set is '+report)
+        #report = 'common_name:' + 'Budding yeast' + ':' + species_name
+        report.extend(['Budding yeast',species_name])
         return report
     if (re.search(r'Raphanus%20raphanistrum%20x%20Raphanus%20sativus',species_name)):
-        report = 'common_name:' + 'Eudicots' + ':' + species_name
-        print('Common name set is '+report)
+        #report = 'common_name:' + 'Eudicots' + ':' + species_name
+        report.extend(['Eudicots',species_name])
         return report
     with urllib.request.urlopen(url) as response:
         data = json.loads(response.read())
-        url = "https://api.gbif.org/v1/species/"+str(data['usageKey'])+"/vernacularNames"
+        if data.get('usageKey'):
+            url = "https://api.gbif.org/v1/species/"+str(data['usageKey'])+"/vernacularNames"
+        else:
+            #report = 'common_name:' + '' + ':' + species_name
+            report.extend(['',species_name])
+            print('No common name entry was found for the species from GBIF')
+            return report
     with urllib.request.urlopen(url) as common_name:
         data = json.loads(common_name.read())
         species_name = species_name.replace('%20',' ')
@@ -383,13 +396,18 @@ def get_common_name_gbif(species_name):
             res = data['results']
             if res:
                 for entry in res:
+                    # Once common name gets assigned, exit function
                     if (entry['language'] == 'eng' and entry['vernacularName']):
-                        report = 'common_name:' + (entry['vernacularName']).capitalize() + ':' + species_name
+                        #report = 'common_name:' + (entry['vernacularName']).capitalize() + ':' + species_name
+                        report.extend([(entry['vernacularName']).capitalize(),species_name])
                         break
                     else:
-                        report = 'common_name:' + '' + ':' + species_name
+                        #report = 'common_name:' + '' + ':' + species_name
+                        report.extend(['',species_name])
+                        break
             else:
-                report = 'common_name:' + '' + ':' + species_name
+                #report = 'common_name:' + '' + ':' + species_name
+                report.extend(['',species_name])
                 print('No common name entry was found for the species from GBIF')
     return report
 
@@ -397,24 +415,36 @@ def get_common_name_via_report_file(assembly_path,assembly_name,accession,specie
     """ Fetch common name from assembly stats file """
     path = assembly_path.split('/')
     url = assembly_path +'/' + path[-1]+ '_assembly_stats.txt'
-    report = ""
+    report = []
+    pattern = "[\n|\r|\r\n|\d+]" #pattern to remove new line character, whitespace and digits from species name
+    species_name = re.sub(pattern, '', species_name )
+    # Create a regex pattern to replace all non letters or special characters in string with empty string
+    species_name = re.sub("[^A-Z]", "", species_name,0,re.IGNORECASE)
+    pattern = r'[' + string.punctuation + ']' #replace punctuation
+    species_name = re.sub(pattern, '', species_name )
     try:
         for line in urllib.request.urlopen(url):
             if (re.search(r'Organism name',str(line))):
                 res = re.findall('\((.*?)\)', line.decode('utf-8'))
                 if res[0]:
-                    report = 'common_name:' + res[0].capitalize() + ':' + species_name
+                    # In searching the report file, if value for common name is matched within brackets, stop looping through file
+                    #report = 'common_name:' + res[0].capitalize() + ':' + species_name
+                    report.extend([res[0].capitalize(),species_name])
                     break
                 else:
-                    report = 'common_name:' + '' + ':' + species_name
+                    #report = 'common_name:' + '' + ':' + species_name
+                    report.extend(['',species_name])
+                    break
     except urllib.error.HTTPError as e:
         if e.code == 404:
             print('No response was received. Possibly missing report file.\n')
             if accession == 'GCA_009617715.1':
-                report = 'common_name:' + 'Caddisflies' + ':' + species_name
+                #report = 'common_name:' + 'Caddisflies' + ':' + species_name
+                report.extend(['Caddisflies',species_name])
     if not report:
         print('Common name could not be determined for this species')
-        report = 'common_name:' + '' + ':' + species_name
+        #report = 'common_name:' + '' + ':' + species_name
+        report.extend(['',species_name])
     return report
 
 #Function to classify assembly into clade
@@ -435,7 +465,7 @@ def get_taxonomy_group(taxon_id,assembly_path,assembly_name,accession):
             else: raise
     record2 = Entrez.read(handle2, validate=False)
     handle2.close()
-    report = ''
+    report = []
     clade = ''
     lineage_rpt = {'Cnidaria': 'cnidaria', 'Mucoromycota': 'mucoromycota', 'Lophotrochozoa': 'lophotrochozoa','Eudicotyledons': 'eudicotyledons','Orthoptera': 'orthoptera','Perniciosus': 'perniciosus', 'Atroparvus': 'atroparvus','Rodentia': 'rodentia','Primates': 'primates','Mammalia': 'mammalia','Amphibia': 'amphibians','Teleostei': 'teleostei','Marsupialia': 'marsupials', 'Aves': 'aves','Sauropsida': 'reptiles','Chondrichthyes': 'sharks','Eukaryota': 'non_vertebrates','Metazoa': 'metazoa','Viral': 'viral',\
 'Viruses': 'viral','Viridiplantae': 'plants','Arthropoda': 'arthropods','Lepidoptera': 'lepidoptera','Insecta': 'insects','Hymenoptera': 'hymenoptera',\
@@ -448,21 +478,28 @@ def get_taxonomy_group(taxon_id,assembly_path,assembly_name,accession):
         if(('CommonName' in common_name) and (not common_name['CommonName'])):
             report = get_common_name_gbif(record2[0]['ScientificName'].replace(' ','%20'))
         elif (('CommonName' in common_name) and (common_name['CommonName'])):
-            report = 'common_name:' + common_name['CommonName'][0].capitalize() + ':' + record2[0]['ScientificName']
+            #report = 'common_name:' + common_name['CommonName'][0].capitalize() + ':' + record2[0]['ScientificName']
+            report.extend([common_name['CommonName'][0].capitalize(),record2[0]['ScientificName']])
         elif ('GenbankCommonName' in common_name):
-            report = 'common_name:' + common_name['GenbankCommonName'].capitalize() + ':' + record2[0]['ScientificName']
+            #report = 'common_name:' + common_name['GenbankCommonName'].capitalize() + ':' + record2[0]['ScientificName']
+            report.extend([common_name['GenbankCommonName'].capitalize(),record2[0]['ScientificName']])
     else:
         report = get_common_name_gbif(record2[0]['ScientificName'].replace(' ','%20'))
     #Check if common name was retrieved via gbif, else try using assembly report file
-    common_name = report.split(':')
+    #common_name = report.split(':')
+    common_name = report
     if common_name[1] == '' and accession == 'GCA_948455875.1':
-        report = 'Common name:Bugs:' + record2[0]['ScientificName']
+        #report = 'Common name:Bugs:' + record2[0]['ScientificName']
+        report.extend(['Bugs',record2[0]['ScientificName']])
     elif common_name[1] == '' and accession == 'GCA_947579085.1':
-        report = 'Common name:Moths:' + record2[0]['ScientificName']
+        #report = 'Common name:Moths:' + record2[0]['ScientificName']
+        report.extend(['Moths',record2[0]['ScientificName']])
     elif common_name[1] == '' and accession == 'GCA_947389915.1':
-        report = 'Common name:Flies:' + record2[0]['ScientificName']
+        #report = 'Common name:Flies:' + record2[0]['ScientificName']
+        report.extend(['Flies',record2[0]['ScientificName']])
     elif common_name[1] == '' and accession == 'GCA_944470385.2':
-        report = 'Common name:Flatworms:' + record2[0]['ScientificName']
+        #report = 'Common name:Flatworms:' + record2[0]['ScientificName']
+        report.extend(['Flatworms',record2[0]['ScientificName']])
     elif common_name[1] == '':
         report = get_common_name_via_report_file(assembly_path,assembly_name,accession,record2[0]['ScientificName'])
     #Reverse the dictionary entry returned by API so we have lowere ancestors before higher up ones
@@ -477,9 +514,11 @@ def get_taxonomy_group(taxon_id,assembly_path,assembly_name,accession):
 
     #If the rank of the species is subspecies, we set the species id to the parent taxon for transcriptomic data selection
     if record2[0]['Rank'] != 'species':
-        report += ':' + record2[0]['ParentTaxId'] + ':'+clade
+        #report += ':' + record2[0]['ParentTaxId'] + ':'+clade
+        report.extend([record2[0]['ParentTaxId'],clade])
     else:
-        report += ':' + record2[0]['TaxId'] + ':'+clade
+        #report += ':' + record2[0]['TaxId'] + ':'+clade
+        report.extend([record2[0]['TaxId'],clade])
     return report
 
 #Function to generate stable space values
@@ -556,15 +595,14 @@ def register_assembly(accession,registry_settings,existing_prefix,existing_space
             #Assembly is not linked to any other assembly
             assembly_metadata = get_assembly_metadata(id,accession)
     #Get clade related information for species
-    clade_rep = get_taxonomy_group(assembly_metadata[11],assembly_metadata[8],assembly_metadata[4],accession)
-    species_details =  clade_rep.split(':') #Retrieve taxonomy related data
-    if species_details[1]:
-        common_name = species_details[1]
+    species_details = get_taxonomy_group(assembly_metadata[11],assembly_metadata[8],assembly_metadata[4],accession)
+    if species_details[0]:
+        common_name = species_details[0]
     else:
         #This means all attempts have been made to find a meaningful common name for this species and in the absence of none, we assign NA
         common_name = 'NA'
     #Check transcriptomic data status at species level
-    trans_status = transcriptomic_status(species_details[3],registry_settings)
+    trans_status = transcriptomic_status(species_details[2],registry_settings)
     #Check what major project assembly falls into for proper grouping
     assembly_group = set_assembly_group(assembly_metadata[3])
     if asm_group_dict[assembly_group]:
@@ -621,7 +659,7 @@ def register_assembly(accession,registry_settings,existing_prefix,existing_space
     existing_stable_id = ast.literal_eval(stable_space_id[2])
     existing_stable_id[str(assembly_metadata[11])] = int(stable_space_id[0])
     assembly_metadata.extend([common_name,trans_status,assembly_group,sec_asm_group,species_prefix,stable_space_id,stable_id_start_end[0],stable_id_start_end[1],\
-                             species_details[4],species_details[3],existing_prefix,existing_space_range,existing_stable_id])
+                             species_details[3],species_details[2],existing_prefix,existing_space_range,existing_stable_id])
     return assembly_metadata
 
 def process_accessions(registry_settings, metazoa_import_types):
@@ -681,7 +719,6 @@ def process_accessions(registry_settings, metazoa_import_types):
     #Check if metazoa performing custom assembly registration or genebuild
     if registry_settings['import_type'] in metazoa_import_types:
         #Get all existing assembly ids
-        print('Not in metazoa')
         sql = "SELECT CONCAT(chain,'.',version), assembly_id FROM assembly"
         results = fetch_data(sql,registry_settings['registry_dbname'],registry_settings['registry_db_host'],int(registry_settings['registry_db_port']),\
                                   registry_settings['user_w'],registry_settings['password'])
@@ -1051,8 +1088,3 @@ if __name__ == '__main__':
     config = args.config_file
     status = check_config(config)
     process_accessions(status[0],status[1])
-    #for types in status[1]:
-     #   print(str(types))
-    #for key, value in status[0].items():
-     #   print('Key = '+str(key))
-      #  print('Value = '+str(value))

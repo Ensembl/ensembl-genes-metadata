@@ -142,7 +142,8 @@ sub batch_samples {
   foreach my $sample_id (keys(%$samples_hash)) {
     my $sample = $samples_hash->{$sample_id};
     my $file_name = ${$sample->{'files'}}[0];
-    my $file_path = catfile($fastq_dir,$self->param('species'),'fastq',$file_name);
+    my $file_path = $fastq_dir.$self->param('species').'/fastq/'.$file_name;
+    #my $file_path = catfile($fastq_dir,$self->param('species'),'fastq',$file_name);
     my $file_size = `stat -c %s $file_path`;
     chomp($file_size);
 

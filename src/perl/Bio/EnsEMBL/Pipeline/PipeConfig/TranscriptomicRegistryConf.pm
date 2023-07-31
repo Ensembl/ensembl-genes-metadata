@@ -33,24 +33,25 @@ sub default_options {
   return {
     # inherit other stuff from the base class
     %{ $self->SUPER::default_options() },
-    user => $ENV{'GBUSER_R'},
-    password => $ENV{'GBPASS'},
-    user_w => $ENV{'GBUSER'},
-    'pipe_db_name' => 'transcriptomic_assessment_mammalia',
+    user => $self->o('user_r'),
+    password => $self->o('password'),
+    user_w => $self->o('user_w'),
+    enscode => $self->o('enscode'),
+    pipe_db_name => 'transcriptomic_assessment_rodents',
     #hash to hold pipeline db settings
     'pipeline_db' => {
                        -dbname => $self->o('pipe_db_name'),
-                       -host   => $ENV{GBS1},
-                       -port   => $ENV{GBP1},
+                       -host   => $self->o('host'),
+                       -port   => $self->o('port'),
                        -user   => $self->o('user_w'),
                        -pass   => $self->o('password'),
                        -driver => 'mysql',
     },
     #hash to hold registry settings
     'output_db' => {
-                       -dbname => $ENV{REG_DB},
-                       -host   => $ENV{GBS1},
-                       -port   => $ENV{GBP1},
+                       -dbname => $self->o('reg_db'),
+                       -host   => $self->o('host'),
+                       -port   => $self->o('port'),
                        -user   => $self->o('user_w'),
                        -pass   => $self->o('password'),
                        -driver => 'mysql',
@@ -66,9 +67,9 @@ sub default_options {
 
     'dbowner'                   => '' || $ENV{EHIVE_USER} || $ENV{USER},
     'user_r'                    => 'ensro', # read only db user
-    'password_r'                => $ENV{GBPASS},
-    'registry_server'           => $ENV{GBS1}, # host for general output dbs
-    'pipe_db_port'              => $ENV{GBP1}, # port for pipeline host
+    'password_r'                => $self->o('password'),
+    'registry_server'           => $self->o('host'), # host for general output dbs
+    'pipe_db_port'              => $self->o('port'), # port for pipeline host
     'registry_port'             => $self->o('pipe_db_port'), # port for general output db host
     'output_path'               => $ENV{meta_database_dir}, # Lustre output dir. This will be the primary dir to house the assembly info and various things from analyses
     'genome_path'               => catfile($self->o('output_path'), 'genomes/'),
@@ -78,13 +79,13 @@ sub default_options {
      star_path                  => catfile($self->o('binary_base'), 'STAR'),
      fastqc                     => '/hps/software/users/ensembl/genebuild/FastQC/fastqc',
      validator_prog             => '/hps/software/users/ensembl/genebuild/fastQValidator/bin/fastQValidator',
-    'rnaseq_dir'                => catdir($self->o('output_path'), 'genomes'),
+    'assembly_path'                => catdir($self->o('output_path'), 'genomes'),
     'rnaseq_ftp_base'           => 'ftp://ftp.sra.ebi.ac.uk/vol1/fastq/',
-    'get_assembly_script_path'  => $ENV{ENSEMBL_GENES_META} . '/src/perl/scripts/get_assembly.pl',
+    'get_assembly_script_path'  => $self->o('enscode') . '/ensembl-genes-metadata/src/python/ensembl/genes/metadata/',
     'tissue_dict_path'          => '/nfs/production/flicek/ensembl/genebuild/meta_database/',
     'minimap_path'             => catfile($self->o('binary_base'), 'minimap2'),
-    'species_list'                => catdir($self->o('output_path'), 'species.csv'),
-    'species_list_nr'                => catdir($self->o('output_path'), 'nr_species.csv'),
+    'species_list'                => catdir($self->o('output_path'), 'assemblies.csv'),
+    'species_list_nr'                => catdir($self->o('output_path'), 'uniq_assemblies.csv'),
     
     # What Read group tag would you like to group your samples
     # by? Default = ID
@@ -142,7 +143,7 @@ sub default_options {
       -port   => $self->o('registry_port'),
       -user   => $self->o('user_r'),
       -pass   => $self->o('password_r'),
-      -dbname => $ENV{REG_DB},
+      -dbname => $self->o('reg_db'),
       -driver => $self->o('hive_driver'),
     },
   };
@@ -197,7 +198,7 @@ sub pipeline_create_commands {
     }
     $lr_tables .= ' KEY(SM), KEY(filename)';
     return [
-      'mkdir -p '.$self->o('rnaseq_dir'),
+      'mkdir -p '.$self->o('assembly_path'),
        # inheriting database and hive tables' creation
         @{$self->SUPER::pipeline_create_commands},
         $self->db_cmd( 'CREATE TABLE ' . $self->o('short_csv_table') . " ($sr_tables)" ),
@@ -228,7 +229,7 @@ sub pipeline_analyses {
 			-logic_name => 'fetch_assembly',
 			-module     => 'Bio::EnsEMBL::Hive::RunnableDB::SystemCmd',
 		   	-parameters => {
-			  cmd => "perl ".$self->o('get_assembly_script_path') . " -file " . $self->o('species_list'),
+			  cmd => "python ".catfile($self->o('get_assembly_script_path'),'fetch_candidate_assembly.py') . " --server ".$self->o('host'). " --user ".$self->o('user_r')." --port ".$self->o('port')." --dbname ".$self->o('reg_db')." --asm_file " . $self->o('species_list'),
 			},
 			-input_ids => [{}],
 			 -rc_name => 'default',
@@ -352,13 +353,13 @@ sub pipeline_analyses {
 			 	 	 minimap_path => $self->o('minimap_path'),
                                          star_path => $self->o('star_path'),
 			 	 },
-			 	 -rc_name => '10GB',
+			 	 -rc_name => '20GB',
 			 	 -flow_into => {
-			 	 	 -1 => ['download_assembly_data_20GB'],
+			 	 	 -1 => ['download_assembly_data_65GB'],
 			 	 },
 			 }, 
 			 {
-			 -logic_name => 'download_assembly_data_20GB',
+			 -logic_name => 'download_assembly_data_65GB',
 			 -module     => 'Bio::EnsEMBL::Pipeline::Runnable::AssemblyLoading',
 			 -parameters => {
 			 	assembly_name => '#ass_name#',
@@ -370,13 +371,13 @@ sub pipeline_analyses {
 			    minimap_path => $self->o('minimap_path'),
                             star_path => $self->o('star_path'),
 			},
-			 -rc_name => '20GB',
+			 -rc_name => '65GB_star',
 			 -flow_into => {
-			 	 -1 => ['download_assembly_data_40GB'],
+			 	 -1 => ['download_assembly_data_85GB'],
 			 }
 		 }, 
 		 {
-			 -logic_name => 'download_assembly_data_40GB',
+			 -logic_name => 'download_assembly_data_85GB',
 			  -module     => 'Bio::EnsEMBL::Pipeline::Runnable::AssemblyLoading',
 			 -parameters => {
 			 	assembly_name => '#ass_name#',
@@ -388,7 +389,7 @@ sub pipeline_analyses {
 			    minimap_path => $self->o('minimap_path'),
                             star_path => $self->o('star_path'),
 			},
-			 -rc_name => '15GB',
+			 -rc_name => '85GB_star',
 		 }, 
 		 	{
 			 	 -logic_name => 'no_rnaseq_data',

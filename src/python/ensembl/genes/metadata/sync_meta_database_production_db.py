@@ -57,7 +57,7 @@ def get_current_release():
     return results
 
 """ This method takes a couple of parameters and  updates the annotation status of an assembly in the registry """
-def update_genebuild_status(current_genebuild,rapid_db_meta_info,main_db_meta_info,release_version,rel_date,host,database,user,port,password):
+def update_genebuild_status(current_genebuild,rapid_db_meta_info,main_db_meta_info,rapid_release_version,rapid_rel_date,main_release_version,main_release_date,host,database,user,port,password):
     con = pymysql.connect(
             host=host, user=user, passwd=password, port=port, database=database.strip(), charset='utf8mb4', cursorclass=pymysql.cursors.DictCursor
     )
@@ -65,60 +65,56 @@ def update_genebuild_status(current_genebuild,rapid_db_meta_info,main_db_meta_in
     # Merge both rapid and main dbs for comparison
     live_db_meta_info = main_db_meta_info.copy()
     live_db_meta_info.update(rapid_db_meta_info)
-    print('Combined db = '+str(len(live_db_meta_info)))
-    combined = 0
     # Search all current genebuild entries to match against the meta info retrieved from the live servers
     for key,val in current_genebuild.items():
         if live_db_meta_info.get(key):
             #for row in live_db_meta_info:
             line = live_db_meta_info[key]
             meta_info = line.split('\t')
+            genebuild_meta = current_genebuild[meta_info[0]]
             # Does accession exist in registry?
             if not meta_info[0] in current_genebuild.keys():
                 continue
             else:
-                genebuild_meta = current_genebuild[meta_info[0]]
+                #genebuild_meta = current_genebuild[meta_info[0]]
                 if genebuild_meta[2] != 'handed over':
+                    status = 'handed over'
+                else:
                     status = 'handed over'
                 try:
                     with con.cursor() as cur:
-                        update_report = meta_info[0]+'\t'+genebuild_meta+'\t'+meta_info[1]+'\n'
+                        update_report = meta_info[0]+'\t'+genebuild_meta[1]+'\t'+meta_info[1]+'\n'
                         # Check to ensure only annotations done by the genebuild team are updated
-                        if (genebuild_meta != meta_info[1] and meta_info[1].find('import') < 0):
+                        if (genebuild_meta[1] != meta_info[1] and meta_info[1].find('import') < 0):
                             update_cnt += 1
                             cur.execute('UPDATE genebuild_status set annotation_source =  %s WHERE assembly_accession = %s AND is_current = %s',(meta_info[1], meta_info[0], 1))
-                            print('Progress status is '+status+' and accession is '+meta_info[0])
                             cur.execute('UPDATE genebuild_status set progress_status =  %s WHERE assembly_accession = %s AND is_current = %s',(status, meta_info[0], 1))
-                            # At the moment, we are storing release information into the release_history table as well.
-                            # This is temporary and should be removed once the team decides the table is no longer useful 
-                            cur.execute('INSERT INTO release_history VALUES (%s,%s,%s,%s,%s)',(release_version,meta_info[0],meta_info[4],'rapid',rel_date))
-                            cur.execute('UPDATE genebuild_status set release_version =  %s WHERE assembly_accession = %s AND is_current = %s',(release_version,meta_info[0], 1))
-                            cur.execute('UPDATE genebuild_status set release_date =  %s WHERE assembly_accession = %s AND is_current = %s',(rel_date,meta_info[0], 1))
-                            # Where assembly has been released on both rapid and main, set server to Rapid as db gets released on Rapid earlier than on Main
-                            # This would become less relevant when Rapid fades away
+                            # Where assembly has been released on both rapid and main, set server to Main considering rapid would fade way at some point
                             if rapid_db_meta_info.get(key) and main_db_meta_info.get(key):
-                                combined += 1
-                                cur.execute('UPDATE genebuild_status set release_server =  %s WHERE assembly_accession = %s AND is_current = %s',('rapid',meta_info[0], 1))
+                                cur.execute('UPDATE genebuild_status set release_server =  %s WHERE assembly_accession = %s AND is_current = %s',('main',meta_info[0], 1))
+                                cur.execute('UPDATE genebuild_status set release_version =  %s WHERE assembly_accession = %s AND is_current = %s',(main_release_version,meta_info[0], 1))
+                                cur.execute('UPDATE genebuild_status set release_date =  %s WHERE assembly_accession = %s AND is_current = %s',(main_rel_date,meta_info[0], 1))
                             elif not rapid_db_meta_info.get(meta_info[0]):
                                 cur.execute('UPDATE genebuild_status set release_server =  %s WHERE assembly_accession = %s AND is_current = %s',('main',meta_info[0], 1))
+                                cur.execute('UPDATE genebuild_status set release_version =  %s WHERE assembly_accession = %s AND is_current = %s',(main_release_version,meta_info[0], 1))
+                                cur.execute('UPDATE genebuild_status set release_date =  %s WHERE assembly_accession = %s AND is_current = %s',(main_rel_date,meta_info[0], 1))
                             else:
                                 cur.execute('UPDATE genebuild_status set release_server =  %s WHERE assembly_accession = %s AND is_current = %s',('rapid',meta_info[0], 1))
+                                cur.execute('UPDATE genebuild_status set release_version =  %s WHERE assembly_accession = %s AND is_current = %s',(rapid_release_version,meta_info[0], 1))
+                                cur.execute('UPDATE genebuild_status set release_date =  %s WHERE assembly_accession = %s AND is_current = %s',(rapid_rel_date,meta_info[0], 1))
                                 # Update completion date if missing/incorrectly set
-                            if meta_info[2] is None:
+                            if genebuild_meta[3] is None:
                                 cur.execute('UPDATE genebuild_status set date_completed =  %s WHERE assembly_accession = %s AND is_current = %s',(meta_info[3], meta_info[0], 1))
-                            with open('genebuild_update', 'a') as writer:
-                                writer.write(update_report+meta_info[0]+'\t'+meta_info[4]+'\trapid\t'+str(rel_date)+'\t'+release_version+'\n')
-                            writer.close()
                         else:
                             continue
         
                 except Exception as error:
-                    print(meta_info[0]+'\tCurrent status: '+genebuild_meta+'\tLive status: '+meta_info[1])
+                    print(meta_info[0]+'\tCurrent status: '+genebuild_meta[1]+'\tLive status: '+meta_info[1])
                     print ('Oops! Genebuild update did not complete successfully. Kindly check the error below\n'+str(error))
                     break
+                    raise SystemExit()
                 else:
                     con.commit()
-    print('Assemblies present in both Rapid and Main = '+str(combined))
     print('Genebuild updated = '+ str(update_cnt))
         
 
@@ -126,10 +122,10 @@ def update_genebuild_status(current_genebuild,rapid_db_meta_info,main_db_meta_in
 def get_pending_genebuilds_for_update():
     #Get all current genebuild entries from the meta database that can be updated
     existing_accessions = {}
-    sql = "SELECT assembly_accession, annotation_source, date_completed FROM genebuild_status WHERE is_current = 1 AND annotation_source = 'pending'"
+    sql = "SELECT assembly_accession, annotation_source, progress_status, date_completed FROM genebuild_status WHERE is_current = 1 AND annotation_source = 'pending'"
     results = fetch_data(sql,os.getenv('REG_DB'),os.getenv('GBS1'),int(os.getenv('GBP1')),os.getenv('GBUSER_R'),'')
     for row in results:
-        existing_accessions[row[0]] = row[1]
+        existing_accessions[row[0]] = row
     print('Pending genebuilds = '+str(len(existing_accessions)))
     return existing_accessions
 
@@ -178,7 +174,8 @@ def get_main_dbs(release):
             last_geneset_update = fetch_data(last_geneset_update_query,row,os.getenv('MIRROR'),int(os.getenv('MPORT')),os.getenv('GBUSER_R'),'')
             for ld in last_geneset_update:
                 last_date = ld[0]
-        genebuild_start_date = fetch_data(genebuild_start_date_query,row,os.getenv('MIRROR'),int(os.getenv('MPORT')),os.getenv('GBUSER_R'),'')
+        genebuild_start_date_query = "SELECT date_started FROM genebuild_status WHERE assembly_accession = '"+accession+"' AND is_current = 1"
+        genebuild_start_date = fetch_data(genebuild_start_date_query,os.getenv('REG_DB'),os.getenv('GBS1'),int(os.getenv('GBP5')),os.getenv('GBUSER_R'),'')
         for gsd in genebuild_start_date:
             start_date = gsd[0]
 
@@ -188,8 +185,7 @@ def get_main_dbs(release):
         if last_date:
             last_date = last_date + '-21'
         else:
-            last_date = re.sub('-01', '-21', start_date)
-
+            last_date = start_date + timedelta(days = 21)
         # Store retrieved meta table info for each database
         main_methods = ['full_genebuild', 'anno']
         alt_methods = ['projection_build', 'braker']
@@ -197,7 +193,7 @@ def get_main_dbs(release):
             gmethod = 'ensembl'
         elif any(c in gmethod for c in alt_methods):
             gmethod = 'draft'
-        db_meta[accession] = accession + '\t' + gmethod + '\t' + start_date + '\t' + last_date + '\t' + row
+        db_meta[accession] = accession + '\t' + gmethod + '\t' + str(start_date) + '\t' + str(last_date) + '\t' + row
         gmethod = ''
         last_date = ''
     print('Main dbs = '+str(len(db_meta)))
@@ -228,7 +224,6 @@ def get_rapid_dbs(release):
     species_prefix_query = "SELECT meta_value FROM meta WHERE meta_key = 'species.stable_id_prefix'"
     initial_rel_date_query = "SELECT meta_value FROM meta WHERE meta_key = 'genebuild.initial_release_date'"
     last_geneset_update_query = "SELECT meta_value FROM meta WHERE meta_key = 'genebuild.last_geneset_update'"
-    genebuild_start_date_query = "SELECT meta_value FROM meta WHERE meta_key = 'genebuild.start_date'"
     end_date = ''
 
     #Retrieve metadata from each rapid db to use in updating the meta database table (genebuild_status)
@@ -253,7 +248,8 @@ def get_rapid_dbs(release):
                 last_geneset_update = fetch_data(last_geneset_update_query,row,os.getenv('RRHOST2'),int(os.getenv('RRWPORT')),os.getenv('GBUSER_R'),'')
                 for ld in last_geneset_update:
                     last_date = ld[0]
-            genebuild_start_date = fetch_data(genebuild_start_date_query,row,os.getenv('RRHOST2'),int(os.getenv('RRWPORT')),os.getenv('GBUSER_R'),'')
+            genebuild_start_date_query = "SELECT date_started FROM genebuild_status WHERE assembly_accession = '"+accession+"' AND is_current = 1"
+            genebuild_start_date = fetch_data(genebuild_start_date_query,os.getenv('REG_DB'),os.getenv('GBS1'),int(os.getenv('GBP5')),os.getenv('GBUSER_R'),'')
             for gsd in genebuild_start_date:
                 start_date = gsd[0]
         else:
@@ -273,18 +269,18 @@ def get_rapid_dbs(release):
                 last_geneset_update = fetch_data(last_geneset_update_query,row,os.getenv('RRHOST1'),int(os.getenv('RRWPORT')),os.getenv('GBUSER_R'),'')
                 for ld in last_geneset_update:
                     last_date = ld[0]
-            genebuild_start_date = fetch_data(genebuild_start_date_query,row,os.getenv('RRHOST1'),int(os.getenv('RRWPORT')),os.getenv('GBUSER_R'),'')
+            genebuild_start_date_query = "SELECT date_started FROM genebuild_status WHERE assembly_accession = '"+accession+"' AND is_current = 1"
+            genebuild_start_date = fetch_data(genebuild_start_date_query,os.getenv('REG_DB'),os.getenv('GBS1'),int(os.getenv('GBP5')),os.getenv('GBUSER_R'),'')
             for gsd in genebuild_start_date:
                 start_date = gsd[0]
         
             # Format the genebuild_start_date and end_dates to match database type
             # This is an estimate of 3 weeks since we dont actually store the day part in the meta table
-        start_date = re.sub('EnsemblMetazoa|Ensembl|WormBase|Plants', '01', start_date)
+    
         if last_date:
             last_date = last_date + '-21'
         else:
-            last_date = re.sub('-01', '-21', start_date)
-
+            last_date = start_date + timedelta(days = 21)
         # Store retrieved meta table info for each database
         main_methods = ['full_genebuild', 'anno']
         alt_methods = ['projection_build', 'braker']
@@ -292,7 +288,7 @@ def get_rapid_dbs(release):
             gmethod = 'ensembl'
         elif any(c in gmethod for c in alt_methods):
             gmethod = 'draft'
-        db_meta[accession] = accession + '\t' + gmethod + '\t' + start_date + '\t' + last_date + '\t' + row
+        db_meta[accession] = accession + '\t' + gmethod + '\t' + str(start_date) + '\t' + str(last_date) + '\t' + row
         gmethod = ''
         last_date = ''
     print('Rapid dbs = '+str(len(db_meta)))
@@ -328,7 +324,7 @@ if __name__ == '__main__':
         rapid_meta = get_rapid_dbs(version[2])
         main_meta = get_main_dbs(version[0])
         existing_assemblies = get_pending_genebuilds_for_update()
-        update_genebuild_status(existing_assemblies,rapid_meta,main_meta,version[2],version[3],os.getenv('GBS1'),os.getenv('REG_DB'),os.getenv('GBUSER'),int(os.getenv('GBP1')),os.getenv('GBPASS'))
+        update_genebuild_status(existing_assemblies,rapid_meta,main_meta,version[2],version[3],version[0],version[1],os.getenv('GBS1'),os.getenv('REG_DB'),os.getenv('GBUSER'),int(os.getenv('GBP5')),os.getenv('GBPASS'))
 
     else:
         print('Could not determine current release version. Check that access to production meta server is good.\n')

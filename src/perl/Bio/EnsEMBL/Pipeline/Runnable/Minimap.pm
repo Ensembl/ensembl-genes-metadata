@@ -35,7 +35,7 @@ sub run{
 	 	 if (-e $output){
 	 	 	 $genome_index = $self->param('genome_file').'/'.$self->param('accession').'.fasta.mmi';
 	 	 }
-	 	my $minimap_index = $self->param('minimap2_path'). " -d $genome_index $output";
+	 	my $minimap_index = $self->param('minimap_path'). " -d $genome_index $output";
 		say "Minimap command is $minimap_index";
 	 	if(system($minimap_index)) {
 	  	  $self->throw("Error indexing genome via minimap2\nError code: $?\n");
@@ -53,7 +53,7 @@ sub run{
 	 if ($read =~ /\.fq/){
 	   if (-e $read){
 	  # run minimap2
-	  my $minimap2_command = $self->param('minimap2_path')." --cs -N 1 -ax splice:hq -u b ".$genome_index." ".$read." > ". $self->param('output_dir') . "/" . $sam. ".sam";
+	  my $minimap2_command = $self->param('minimap_path')." --cs -N 1 -ax splice:hq -u b ".$genome_index." ".$read." > ". $self->param('output_dir') . "/" . $sam. ".sam";
 	  $self->warning("Command:\n".$minimap2_command."\n");
 	  if(system($minimap2_command)) {
 	  	  $self->throw("Error running minimap2\nError code: $?\n");
@@ -69,8 +69,9 @@ sub run{
 	   `rm $file.sam $file.bam`;
 	 }
          else{
-           $read =~ s/fq/fastq.gz/;
-           my $minimap2_command = $self->param('minimap2_path')." --cs -N 1 -ax splice:hq -u b ".$genome_index." ".$read." > ". $self->param('output_dir') . "/" . $sam. ".sam";
+		 #$read =~ s/fq/fastq.gz/;
+	   $read = "/hps/nobackup/flicek/ensembl/genebuild/meta_database/transcriptomic_assessment/mammals/".$self->param('species') . "/fastq/".$self->param('iid');
+           my $minimap2_command = $self->param('minimap_path')." --cs -N 1 -ax splice:hq -u b ".$genome_index." ".$read." > ". $self->param('output_dir') . "/" . $sam. ".sam";
           $self->warning("Command:\n".$minimap2_command."\n");
           if(system($minimap2_command)) {
                   $self->throw("Error running minimap2\nError code: $?\n");
