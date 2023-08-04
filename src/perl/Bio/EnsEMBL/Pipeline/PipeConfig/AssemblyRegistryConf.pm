@@ -55,7 +55,7 @@ sub default_options {
        -driver => 'mysql',
     },
     
-    'output_path' => $self->param('output_path') || $ENV{meta_database_dir},
+    'output_path' => $ENV{meta_database_dir} || '',
       
   }
 }
@@ -89,7 +89,7 @@ sub pipeline_analyses {
      -logic_name => 'check_and_update_transcriptomic_data',
      -module     => 'Bio::EnsEMBL::Hive::RunnableDB::SystemCmd',
      -parameters => {
-	cmd => 'python ' . $ENV{ENSEMBL_GENES_META} . '/src/python/ensembl/genes/metadata/check_and_update_transcriptomic_data.py --reg_path '.$self->o('output_path'),
+        cmd => 'python ' . $ENV{ENSEMBL_GENES_META} . '/src/python/ensembl/genes/metadata/check_and_update_transcriptomic_data.py --output_path '.$self->o('output_path').' --user '. $self->o('user_w') . ' --server '. $ENV{GBS1} . ' --password ' . $self->o('password') . ' --port '. $ENV{GBP1} . ' --dbname '.$ENV{REG_DB},
      },
      -rc_name    => 'default',
     },
@@ -131,7 +131,7 @@ sub pipeline_analyses {
       -module     => 'Bio::EnsEMBL::Hive::RunnableDB::SystemCmd',
       -parameters => {
         cmd => 'python ' . $ENV{ENSEMBL_GENES_META} . '/src/python/ensembl/genes/metadata/registry_backup.py --backup_file #output_file# --port '.$ENV{GBP1}. ' --server '. $ENV{GBS1} . ' --dbname '. $ENV{REG_DB} . ' --user '. $ENV{GBUSER_R},
-        output_file => $self->o('output_path') . '/registry_db_bak/' . 'registry_bkup_'.strftime('%Y-%m-%d',localtime), . '.sql'
+        output_file => $self->o('output_path') . '/registry_db_bak/' . 'registry_bkup_'.strftime('%Y-%m-%d',localtime) . '.sql',
 
       },
       -flow_into => { 1 => ['register_assembly'],},
@@ -176,7 +176,7 @@ sub pipeline_wide_parameters {
 sub pipeline_create_commands {
 	my ($self) = @_;
 	return [
-	       'mkdir -p '.$self->param('output_path').'/registry_db_bak',
+	       'mkdir -p '.$self->o('output_path').'/registry_db_bak',
     # inheriting database and hive tables' creation
 		@{$self->SUPER::pipeline_create_commands},
 	];

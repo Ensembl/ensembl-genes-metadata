@@ -47,6 +47,7 @@ use File::Temp;
 use File::Spec::Functions qw(catfile splitpath catdir);
 use File::Path qw(make_path);
 use Digest::MD5;
+use Bio::EnsEMBL::Pipeline::Runnable::TranscriptomicRegistryAdaptor;
 use IO::Uncompress::AnyUncompress qw(anyuncompress $AnyUncompressError) ;
 
 use Bio::EnsEMBL::Hive::Utils qw(destringify);
@@ -141,6 +142,14 @@ sub fetch_input {
   my $assembly_name = $self->param_required('assembly_name');
   my $species_name = $self->param_required('species_name');
   
+  my $registry_adaptor = new Bio::EnsEMBL::Pipeline::Runnable::TranscriptomicRegistryAdaptor(
+    -user   => $ENV{GBUSER},
+    -dbname => $ENV{REG_DB},
+    -host   => $ENV{GBS1},
+    -port   => $ENV{GBP1},
+    -pass   => $ENV{GBPASS},
+    -driver => 'mysql',
+  );
   my $report_dir;
   if ($self->param_is_defined('genome_path')) {
     $report_dir = $self->param('genome_path') . "/$species_name/$assembly_accession/";
@@ -157,30 +166,29 @@ sub fetch_input {
   if (-e $report_dir){
     #`rm -r $report_dir`;
   }
-  my $query = "cd $report_dir; $ENV{meta_database_tools}/datasets download genome accession " . $assembly_accession;
-  say "Command is $query"; 
-  if(system($query)){
-  #  `rm -r $report_dir`;
+  my $assembly_path = $registry_adaptor->fetch_assembly_path_by_gca($assembly_accession);
+  my $wget_query = "cd $report_dir; wget -c $assembly_path/".$assembly_accession."_".$assembly_name."_genomic.fna.gz";
+   if(system($wget_query)){
     say "Download failed";
-  }
-  else{
+   }
+     else{
     $self->param('genome_path', $report_dir);
     say "Download succeeded for genome";
-  }
-  my $genome_extract = "cd $report_dir; unzip " . $report_dir . 'ncbi_dataset.zip';
+    }
+  my $genome_extract = "cd $report_dir; gunzip " . $report_dir . $assembly_accession."_".$assembly_name."_genomic.fna.gz"; #'ncbi_dataset.zip';
   say "Command to extract is $genome_extract";
   if(system($genome_extract)){
     say "Extraction failed";
-  }
+   }
   else{
     say "Extraction completed successfully";
   }
   # Rename downloaded genome
-  my $rename_cmd = "mv " . $report_dir . '/ncbi_dataset/data/' . $assembly_accession . '/*.fna ' . $report_dir . '/' . $assembly_accession . '.fasta'; 
+  my $rename_cmd = "mv " . $report_dir .  $assembly_accession."_".$assembly_name."_genomic.fna " . $report_dir . '/' . $assembly_accession . '.fasta';
   if(system($rename_cmd)){
     say "File renaming failed";
-  }
-  else{
+   }
+   else{
     say "File renaming completed successfully";
   } 		
 }
@@ -204,7 +212,7 @@ sub run {
   #index genome
   my $output = $self->param('genome_path').$self->param('assembly_accession').".fasta";
   say "now indexing with STAR";
-  my $query = $self->param('star_path') . ' --limitGenomeGenerateRAM 504273583712  --runThreadN 12 --runMode genomeGenerate --outFileNamePrefix ' . $self->param('genome_path') . ' --genomeDir '. $self->param('genome_path') . ' --genomeFastaFiles ' . $output;
+  my $query = $self->param('star_path') . ' --limitGenomeGenerateRAM 656059131146  --runThreadN 12 --runMode genomeGenerate --outFileNamePrefix ' . $self->param('genome_path') . ' --genomeDir '. $self->param('genome_path') . ' --genomeFastaFiles ' . $output;
   if(system($query)){
     $self->throw("Error indexing genome via Star\nError code: $?\n");
   }

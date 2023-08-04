@@ -155,7 +155,7 @@ sub write_output {
   my ($self) = @_;
   my $ftp_base_url = $self->param('ftp_base_url');
   my $fastq = $self->param('filename');
-  my $path = $self->param('input_dir') . $self->param('species') . "/fastq/";
+  my $path = catdir($self->param('input_dir'),$self->param('species'),"/fastq/");
   my @file;
   unless (-d $path){
   	  `mkdir -p $path`;

@@ -123,7 +123,7 @@ sub run {
     `zcat $fastq_file > $subsample`;
     $subsample =~ s/fastq.gz/fq/;
    }
-   #`rm $fastq_file`;
+   `rm $fastq_file`;
 }
 
 sub create_faidx {
