@@ -52,6 +52,7 @@ def check_config(config):
     metazoa_import_types = ['import_community','import_flybase','import_genbank','import_noninsdc','import_refseq','import_veupathdb','import_wormbase']
     #make sure config file exists before attempting to process it
     if cfg_path.is_file():
+        print ("FILES EXISTS!")
         with open(cfg_path) as file:
             while True:
                 lines = file.readline()
@@ -64,7 +65,11 @@ def check_config(config):
         else:
             print('Genebuild registration selected')
             registry_settings['import_type'] = 'unannotated'
+        print(registry_settings)
+        print(metazoa_import_types)
         config_settings = [registry_settings,metazoa_import_types]
+    else:
+        print ("CANNOT FIND FILE"+config)
     return config_settings
 
 #Method to establish connection to database and query it
