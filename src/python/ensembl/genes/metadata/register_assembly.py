@@ -59,6 +59,7 @@ def check_config(config):
                 if not lines:
                     break
                 lines = lines.split('=')
+                print(lines)
                 registry_settings[lines[0].strip()] = (lines[1].replace('\n','')).strip()
         if metazoa_import_types.count(str(registry_settings['import_type'])) > 0:
             print('Metazoa registration selected')
