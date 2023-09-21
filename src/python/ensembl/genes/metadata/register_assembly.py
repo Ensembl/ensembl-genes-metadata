@@ -467,7 +467,7 @@ def get_taxonomy_group(taxon_id,assembly_path,assembly_name,accession):
     handle2.close()
     report = []
     clade = ''
-    lineage_rpt = {'Cnidaria': 'cnidaria', 'Mucoromycota': 'mucoromycota', 'Lophotrochozoa': 'lophotrochozoa','Eudicotyledons': 'eudicotyledons','Orthoptera': 'orthoptera','Perniciosus': 'perniciosus', 'Atroparvus': 'atroparvus','Rodentia': 'rodentia','Primates': 'primates','Mammalia': 'mammalia','Amphibia': 'amphibians','Teleostei': 'teleostei','Marsupialia': 'marsupials', 'Aves': 'aves','Sauropsida': 'reptiles','Chondrichthyes': 'sharks','Eukaryota': 'non_vertebrates','Metazoa': 'metazoa','Viral': 'viral',\
+    lineage_rpt = {'Cnidaria': 'cnidaria', 'Mucoromycota': 'mucoromycota', 'Lophotrochozoa': 'lophotrochozoa','Eudicotyledons': 'eudicotyledons','Polyneoptera': 'polyneoptera','Perniciosus': 'perniciosus', 'Atroparvus': 'atroparvus','Rodentia': 'rodentia','Primates': 'primates','Mammalia': 'mammalia','Amphibia': 'amphibians','Teleostei': 'teleostei','Marsupialia': 'marsupials', 'Aves': 'aves','Sauropsida': 'reptiles','Chondrichthyes': 'sharks','Eukaryota': 'non_vertebrates','Metazoa': 'metazoa','Viral': 'viral',\
 'Viruses': 'viral','Viridiplantae': 'plants','Arthropoda': 'arthropods','Lepidoptera': 'lepidoptera','Insecta': 'insects','Hymenoptera': 'hymenoptera',\
 'Hemiptera': 'hemiptera','Coleoptera': 'coleoptera','Diptera': 'diptera','Mollusca': 'mollusca','Vertebrata': 'vertebrates','Alveolata': 'protists',\
 'Amoebozoa': 'protists','Choanoflagellida':'protists','Cryptophyta':'protists','Euglenozoa':'protists','Fungi':'fungi','Fornicata':'protists',\
