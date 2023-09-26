@@ -40,7 +40,7 @@ def get_current_release():
     results = fetch_data(sql,os.getenv('ENS_META'),os.getenv('PROD_META'),int(os.getenv('PROD_PORT')),os.getenv('GBUSER_R'),'')
     for row in results:
         # In order to find the cuorrect set of db on liver servers, we use one version less the current release
-        main_release = row[0] - 1
+        main_release = 110#row[0] - 1
         main_rel_date = row[1]
     
     #Obtain release number for RR
@@ -159,42 +159,43 @@ def get_main_dbs(release):
 
     #Retrieve metadata from each rapid db to use in updating the meta database table (genebuild_status)
     for row in main_dbs:
-        genebuild_method = fetch_data(genebuild_method_query,row,os.getenv('MIRROR'),int(os.getenv('MPORT')),os.getenv('GBUSER_R'),'')
-        for mtd in genebuild_method:
-            gmethod = mtd[0]
-        assembly_accession = fetch_data(assembly_accession_query,row,os.getenv('MIRROR'),int(os.getenv('MPORT')),os.getenv('GBUSER_R'),'')
-        for acc in assembly_accession:
-            accession = acc[0]
-        initial_rel_date = fetch_data(initial_rel_date_query,row,os.getenv('MIRROR'),int(os.getenv('MPORT')),os.getenv('GBUSER_R'),'')
-        # End date can be fetched in either ways depending on what is set at the time
-        if initial_rel_date:
-            for ind in initial_rel_date:
-                last_date = ind[0]
-        else:
-            last_geneset_update = fetch_data(last_geneset_update_query,row,os.getenv('MIRROR'),int(os.getenv('MPORT')),os.getenv('GBUSER_R'),'')
-            for ld in last_geneset_update:
-                last_date = ld[0]
-        genebuild_start_date_query = "SELECT date_started FROM genebuild_status WHERE assembly_accession = '"+accession+"' AND is_current = 1"
-        genebuild_start_date = fetch_data(genebuild_start_date_query,os.getenv('REG_DB'),os.getenv('GBS1'),int(os.getenv('GBP1')),os.getenv('GBUSER_R'),'')
-        for gsd in genebuild_start_date:
-            start_date = gsd[0]
+        if (row != "homo_sapiens_37_core_110_37"):#hack for skipping the re-named GRCh37 db (ask Leanne if you need to know)
+            genebuild_method = fetch_data(genebuild_method_query,row,os.getenv('MIRROR'),int(os.getenv('MPORT')),os.getenv('GBUSER_R'),'')
+            for mtd in genebuild_method:
+                gmethod = mtd[0]
+            assembly_accession = fetch_data(assembly_accession_query,row,os.getenv('MIRROR'),int(os.getenv('MPORT')),os.getenv('GBUSER_R'),'')
+            for acc in assembly_accession:
+                accession = acc[0]
+            initial_rel_date = fetch_data(initial_rel_date_query,row,os.getenv('MIRROR'),int(os.getenv('MPORT')),os.getenv('GBUSER_R'),'')
+            # End date can be fetched in either ways depending on what is set at the time
+            if initial_rel_date:
+                for ind in initial_rel_date:
+                    last_date = ind[0]
+            else:
+                last_geneset_update = fetch_data(last_geneset_update_query,row,os.getenv('MIRROR'),int(os.getenv('MPORT')),os.getenv('GBUSER_R'),'')
+                for ld in last_geneset_update:
+                    last_date = ld[0]
+            genebuild_start_date_query = "SELECT date_started FROM genebuild_status WHERE assembly_accession = '"+accession+"' AND is_current = 1"
+            genebuild_start_date = fetch_data(genebuild_start_date_query,os.getenv('REG_DB'),os.getenv('GBS1'),int(os.getenv('GBP1')),os.getenv('GBUSER_R'),'')
+            for gsd in genebuild_start_date:
+                start_date = gsd[0]
 
-        # Format the genebuild_start_date and end_dates to match database type
-        # This is an estimate of 3 weeks since we dont actually store the day part in the meta table
-        if last_date:
-            last_date = last_date + '-21'
-        else:
-            last_date = start_date + timedelta(days = 21)
-        # Store retrieved meta table info for each database
-        main_methods = ['full_genebuild', 'anno']
-        alt_methods = ['projection_build', 'braker']
-        if any(c in gmethod for c in main_methods):
-            gmethod = 'ensembl'
-        elif any(c in gmethod for c in alt_methods):
-            gmethod = 'draft'
-        db_meta[accession] = accession + '\t' + gmethod + '\t' + str(start_date) + '\t' + str(last_date) + '\t' + row
-        gmethod = ''
-        last_date = ''
+            # Format the genebuild_start_date and end_dates to match database type
+            # This is an estimate of 3 weeks since we dont actually store the day part in the meta table
+            if last_date:
+                last_date = last_date + '-21'
+            else:
+                last_date = start_date + timedelta(days = 21)
+            # Store retrieved meta table info for each database
+            main_methods = ['full_genebuild', 'anno']
+            alt_methods = ['projection_build', 'braker']
+            if any(c in gmethod for c in main_methods):
+                gmethod = 'ensembl'
+            elif any(c in gmethod for c in alt_methods):
+                gmethod = 'draft'
+            db_meta[accession] = accession + '\t' + gmethod + '\t' + str(start_date) + '\t' + str(last_date) + '\t' + row
+            gmethod = ''
+            last_date = ''
     print('Main dbs = '+str(len(db_meta)))
     return db_meta
 
