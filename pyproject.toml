@@ -60,7 +60,7 @@ doc = [
 
 [project.urls]
 homepage = "https://www.ensembl.org"
-repository = "https://github.com/Ensembl/template-genes-metadata"
+repository = "https://github.com/Ensembl/ensembl-genes-metadata"
 
 [project.scripts]
 run_fastqc = "ensembl.genes.metadata.qc.run_fastqc:main"
