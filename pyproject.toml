@@ -76,7 +76,7 @@ where = ["src"]
 
 [build-system]
 build-backend = "setuptools.build_meta"
-requires = [
+requires = [ 
     "setuptools",
     "setuptools-scm",
     "wheel"
@@ -115,8 +115,8 @@ norecursedirs = [
 ]
 testpaths = ["tests"]
 
-[tool.coverage.run]
-branch = true
-source = [
-    "src/ensembl/genes/metadata",
-]
+#[tool.coverage.run]
+#branch = true
+#source = [
+#    "src/ensembl/genes/metadata",
+#]
