@@ -24,7 +24,10 @@ print(sys.executable)
 # -- Project information -----------------------------------------------------
 project = 'ensembl-genes-metadata'
 author = 'ensembl@dev.org'
-copyright = f"[2018-{datetime.now().year}] EMBL-European Bioinformatics Institute"
+copyright_owner = "EMBL-European Bioinformatics Institute"
+copyright_dates = "[2016-%d]" % datetime.datetime.now().year
+copyright = copyright_dates + " " + copyright_owner
+html_baseurl = 'https://ensembl.github.io/ensembl-genes-metadata/'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
