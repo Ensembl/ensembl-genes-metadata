@@ -63,7 +63,7 @@ homepage = "https://www.ensembl.org"
 repository = "https://github.com/Ensembl/ensembl-genes-metadata"
 
 [project.scripts]
-run_fastqc = "ensembl.genes.metadata.qc.run_fastqc:main"
+#run_fastqc = "ensembl.genes.metadata.qc.run_fastqc:main"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
