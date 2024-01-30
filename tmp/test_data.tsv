@@ -1,0 +1,2 @@
+run_accession	center_name	sample_accession	description	cell_line	cell_type	cultivar	ecotype	experiment_alias	experiment_title	isolate	library_name	sample_alias	sample_description	serotype	strain	study_accession	tax_id	tissue_lib	tissue_type
+SRR4240445		SAMN05728284	Illumina HiSeq 2000 sequencing: Sheep liver transcriptome					sheep liver	Illumina HiSeq 2000 sequencing: Sheep liver transcriptome			sheep	Model organism or animal sample from Ovis aries			PRJNA342075	9940		liver
