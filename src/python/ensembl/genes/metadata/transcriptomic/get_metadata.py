@@ -91,7 +91,7 @@ def main() -> None:
         'experiment_alias',     # \
         'experiment_title',     #  \ go to the same place
         'library_source',       # library_name (name is requested later, but it's often empty so we'll catch it still to fill tissue-related info if available but best to use source for this field)
-        'library_selection',
+        'library_selection',    # is this really needed?
         'tissue_type',          # \
         'tissue_lib',           #  \ these both work towards filling the same field
         'cell_line',            # \ 
@@ -112,13 +112,13 @@ def main() -> None:
         default="SRR4240445",
         help="Run accession to grab metadata from",
     )
-    args = parser.parse_args(['-r', 'SRR4240445'])
+    args = parser.parse_args()
     
     data = _request_data(args.run,fields)
     json = _json_parse(data,fields)
 
-    return json # not sure if this is it, or for nextflow to grab the output it has to be printed... if it needs printing, next line would solve it...
-    # print(json)
+    #return json # not sure if this is it, or for nextflow to grab the output it has to be printed... if it needs printing, next line would solve it...
+    print(json)
 
 if __name__ == "__main__":
     main()
