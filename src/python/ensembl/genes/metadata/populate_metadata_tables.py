@@ -1,5 +1,9 @@
 
+"""It retrieves the metadata and store it the the assembly metadata database.
 
+Returns:
+    None: None
+"""
 
 import requests
 import os
@@ -148,9 +152,16 @@ def execute_query(query, table_conf, table_name, metadata, db_params):
         database=db_params['database'],
         port=int(db_params['port']))
     cur  = conn.cursor()
-    cur.execute(query)
-    last_id = cur.lastrowid
-    metadata.update({table_conf[table_name]['id_name'] : last_id})
+    try:
+    
+        cur.execute(query)
+        last_id = cur.lastrowid
+        metadata.update({table_conf[table_name]['id_name'] : last_id})
+    
+    except Exception as e:
+        print(e)
+        print('Duplicate query!')
+        print('Query')
     
     cur.close()
     conn.close()
@@ -189,7 +200,7 @@ def main() -> None:
     args = parser.parse_args()
     print(args)
     
-    if os.path.exists(args.file_path):
+    if os.path.exists(str(args.file_path)):
 
         with open(args.file_path, 'r') as file:
             for gca in file:
@@ -212,8 +223,8 @@ def main() -> None:
     else:
         print("GCA list file not found. Re run to generate file ")
 
-
-
+if __name__ == '__main__':
+     main()
 
 
 
