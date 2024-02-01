@@ -32,17 +32,33 @@ def parse_data(data):
     'release_date' : data['reports'][0]['assembly_info']['release_date'],
     'submitter' : data['reports'][0]['assembly_info']['submitter'],
     'bioproject_id' : data['reports'][0]['assembly_info']['bioproject_accession'],
-    'dtol_id' : '',
+    'dtol_id' : "",
     'scientific_name' : data['reports'][0]['organism']['organism_name'],
-    'dtol_prefix' : '',
-    'clade' : '',
-    'parlance_name' : '' ,
-    'stable_id_prefix' : '',
+    'dtol_prefix' : "",
+    'clade' : "",
+    'parlance_name' : "" ,
+    'stable_id_prefix' : "",
     'assembly_metrics' : data['reports'][0]['assembly_stats']
     }
+  
+    bioproject_lineage = {}
+    seen_accessions = set()
+    
+    biproject_dict = data['reports'][0]['assembly_info']['bioproject_lineage'][0]['bioprojects']
+
+    for item in biproject_dict:
+        accession = item['accession']
+        title = item['title'].replace("'", "")
+
+        # Check if accession is not seen before
+        if accession not in seen_accessions:
+            seen_accessions.add(accession)
+            bioproject_lineage[accession] = title
+    
+    ncbi_parsed.update({'bioproject_lineage': bioproject_lineage})
     
     try:
-        common_name = data['reports'][0]['organism']['common_name']
+        common_name = data['reports'][0]['organism']['common_name'].replace("'", "''")
     except:
         common_name = ""
     
@@ -52,14 +68,14 @@ def parse_data(data):
         refseq_accession = data['reports'][0]['paired_accession']
     except:
         #print('No refseq accession found, set as NULL')
-        refseq_accession = ''
+        refseq_accession = ""
         
     try:
-        intra_name = list(data['reports'][0]['organism']['infraspecific_names'].keys())[0]
+        intra_name = list(data['reports'][0]['organism']['infraspecific_names'].keys())[0].replace("'", "''")
         intra_type = list(data['reports'][0]['organism']['infraspecific_names'].values())[0]  
     except:
-        intra_name = ''
-        intra_type = ''
+        intra_name = ""
+        intra_type = ""
     
     
     ncbi_parsed.update({'refseq_accession':refseq_accession,
@@ -112,10 +128,10 @@ def create_query(table_name,metadata, db_params, table_conf):
     if method=='per_col':
         #values_string = [metadata[var] for var in metadata if var in table_var]
         values_string = [metadata[x] for x in table_var]
-        values_string = ", ".join([f"'{value}'" for value in values_string]).replace(", ''", ", NULL" )
+        values_string = ", ".join([f'"{value}"' for value in values_string]).replace(', ""' , ", NULL" )
         values_string = "({})".format(values_string)
         
-    elif method =='per_row': #Method valid for assembly_metrics only
+    elif method =='per_row': #Method valid for assembly_metrics and bioproject_lineage
         value_list = []
         for key,value in metadata[table_name].items():
             value_item = f"('{metadata['assembly_id']}', '{key}', '{value}')"
@@ -159,9 +175,10 @@ def execute_query(query, table_conf, table_name, metadata, db_params):
         metadata.update({table_conf[table_name]['id_name'] : last_id})
     
     except Exception as e:
-        print(e)
-        print('Duplicate query!')
-        print('Query')
+        if e.args[0] == 1062:  # Duplicate entry error code
+            pass
+        else:
+            print(f'Error: {e}')
     
     cur.close()
     conn.close()
@@ -188,7 +205,9 @@ def main() -> None:
                 'species'  : {'method': 'per_col',
                             'id_name': 'species_id'},
                 'assembly_metrics' : {'method': 'per_row',
-                                    'id_name': 'assembly_metrics_id'}
+                                    'id_name': 'assembly_metrics_id'},
+                'bioproject_lineage': {'method': 'per_row',
+                                    'id_name': 'lineage_id'}         
     }
 
     parser = argparse.ArgumentParser(prog='populate_metadata_tables.py', 
@@ -198,13 +217,13 @@ def main() -> None:
                         help="File with the list of GCA accession to register in text plain format")
     
     args = parser.parse_args()
-    print(args)
+    #print(args)
     
     if os.path.exists(str(args.file_path)):
 
         with open(args.file_path, 'r') as file:
             for gca in file:
-                print(gca.strip())
+                #print(gca.strip())
                 
                 uri = "https://api.ncbi.nlm.nih.gov/datasets/v2alpha/genome/accession/"+str(gca).strip()+'/dataset_report'
                 response = requests.get(uri) #, params=ncbi_params)
