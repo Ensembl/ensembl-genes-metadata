@@ -23,10 +23,9 @@ Requirements
 
 An Ensembl API checkout including:
 
-- ensembl-production `ensembl-production <https://github.com/Ensembl/ensembl-production>`_.
-- ensembl-analysis `ensembl-analysis <https://github.com/Ensembl/ensembl-analysis/tree/dev/hive_master>`_. (on dev/hive_master branch)
-- ensembl-taxonomy `ensembl-taxonomy <https://github.com/Ensembl/ensembl-taxonomy>`_.
-- ensembl-orm `ensembl-orm <https://github.com/Ensembl/ensembl-orm>`_.
+- ensembl-anno `ensembl-analysis <https://github.com/Ensembl/ensembl-anno/tree/dev/python_repo>`_. (on dev/python_repo branch)
+- ensembl-analysis `ensembl-taxonomy <https://github.com/Ensembl/ensembl-analysis>`_.
+
 
 Software
 ^^^^^^^^
@@ -36,7 +35,7 @@ Software
 
 Python Modules
 ^^^^^^^^^^^^^^
-#. argschema
+#. 
 
 
 
@@ -48,7 +47,4 @@ Directly from GitHub:
    :linenos:
 
    git clone https://github.com/Ensembl/ensembl-analysis 
-   git clone https://github.com/Ensembl/ensembl-production
-   git clone https://github.com/Ensembl/ensembl-hive
-   git clone https://github.com/Ensembl/ensembl-taxonomy
-   git clone https://github.com/Ensembl/ensembl-orm
+   git clone https://github.com/Ensembl/ensembl-anno
