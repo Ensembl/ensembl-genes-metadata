@@ -181,10 +181,13 @@ workflow SHORT_READ {
     else {
       run_accession_list = params.run_accession
     }
-    //get and store metadat and download fastq paired files 
+
+    // PER RUN ACCESSION
+
+    //get and store metadata and download fastq paired files 
     paired_fastq= PROCESS_RUN_ACCESSION_METADATA (
       run_accession_list
-
+      
     )
 
     csvData = Channel.fromPath(params.csvFile).splitCsv()

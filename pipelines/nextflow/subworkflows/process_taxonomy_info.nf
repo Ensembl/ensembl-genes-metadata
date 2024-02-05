@@ -45,9 +45,16 @@ workflow PROCESS_TAXONOMY_INFO {
     filtered_run_accessions = Channel.empty()
     inital_run_accession = GET_RUN_ACCESSION (taxon_id)  ///list of original run accession for a taxon id
     //now we need to filter them
-    filtered_run_accessions = CHECK_RUN_ACCESSION (inital_run_accession.out.run_accession_list)
+    filtered_run_accessions = CHECK_RUN_ACCESSION (
+      taxon_id,
+      transcriptomic_dbname, 
+      transcriptomic_host,
+      transcriptomic_port,   
+      transcriptomic_user,
+      transcriptomic_password,
+      inital_run_accession.out.run_accession_list)
 
 
     emit:
     filtered_run_accessions            = filtered_run_accessions                  // channel: [run_accessions]
-    
+}

@@ -19,15 +19,23 @@
 process CHECK_RUN_ACCESSION {
     scratch false
     label 'default'
-    tag 
+    tag "$run_accession"
     
     input:
-
+    val taxon_id
+    
+    val transcriptomic_dbname, 
+    val  transcriptomic_host,
+    val  transcriptomic_port,   
+    val  transcriptomic_user,
+    val  transcriptomic_password,
+    val run_accession_list
 
     output:
-
+    val filtered_run_accessions, emit : filtered_run_accessions
 
     script:
     """
     """
+    emit 
 }

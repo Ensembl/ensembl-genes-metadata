@@ -19,15 +19,16 @@
 process GET_RUN_ACCESSIONS {
     scratch false
     label 'default'
-    tag 
+    tag "$taxon_id"
     
     input:
-
+    val taxon_id
 
     output:
-
+    val run_accession_list, emit : run_accession_list
 
     script:
     """
     """
+    emit 
 }
