@@ -18,43 +18,48 @@
 
 nextflow.enable.dsl=2
 
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
+
+includeConfig './nextflow.config'
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     IMPORT LOCAL MODULES/SUBWORKFLOWS
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
-include { GET_RUN_ACCESSION } from '../modules/process_taxonomy_info/check_run_accession.nf'
-include { CHECK_RUN_ACCESSION } from '../modules/process_taxonomy_info/get_run_accession.nf'
 
+
+
+def resultPresent = checkTableResult(jdbcUrl, username, password, query)
+println "Result present: $resultPresent"
+
+include { GET_RUN_ACCESSIONS } from '../modules/process_taxonomy_info/get_run_accessions.nf'
+
+
+//  taxon id present or not? if yes get all new short read data after this date if not add it for the first time
 
 
 workflow PROCESS_TAXONOMY_INFO {
     take:
-    taxon_id    
-    run_accession            
-    transcriptomic_dbname                 
-    transcriptomic_host                  
-    transcriptomic_port   
-    transcriptomic_user    
-    transcriptomic_password           
+    taxon_id                   
 
+    // Define the output channel for run accessions
+    output:
+    Channel.from(run_accessions_path) into runAccessionsPath
+    
     main:
-
-    filtered_run_accessions = Channel.empty()
-    inital_run_accession = GET_RUN_ACCESSION (taxon_id)  ///list of original run accession for a taxon id
-    //now we need to filter them
-    filtered_run_accessions = CHECK_RUN_ACCESSION (
-      taxon_id,
-      transcriptomic_dbname, 
-      transcriptomic_host,
-      transcriptomic_port,   
-      transcriptomic_user,
-      transcriptomic_password,
-      inital_run_accession.out.run_accession_list)
-
-
-    emit:
-    filtered_run_accessions            = filtered_run_accessions                  // channel: [run_accessions]
+    def taxonomyExists = checkTaxonomy(params.jdbcUrl, params.transcriptomic_user, params.transcriptomic_password, taxonId)
+    if (taxonomyExists) {
+      // retrieve new run accessions for short-read transcriptomic data published AFTER the last check date
+      def lastDate = getLastCheckDate(params.jdbcUrl, params.transcriptomic_user, params.transcriptomic_password, taxonId)
+      GET_RUN_ACCESSIONS (taxon_id, last_date).view()
+    else{
+      //add the new taxon id and last_check=currentDate and retrieve all the run accessions for short-read transcriptomic data 
+      def addTaxonId= insertMetaRecord(jdbcUrl, username, password, taxonId)
+      GET_RUN_ACCESSIONS (taxon_id).view()
+    }  
+    
+    }
 }

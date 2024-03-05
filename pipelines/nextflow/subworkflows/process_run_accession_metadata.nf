@@ -100,9 +100,8 @@ if (params.help) {
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
-include { GET_METADATA } from '../modules/process_run_accession_metadata/get_metadata.nf'
 include { STORE_METADATA } from '../modules/process_run_accession_metadata/store_metadata.nf'
-
+include { DOWNLOAD_PAIRED_FASTQS } from '../modules/process_run_accession_metadata/download_paired_fastqs.nf'
 
 
 
@@ -114,22 +113,22 @@ include { STORE_METADATA } from '../modules/process_run_accession_metadata/store
 
 workflow PROCESS_RUN_ACCESSION_METADATA {
     take:
-    taxon_id    
-    run_accession            
-    transcriptomic_dbname                 
-    transcriptomic_host                  
-    transcriptomic_port   
-    transcriptomic_user    
-    transcriptomic_password           
+    val metadataInput          
 
     main:
 
-    filtered_run_accessions = Channel.empty()
-    inital_run_accession = GET_RUN_ACCESSION (taxon_id)  ///list of original run accession for a taxon id
-    //now we need to filter them
-    filtered_run_accessions = CHECK_RUN_ACCESSION (inital_run_accession.out.run_accession_list)
+    paired_fastq_files = Channel.empty()
+    paired_fastq_files_path = Channel.empty()
+    //it is an insert but we need to split the value 
+    //so it might be  first function that split the values and another function INSERT
+    //emit fasta_paired_files
+    paired_fastq_files=STORE_METADATA(metadataInput)
+
+    //script or function? 
+    paired_fastq_files_path=DOWNLOAD_PAIRED_FASTQS(paired_fastq_files)
+
 
 
     emit:
-    filtered_run_accessions            = filtered_run_accessions                  // channel: [run_accessions]
+    paired_fastq_files_path            = paired_fastq_files_path                  // channel: [path1, path2]
 }

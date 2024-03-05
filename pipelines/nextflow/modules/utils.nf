@@ -14,7 +14,61 @@
  See the License for the specific language governing permissions and
  limitations under the License.
 */
+import groovy.sql.Sql
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
+def checkTaxonomy(String jdbcUrl, String username, String password, String taxonId) {
+    def sql = Sql.newInstance(jdbcUrl, username, password)
+    
+    try {
+        def query = "SELECT * FROM meta  WHERE taxon_id = '${taxonId}'"
+        def result = sql.rows(query)
+        return result.size() > 0
+    } finally {
+        sql.close()
+    }
+}
+
+def getLastCheckDate(String jdbcUrl, String username, String password, String taxonId) {
+    def sql = Sql.newInstance(jdbcUrl, username, password)
+    def lastCheckDate = null
+
+    try {
+        def query = "SELECT last_check FROM meta WHERE taxon_id = '${taxonId}'"
+        def result = sql.rows(query)
+
+        if (result.size() > 0) {
+            // Assuming 'last_check' is a date-like column
+            // Adjust the date format pattern based on the actual format in your database
+            def dateFormat = new SimpleDateFormat("yyyy-MM-dd") // Adjust the format if needed
+            lastCheckDate = dateFormat.parse(result[0].last_check)
+        }
+    } finally {
+        sql.close()
+    }
+
+    return lastCheckDate
+}
+
+def insertMetaRecord(String jdbcUrl, String username, String password, String taxonId) {
+    def sql = Sql.newInstance(jdbcUrl, username, password)
+
+    try {
+        // Get the current date and time
+        def currentDate = LocalDateTime.now()
+        def dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
+        def formattedDate = currentDate.format(dateFormatter)
+
+        // Execute the SQL INSERT statement
+        def insertQuery = "INSERT INTO meta (taxon_id, last_check) VALUES ('${taxonId}', '${formattedDate}')"
+        sql.executeUpdate(insertQuery, 'meta_id')
+
+    } finally {
+        sql.close()
+    }
+
+}
 
 def build_ncbi_path(gca, assembly_name) {
     final gca_splitted = gca.replaceAll("_","").tokenize(".")[0].split("(?<=\\G.{3})").join('/')

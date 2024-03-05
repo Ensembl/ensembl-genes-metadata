@@ -25,7 +25,7 @@ process STORE_METADATA {
 
 
     output:
-
+    tuple fastq_paired_files, emit: fastq_paired_files
 
     script:
     """

@@ -99,6 +99,9 @@ includeConfig './nextflow.config'
 params.taxon_id = params.taxon_id ?: config.taxon_id
 params.genome_file = config.genome_file //it can be downloaded using assembly name and GCA
 params.run_accession = = params.run_accession ?: config.run_accession  //TEMPORARY
+params.outDir = params.outDir ?: config.outDir
+params.assembly_name = params.assembly_name ?: config.assembly_name
+params.assembly_accession = params.assembly_name ?: config.assembly_name
 
 if (!params.taxon_id) {
     error "You must provide a value for taxon_id either via command line or config."
@@ -164,62 +167,55 @@ include { RUN_ALIGNMENT } from '../../subworkflows/run_alignment/run_alignment.n
 workflow SHORT_READ {
     //jolly channel
     run_accession_list = Channel.empty()
-    if (!params.run_accession ) {
-    //given taxon id, gete list of run accession an 
+
+    //taxon id present or not? if yes get all new short read data after this date if not add it for the first time
+    //given taxon id, get list of run accession an 
     PROCESS_TAXONOMY_INFO (
+        params.taxon_id,
+    )
+    //run_accession_list = key from PROCESS_TAXONOMY_INFO.runAccessionsPath.splitJson().flatten()
+    run_accession_list = PROCESS_TAXONOMY_INFO.runAccessionsPath.splitJson().flatten()
+    def json = '[{"run_accession1": ["ABC123", "123"]}, {"run_accession2": ["DEF456", "34"]}]'
+
+    // Parse the JSON string into a list of maps
+    def jsonMapList = new groovy.json.JsonSlurper().parseText(run_accession_list)
+
+    // Iterate over the list of maps and process each key-value pair
+    jsonMapList.each { jsonMap ->
+        jsonMap.each { key, value ->
+            //println "Key: $key, Value: $value"
+            // Here you can perform further processing based on the key-value pairs
+            // For example, you can pass the key and value to another process or function
+            // STORE METADATA
+            PROCESS_RUN_ACCESSION_METADATA(value)
+        }
+    }
+    // Assign run accessions directly to run_accession_list
+    run_accession_list = PROCESS_TAXONOMY_INFO.runAccessionsPath.splitJson().flatten()
+}
+
+      
+      unprocessed_run_accession = run_accession_list(PROCESS_TAXONOMY_INFO.out.filtered_run_accessions).flatten()
+
+    }
+    else {
+      unprocessed_run_accession = params.run_accession
+    }
+
+    // PER RUN ACCESSION
+
+    //get and store metadata and download fastq paired files    output paired file path
+    PROCESS_RUN_ACCESSION_METADATA (
         params.taxon_id,
         params.transcriptomic_dbname ,                
         params.transcriptomic_host,                  
         params.transcriptomic_port,   
         params.transcriptomic_user,    
         params.transcriptomic_password,
+        unprocessed_run_accession
+        params.outDir
 
     )
-    run_accession_list = run_accession_list(PROCESS_TAXONOMY_INFO.out.filtered_run_accessions).flatten()
 
-    }
-    else {
-      run_accession_list = params.run_accession
-    }
-
-    // PER RUN ACCESSION
-
-    //get and store metadata and download fastq paired files 
-    paired_fastq= PROCESS_RUN_ACCESSION_METADATA (
-      run_accession_list
-      
-    )
-
-    csvData = Channel.fromPath(params.csvFile).splitCsv()
-
-    // Get db name and its metadata
-    db = csvData.flatten()
-    db_meta = SPECIES_METADATA(db, params.outDir, params.project)
-      .splitCsv(header: true)
-
-    // Get the closest Busco dataset from the taxonomy classification stored in db meta table 
-    db_dataset = BUSCO_DATASET(db_meta)
     
-    // Run Busco in genome mode
-    if (busco_mode.contains('genome')) {
-        genome_data = FETCH_GENOME(db_dataset, params.cacheDir)
-        busco_genome_output = BUSCO_GENOME_LINEAGE(genome_data)
-        BUSCO_GENOME_OUTPUT(busco_genome_output, "genome", params.project)
-        if (params.project == 'ensembl') {
-          FASTA_GENOME_OUTPUT(genome_data, params.project, 'genome')
-        }
-    }
-    
-    // Run Busco in protein mode
-    if (busco_mode.contains('protein')) {
-        if (params.project == 'brc') {
-            db_dataset = db_dataset.filter{ it[0].has_genes == "1" }
-        }
-        protein_data = FETCH_PROTEINS (db_dataset, params.cacheDir)
-        busco_protein_output = BUSCO_PROTEIN_LINEAGE(protein_data)
-        BUSCO_PROTEIN_OUTPUT(busco_protein_output, "protein", params.project)
-        if (params.project == 'ensembl') {
-          FASTA_PROTEIN_OUTPUT(protein_data, params.project, 'fasta')
-        }
-    }
 }
