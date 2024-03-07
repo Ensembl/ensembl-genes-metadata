@@ -1,0 +1,12 @@
+{
+    "server_details" : {
+	"db_name" : "leanne_transcriptomic_hackathon",
+	"db_host" : "mysql-ens-genebuild-prod-2",
+	"db_user" : "ensadmin",
+	"db_port" : 4528,
+	"db_pass" : "ensembl"
+    },
+    "tissue_types" : {
+	"prioritise" : ["heart", "lung", "brain", "ovary", "ovaries", "testes", "testis", "gonad", "gonads"] 
+    }
+}
