@@ -30,9 +30,9 @@ def checkTaxonomy(String jdbcUrl, String username, String password, String taxon
     }
 }
 
-def getLastCheckDate(String jdbcUrl, String username, String password, String taxonId) {
+def getLastCheckedDate(String jdbcUrl, String username, String password, String taxonId) {
     def sql = Sql.newInstance(jdbcUrl, username, password)
-    def lastCheckDate = null
+    def lastCheckedDate = null
 
     try {
         def query = "SELECT last_check FROM meta WHERE taxon_id = '${taxonId}'"
@@ -42,13 +42,13 @@ def getLastCheckDate(String jdbcUrl, String username, String password, String ta
             // Assuming 'last_check' is a date-like column
             // Adjust the date format pattern based on the actual format in your database
             def dateFormat = new SimpleDateFormat("yyyy-MM-dd") // Adjust the format if needed
-            lastCheckDate = dateFormat.parse(result[0].last_check)
+            lastCheckedDate = dateFormat.parse(result[0].last_check)
         }
     } finally {
         sql.close()
     }
 
-    return lastCheckDate
+    return lastCheckedDate
 }
 
 def insertMetaRecord(String jdbcUrl, String username, String password, String taxonId) {
@@ -57,11 +57,11 @@ def insertMetaRecord(String jdbcUrl, String username, String password, String ta
     try {
         // Get the current date and time
         def currentDate = LocalDateTime.now()
-        def dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
+        def dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
         def formattedDate = currentDate.format(dateFormatter)
 
         // Execute the SQL INSERT statement
-        def insertQuery = "INSERT INTO meta (taxon_id, last_check) VALUES ('${taxonId}', '${formattedDate}')"
+        def insertQuery = "INSERT INTO meta (taxon_id, last_checked_date) VALUES ('${taxonId}', '${formattedDate}')"
         sql.executeUpdate(insertQuery, 'meta_id')
 
     } finally {
@@ -69,7 +69,24 @@ def insertMetaRecord(String jdbcUrl, String username, String password, String ta
     }
 
 }
+def updateLastCheckedDate(String jdbcUrl, String username, String password, String taxonId) {
+    def sql = Sql.newInstance(jdbcUrl, username, password)
 
+    try {
+        // Get the current date and time
+        def currentDate = LocalDateTime.now()
+        def dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
+        def formattedDate = currentDate.format(dateFormatter)
+
+        // Execute the SQL UPDATE statement
+        def updateQuery = "UPDATE meta set last_checked_date = '${formattedDate}' where taxon_id = '${taxonId}'"
+        sql.executeUpdate(updateQuery)
+
+    } finally {
+        sql.close()
+    }
+
+}
 def build_ncbi_path(gca, assembly_name) {
     final gca_splitted = gca.replaceAll("_","").tokenize(".")[0].split("(?<=\\G.{3})").join('/')
     return  'https://ftp.ncbi.nlm.nih.gov/genomes/all'  + '/' + gca_splitted + '/' + "$gca" +'_' + assembly_name.replaceAll(" ","_") + '/' + "$gca" + '_' + assembly_name.replaceAll(" ","_") + '_genomic.fna.gz'

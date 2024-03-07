@@ -47,18 +47,19 @@ workflow PROCESS_TAXONOMY_INFO {
 
     // Define the output channel for run accessions
     output:
-    Channel.from(run_accessions_path) into runAccessionsPath
+    val run_accessions_path into runAccessionsPath
     
     main:
     def taxonomyExists = checkTaxonomy(params.jdbcUrl, params.transcriptomic_user, params.transcriptomic_password, taxonId)
     if (taxonomyExists) {
-      // retrieve new run accessions for short-read transcriptomic data published AFTER the last check date
-      def lastDate = getLastCheckDate(params.jdbcUrl, params.transcriptomic_user, params.transcriptomic_password, taxonId)
-      GET_RUN_ACCESSIONS (taxon_id, last_date).view()
+      // Retrieve new run accessions for short-read transcriptomic data published AFTER the last check date
+      def lastDate = getLastCheckedDate(params.jdbcUrl, params.transcriptomic_user, params.transcriptomic_password, taxonId)
+      emit GET_RUN_ACCESSIONS (taxon_id, last_date)
+      updateLastCheckedDate(params.jdbcUrl, params.transcriptomic_user, params.transcriptomic_password, taxonId)
     else{
-      //add the new taxon id and last_check=currentDate and retrieve all the run accessions for short-read transcriptomic data 
-      def addTaxonId= insertMetaRecord(jdbcUrl, username, password, taxonId)
-      GET_RUN_ACCESSIONS (taxon_id).view()
+      // Add the new taxon id and last_check=currentDate and retrieve all the run accessions for short-read transcriptomic data 
+      def addTaxonId= insertMetaRecord(params.jdbcUrl, params.transcriptomic_user, params.transcriptomic_password, taxonId)
+      emit GET_RUN_ACCESSIONS (taxon_id)
     }  
     
     }

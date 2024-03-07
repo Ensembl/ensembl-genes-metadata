@@ -15,20 +15,37 @@
  limitations under the License.
 */
 
-// module description 
-process GET_RUN_ACCESSIONS {
+process GET_RUN_ACCESSION {
     scratch false
     label 'default'
     tag "$taxon_id"
-    
+
     input:
     val taxon_id
+    val dateQuery = null // Optional input parameter for date query (format: 'YYYY-MM-DD')
 
     output:
-    val run_accession_list, emit : run_accession_list
+    file(joinPath(params.outDir, "${taxon_id}", "run_accessions.txt")) into runAccessionsPath
 
     script:
     """
+    def taxonQuery = "tax_eq(${taxon_id})"
+    def instrumentQuery = "instrument_platform=ILLUMINA"
+    def layoutQuery = "library_layout=PAIRED"
+    def sourceQuery = "library_source=TRANSCRIPTOMIC"
+    def defaultDateQuery = "first_created >= '2019-01-01'" // Default date query if dateQuery is not provided
+
+    // Use provided dateQuery if available, otherwise use default
+    def usedDateQuery = dateQuery ? "first_created >= '${dateQuery}'" : defaultDateQuery
+
+    def query = [taxonQuery, instrumentQuery, layoutQuery, sourceQuery, usedDateQuery].join(" AND ")
+    def encodedQuery = URLEncoder.encode(query, 'UTF-8')
+
+    def searchUrl = "https://www.ebi.ac.uk/ena/portal/api/search?display=report&query=${encodedQuery}&domain=read&result=read_run&fields=run_accession"
+
+    def response = new URL(searchUrl).text
+    def runAccessions = response.split("\\n").drop(1).join("\\n") // Remove header
+
+    new File('run_accessions.csv').write(runAccessions)
     """
-    emit 
 }
