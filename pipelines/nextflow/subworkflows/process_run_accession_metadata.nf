@@ -102,6 +102,7 @@ if (params.help) {
 
 include { STORE_METADATA } from '../modules/process_run_accession_metadata/store_metadata.nf'
 include { DOWNLOAD_PAIRED_FASTQS } from '../modules/process_run_accession_metadata/download_paired_fastqs.nf'
+include { GET_RUN_ACCESSION_METADATA } from '../modules/process_run_accession_metadata/get_run_accession_metadata.nf'
 
 
 
@@ -113,7 +114,8 @@ include { DOWNLOAD_PAIRED_FASTQS } from '../modules/process_run_accession_metada
 
 workflow PROCESS_RUN_ACCESSION_METADATA {
     take:
-    val metadataInput          
+    val taxon_id
+    val run_accession          
 
     main:
 
@@ -122,12 +124,9 @@ workflow PROCESS_RUN_ACCESSION_METADATA {
     //it is an insert but we need to split the value 
     //so it might be  first function that split the values and another function INSERT
     //emit fasta_paired_files
-    paired_fastq_files=STORE_METADATA(metadataInput)
-
-    //script or function? 
-    paired_fastq_files_path=DOWNLOAD_PAIRED_FASTQS(paired_fastq_files)
-
-
+    run_accession_metadata = GET_RUN_ACCESSION_METADATA(run_accession)
+    STORE_METADATA(run_accession_metadata.runAccessionsMetadataPath)
+    paired_fastq_files_path=DOWNLOAD_PAIRED_FASTQ(taxon_id, run_accession)
 
     emit:
     paired_fastq_files_path            = paired_fastq_files_path                  // channel: [path1, path2]

@@ -22,6 +22,7 @@ process STORE_METADATA {
     tag 
     
     input:
+    file run_accession_metadata
 
 
     output:
@@ -29,5 +30,8 @@ process STORE_METADATA {
 
     script:
     """
+    //src/python/ensembl/genes/metadata/populate_metadata_tables.py ??
+    needs changes to adapt to get_metadata.py
     """
+    emit:
 }
