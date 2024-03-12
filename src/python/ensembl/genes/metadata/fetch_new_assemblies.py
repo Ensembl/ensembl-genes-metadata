@@ -19,7 +19,7 @@ def set_date(taxon, ncbi_params, file_path):
 
     Args:
         file_path (str): path with the last database update (optional) 
-        taxon (int): Taxon ID, by default it is 3745 (Eukaryote domain)
+        taxon (int): Taxon ID, by default it is 2759 (Eukaryote domain)
         ncbi_params (dict): NCBI API's parameters
 
     Returns:
@@ -53,7 +53,7 @@ def fetch_gca_list (taxon, ncbi_params):
     """Fetch a list of accessions avilable since the last update date 
 
     Args:
-        taxon (int): Taxon ID, by default it is 3745 (Eukaryote domain)
+        taxon (int): Taxon ID, by default it is 2759 (Eukaryote domain)
         ncbi_params (dict): NCBI API's parameters
 
     Returns:
@@ -251,9 +251,9 @@ def main():
                                      description='Determinate which assemblies register')
     
     parser.add_argument('--taxon', 
-                        default=3745,
+                        default=2759,
                         type=int,
-                        help='Valid Taxon id: eukaryota - 3745')
+                        help='Valid Taxon id: eukaryota - 2759')
     parser.add_argument('--file-path',
                         default='',
                         type=str,
@@ -265,7 +265,7 @@ def main():
                         action='append')
     
     args = parser.parse_args()
-    print(args)
+    #print(args)
     
     ncbi_params, release_date = set_date(args.taxon, ncbi_params, args.file_path)
     gca_list = fetch_gca_list(args.taxon, ncbi_params)
