@@ -113,5 +113,21 @@ include { STORE_FASTQC_OUTPUT } from '../modules/fastqc_processing/store_fastqc_
 */
 
 workflow {
-    
+    take:
+    taxon_id
+    val run accession
+    val pairedFastqFiles                   
+
+    // Define the output channel for run accessions
+    output:
+    Channel.from(run_accessions_path) into runAccessionsPath
+
+    main:
+    fastqc_dir=RUN_FASTQC(taxon_id, run_accession, pairedFastqFiles)
+    fastqc_output=PROCESS_FASTQC_OUTPUT(taxon_id, fastqc_dir.fastqcOutput)
+    STORE_FASTQC_OUTPUT(taxon_id,fastqc_output.fastqcMetadata)
+    EVALUATE_FASTQC
+
+
+
 }

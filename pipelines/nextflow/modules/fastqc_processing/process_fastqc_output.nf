@@ -15,24 +15,23 @@
  limitations under the License.
 */
 
-// module description 
-process STORE_FASTQC_OUTPUT {
-    scratch false
+process PROCESS_FASTQC_OUTPUT {
+    scratch true
     label 'default'
-    tag 'store_fastqc_output'
+    tag "fastqc_output"
 
     input:
     val taxon_id
-    file fastqcMetadata
+    path fastqcOutput
 
     output:
-    val taxon_id
+    file(joinPath(params.outDir, "${taxon_id}", "${run_accession}", "fastqc","fastqc_metadata.json")) into fastqcMetadata
 
     script:
     """
     // Construct the command based on whether last_date is provided
-    def pythonScript = file("$projectDir/src/python/ensembl/genes/metadata/database/JSON_to_db.py")
-    def command = "python ${pythonScript} --file-path ${fastqcMetadata}"
+    def pythonScript = file("$projectDir/convert_to_json.py")
+    def command = "python ${pythonScript} ${fastqcOutput}"
 
     // Execute the Python script
     def process = ["python", pythonScript.toString(), run_accession].execute()
@@ -44,3 +43,4 @@ process STORE_FASTQC_OUTPUT {
     }
     """
 }
+
