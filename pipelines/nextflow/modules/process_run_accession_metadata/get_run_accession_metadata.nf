@@ -16,7 +16,7 @@
 */
 // pyhton env?
 process GET_RUN_ACCESSION_METADATA {
-    scratch false
+
     label 'default'
     tag "$run_accession"
 

@@ -16,7 +16,8 @@
 */
 
 process DOWNLOAD_PAIRED_FASTQ {
-
+    label "default"
+    tag "download ${run_accession} fastqs"
     // Define input parameters
     input:
     val taxon_id

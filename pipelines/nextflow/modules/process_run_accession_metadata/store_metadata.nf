@@ -19,7 +19,7 @@
 process STORE_METADATA {
     scratch false
     label 'default'
-    tag 
+    tag 'store_metadata'
     
     input:
     file run_accession_metadata
@@ -33,5 +33,4 @@ process STORE_METADATA {
     //src/python/ensembl/genes/metadata/populate_metadata_tables.py ??
     needs changes to adapt to get_metadata.py
     """
-    emit:
 }
