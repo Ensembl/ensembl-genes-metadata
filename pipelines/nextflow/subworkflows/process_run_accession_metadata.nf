@@ -119,7 +119,6 @@ workflow PROCESS_RUN_ACCESSION_METADATA {
 
     main:
 
-    paired_fastq_files = Channel.empty()
     paired_fastq_files_path = Channel.empty()
     //it is an insert but we need to split the value 
     //so it might be  first function that split the values and another function INSERT
@@ -129,5 +128,5 @@ workflow PROCESS_RUN_ACCESSION_METADATA {
     paired_fastq_files_path=DOWNLOAD_PAIRED_FASTQ(taxon_id, run_accession)
 
     emit:
-    paired_fastq_files_path            = paired_fastq_files_path                  // channel: [path1, path2]
+    pairedFastqFiles            = paired_fastq_files_path                  // channel: [path1, path2]
 }
