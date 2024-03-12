@@ -16,7 +16,7 @@
 */
 
 process GET_RUN_ACCESSION {
-    scratch false
+
     label 'default'
     tag "$taxon_id"
 
