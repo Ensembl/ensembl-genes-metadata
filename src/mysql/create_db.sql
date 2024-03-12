@@ -1,6 +1,6 @@
 create database transcriptomic_hackathon;
 use transcriptomic_hackathon;
-create table file (
+create table data_files (
 	file_id int not null auto_increment,
 	run_id int not null,
 	name varchar(255) not null,
