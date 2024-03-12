@@ -43,7 +43,7 @@ include { GET_RUN_ACCESSIONS } from '../modules/process_taxonomy_info/get_run_ac
 
 workflow PROCESS_TAXONOMY_INFO {
     take:
-    taxon_id                   
+    val taxon_id                   
 
     // Define the output channel for run accessions
     output:
