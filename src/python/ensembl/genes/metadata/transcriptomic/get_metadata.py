@@ -82,8 +82,8 @@ def main() -> None:
 
     fields = (
         'run_accession',
-        'fastq_ftp',
-        'fastq_md5',
+        'fastq_ftp',            # uses ftp, and contains both reads (if paired) separated by a semi colon (;)
+        'fastq_md5',            # \ again, both separated by semicolon (;)
         'tax_id',
         'sample_accession',
         'study_accession',
