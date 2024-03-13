@@ -82,6 +82,8 @@ def main() -> None:
 
     fields = (
         'run_accession',
+        'fastq_ftp',
+        'fastq_md5',
         'tax_id',
         'sample_accession',
         'study_accession',
