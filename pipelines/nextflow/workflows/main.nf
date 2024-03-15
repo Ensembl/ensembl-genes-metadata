@@ -161,6 +161,8 @@ include { RUN_ALIGNMENT } from '../../subworkflows/run_alignment/run_alignment.n
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     RUN MAIN WORKFLOW
+
+    input taxon id, gca, assembly name, species name if needed for the genome file 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
@@ -174,6 +176,15 @@ workflow SHORT_READ {
         params.taxon_id,
     )
     //run_accession_list = key from PROCESS_TAXONOMY_INFO.runAccessionsPath.splitJson().flatten()
+    run_accession_list = Channel.fromPath(PROCESS_TAXONOMY_INFO.runAccessionsPath).splitCsv()
+    
+    run_accession_list.subscribe { accession ->
+        // Generate a job for each accession
+        def processMetadata = PROCESS_RUN_ACCESSION_METADATA(params.taxon_id, accession)
+        def processFastq = FASTQ_PROCESSING(processMetadata.taxon_id, accession, processMetadata.pairedFastqFiles)
+        RUN_ALIGNMENT(FASTQ_PROCESSING.runAccessionFastqs)
+    }
+    
     run_accession_list = PROCESS_TAXONOMY_INFO.runAccessionsPath.splitJson().flatten()
     def json = '[{"run_accession1": ["ABC123", "123"]}, {"run_accession2": ["DEF456", "34"]}]'
 
@@ -187,7 +198,9 @@ workflow SHORT_READ {
             // Here you can perform further processing based on the key-value pairs
             // For example, you can pass the key and value to another process or function
             // STORE METADATA
-            PROCESS_RUN_ACCESSION_METADATA(value)
+            PROCESS_RUN_ACCESSION_METADATA(value)//  is taxon id in the values?
+            FASTQ_PROCESSING(params.taxon_id, PROCESS_RUN_ACCESSION_METADATA.paired_fastq_files_path)
+            RUN_ALIGNMENT(FASTQ_PROCESSING.)
         }
     }
     // Assign run accessions directly to run_accession_list
@@ -218,4 +231,9 @@ workflow SHORT_READ {
     )
 
     
+}
+
+
+workflow.onComplete {
+    log.info "Pipeline completed at: ${new Date().format('dd-MM-yyyy HH:mm:ss')}"
 }
