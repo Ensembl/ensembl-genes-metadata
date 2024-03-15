@@ -29,12 +29,6 @@ includeConfig './nextflow.config'
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
-
-
-
-def resultPresent = checkTableResult(jdbcUrl, username, password, query)
-println "Result present: $resultPresent"
-
 include { GET_RUN_ACCESSIONS } from '../modules/process_taxonomy_info/get_run_accessions.nf'
 
 
