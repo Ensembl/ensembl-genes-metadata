@@ -15,28 +15,18 @@
  limitations under the License.
 */
 
-// https://hub.docker.com/r/staphb/fastqc v12
-process RUN_FASTQC {
-    scratch true
-    label 'fastqc'
-    tag "$taxon_id"
+process CLEANING {
+    scratch false
+    label 'default'
+    tag "cleaning"
 
     input:
     val taxon_id
     val run_accession
-    set pair1, pair2 from pairedFastqFiles
-
-    output:
-    val taxon_id, emit: taxon_id
-    val run_accession, emit: run_accession
-    storeDir joinPath(params.outDir, "${taxon_id}", "${run_accession}", "fastqc"), emit: fastqcOutput
-
 
     script:
     """
-    fastqc fastqc_output ${pair1} ${pair2} --quiet --extract --threads ${task.cpus}
+    rm -rf joinPath(params.outDir, "${taxon_id}", "${run_accession}")
     """
-
-    
 }
 

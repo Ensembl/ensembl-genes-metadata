@@ -22,11 +22,7 @@ process STORE_FASTQC_OUTPUT {
     tag 'store_fastqc_output'
 
     input:
-    val taxon_id
     file fastqcMetadata
-
-    output:
-    val taxon_id
 
     script:
     """

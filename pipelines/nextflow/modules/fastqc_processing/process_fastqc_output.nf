@@ -21,8 +21,7 @@ process PROCESS_FASTQC_OUTPUT {
     tag "fastqc_output"
 
     input:
-    val taxon_id
-    path fastqcOutput
+    tuple val(taxon_id), val(run_accession), path(fastqcOutput)
 
     output:
     file(joinPath(params.outDir, "${taxon_id}", "${run_accession}", "fastqc","fastqc_metadata.json")) into fastqcMetadata

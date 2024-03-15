@@ -18,91 +18,24 @@
 
 nextflow.enable.dsl=2
 
-/*
-   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-   VALIDATE INPUTS
-   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-*/
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
-if (!params.host) {
-  exit 1, "Undefined --host parameter. Please provide the server host for the db connection"
-}
 
-if (!params.port) {
-  exit 1, "Undefined --port parameter. Please provide the server port for the db connection"
-}
-if (!params.user) {
-  exit 1, "Undefined --user parameter. Please provide the server user for the db connection"
-}
-
-if (!params.enscode) {
-  exit 1, "Undefined --enscode parameter. Please provide the enscode path"
-}
-if (!params.outDir) {
-  exit 1, "Undefined --outDir parameter. Please provide the output directory's path"
-}
-if (!params.cacheDir) {
-  exit 1, "Undefined --cacheDir parameter. Please provide the cache dir directory's path"
-}
-if (!params.mode) {
-  exit 1, "Undefined --mode parameter. Please define Busco running mode"
-}
-
-if (params.csvFile) {
-    csvFile = file(params.csvFile, checkIfExists: true)
-} else {
-    exit 1, 'CSV file not specified!'
-}
-
-busco_mode = []
-if (params.mode instanceof java.lang.String) {
-  busco_mode = [params.mode]
-}
-else {
-  busco_mode = params.mode
-}
-
-acceptable_projects = ['ensembl', 'brc']
-if (!acceptable_projects.contains(params.project)) {
-    exit 1, 'Invalid project name'
-}
-
-/*
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    HELP
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-*/
-
-if (params.help) {
-  log.info ''
-  log.info 'Pipeline to run Busco score in protein and/or genome mode'
-  log.info '-------------------------------------------------------'
-  log.info ''
-  log.info 'Usage: '
-  log.info '  nextflow -C ensembl-genes-nf/nextflow.config run ensembl-genes-nf/iworkflows/busco_pipeline.nf --enscode --csvFile --mode'
-  log.info ''
-  log.info 'Options:'
-  log.info '  --host STR                   Db host server '
-  log.info '  --port INT                   Db port  '
-  log.info '  --user STR                   Db user  '
-  log.info '  --enscode STR                Enscode path '
-  log.info '  --outDir STR                 Output directory. Default is workDir'
-  log.info '  --csvFile STR                Path for the csv containing the db name'
-  log.info '  --mode STR                   Busco mode: genome or protein, default is to run both'
-  log.info '  --bioperl STR                BioPerl path (optional)'
-  log.info '  --project STR                Project, for the formatting of the output ("ensembl" or "brc")'
-  exit 1
-}
-
+includeConfig './nextflow.config'
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     IMPORT LOCAL MODULES/SUBWORKFLOWS
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
-include { DOWNLOAD_PAIRED_FASTQS } from '../modules/fastqc_processing/download_paired_fastqs.nf'
+
+include { PROCESS_FASTQC_OUTPUT } from '../modules/fastqc_processing/process_fastqc_output.nf'
 include { RUN_FASTQC } from '../modules/fastqc_processing/run_fastqc.nf'
 include { STORE_FASTQC_OUTPUT } from '../modules/fastqc_processing/store_fastqc_output.nf'
+include { SUBSAMPLE_FASTQ_FILES } from '../modules/fastqc_processing/subsample_fastq_files.nf'
+include { ADAPTER_TRIMMING } from '../modules/fastqc_processing/adapter_trimming.nf'
+include { CLEANING } from '../modules/cleaning.nf'
 
 
 
@@ -112,22 +45,28 @@ include { STORE_FASTQC_OUTPUT } from '../modules/fastqc_processing/store_fastqc_
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
-workflow {
-    take:
-    taxon_id
-    val run accession
-    val pairedFastqFiles                   
-
-    // Define the output channel for run accessions
-    output:
-    Channel.from(run_accessions_path) into runAccessionsPath
+workflow FASTQC_PROCESSING{
+    take:                 
+    tuple taxon_id, run_accession, pairedFastqFiles
 
     main:
-    fastqc_dir=RUN_FASTQC(taxon_id, run_accession, pairedFastqFiles)
-    fastqc_output=PROCESS_FASTQC_OUTPUT(taxon_id, fastqc_dir.fastqcOutput)
-    STORE_FASTQC_OUTPUT(taxon_id,fastqc_output.fastqcMetadata)
-    EVALUATE_FASTQC
+    fastqc_output = RUN_FASTQC(taxon_id, run_accession, pairedFastqFiles)
+    PROCESS_FASTQC_OUTPUT(fastqc_output.taxon_id, fastqc_output.run_accession, fastqc_output.fastqcOutput)
+    STORE_FASTQC_OUTPUT(PROCESS_FASTQC_OUTPUT.fastqcMetadata)
+    def qc_status = checkFastqc(params.jdbcUrl, params.transcriptomic_user, params.transcriptomic_password, run_accession)
 
+    output:
+    if (qc_status == 'QC_PASS'){
+        subsampling = SUBSAMPLE_FASTQ_FILES(taxon_id, run_accession, pairedFastqFiles)
+        def  overrepresented_sequences = checkOverrepresentedSequences(params.jdbcUrl, params.transcriptomic_user, params.transcriptomic_password, run_accession)
 
-
+        if (overrepresented_sequences == true){
+          trimming = ADAPTER_TRIMMING(subsampling.subsampledFastqs.taxon_id, subsampling.run_accession, subsampling.subsampledFastqs)
+          emit runAccessionFastqs(trimming.runTrimmedFastqs.taxon_id, trimming.runTrimmedFastqs.run_accession, trimming.runTrimmedFastqs.trimmedFastqFiles)
+        } else {
+          emit runAccessionFastqs(subsampling.sampledFastqFiles.taxon_id, subsampling.sampledFastqFiles.run_accession, subsampling.sampledFastqFiles.pairedFastqFiles)
+        }
+    } else if (qc_status == 'QC_FAIL'){
+      CLEANING(taxon_id, run_accession)
+    }
 }

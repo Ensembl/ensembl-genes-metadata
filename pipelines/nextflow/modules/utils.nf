@@ -25,7 +25,9 @@ def checkTaxonomy(String jdbcUrl, String username, String password, String taxon
         def query = "SELECT * FROM meta  WHERE taxon_id = '${taxonId}'"
         def result = sql.rows(query)
         return result.size() > 0
-    } finally {
+    } catch (Exception ex) {
+        ex.printStackTrace()}
+    finally {
         sql.close()
     }
 }
@@ -44,6 +46,8 @@ def getLastCheckedDate(String jdbcUrl, String username, String password, String 
             def dateFormat = new SimpleDateFormat("yyyy-MM-dd") // Adjust the format if needed
             lastCheckedDate = dateFormat.parse(result[0].last_check)
         }
+    } catch (Exception ex) {
+        ex.printStackTrace()    
     } finally {
         sql.close()
     }
@@ -63,7 +67,8 @@ def insertMetaRecord(String jdbcUrl, String username, String password, String ta
         // Execute the SQL INSERT statement
         def insertQuery = "INSERT INTO meta (taxon_id, last_checked_date) VALUES ('${taxonId}', '${formattedDate}')"
         sql.executeUpdate(insertQuery, 'meta_id')
-
+    } catch (Exception ex) {
+        ex.printStackTrace()
     } finally {
         sql.close()
     }
@@ -79,10 +84,11 @@ def updateLastCheckedDate(String jdbcUrl, String username, String password, Stri
         def formattedDate = currentDate.format(dateFormatter)
 
         // Execute the SQL UPDATE statement
-        def updateQuery = "UPDATE meta set last_checked_date = '${formattedDate}' where taxon_id = '${taxonId}'"
+        def updateQuery = "UPDATE meta SET last_checked_date = '${formattedDate}' WHERE taxon_id = '${taxonId}'"
         sql.executeUpdate(updateQuery)
-
-    } finally {
+    } catch (Exception ex) {
+        ex.printStackTrace()
+    }finally {
         sql.close()
     }
 
@@ -92,7 +98,90 @@ def build_ncbi_path(gca, assembly_name) {
     return  'https://ftp.ncbi.nlm.nih.gov/genomes/all'  + '/' + gca_splitted + '/' + "$gca" +'_' + assembly_name.replaceAll(" ","_") + '/' + "$gca" + '_' + assembly_name.replaceAll(" ","_") + '_genomic.fna.gz'
 }
 
+def getPairedFastqsURL(String jdbcUrl, String username, String password, String run_accession) {
+    def sql = Sql.newInstance(jdbcUrl, username, password)
+    try {
+        def query = "SELECT url FROM file INNER JOIN run ON run_id WHERE run_accession = '${run_accession}'"
+        def result = sql.rows(query)
+    } catch (Exception ex) {
+    ex.printStackTrace()    
+    } finally {
+        sql.close()
+    }
 
+    return result
+}
+
+def checkFastqc(String jdbcUrl, String username, String password, String run_accession) {
+    def sql = Sql.newInstance(jdbcUrl, username, password)
+    def query = """ SELECT basic_statistics, per_base_sequence_quality, per_sequence_quality_scores, \
+        per_base_sequence_content 
+        FROM data_files df 
+        INNER JOIN run r on df.run_id =r.run_id 
+        WHERE r.run_id= '${run_accession}'
+        """
+    def qc_status = null 
+
+    try {
+        def result = sql.rows(query)
+        // Process the results
+        results.each { row ->
+        def basicStatistics = row.basic_statistics
+        def perBaseSequenceQuality = row.per_base_sequence_quality
+        def perSequenceQualityScores = row.per_sequence_quality_scores
+        def perBaseSequenceContent = row.per_base_sequence_content
+        if (basicStatistics=='PASS' && perBaseSequenceQuality='PASS' &&
+            perSequenceQualityScores='PASS' && perBaseSequenceContent='PASS') {
+            // Execute the SQL UPDATE statement
+            def updateQuery = "UPDATE RUN set qc_status = 'QC_PASS' WHERE run_id= '${run_accession}'"
+            sql.executeUpdate(updateQuery)
+            qc_status = 'QC_PASS'
+            }
+        else {
+            // Execute the SQL UPDATE statement
+            def updateQuery = "UPDATE RUN set qc_status = 'QC_FAIL' WHERE run_id= '${run_accession}'"
+            sql.executeUpdate(updateQuery)
+            qc_status = 'QC_FAIL'
+            }
+    }
+    } catch (Exception ex) {
+        ex.printStackTrace()}
+    finally {
+        sql.close()
+    }
+
+    return qc_status
+}
+
+def checkOverrepresentedSequences(String jdbcUrl, String username, String password, String run_accession) {
+    def sql = Sql.newInstance(jdbcUrl, username, password)
+    def query = """ SELECT overrepresented_sequences 
+        FROM data_files df 
+        INNER JOIN run r on df.run_id =r.run_id 
+        WHERE r.run_id= '${run_accession}'
+        """
+    def overrepresented_sequences = null 
+
+    try {
+        def result = sql.rows(query)
+        // Process the results
+        results.each { row ->
+        def OverrepresentedSequences = row.overrepresented_sequences
+        
+        if (OverrepresentedSequences=='WARN' OR OverrepresentedSequences=='FAIL') {
+            overrepresented_sequences = True
+            }
+        else {
+            overrepresented_sequences = False
+            }
+    }
+    } catch (Exception ex) {
+        ex.printStackTrace()}
+    finally {
+        sql.close()
+    }
+    return overrepresented_sequences
+}
 def concatString(string1, string2, string3){
     return string1 + '_'+string2 + '_'+string3
 }
