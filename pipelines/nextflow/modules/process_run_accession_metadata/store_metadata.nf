@@ -24,10 +24,6 @@ process STORE_METADATA {
     input:
     file run_accession_metadata
 
-
-    output:
-    tuple fastq_paired_files, emit: fastq_paired_files
-
     script:
     """
     //src/python/ensembl/genes/metadata/populate_metadata_tables.py ??

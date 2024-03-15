@@ -21,8 +21,7 @@ process GET_RUN_ACCESSION_METADATA {
     tag "$run_accession"
 
     input:
-    val taxon_id
-    val run_accession
+    tuple val(taxon_id), val(run_accession)
 
     output:
     file(joinPath(params.outDir, "${taxon_id}", "${run_accession}", "metadata.json")) into runAccessionsMetadataPath

@@ -20,8 +20,7 @@ process DOWNLOAD_PAIRED_FASTQ {
     tag "download ${run_accession} fastqs"
     // Define input parameters
     input:
-    val taxon_id
-    val run_accession
+    tuple val(taxon_id), val(run_accession)
 
     // Define output channel
     output:
