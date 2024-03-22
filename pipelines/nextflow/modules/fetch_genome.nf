@@ -17,29 +17,28 @@
 
 // module description 
 
-// Import utility functions
-include { build_ncbi_path } from './../utils.nf'
-include { concatString } from './../utils.nf'
 
 process FETCH_GENOME {
-  //memory { 8.GB * task.attempt }
-  label 'default'
-    scratch false
+
+  label 'fetch_file'
   input:
-  //tuple val(gca), val(assembly_name)
   val gca
-  val assembly_name
-  val busco_lineage
-  storeDir "${params.outDir}/${gca}/data/"
+  val taxon_id
+  val run_accession
+
   
   output:
+  val taxon_id, emit:taxon_id
+  val run_accession, emit:run_accession
   val(gca), emit:gca
-  path "*.fna", emit: genome_file
-  val busco_lineage, emit:busco_lineage
+  file(joinPath(params.outDir, "${taxon_id}", "${run_accession}", "ncbi_dataset", "data", "${gca}", "*.fna") ), emit: genome_file
+
 
   script:
   """
-  wget  ${build_ncbi_path("${gca}", "${assembly_name}")}
-  gzip -d -f ${concatString("${gca}", "${assembly_name.replaceAll(" ","_")}", 'genomic.fna.gz')}
+  curl -X GET "${params.ncbiBaseUrl}/${gca}/download?include_annotation_type=GENOME_FASTA&hydrated=FULLY_HYDRATED"  -H "Accept: application/zip" --output genome_file.zip
+  unzip genome_file.zip
+  
+  //ncbi_dataset/data/GCA_963576655.1/GCA_963576655.1_icGasPoly1.1_genomic.fna 
   """
 }
