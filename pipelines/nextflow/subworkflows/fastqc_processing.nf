@@ -22,7 +22,9 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 
-includeConfig './nextflow.config'
+includeConfig './pipelines/workflows/nextflow.config'
+include { checkFastqc, checkOverrepresentedSequences  } from './pipelines/modules/utils.nf'
+
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     IMPORT LOCAL MODULES/SUBWORKFLOWS

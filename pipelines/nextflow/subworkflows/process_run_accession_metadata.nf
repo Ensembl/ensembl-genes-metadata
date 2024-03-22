@@ -22,7 +22,7 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 
-includeConfig './nextflow.config'
+includeConfig './pipelines/workflows/nextflow.config'
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     IMPORT LOCAL MODULES/SUBWORKFLOWS
@@ -30,7 +30,7 @@ includeConfig './nextflow.config'
 */
 
 
-include { STORE_METADATA } from '../modules/process_run_accession_metadata/store_metadata.nf'
+include { STORE_METADATA } from '../modules/store_metadata.nf'
 include { DOWNLOAD_PAIRED_FASTQS } from '../modules/process_run_accession_metadata/download_paired_fastqs.nf'
 include { GET_RUN_ACCESSION_METADATA } from '../modules/process_run_accession_metadata/get_run_accession_metadata.nf'
 

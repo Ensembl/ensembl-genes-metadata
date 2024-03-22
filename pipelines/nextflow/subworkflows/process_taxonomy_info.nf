@@ -22,7 +22,8 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 
-includeConfig './nextflow.config'
+includeConfig './pipelines/workflows/nextflow.config'
+include { checkTaxonomy, getLastCheckedDate, updateLastCheckedDate, insertMetaRecord } from './pipelines/modules/utils.nf'
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     IMPORT LOCAL MODULES/SUBWORKFLOWS
