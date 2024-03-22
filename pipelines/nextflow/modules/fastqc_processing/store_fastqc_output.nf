@@ -31,7 +31,7 @@ process STORE_FASTQC_OUTPUT {
     def command = "python ${pythonScript} --file-path ${fastqcMetadata}"
 
     // Execute the Python script
-    def process = ["python", pythonScript.toString(), run_accession].execute()
+    def process = command.execute()
     process.waitFor()
     
     // Check if the script execution was successful

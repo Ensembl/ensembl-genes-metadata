@@ -33,7 +33,7 @@ process PROCESS_FASTQC_OUTPUT {
     def command = "python ${pythonScript} ${fastqcOutput}"
 
     // Execute the Python script
-    def process = ["python", pythonScript.toString(), run_accession].execute()
+    def process = command.execute()
     process.waitFor()
     
     // Check if the script execution was successful

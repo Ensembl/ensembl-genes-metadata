@@ -36,7 +36,7 @@ process SUBSAMPLE_FASTQC_FILES {
     def command = "python ${pythonScript} "
 
     // Execute the Python script
-    def process = ["python", pythonScript.toString(), run_accession].execute()
+    def process = command.execute()
     process.waitFor()
 
     // Check if the script execution was successful
