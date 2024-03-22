@@ -107,21 +107,10 @@ if (!params.taxon_id) {
     error "You must provide a value for taxon_id either via command line or config."
 }
 
-if (!params.run_accession) {
-    error "You must provide a value for taxon_id either via command line or config."
+if (!params.gca) {
+    error "You must provide a value for assembly accession either via command line or config."
 }
 
-
-if (!params.host) {
-  exit 1, "Undefined --host parameter. Please provide the server host for the db connection"
-}
-
-if (!params.port) {
-  exit 1, "Undefined --port parameter. Please provide the server port for the db connection"
-}
-if (!params.user) {
-  exit 1, "Undefined --user parameter. Please provide the server user for the db connection"
-}
 
 if (!params.enscode) {
   exit 1, "Undefined --enscode parameter. Please provide the enscode path"
@@ -150,10 +139,11 @@ include {                  } from '../modules/local/'
 // SUBWORKFLOW
 //
 
-include { PROCESS_TAXONOMY_INFO } from '../../subworkflows/process_taxonomy_info/process_taxonomy_info.nf'
-include { PROCESS_RUN_ACCESSION_METADATA } from '../../subworkflows/process_run_accession_metadata/process_run_accession_metadata.nf'
-include { FASTQ_PROCESSING } from '../../subworkflows/fastq_processing/fastq_processing.nf'
-include { RUN_ALIGNMENT } from '../../subworkflows/run_alignment/run_alignment.nf'
+include { PROCESS_TAXONOMY_INFO } from '../subworkflows/process_taxonomy_info/process_taxonomy_info.nf'
+include { PROCESS_RUN_ACCESSION_METADATA } from '../subworkflows/process_run_accession_metadata/process_run_accession_metadata.nf'
+include { FASTQ_PROCESSING } from '../subworkflows/fastq_processing/fastq_processing.nf'
+include { RUN_ALIGNMENT } from '../subworkflows/run_alignment/run_alignment.nf'
+include { FETCH_GENOME } from '../modules/fetch_genome.nf'
 //include { DUMP_SQL } from '../../subworkflows/dump_sql/main.nf'
 
 
@@ -175,6 +165,7 @@ workflow SHORT_READ {
     PROCESS_TAXONOMY_INFO (
         params.taxon_id,
     )
+    genome_file=FETCH_GENOME(gca)
     //run_accession_list = key from PROCESS_TAXONOMY_INFO.runAccessionsPath.splitJson().flatten()
     run_accession_list = Channel.fromPath(PROCESS_TAXONOMY_INFO.runAccessionsPath).splitCsv()
     
@@ -182,57 +173,9 @@ workflow SHORT_READ {
         // Generate a job for each accession
         def processMetadata = PROCESS_RUN_ACCESSION_METADATA(params.taxon_id, accession)
         def processFastq = FASTQ_PROCESSING(processMetadata.taxon_id, accession, processMetadata.pairedFastqFiles)
-        RUN_ALIGNMENT(FASTQ_PROCESSING.runAccessionFastqs)
+        RUN_ALIGNMENT(params.gca,genome_file,processFastq.runAccessionFastqs)
     }
-    
-    run_accession_list = PROCESS_TAXONOMY_INFO.runAccessionsPath.splitJson().flatten()
-    def json = '[{"run_accession1": ["ABC123", "123"]}, {"run_accession2": ["DEF456", "34"]}]'
-
-    // Parse the JSON string into a list of maps
-    def jsonMapList = new groovy.json.JsonSlurper().parseText(run_accession_list)
-
-    // Iterate over the list of maps and process each key-value pair
-    jsonMapList.each { jsonMap ->
-        jsonMap.each { key, value ->
-            //println "Key: $key, Value: $value"
-            // Here you can perform further processing based on the key-value pairs
-            // For example, you can pass the key and value to another process or function
-            // STORE METADATA
-            PROCESS_RUN_ACCESSION_METADATA(value)//  is taxon id in the values?
-            FASTQ_PROCESSING(params.taxon_id, PROCESS_RUN_ACCESSION_METADATA.paired_fastq_files_path)
-            RUN_ALIGNMENT(FASTQ_PROCESSING.)
-        }
-    }
-    // Assign run accessions directly to run_accession_list
-    run_accession_list = PROCESS_TAXONOMY_INFO.runAccessionsPath.splitJson().flatten()
-}
-
-      
-      unprocessed_run_accession = run_accession_list(PROCESS_TAXONOMY_INFO.out.filtered_run_accessions).flatten()
-
-    }
-    else {
-      unprocessed_run_accession = params.run_accession
-    }
-
-    // PER RUN ACCESSION
-
-    //get and store metadata and download fastq paired files    output paired file path
-    PROCESS_RUN_ACCESSION_METADATA (
-        params.taxon_id,
-        params.transcriptomic_dbname ,                
-        params.transcriptomic_host,                  
-        params.transcriptomic_port,   
-        params.transcriptomic_user,    
-        params.transcriptomic_password,
-        unprocessed_run_accession
-        params.outDir
-
-    )
-
-    
-}
-
+}  
 
 workflow.onComplete {
     log.info "Pipeline completed at: ${new Date().format('dd-MM-yyyy HH:mm:ss')}"
