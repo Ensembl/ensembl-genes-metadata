@@ -33,7 +33,7 @@ process GET_RUN_ACCESSION_METADATA {
     def command = "python ${pythonScript} ${run_accession}"
 
     // Execute the Python script
-    def process = ["python", pythonScript.toString(), run_accession].execute()
+    def process = command.execute()
     process.waitFor()
     
     // Check if the script execution was successful
