@@ -205,3 +205,18 @@ def getRunId(String jdbcUrl, String username, String password, String run_access
     }
     
 }
+
+def updateFastqcStatus(String jdbcUrl, String username, String password, String run_accession) {
+    def sql = Sql.newInstance(jdbcUrl, username, password)
+
+    try {
+        // Execute the SQL UPDATE statement
+        def updateQuery = "UPDATE run SET qc_status = 'ALIGNED' WHERE run_accession = '${run_accession}'"
+        sql.executeUpdate(updateQuery)
+    } catch (Exception ex) {
+        ex.printStackTrace()
+    }finally {
+        sql.close()
+    }
+
+}

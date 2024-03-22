@@ -51,6 +51,7 @@ workflow {
     star_output = RUN_STAR(genome_file.gca, genome_file.genome_file, fastqFile1, fastqFile2 )
     start_stats_json = EXTRACT_UNIQUELY_MAPPED_READS_PERCENTAGE(star_output.log_final_out, run_accession, gca)
     STORE_METADATA(start_stats_json.star_metadata)
+    updateFastqcStatus(params.jdbcUrl, params.transcriptomic_user, params.transcriptomic_password, run_accession)
     CLEANING(taxon_id, run_accession)
 
 }
