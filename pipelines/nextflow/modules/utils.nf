@@ -186,7 +186,22 @@ def concatString(string1, string2, string3){
     return string1 + '_'+string2 + '_'+string3
 }
 
-def getDataset(busco_lineage){
-    String fileContents = new File(busco_lineage).text
-    return fileContents
+def calculateIndexBases(genomeFile) {
+    def indexBases = Math.min(14, Math.floor((Math.log(genomeFile, 2) / 2) - 1))
+    return indexBases
+}
+
+def getRunId(String jdbcUrl, String username, String password, String run_accession, String gca, String percentage_mapped) {
+    def sql = Sql.newInstance(jdbcUrl, username, password)
+    def run_id = null
+    try {
+        def query = "SELECT run_id  FROM run WHERE run_accession = '${run_accession}'"
+        run_id = sql.rows(query)
+        return run_id
+    } catch (Exception ex) {
+        ex.printStackTrace()
+    } finally {
+        sql.close()
+    }
+    
 }
