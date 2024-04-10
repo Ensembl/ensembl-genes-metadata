@@ -1,48 +1,22 @@
 #!/usr/bin/env nextflow
 /*
-  See the NOTICE file distributed with this work for additional information
-  regarding copyright ownership.
+See the NOTICE file distributed with this work for additional information
+regarding copyright ownership.
 
-  Licensed under the Apache License, Version 2.0 (the "License");
-  you may not use this file except in compliance with the License.
-  You may obtain a copy of the License at
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
 
-  http://www.apache.org/licenses/LICENSE-2.0
+http://www.apache.org/licenses/LICENSE-2.0
 
-  Unless required by applicable law or agreed to in writing, software
-  distributed under the License is distributed on an "AS IS" BASIS,
-  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  See the License for the specific language governing permissions and
-  limitations under the License.
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
 */
 
 nextflow.enable.dsl=2
-
-/*
-========================================================================================
-                         SteadyFlow - Steady Sate Transcription PIPELINE
-========================================================================================
-Steady Sate Analysis Pipeline. Started 2018-06-21.
- #### Homepage / Documentation
- https://github.com/Dowell-Lab/RNA-seq-Flow
- #### Authors
- Margaret Gruca <magr0763@colorado.edu>
-========================================================================================
-========================================================================================
-
-Pipeline steps:
-
-    1. Pre-processing sra/fastq
-        # Proces taxonomy info
-        # Download fastq/files (paired only)
-
-    2. FastQC mapping and quality control
-        # FastQC -- perform FastQC on fastq files and evaluate the status
-
-    3. STAR alignment and mapping coverage evaluation
-        # STAR - calculate mapping coverage for a read pair for a provided genome file 
-
-*/
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -55,10 +29,12 @@ if (params.help) {
     =========================================
     Transcriptomic pipeline for short read evaluation and filtering
     =========================================
-    Usage:
+    Usage
+    -----   
 
     The typical command for running the pipeline is as follows:
 
+    .. code-block:: nextflow
     nextflow run main.nf -profile slurm --fastqs '/project/*_{R1,R2}*.fastq' --outdir '/project/'
 
     Required arguments:
@@ -97,31 +73,63 @@ includeConfig './nextflow.config'
 
 
 params.taxon_id = params.taxon_id ?: config.taxon_id
-params.genome_file = config.genome_file //it can be downloaded using assembly name and GCA
-params.run_accession = = params.run_accession ?: config.run_accession  //TEMPORARY
 params.outDir = params.outDir ?: config.outDir
-params.assembly_name = params.assembly_name ?: config.assembly_name
-params.assembly_accession = params.assembly_name ?: config.assembly_name
+params.assembly_accession = params.assembly_accession ?: config.assembly_accession
 
 if (!params.taxon_id) {
     error "You must provide a value for taxon_id either via command line or config."
 }
 
-if (!params.gca) {
+if (!params.assembly_accession) {
     error "You must provide a value for assembly accession either via command line or config."
 }
 
+if (!params.transcriptomic_dbhost) {
+    exit 1, "Undefined --host parameter. Please provide the server host for the db connection"
+}
+
+if (!params.transcriptomic_dbport) {
+    exit 1, "Undefined --port parameter. Please provide the server port for the db connection"
+}
+if (!params.transcriptomic_dbuser) {
+    exit 1, "Undefined --user parameter. Please provide the server user for the db connection"
+}
 
 if (!params.enscode) {
-  exit 1, "Undefined --enscode parameter. Please provide the enscode path"
+    exit 1, "Undefined --enscode parameter. Please provide the enscode path"
 }
 if (!params.outDir) {
-  exit 1, "Undefined --outDir parameter. Please provide the output directory's path"
+    exit 1, "Undefined --outDir parameter. Please provide the output directory's path"
 }
 if (!params.cacheDir) {
-  exit 1, "Undefined --cacheDir parameter. Please provide the cache dir directory's path"
+    exit 1, "Undefined --cacheDir parameter. Please provide the cache dir directory's path"
 }
 
+/*
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    HELP
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+*/
+
+if (params.help) {
+    log.info ''
+    log.info 'Pipeline to process short read data fo a given taxon id'
+    log.info '-------------------------------------------------------'
+    log.info ''
+    log.info 'Usage: '
+    log.info '  nextflow -C ...'
+    log.info ''
+    log.info 'Options:'
+    log.info '  --host STR                   Db host server '
+    log.info '  --port INT                   Db port  '
+    log.info '  --user STR                   Db user  '
+    log.info '  --enscode STR                Enscode path '
+    log.info '  --outDir STR                 Output directory. Default is workDir'
+    log.info '  --taxon id INT               Taxon Id'
+    log.info '  --assembly_accession STR     Assembly accession'
+    log.info '  --bioperl STR                BioPerl path (optional)'
+    exit 1
+}
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -131,28 +139,23 @@ if (!params.cacheDir) {
 */
 
 //
-// MODULE: Loaded from modules/
+// MODULE
 //
-include {                  } from '../modules/local/'
-
+include { FETCH_GENOME } from '../modules/fetch_genome.nf'
 //
 // SUBWORKFLOW
 //
 
-include { PROCESS_TAXONOMY_INFO } from '../subworkflows/process_taxonomy_info/process_taxonomy_info.nf'
-include { PROCESS_RUN_ACCESSION_METADATA } from '../subworkflows/process_run_accession_metadata/process_run_accession_metadata.nf'
-include { FASTQ_PROCESSING } from '../subworkflows/fastq_processing/fastq_processing.nf'
-include { RUN_ALIGNMENT } from '../subworkflows/run_alignment/run_alignment.nf'
-include { FETCH_GENOME } from '../modules/fetch_genome.nf'
-//include { DUMP_SQL } from '../../subworkflows/dump_sql/main.nf'
+include { PROCESS_TAXONOMY_INFO } from '../subworkflows/process_taxonomy_info.nf'
+include { PROCESS_RUN_ACCESSION_METADATA } from '../subworkflows/process_run_accession_metadata.nf'
+include { FASTQ_PROCESSING } from '../subworkflows/fastq_processing.nf'
+include { RUN_ALIGNMENT } from '../subworkflows/run_alignment.nf'
 
 
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    RUN MAIN WORKFLOW
-
-    input taxon id, gca, assembly name, species name if needed for the genome file 
+    MAIN WORKFLOW
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
@@ -165,7 +168,7 @@ workflow SHORT_READ {
     PROCESS_TAXONOMY_INFO (
         params.taxon_id,
     )
-    genome_file=FETCH_GENOME(gca)
+    genome_file=FETCH_GENOME(params.assembly_accession)
     //run_accession_list = key from PROCESS_TAXONOMY_INFO.runAccessionsPath.splitJson().flatten()
     run_accession_list = Channel.fromPath(PROCESS_TAXONOMY_INFO.runAccessionsPath).splitCsv()
     
@@ -173,7 +176,7 @@ workflow SHORT_READ {
         // Generate a job for each accession
         def processMetadata = PROCESS_RUN_ACCESSION_METADATA(params.taxon_id, accession)
         def processFastq = FASTQ_PROCESSING(processMetadata.taxon_id, accession, processMetadata.pairedFastqFiles)
-        RUN_ALIGNMENT(params.gca,genome_file,processFastq.runAccessionFastqs)
+        RUN_ALIGNMENT(params.assembly_accession,genome_file,processFastq.runAccessionFastqs)
     }
 }  
 

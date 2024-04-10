@@ -1,19 +1,19 @@
 #!/usr/bin/env nextflow
 /*
-   See the NOTICE file distributed with this work for additional information
-   regarding copyright ownership.
+See the NOTICE file distributed with this work for additional information
+regarding copyright ownership.
 
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
 
-   http://www.apache.org/licenses/LICENSE-2.0
+http://www.apache.org/licenses/LICENSE-2.0
 
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
 */
 
 nextflow.enable.dsl=2
@@ -55,12 +55,12 @@ workflow FASTQC_PROCESSING{
     fastqc_output = RUN_FASTQC(taxon_id, run_accession, pairedFastqFiles)
     PROCESS_FASTQC_OUTPUT(fastqc_output.taxon_id, fastqc_output.run_accession, fastqc_output.fastqcOutput)
     STORE_FASTQC_OUTPUT(PROCESS_FASTQC_OUTPUT.fastqcMetadata)
-    def qc_status = checkFastqc(params.jdbcUrl, params.transcriptomic_user, params.transcriptomic_password, run_accession)
+    def qc_status = checkFastqc(params.jdbcUrl, params.transcriptomic_dbuser, params.transcriptomic_dbpassword, run_accession)
 
     output:
     if (qc_status == 'QC_PASS'){
         subsampling = SUBSAMPLE_FASTQ_FILES(taxon_id, run_accession, pairedFastqFiles)
-        def  overrepresented_sequences = checkOverrepresentedSequences(params.jdbcUrl, params.transcriptomic_user, params.transcriptomic_password, run_accession)
+        def  overrepresented_sequences = checkOverrepresentedSequences(params.jdbcUrl, params.transcriptomic_dbuser, params.transcriptomic_dbpassword, run_accession)
 
         if (overrepresented_sequences == true){
           trimming = ADAPTER_TRIMMING(subsampling.subsampledFastqs.taxon_id, subsampling.run_accession, subsampling.subsampledFastqs)
