@@ -16,7 +16,9 @@ create table data_files (
 	sequence_duplication_levels SET("PASS","FAIL","WARN"),
 	overrepresented_sequences SET("PASS","FAIL","WARN"),
 	adapter_content SET("PASS","FAIL","WARN"),
-	primary key (file_id)
+	total_sequences int,
+	gc_content int,
+	primary	key (file_id)
 );
 create table study (
 	study_id int not null auto_increment,
