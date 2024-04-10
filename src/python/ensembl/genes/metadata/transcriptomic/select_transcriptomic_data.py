@@ -22,7 +22,7 @@ import random
 from collections import Counter
 
 #need to add path to config
-with open("./config.json", "r") as f:
+with open(os.environ["ENSCODE"] + "/ensembl-genes-metadata/config.json", "r") as f:
     config = json.load(f)
 
 def mysql_fetch_data(query, database, host, port, user, password):
