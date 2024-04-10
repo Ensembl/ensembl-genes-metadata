@@ -33,7 +33,8 @@ process SUBSAMPLE_FASTQC_FILES {
     script:
     """
     // Construct the command based on whether last_date is provided
-    def pythonScript = file("$projectDir/src/python/ensembl/genes/ ")
+    def pythonScript = file("${params.enscode}/ensembl-anno/support_scripts/subsample_fastq.py ")
+
     def command = "python ${pythonScript} "
 
     // Execute the Python script
