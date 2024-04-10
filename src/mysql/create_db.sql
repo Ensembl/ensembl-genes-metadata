@@ -37,7 +37,7 @@ create table run (
 	run_accession varchar(255) not null,
 	species_taxon_id int not null,
 	genus_taxon_id int,
-	qc_status varchar(255),
+	qc_status SET("NOT_CHECKED","QC_PASS","QC_FAIL","ALIGNED"),
 	sample_accession varchar(255) not null,
 	study_accession varchar(255) not null,
 	read_type varchar(255),
