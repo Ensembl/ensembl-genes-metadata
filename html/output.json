@@ -1,0 +1,6 @@
+{"filename": "index.rst", "lineno": 45, "status": "unchecked", "code": 0, "uri": "", "info": ""}
+{"filename": "index.rst", "lineno": 30, "status": "unchecked", "code": 0, "uri": "#install", "info": ""}
+{"filename": "license.rst", "lineno": 4, "status": "redirected", "code": 301, "uri": "http://www.apache.org/licenses/", "info": "https://www.apache.org/licenses/"}
+{"filename": "license.rst", "lineno": 197, "status": "redirected", "code": 301, "uri": "http://www.apache.org/licenses/LICENSE-2.0", "info": "https://www.apache.org/licenses/LICENSE-2.0"}
+{"filename": "install.rst", "lineno": 27, "status": "working", "code": 0, "uri": "https://github.com/Ensembl/ensembl-analysis", "info": ""}
+{"filename": "install.rst", "lineno": 26, "status": "working", "code": 0, "uri": "https://github.com/Ensembl/ensembl-anno/tree/dev/python_repo", "info": ""}

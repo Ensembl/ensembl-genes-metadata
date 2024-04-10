@@ -1,0 +1,2 @@
+license.rst:4: [redirected permanently] http://www.apache.org/licenses/ to https://www.apache.org/licenses/
+license.rst:197: [redirected permanently] http://www.apache.org/licenses/LICENSE-2.0 to https://www.apache.org/licenses/LICENSE-2.0
