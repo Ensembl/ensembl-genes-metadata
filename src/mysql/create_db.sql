@@ -18,6 +18,8 @@ create table data_files (
 	adapter_content SET("PASS","FAIL","WARN"),
 	total_sequences int,
 	gc_content int,
+	read_count int,
+	read_length int,
 	primary	key (file_id)
 );
 create table study (
