@@ -13,6 +13,15 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+"""
+Script to create mysql queries (insert and update) given a json file as input
+    
+Raises:
+    ValueError: rise and exception when key are missing of the data is not properly formatted
+
+    Returns:
+    str: MySQl queries
+"""
 
 #import pymysql
 import json
@@ -115,7 +124,7 @@ def update_query(data_dict, table_name, table_conf):
         
     update_values = ','.join(update_list)
     
-    return f"UPDATE {table_name} SET {update_values} WHERE {condition}"
+    return f"UPDATE {table_name} SET {update_values} WHERE {condition} ;"
 
 def create_query(data_dict, table_name, update, table_conf):
     """
@@ -148,7 +157,7 @@ def main():
             "data_files": {"method": "per_col","dkey": "run_id", "ukey": "file_id"},
             "align": {"method": "per_col",  "dkey": "run_id", "ukey": "None"}
         }
-
+    
     db_params = {
         "host":"mysql-ens-genebuild-prod-1",
         "user":"ensadmin",
@@ -164,7 +173,7 @@ def main():
                                     description="Write JSON files to DB")
     
     parser.add_argument("--file-path", type=str,
-                        help="JSON file containing data to insert/update in a DB")
+                        help="Path to the JSON file containing data to insert/update in a DB")
     
     #parser.add_argument('--table-config', type=str,
     #                    help="file with the configuration of the DB")
