@@ -19,12 +19,15 @@ import groovy.sql.Sql
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
-def checkTaxonomy(String jdbcUrl, String username, String password, String taxonId) {
-    def sql = Sql.newInstance(jdbcUrl, username, password)
+def checkTaxonomy(String taxonId) {
+    def sql 
+    def driver = 'com.mysql.cj.jdbc.Driver'
+    def jdbcUrl = "jdbc:mysql://${params.transcriptomic_dbhost}:${params.transcriptomic_dbport}/${params.transcriptomic_dbname}"
+    sql = Sql.newInstance(jdbcUrl, params.transcriptomic_dbuser,params.transcriptomic_dbpassword,driver)
     
     try {
-        def query = "SELECT * FROM meta  WHERE taxon_id = '${taxonId}'"
-        def result = sql.rows(query)
+        def query = "SELECT * FROM meta  WHERE taxon_id = ? "
+        def result = sql.rows(query,[taxonId])
         return result.size() > 0
     } catch (Exception ex) {
         ex.printStackTrace()}
@@ -33,14 +36,16 @@ def checkTaxonomy(String jdbcUrl, String username, String password, String taxon
     }
 }
 
-def getLastCheckedDate(String jdbcUrl, String username, String password, String taxonId) {
-    def sql = Sql.newInstance(jdbcUrl, username, password)
+def getLastCheckedDate(String taxonId) {
+    def sql 
+    def driver = 'com.mysql.cj.jdbc.Driver'
+    def jdbcUrl = "jdbc:mysql://${params.transcriptomic_dbhost}:${params.transcriptomic_dbport}/${params.transcriptomic_dbname}"
+    sql = Sql.newInstance(jdbcUrl, params.transcriptomic_dbuser,params.transcriptomic_dbpassword,driver)
     def lastCheckedDate = null
 
     try {
-        def query = "SELECT last_check FROM meta WHERE taxon_id = '${taxonId}'"
-        def result = sql.rows(query)
-
+        def query = "SELECT last_check FROM meta WHERE taxon_id = ? "
+        def result = sql.rows(query, [taxonId])
         if (result.size() > 0) {
             // Assuming 'last_check' is a date-like column
             // Adjust the date format pattern based on the actual format in your database
@@ -57,7 +62,10 @@ def getLastCheckedDate(String jdbcUrl, String username, String password, String 
 }
 
 def insertMetaRecord(String jdbcUrl, String username, String password, String taxonId) {
-    def sql = Sql.newInstance(jdbcUrl, username, password)
+    def sql 
+    def driver = 'com.mysql.cj.jdbc.Driver'
+    def jdbcUrl = "jdbc:mysql://${params.transcriptomic_dbhost}:${params.transcriptomic_dbport}/${params.transcriptomic_dbname}"
+    sql = Sql.newInstance(jdbcUrl, params.transcriptomic_dbuser,params.transcriptomic_dbpassword,driver)
 
     try {
         // Get the current date and time
@@ -67,7 +75,7 @@ def insertMetaRecord(String jdbcUrl, String username, String password, String ta
 
         // Execute the SQL INSERT statement
         def insertQuery = "INSERT INTO meta (taxon_id, last_checked_date) VALUES ('${taxonId}', '${formattedDate}')"
-        sql.executeUpdate(insertQuery, 'meta_id')
+        sql.executeInsert(insertQuery)
     } catch (Exception ex) {
         ex.printStackTrace()
     } finally {
@@ -122,7 +130,19 @@ def checkFastqc(String jdbcUrl, String username, String password, String run_acc
         WHERE r.run_id= '${run_accession}'
         """
     def qc_status = null 
-
+    SELECT 
+        df1.basic_statistics AS basic_statistics_1, df1.per_base_sequence_quality AS per_base_sequence_quality_1,
+        df1.per_sequence_quality_scores AS per_sequence_quality_scores_1, df1.per_base_sequence_content AS per_base_sequence_content_1,
+        df2.basic_statistics AS basic_statistics_2, df2.per_base_sequence_quality AS per_base_sequence_quality_2,
+        df2.per_sequence_quality_scores AS per_sequence_quality_scores_2, df2.per_base_sequence_content AS per_base_sequence_content_2
+    FROM 
+        run r
+    JOIN 
+        data_files df1 ON r.run_id = df1.run_id
+    LEFT JOIN 
+        data_files df2 ON r.run_id = df2.run_id AND df1.data_file_id <> df2.data_file_id
+    WHERE 
+        r.run_id = '${run_accession}'
     try {
         def result = sql.rows(query)
         // Process the results

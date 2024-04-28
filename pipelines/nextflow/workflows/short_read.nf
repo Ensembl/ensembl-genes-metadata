@@ -71,19 +71,6 @@ if (params.help){
 
 includeConfig './nextflow.config'
 
-
-params.taxon_id = params.taxon_id ?: config.taxon_id
-params.outDir = params.outDir ?: config.outDir
-params.assembly_accession = params.assembly_accession ?: config.assembly_accession
-
-if (!params.taxon_id) {
-    error "You must provide a value for taxon_id either via command line or config."
-}
-
-if (!params.assembly_accession) {
-    error "You must provide a value for assembly accession either via command line or config."
-}
-
 if (!params.transcriptomic_dbhost) {
     exit 1, "Undefined --host parameter. Please provide the server host for the db connection"
 }
@@ -98,9 +85,7 @@ if (!params.transcriptomic_dbuser) {
 if (!params.enscode) {
     exit 1, "Undefined --enscode parameter. Please provide the enscode path"
 }
-if (!params.outDir) {
-    exit 1, "Undefined --outDir parameter. Please provide the output directory's path"
-}
+
 if (!params.cacheDir) {
     exit 1, "Undefined --cacheDir parameter. Please provide the cache dir directory's path"
 }
@@ -120,13 +105,14 @@ if (params.help) {
     log.info '  nextflow -C ...'
     log.info ''
     log.info 'Options:'
-    log.info '  --host STR                   Db host server '
-    log.info '  --port INT                   Db port  '
-    log.info '  --user STR                   Db user  '
+    log.info '  --transcriptomic_dbhost STR                   Db host server '
+    log.info '  --transcriptomic_dbport INT                   Db port  '
+    log.info '  --transcriptomic_dbuser STR                   Db user  '
+    log.info '  --transcriptomic_dbpassword STR                   Db password  '
+    log.info '  --user_r STR                 Db user read_only'
     log.info '  --enscode STR                Enscode path '
     log.info '  --outDir STR                 Output directory. Default is workDir'
-    log.info '  --taxon id INT               Taxon Id'
-    log.info '  --assembly_accession STR     Assembly accession'
+    log.info '  --csvFile STR                Path for the csv containing the db name' 
     log.info '  --bioperl STR                BioPerl path (optional)'
     exit 1
 }
@@ -161,14 +147,17 @@ include { RUN_ALIGNMENT } from '../subworkflows/run_alignment.nf'
 
 workflow SHORT_READ {
     //jolly channel
-    run_accession_list = Channel.empty()
+    data = Channel.fromPath(params.csvFile, type: 'file', checkIfExists: true)
+                .splitCsv(sep:',', header:true)
+                .map { row -> [taxon_id:row.get('taxon_id'), gca:row.get('gca')]}
+                
 
     //taxon id present or not? if yes get all new short read data after this date if not add it for the first time
     //given taxon id, get list of run accession an 
-    PROCESS_TAXONOMY_INFO (
-        params.taxon_id,
-    )
-    genome_file=FETCH_GENOME(params.assembly_accession)
+    runAccessionList= PROCESS_TAXONOMY_INFO (data)
+    Channel.of(runAccessionList).groupTuple(taxon_id).collect()
+
+
     //run_accession_list = key from PROCESS_TAXONOMY_INFO.runAccessionsPath.splitJson().flatten()
     run_accession_list = Channel.fromPath(PROCESS_TAXONOMY_INFO.runAccessionsPath).splitCsv()
     

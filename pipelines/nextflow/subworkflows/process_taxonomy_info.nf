@@ -1,5 +1,4 @@
 #!/usr/bin/env nextflow
-#!/usr/bin/env nextflow
 /*
 See the NOTICE file distributed with this work for additional information
 regarding copyright ownership.
@@ -32,31 +31,20 @@ include { checkTaxonomy, getLastCheckedDate, updateLastCheckedDate, insertMetaRe
 */
 
 include { GET_RUN_ACCESSIONS } from '../modules/process_taxonomy_info/get_run_accessions.nf'
-
-
-//  taxon id present or not? if yes get all new short read data after this date if not add it for the first time
-
+include { PROCESS_TAXON_ID } from '../modules/process_taxonomy_info/process_taxon_id.nf'
 
 workflow PROCESS_TAXONOMY_INFO {
     take:
-    val taxon_id                   
+    val data                   
 
     // Define the output channel for run accessions
     output:
-    val run_accessions_path into runAccessionsPath
+    val(runAccessionList)
     
     main:
-    def taxonomyExists = checkTaxonomy(params.jdbcUrl, params.transcriptomic_dbuser, params.transcriptomic_dbpassword, taxonId)
-    if (taxonomyExists) {
-      // Retrieve new run accessions for short-read transcriptomic data published AFTER the last check date
-      def lastDate = getLastCheckedDate(params.jdbcUrl, params.transcriptomic_dbuser, params.transcriptomic_dbpassword, taxonId)
-      emit GET_RUN_ACCESSIONS (taxon_id, last_date)
-      updateLastCheckedDate(params.jdbcUrl, params.transcriptomic_dbuser, params.transcriptomic_dbpassword, taxonId)
-    else{
-      // Add the new taxon id and last_check=currentDate and retrieve all the run accessions for short-read transcriptomic data 
-      def addTaxonId= insertMetaRecord(params.jdbcUrl, params.transcriptomic_dbuser, params.transcriptomic_dbpassword, taxonId)
-      emit GET_RUN_ACCESSIONS (taxon_id)
-    }  
+    def data1=data
+    data1.flatten().view { d -> "Taxon ID: ${d.taxon_id}, GCA: ${d.gca},"}
+    def taxonomyInfo = PROCESS_TAXON_ID(data.flatten())
+    def (runAccessionList, runAccessionFile) = GET_RUN_ACCESSIONS(taxonomyInfo)
     
-    }
 }

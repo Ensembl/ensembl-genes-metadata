@@ -1,5 +1,11 @@
 create database transcriptomic_hackathon;
 use transcriptomic_hackathon;
+create table meta (
+	meta_id int not null auto_increment,
+	taxon_id int not null,
+	last_check DATE,
+	primary key (meta_id)
+);
 create table data_files (
 	file_id int not null auto_increment,
 	run_id int not null,

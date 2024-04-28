@@ -48,6 +48,8 @@ workflow {
     set fastqFile1, fastqFile2 from pairedFastqFiles
 
     main:
+
+      genome_file=FETCH_GENOME(params.assembly_accession)
     star_output = RUN_STAR(genome_file.gca, genome_file.genome_file, fastqFile1, fastqFile2 )
     start_stats_json = EXTRACT_UNIQUELY_MAPPED_READS_PERCENTAGE(star_output.log_final_out, run_accession, gca)
     STORE_METADATA(start_stats_json.star_metadata)

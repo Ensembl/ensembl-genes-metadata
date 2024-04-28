@@ -15,21 +15,23 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+import java.net.URLEncoder
 
 process GET_RUN_ACCESSION {
-
     label 'default'
-    tag "$taxon_id"
+    tag "$taxon_id:$gca"
+    storeDir "${params.cacheDir}/$taxon_id/"
+    afterScript "sleep $params.files_latency"  // Needed because of file system latency
 
     input:
-    val taxon_id
-    val dateQuery = null // Optional input parameter for date query (format: 'YYYY-MM-DD')
+    tuple val(taxon_id), val(gca), val(lastCheckedDate)
 
     output:
-    file(joinPath(params.outDir, "${taxon_id}", "run_accessions.txt")) into runAccessionsPath
+    val runAccessionData
+    path(".csv")
 
     script:
-    """
+
     def taxonQuery = "tax_eq(${taxon_id})"
     def instrumentQuery = "instrument_platform=ILLUMINA"
     def layoutQuery = "library_layout=PAIRED"
@@ -37,7 +39,7 @@ process GET_RUN_ACCESSION {
     def defaultDateQuery = "first_created >= '2019-01-01'" // Default date query if dateQuery is not provided
 
     // Use provided dateQuery if available, otherwise use default
-    def usedDateQuery = dateQuery ? "first_created >= '${dateQuery}'" : defaultDateQuery
+    def usedDateQuery = "first_created >= '${lastCheckedDate}'"
 
     def query = [taxonQuery, instrumentQuery, layoutQuery, sourceQuery, usedDateQuery].join(" AND ")
     def encodedQuery = URLEncoder.encode(query, 'UTF-8')
@@ -46,7 +48,13 @@ process GET_RUN_ACCESSION {
 
     def response = new URL(searchUrl).text
     def runAccessions = response.split("\\n").drop(1).join("\\n") // Remove header
-
+    def runAccessionList = []
+    rows = file(params.csvFile).readLines().drop(1) // Skip header
+    runAccessions.each { row ->
+            runAccessionList.add([taxon_id: taxon_id, gca: gca, run_accession: row])
+        }
+    runAccessionData = Channel.from(runAccessionList)    
     new File('run_accessions.csv').write(runAccessions)
-    """
+
+    updateLastCheckedDate(taxon_id)
 }

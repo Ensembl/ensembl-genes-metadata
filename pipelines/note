@@ -1,0 +1,35 @@
+I/O, Directory structures, File names
+
+/hps/nobackup/flicek/ensembl/genebuild/transcriptomic_assessment/metadata_qc/<taxon_id>/<run_accession>
+
+METADATA
+Input: list of run accessions in text on filesystem
+/hps/nobackup/flicek/ensembl/genebuild/transcriptomic_assessment/metadata_qc//<taxon_id>/run_accessions.txt
+Output: json metadata file on filesystem
+/hps/nobackup/flicek/ensembl/genebuild/transcriptomic_assessment/metadata_qc//<taxon_id>/<run_accession>/metadata.json (check name of this file)
+
+FASTQ files
+Input: run accession to create query
+Output: fastq files on file system
+/hps/nobackup/flicek/ensembl/genebuild/transcriptomic_assessment/metadata_qc/<taxon_id>/<run_accession>/<run_accession>_1.fastq
+AND
+/hps/nobackup/flicek/ensembl/genebuild/transcriptomic_assessment/metadata_qc/<taxon_id>/<run_accession>/<run_accession>_2.fastq
+
+FASTQC
+Input: fastq files on filesystem (from above)
+Output: fastqc output files 
+/hps/nobackup/flicek/ensembl/genebuild/transcriptomic_assessment/metadata_qc/<taxon_id>/<run_accession>/fastqc/<files?> (check names of files needed)
+
+SUBSAMPLE
+Input: fastq files on filesystem (from above)
+Output: subsampled fastq files on filesystem 
+/hps/nobackup/flicek/ensembl/genebuild/transcriptomic_assessment/metadata_qc/<taxon_id>/<taxon_id>/<run_accession>/<run_accession>_1.fastq.sub
+AND
+/hps/nobackup/flicek/ensembl/genebuild/transcriptomic_assessment/metadata_qc/<taxon_id>/<taxon_id>/<run_accession>/<run_accession>_2.fastq.sub
+
+(NOTE: you can specify the output filenames or the default will appened "sub" to the filenames, see code: https://github.com/Ensembl/ensembl-anno/blob/a8764837454ce984e294e8d9aaae45a30958deab/support_scripts/subsample_fastq.py#L145)
+
+STAR
+Input: subsampled fastq files on filesystem (from above)
+Output: STAR directory/ subdirectories/ files
+/hps/nobackup/flicek/ensembl/genebuild/transcriptomic_assessment/metadata_qc/<taxon_id>/<run_accession>/star/<files?> (check names of files needed)
