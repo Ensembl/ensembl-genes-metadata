@@ -1,3 +1,4 @@
+import argparse
 import logging
 import logging.config
 import os
@@ -5,29 +6,8 @@ import subprocess
 import json
 import re
 
-def run_fastqc(fastqc_dir):
-    # Get a list of all fastq files in the specified folder
-    fastq_files = [file for file in os.listdir(fastqc_dir) if file.endswith((".fastq", ".gz"))]
 
-    # Create output folder for FastQC results
-    output_folder = os.path.join(fastqc_dir, "fastqc_results")
-    os.makedirs(output_folder, exist_ok=True)
-
-    for fastq_file in fastq_files:
-        # Construct the full path to the input fastq file
-        input_file_path = os.path.join(fastqc_dir, fastq_file)
-
-        # Construct the full path to the output folder and file
-        output_file_path = os.path.join(output_folder, fastq_file.replace(".fastq", "_fastqc"))
-
-        # Run FastQC command using subprocess
-        #cmd = ["LC_ALL=C singularity", "exec", "./fastqc_latest.sif", "fastqc", "--outdir", output_folder, input_file_path, "-q", "--extract"]
-        cmd = "LC_ALL=C singularity exec ./fastqc_latest.sif fastqc --outdir {} {} -q --extract".format(output_folder, input_file_path)
-        subprocess.run(cmd, shell=True)
-
-        logging.info(f"FastQC completed for {fastq_file}. Results saved to {output_file_path}")
-
-def parse_fastqc_summary(summary_path):
+def parse_fastqc_summary(summary_path:str):
     # Read the summary.txt file and parse relevant information
     summary_data = {}
     with open(summary_path, 'r') as summary_file:
@@ -61,8 +41,8 @@ def parse_fastqc_data(fastqc_data_path):
     return fastqc_data
 
 def convert_to_json(folder_path):
-    # Create a dictionary to store parsed summary information for each fastq file
-    summary_data_dict = {}
+    # Create a list to store parsed summary information for each fastq file
+    data_files = []
 
     # Get a list of all fastq files in the specified folder
     fastq_files = [file for file in os.listdir(folder_path) if file.endswith(('.fastq', '.gz'))]
@@ -72,13 +52,26 @@ def convert_to_json(folder_path):
         summary_path = os.path.join(folder_path, 'fastqc_results', f'{fastq_file.replace(".fastq.gz", "_fastqc")}', 'summary.txt')
         fastqc_data_path = os.path.join(folder_path, 'fastqc_results', f'{fastq_file.replace(".fastq.gz", "_fastqc")}', 'fastqc_data.txt')
 
-        # Parse the summary file and store the information in the dictionary
+        # Parse the summary file and store the information in a dictionary
         summary_data = parse_fastqc_summary(summary_path)
         fastqc_data = parse_fastqc_data(fastqc_data_path)
-        summary_data_dict[fastq_file] = summary_data, fastqc_data
+        
+        # Create a dictionary for each file's data
+        file_data = {
+            "file_id": "",  # You can add an ID here if needed
+            "name": fastq_file,
+            **summary_data,  # Merge summary data into the dictionary
+            **fastqc_data     # Merge fastqc data into the dictionary
+        }
+        
+        # Append file data to the list
+        data_files.append(file_data)
 
+    # Wrap the list of file data into a dictionary with key "data_files"
+    output_data = {"data_files": data_files}
+    
     # Convert the dictionary to a JSON string
-    json_data = json.dumps(summary_data_dict, indent=2)
+    json_data = json.dumps(output_data, indent=2)
 
     # Save the JSON data to a file
     output_json_path = os.path.join(folder_path, 'fastqc_results_summary.json')
@@ -87,10 +80,19 @@ def convert_to_json(folder_path):
 
     logging.info(f"Summary data converted to JSON. Results saved to {output_json_path}")
 
+def parse_args():
+    """Parse command line arguments."""
+    parser = argparse.ArgumentParser(description="Parse FASTQC output and create JSON with specified keys")
+    parser.add_argument("--fastqc_results_path", required=True, type=str, help="Path to the FASTQC data file")
+    parser.add_argument("--output_dir", required=True, type=str, help="Output dir")
+    for key in keys_to_extract:
+        parser.add_argument(f"--{key}", action="store_true", help=f"Include {key} in output JSON")
+    # print(vars(parser))
+    return parser.parse_args()
+
 if __name__ == "__main__":
     # Configure logging
     logging.basicConfig(level=logging.INFO)
     folder_path = "/hps/nobackup/flicek/ensembl/genebuild/swati/fastqc/version_12_test/"
-    run_fastqc(folder_path)
     convert_to_json(folder_path)
 
