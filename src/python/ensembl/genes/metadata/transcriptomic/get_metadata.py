@@ -68,14 +68,45 @@ def _json_parse(response,fields) -> str:
     table = response.split('\n')
     data = table[1].split('\t')
 
-    data_dict = {}
-    for key in fields:
+    d = {}
+    for key in fields: 
         for value in data:
-            data_dict[key] = value
+            d[key] = value
             data.remove(value)
             break
+    
+    # we load the data from before in an orderly fashion to fit out format
+    metadata = {
+        'run' : ({
+            'taxon_id' : d[tax_id],
+            'run_accession' : d[run_accession],
+            # species tax id?
+            # genus?
+            'sample_accession' : d[sample_accession],
+            'study_accession' : d[study_accession],
+            'read_type' : d[library_strategy],
+            'platform' : d[instrument_platform],
+            # ...
+            }),
+        'study' : ({
+            'study_accession' : d[study_accession],
+            'center_name' : d[center_name]
+            }),
+        'data_files' : (
+            {
+                'name' : # function to split the records in two
+                'url' : 
+                'md5' : 
+                },
+            {
+                'name' : 
+                'url' : 
+                'md5' :
+                }
+        )
+    }
 
-    return json.dumps(data_dict)
+    return json.dumps(metadata)
 
 def main() -> None:
     """Module's entry-point."""
