@@ -28,6 +28,7 @@ def parse_fastqc_data(fastqc_data_path):
         data = f.read()
     # Regex patterns to extract total sequences and %GC
     total_sequences_pattern = r"Total Sequences\s+(\d+)"
+    sequence_length_pattern = r"Sequence length\s+(\d+)"
     gc_content_pattern = r"%GC\s+(\d+)"
     # Search for total sequences
     total_sequences_match = re.search(total_sequences_pattern, data)
@@ -37,6 +38,9 @@ def parse_fastqc_data(fastqc_data_path):
     gc_content_match = re.search(gc_content_pattern, data)
     if gc_content_match:
         fastqc_data['gc_content'] = int(gc_content_match.group(1))
+    sequence_length_match = re.search(sequence_length_pattern, data)
+    if sequence_length_match:
+        fastqc_data['sequence_length'] = int(sequence_length_match.group(1))
 
     return fastqc_data
 
