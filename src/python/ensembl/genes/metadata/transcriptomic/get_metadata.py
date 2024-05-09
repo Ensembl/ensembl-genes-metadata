@@ -75,40 +75,51 @@ def _json_parse(response,fields) -> str:
             data.remove(value)
             break
 
-    file_name = 
-    file_url = 
-    file_md5 = 
-    
     # we load the data from before in an orderly fashion to fit out format
     metadata = {
         'run' : ({
-            'taxon_id' : d[tax_id],
-            'run_accession' : d[run_accession],
-            # species tax id?
-            # genus?
-            'sample_accession' : d[sample_accession],
-            'study_accession' : d[study_accession],
-            'read_type' : d[library_strategy],
-            'platform' : d[instrument_platform],
-            # ...
+            # run_id -> vianey's script get it and assign it
+            'taxon_id' : d['tax_id'],
+            'run_accession' : d['run_accession'],
+            # species (when subspecies) and genus tax_id -> not in the list of available fields...
+            'qc_status' : 'NOT_CHECKED',
+            'sample_accession' : d['sample_accession'],
+            'study_accession' : d['study_accession'],
+            'read_type' : d['library_strategy'],
+            'platform' : d['instrument_platform'],
+            'paired' : 1 if d['library_layout'] == "PAIRED" else 0,
+            'experiment' : '; '.join(value for value in [d['experiment_alias'],d['experiment_title']] if value is not None),
+            'description' : d['description'],
+            'library_name' : '; '.join(value for value in [d['library_source'],d['library_name']] if value is not None),
+            'library_selection' : d['library_selection'],
+            'tissue' : '; '.join(value for value in [d['tissue_type'],d['tissue_lib']] if value != ""),
+            'cell_line' : d['cell_line'],
+            'cell_type' : d['cell_type'],
+            'strain' : '; '.join(value for value in [d['strain'],d['cultivar'],d['ecotype'],d['isolate']] if value != ""),
             }),
         'study' : ({
-            'study_accession' : d[study_accession],
-            'center_name' : d[center_name]
+            'study_accession' : d['study_accession'],
+            'center_name' : d['center_name']
             }),
-        'data_files' : (
-            {
-                'name' : # function to split the records in two
-                'url' : 
-                'md5' : 
-                },
-            {
-                'name' : 
-                'url' : 
-                'md5' :
-                }
-        )
+        'data_files' : list()
     }
+
+    file_name = list()
+    file_url = d['fastq_ftp'].split(';')
+    file_md5 = d['fastq_md5'].split(';')
+
+    for url in (file_url):
+        extension_name = url.split('/')[-1]
+        base_name = extension_name.split('.')[0]
+        file_name.append(base_name)
+
+    for i in range(len(file_name)):
+        read = {
+            'name'  : file_name[i],
+            'url'   : file_url[i],
+            'md5'   : file_md5[i]
+        }
+        metadata['data_files'].append(read)
 
     return json.dumps(metadata)
 
@@ -127,6 +138,7 @@ def main() -> None:
         'library_layout',       # paired
         'experiment_alias',     # \
         'experiment_title',     #  \ go to the same place
+        'description',
         'library_source',       # library_name (name is requested later, but it's often empty so we'll catch it still to fill tissue-related info if available but best to use source for this field)
         'library_selection',    # is this really needed?
         'tissue_type',          # \
@@ -138,7 +150,7 @@ def main() -> None:
         'cultivar',             # \
         'ecotype',              #  \
         'isolate',              #   \ these last ones are to cater for the different ways of expresin "strains"
-        'cage_protocol',        # this could be important to some farmed data, so added
+        # 'cage_protocol',        # this could be important to some farmed data, so added
         'center_name'
     )
 
