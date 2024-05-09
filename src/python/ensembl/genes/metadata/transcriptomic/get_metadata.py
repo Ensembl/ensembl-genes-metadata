@@ -74,6 +74,10 @@ def _json_parse(response,fields) -> str:
             d[key] = value
             data.remove(value)
             break
+
+    file_name = 
+    file_url = 
+    file_md5 = 
     
     # we load the data from before in an orderly fashion to fit out format
     metadata = {
