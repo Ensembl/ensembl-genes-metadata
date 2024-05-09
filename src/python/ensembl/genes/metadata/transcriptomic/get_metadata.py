@@ -76,7 +76,7 @@ def _json_parse(response,fields) -> str:
             break # and break the loop to go to the next field...
 
     # we load the data from before in an orderly fashion to fit out format
-    table_run = {
+    table_run = {'run' : {
         # run_id -> vianey's script get it and assign it
         'taxon_id' : d['tax_id'],
         'run_accession' : d['run_accession'],
@@ -95,14 +95,14 @@ def _json_parse(response,fields) -> str:
         'cell_line' : d['cell_line'],
         'cell_type' : d['cell_type'],
         'strain' : '; '.join(value for value in [d['strain'],d['cultivar'],d['ecotype'],d['isolate']] if value != ""),
-    }
+    }}
 
-    table_study = {
+    table_study = {'study' : {
         'study_accession' : d['study_accession'],
         'center_name' : d['center_name'],
-    }
+    }}
 
-    table_data_files = list()
+    table_data_files = {'data_files' : list()}
 
     file_name = list()
     file_url = d['fastq_ftp'].split(';')
@@ -119,7 +119,7 @@ def _json_parse(response,fields) -> str:
             'url'   : file_url[i],
             'md5'   : file_md5[i]
         }
-        table_data_files.append(read)
+        table_data_files['data_files'].append(read)
 
     json_run = json.dumps(table_run)
     json_study = json.dumps(table_study)
