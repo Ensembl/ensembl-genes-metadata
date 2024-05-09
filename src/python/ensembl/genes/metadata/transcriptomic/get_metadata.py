@@ -69,11 +69,11 @@ def _json_parse(response,fields) -> str:
     data = table[1].split('\t')
 
     d = {}
-    for key in fields: 
-        for value in data:
-            d[key] = value
-            data.remove(value)
-            break
+    for key in fields: # this loop iterates the values in "fields",
+        for value in data: # this loop iterates the values of "data", which contains the associated values for the fields
+            d[key] = value # we assignt the first value to the field, which, as they are ordered, will be the matching one
+            data.remove(value) # we delete the value from values to avoid it being assigned to the next one
+            break # and break the loop to go to the next field...
 
     # we load the data from before in an orderly fashion to fit out format
     table_run = {
