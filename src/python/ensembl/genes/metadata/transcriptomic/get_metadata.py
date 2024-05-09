@@ -76,33 +76,33 @@ def _json_parse(response,fields) -> str:
             break
 
     # we load the data from before in an orderly fashion to fit out format
-    metadata = {
-        'run' : ({
-            # run_id -> vianey's script get it and assign it
-            'taxon_id' : d['tax_id'],
-            'run_accession' : d['run_accession'],
-            # species (when subspecies) and genus tax_id -> not in the list of available fields...
-            'qc_status' : 'NOT_CHECKED',
-            'sample_accession' : d['sample_accession'],
-            'study_accession' : d['study_accession'],
-            'read_type' : d['library_strategy'],
-            'platform' : d['instrument_platform'],
-            'paired' : 1 if d['library_layout'] == "PAIRED" else 0,
-            'experiment' : '; '.join(value for value in [d['experiment_alias'],d['experiment_title']] if value is not None),
-            'description' : d['description'],
-            'library_name' : '; '.join(value for value in [d['library_source'],d['library_name']] if value is not None),
-            'library_selection' : d['library_selection'],
-            'tissue' : '; '.join(value for value in [d['tissue_type'],d['tissue_lib']] if value != ""),
-            'cell_line' : d['cell_line'],
-            'cell_type' : d['cell_type'],
-            'strain' : '; '.join(value for value in [d['strain'],d['cultivar'],d['ecotype'],d['isolate']] if value != ""),
-            }),
-        'study' : ({
-            'study_accession' : d['study_accession'],
-            'center_name' : d['center_name']
-            }),
-        'data_files' : list()
+    table_run = {
+        # run_id -> vianey's script get it and assign it
+        'taxon_id' : d['tax_id'],
+        'run_accession' : d['run_accession'],
+        # species (when subspecies) and genus tax_id -> not in the list of available fields...
+        'qc_status' : 'NOT_CHECKED',
+        'sample_accession' : d['sample_accession'],
+        'study_accession' : d['study_accession'],
+        'read_type' : d['library_strategy'],
+        'platform' : d['instrument_platform'],
+        'paired' : 1 if d['library_layout'] == "PAIRED" else 0,
+        'experiment' : '; '.join(value for value in [d['experiment_alias'],d['experiment_title']] if value is not None),
+        'description' : d['description'],
+        'library_name' : '; '.join(value for value in [d['library_source'],d['library_name']] if value is not None),
+        'library_selection' : d['library_selection'],
+        'tissue' : '; '.join(value for value in [d['tissue_type'],d['tissue_lib']] if value != ""),
+        'cell_line' : d['cell_line'],
+        'cell_type' : d['cell_type'],
+        'strain' : '; '.join(value for value in [d['strain'],d['cultivar'],d['ecotype'],d['isolate']] if value != ""),
     }
+
+    table_study = {
+        'study_accession' : d['study_accession'],
+        'center_name' : d['center_name'],
+    }
+
+    table_data_files = list()
 
     file_name = list()
     file_url = d['fastq_ftp'].split(';')
@@ -119,9 +119,18 @@ def _json_parse(response,fields) -> str:
             'url'   : file_url[i],
             'md5'   : file_md5[i]
         }
-        metadata['data_files'].append(read)
+        table_data_files.append(read)
 
-    return json.dumps(metadata)
+    json_run = json.dumps(table_run)
+    json_study = json.dumps(table_study)
+    json_data_files = json.dumps(table_data_files)
+
+    with open("insert_into_run.json", "w") as file:
+        file.write(json_run)
+    with open("insert_into_study.json", "w") as file:
+        file.write(json_study)
+    with open("insert_into_data_files.json", "w") as file:
+        file.write(json_data_files)
 
 def main() -> None:
     """Module's entry-point."""
