@@ -18,7 +18,7 @@ limitations under the License.
 
 include { checkTaxonomy } from '../utils.nf'
 include { getLastCheckedDate } from '../utils.nf'
-include { insertMetaRecord } from '../utils.nf'
+include { setMetaRecord } from '../utils.nf'
 
 process PROCESS_TAXON_ID {
 
@@ -29,20 +29,24 @@ process PROCESS_TAXON_ID {
     tuple val(taxon_id), val(gca)
 
     output:
-    tuple val(taxon_id), val(gca), val(lastCheckedDate)
+    tuple(val(taxon_id), val(gca), stdout)
 
 
     script:
+    //def lastCheckedDate =[]
     def taxonomyExists = checkTaxonomy(taxon_id)
     if (taxonomyExists){
-      // Retrieve new run accessions for short-read transcriptomic data published AFTER the last check date
-        lastCheckedDate = getLastCheckedDate(taxon_id)
-      //updateLastCheckedDate(params.jdbcUrl, params.transcriptomic_dbuser, params.transcriptomic_dbpassword, taxonId)
-    else{
-      // Add the new taxon id and last_check=currentDate and retrieve all the run accessions for short-read transcriptomic data 
-        addTaxonId = insertMetaRecord(taxon_id)
+        // Retrieve new run accessions for short-read transcriptomic data published AFTER the last check date
+        lastCheckedDate = getLastCheckedDate(taxon_id)[0].last_check
+        //updateLastCheckedDate(params.jdbcUrl, params.transcriptomic_dbuser, params.transcriptomic_dbpassword, taxonId)
+    }else{
+        // Add the new taxon id and last_check=currentDate and retrieve all the run accessions for short-read transcriptomic data 
+        setMetaRecord(taxon_id,'insert')
         lastCheckedDate = '2019-01-01'
-        }  
     }
 
+    //lastCheckedDate.view()
+    """
+    echo $lastCheckedDate
+    """
 }    

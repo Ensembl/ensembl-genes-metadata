@@ -18,50 +18,6 @@ limitations under the License.
 
 nextflow.enable.dsl=2
 
-/*
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    HELP
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-*/
-
-if (params.help) {
-    log.info"""
-    =========================================
-    Transcriptomic pipeline for short read evaluation and filtering
-    =========================================
-    Usage
-    -----   
-
-    The typical command for running the pipeline is as follows:
-
-    .. code-block:: nextflow
-    nextflow run main.nf -profile slurm --fastqs '/project/*_{R1,R2}*.fastq' --outdir '/project/'
-
-    Required arguments:
-        -profile                      Configuration profile to use. <base, slurm>
-        --workdir                     Nextflow working directory where all intermediate files are saved.
-        --taxon_id                    Input taxon id 
-        --run_accession    specified as ['SRA..'] for now
-
-    FastQC Options:
-
-    STAR Options:
-
-    
-    Transcriptomic Db Connection:
-        --dbname
-        --host
-        --port
-        --user
-        ---password
-
-    """.stripIndent()
-}
-
-/*
- * SET UP CONFIGURATION VARIABLES
- */
-
 // Show help message
 params.help = false
 if (params.help){
@@ -69,17 +25,19 @@ if (params.help){
     exit 0
 }
 
-includeConfig './nextflow.config'
+if (!params.transcriptomic_dbname) {
+    exit 1, "Undefined --params.transcriptomic_dbname parameter. Please provide the server host for the db connection"
+}
 
 if (!params.transcriptomic_dbhost) {
-    exit 1, "Undefined --host parameter. Please provide the server host for the db connection"
+    exit 1, "Undefined --transcriptomic_dbhost parameter. Please provide the server host for the db connection"
 }
 
 if (!params.transcriptomic_dbport) {
-    exit 1, "Undefined --port parameter. Please provide the server port for the db connection"
+    exit 1, "Undefined --transcriptomic_dbport parameter. Please provide the server port for the db connection"
 }
 if (!params.transcriptomic_dbuser) {
-    exit 1, "Undefined --user parameter. Please provide the server user for the db connection"
+    exit 1, "Undefined --transcriptomic_dbuser parameter. Please provide the server user for the db connection"
 }
 
 if (!params.enscode) {
@@ -105,6 +63,7 @@ if (params.help) {
     log.info '  nextflow -C ...'
     log.info ''
     log.info 'Options:'
+    log.info '  --transcriptomic_dbname STR                   Db name '
     log.info '  --transcriptomic_dbhost STR                   Db host server '
     log.info '  --transcriptomic_dbport INT                   Db port  '
     log.info '  --transcriptomic_dbuser STR                   Db user  '
@@ -133,9 +92,9 @@ include { FETCH_GENOME } from '../modules/fetch_genome.nf'
 //
 
 include { PROCESS_TAXONOMY_INFO } from '../subworkflows/process_taxonomy_info.nf'
-include { PROCESS_RUN_ACCESSION_METADATA } from '../subworkflows/process_run_accession_metadata.nf'
-include { FASTQ_PROCESSING } from '../subworkflows/fastq_processing.nf'
-include { RUN_ALIGNMENT } from '../subworkflows/run_alignment.nf'
+//include { PROCESS_RUN_ACCESSION_METADATA } from '../subworkflows/process_run_accession_metadata.nf'
+//include { FASTQC_PROCESSING } from '../subworkflows/fastqc_processing.nf'
+//include { RUN_ALIGNMENT } from '../subworkflows/run_alignment.nf'
 
 
 
@@ -146,26 +105,34 @@ include { RUN_ALIGNMENT } from '../subworkflows/run_alignment.nf'
 */
 
 workflow SHORT_READ {
-    //jolly channel
     data = Channel.fromPath(params.csvFile, type: 'file', checkIfExists: true)
                 .splitCsv(sep:',', header:true)
                 .map { row -> [taxon_id:row.get('taxon_id'), gca:row.get('gca')]}
                 
-
+    data1=data
+    data1.each{ d-> d.view()}
     //taxon id present or not? if yes get all new short read data after this date if not add it for the first time
     //given taxon id, get list of run accession an 
-    runAccessionList= PROCESS_TAXONOMY_INFO (data)
-    Channel.of(runAccessionList).groupTuple(taxon_id).collect()
-
+    runAccessionList= PROCESS_TAXONOMY_INFO(data)
+    rr=runAccessionList
+    rr.flatten().view { d -> "Taxon ID: ${d.taxon_id}, GCA: ${d.gca}, run accession: ${d.run_accession}"} 
+    //def processMetadata = PROCESS_RUN_ACCESSION_METADATA(params.taxon_id, accession)
+    //Channel.of(runAccessionList).groupTuple(taxon_id).collect()
+    //runAccessionList.view()
 
     //run_accession_list = key from PROCESS_TAXONOMY_INFO.runAccessionsPath.splitJson().flatten()
-    run_accession_list = Channel.fromPath(PROCESS_TAXONOMY_INFO.runAccessionsPath).splitCsv()
-    
+    //run_accession_list = Channel.fromPath(PROCESS_TAXONOMY_INFO.runAccessionsPath).splitCsv()
+   /* 
     run_accession_list.subscribe { accession ->
         // Generate a job for each accession
         def processMetadata = PROCESS_RUN_ACCESSION_METADATA(params.taxon_id, accession)
         def processFastq = FASTQ_PROCESSING(processMetadata.taxon_id, accession, processMetadata.pairedFastqFiles)
         RUN_ALIGNMENT(params.assembly_accession,genome_file,processFastq.runAccessionFastqs)
+    }
+*/
+    if (params.cleanCache) {
+        // Clean cache directories
+        exec "rm -rf ${params.cacheDir}/*"
     }
 }  
 

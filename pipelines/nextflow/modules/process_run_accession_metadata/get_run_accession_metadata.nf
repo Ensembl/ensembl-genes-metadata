@@ -20,12 +20,12 @@ process GET_RUN_ACCESSION_METADATA {
 
     label 'default'
     tag "$run_accession"
-
+    ipublishDir "${params.outDir}/$taxon_id/$run_accession", mode: 'copy'
     input:
-    tuple val(taxon_id), val(run_accession)
+    tuple val(taxon_id), val(gca), val(run_accession)
 
     output:
-    file(joinPath(params.outDir, "${taxon_id}", "${run_accession}", "metadata.json")) into runAccessionsMetadataPath
+    tuple val(taxon_id), val(gca), val(run_accession), path("metadata.json")
 
     script:
     """

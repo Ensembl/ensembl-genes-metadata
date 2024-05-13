@@ -22,8 +22,6 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 
-includeConfig './pipelines/workflows/nextflow.config'
-include { checkTaxonomy, getLastCheckedDate, updateLastCheckedDate, insertMetaRecord } from './pipelines/modules/utils.nf'
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     IMPORT LOCAL MODULES/SUBWORKFLOWS
@@ -35,16 +33,50 @@ include { PROCESS_TAXON_ID } from '../modules/process_taxonomy_info/process_taxo
 
 workflow PROCESS_TAXONOMY_INFO {
     take:
-    val data                   
+    data
 
-    // Define the output channel for run accessions
-    output:
-    val(runAccessionList)
     
     main:
     def data1=data
-    data1.flatten().view { d -> "Taxon ID: ${d.taxon_id}, GCA: ${d.gca},"}
+    data1.flatten().view { d -> "Taxon ID: ${d.taxon_id}, GCA: ${d.gca}"}
     def taxonomyInfo = PROCESS_TAXON_ID(data.flatten())
-    def (runAccessionList, runAccessionFile) = GET_RUN_ACCESSIONS(taxonomyInfo)
+    def (runAccessionList, runAccessionFile)  = GET_RUN_ACCESSIONS(taxonomyInfo)
+    /*
+    def runAccessionList = []
+    def runAccessionFiles = []
+    taxonomyInfo.each { info ->
+    def (list, file) = GET_RUN_ACCESSIONS(info)
+    runAccessionList.addAll(list)
+    runAccessionFiles << file
+        }
+   // flattenedList = runAccessionList.collectMany { it }
+    flattenedList = runAccessionList.flatten()
+
+//flattenedList.each { item ->
+  //  println("Taxon ID: ${item.taxon_id}, GCA: ${item.gca}, run accession: ${item.run_accession}")
+//}
+    */
+    //def runAccessionLists = taxonomyInfo.collect { info ->
+    //    GET_RUN_ACCESSIONS(info)
+    //}
+    runAccessionList1= runAccessionList
+    runAccessionList1.flatten().view{ d -> "AAAATaxon ID: ${d.taxon_id}, GCA: ${d.gca}, run accession: ${d.run_accession}" }
+    //aggregatedRunAccessionList = Channel.from(runAccessionLists.flatten())
+    //runAccessionList1=aggregatedRunAccessionList
+    //runAccessionList1.view { d -> "Taxon ID: ${d.taxon_id}, GCA: ${d.gca}, run accession: ${d.run_accession}"}
+    //aggregatedRunAccessionList.view { d -> "Taxon ID: ${d.taxon_id}, GCA: ${d.gca}, run accession: ${d.run_accession}" }
     
+    
+    
+    //titti=taxonomyInfo
+    //titti.view()
+    //titti.flatten().view { d -> "Taxon ID: ${d.taxon_id}, GCA: ${d.gca}, last date: ${d.lastCheckedDate}"}
+    //runAccessionList = GET_RUN_ACCESSIONS(taxonomyInfo) //runAccessionFile
+    //runAccessionList1= runAccessionList
+    //runAccessionList1.view()
+    //{ d -> "Taxon ID: ${d.taxon_id}, GCA: ${d.gca}, last date: ${d.run_accession}"}
+    // pippo=Channel.from(runAccessionList).collect()
+
+    emit:
+    list_run_accession = runAccessionList
 }

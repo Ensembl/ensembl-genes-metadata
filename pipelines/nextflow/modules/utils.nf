@@ -15,14 +15,19 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+@Grab('org.codehaus.groovy:groovy-all:2.2.2')
 import groovy.sql.Sql
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import java.text.SimpleDateFormat;
+import java.sql.Date
+
+// Define global variable in the script binding
+binding.driver = 'com.mysql.cj.jdbc.Driver'
+binding.jdbcUrl = "jdbc:mysql://${params.transcriptomic_dbhost}:${params.transcriptomic_dbport}/${params.transcriptomic_dbname}"
 
 def checkTaxonomy(String taxonId) {
-    def sql 
-    def driver = 'com.mysql.cj.jdbc.Driver'
-    def jdbcUrl = "jdbc:mysql://${params.transcriptomic_dbhost}:${params.transcriptomic_dbport}/${params.transcriptomic_dbname}"
+    def sql
     sql = Sql.newInstance(jdbcUrl, params.transcriptomic_dbuser,params.transcriptomic_dbpassword,driver)
     
     try {
@@ -38,19 +43,24 @@ def checkTaxonomy(String taxonId) {
 
 def getLastCheckedDate(String taxonId) {
     def sql 
-    def driver = 'com.mysql.cj.jdbc.Driver'
-    def jdbcUrl = "jdbc:mysql://${params.transcriptomic_dbhost}:${params.transcriptomic_dbport}/${params.transcriptomic_dbname}"
     sql = Sql.newInstance(jdbcUrl, params.transcriptomic_dbuser,params.transcriptomic_dbpassword,driver)
-    def lastCheckedDate = null
-
+    def result
     try {
         def query = "SELECT last_check FROM meta WHERE taxon_id = ? "
-        def result = sql.rows(query, [taxonId])
+        result = sql.rows(query, [taxonId])
         if (result.size() > 0) {
-            // Assuming 'last_check' is a date-like column
+            println("taxonomy present get last check")
+            // Assuming 'last_check' is yyyy-MM-dd format
             // Adjust the date format pattern based on the actual format in your database
-            def dateFormat = new SimpleDateFormat("yyyy-MM-dd") // Adjust the format if needed
-            lastCheckedDate = dateFormat.parse(result[0].last_check)
+            //def dateFormat = new SimpleDateFormat("yyyy-MM-dd") // Adjust the format if needed
+            //def dateString = Date.valueOf(result[0].last_check.toString())
+            //lastCheckedDate = dateFormat.parse(dateString)
+
+            //def dateString = result[0].last_check.toLocalDate()
+            //def dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
+            //lastCheckedDate = dateString.format(dateFormatter)
+            lastCheckedDate = result[0].last_check
+            //println(lastCheckedDate)
         }
     } catch (Exception ex) {
         ex.printStackTrace()    
@@ -58,34 +68,11 @@ def getLastCheckedDate(String taxonId) {
         sql.close()
     }
 
-    return lastCheckedDate
+    //return Channel.of(lastCheckedDate)
+    return result
 }
-
-def insertMetaRecord(String jdbcUrl, String username, String password, String taxonId) {
-    def sql 
-    def driver = 'com.mysql.cj.jdbc.Driver'
-    def jdbcUrl = "jdbc:mysql://${params.transcriptomic_dbhost}:${params.transcriptomic_dbport}/${params.transcriptomic_dbname}"
+def updateLastCheckedDate(String taxonId) {
     sql = Sql.newInstance(jdbcUrl, params.transcriptomic_dbuser,params.transcriptomic_dbpassword,driver)
-
-    try {
-        // Get the current date and time
-        def currentDate = LocalDateTime.now()
-        def dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
-        def formattedDate = currentDate.format(dateFormatter)
-
-        // Execute the SQL INSERT statement
-        def insertQuery = "INSERT INTO meta (taxon_id, last_checked_date) VALUES ('${taxonId}', '${formattedDate}')"
-        sql.executeInsert(insertQuery)
-    } catch (Exception ex) {
-        ex.printStackTrace()
-    } finally {
-        sql.close()
-    }
-
-}
-def updateLastCheckedDate(String jdbcUrl, String username, String password, String taxonId) {
-    def sql = Sql.newInstance(jdbcUrl, username, password)
-
     try {
         // Get the current date and time
         def currentDate = LocalDateTime.now()
@@ -98,6 +85,39 @@ def updateLastCheckedDate(String jdbcUrl, String username, String password, Stri
     } catch (Exception ex) {
         ex.printStackTrace()
     }finally {
+        sql.close()
+    }
+
+}
+def setMetaRecord(String taxonId,String query_option) {
+    def sql 
+    sql = Sql.newInstance(jdbcUrl, params.transcriptomic_dbuser,params.transcriptomic_dbpassword,driver)
+
+    try {
+        // Get the current date and time
+        def currentDate = LocalDateTime.now()
+        def dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
+        def formattedDate = currentDate.format(dateFormatter)
+        if(query_option.contains("insert")){
+        // Execute the SQL INSERT statement
+        //def map = [taxon_id:'${taxonId}', last_checked_date:'${formattedDate}']
+        //sql.execute "INSERT INTO meta (taxon_id, last_checked_date) VALUES ($map.taxon_id, $map.last_checked_date)"
+        def params = [taxonId, formattedDate]
+        sql.execute 'INSERT INTO meta (taxon_id, last_check) VALUES (?, ?)', params
+        //def insertQuery = "INSERT INTO meta (taxon_id, last_checked_date) VALUES ('${taxonId}', '${formattedDate}')"
+        //sql.executeInsert(insertQuery)
+        println("sto facendo insert")
+        }
+        if(query_option =="update"){
+        // Execute the SQL INSERT statement
+        def params = [formattedDate, taxonId]
+        //def updateQuery = "UPDATE meta SET last_check = '${formattedDate}' WHERE taxon_id = '${taxonId}'"
+        sql.execute 'UPDATE meta SET last_check = ?  WHERE taxon_id = ?', params
+        println("sto facendo update")
+        }
+    } catch (Exception ex) {
+        ex.printStackTrace()
+    } finally {
         sql.close()
     }
 
@@ -120,7 +140,7 @@ def getPairedFastqsURL(String jdbcUrl, String username, String password, String 
 
     return result
 }
-
+/*
 def checkFastqc(String jdbcUrl, String username, String password, String run_accession) {
     def sql = Sql.newInstance(jdbcUrl, username, password)
     def query = """ SELECT basic_statistics, per_base_sequence_quality, per_sequence_quality_scores, \
@@ -142,7 +162,7 @@ def checkFastqc(String jdbcUrl, String username, String password, String run_acc
     LEFT JOIN 
         data_files df2 ON r.run_id = df2.run_id AND df1.data_file_id <> df2.data_file_id
     WHERE 
-        r.run_id = '${run_accession}'
+    r.run_id = '${run_accession}'
     try {
         def result = sql.rows(query)
         // Process the results
@@ -151,8 +171,8 @@ def checkFastqc(String jdbcUrl, String username, String password, String run_acc
         def perBaseSequenceQuality = row.per_base_sequence_quality
         def perSequenceQualityScores = row.per_sequence_quality_scores
         def perBaseSequenceContent = row.per_base_sequence_content
-        if (basicStatistics=='PASS' && perBaseSequenceQuality='PASS' &&
-            perSequenceQualityScores='PASS' && perBaseSequenceContent='PASS') {
+        if (basicStatistics=='PASS' and perBaseSequenceQuality='PASS' and
+            perSequenceQualityScores='PASS' and perBaseSequenceContent='PASS') {
             // Execute the SQL UPDATE statement
             def updateQuery = "UPDATE RUN set qc_status = 'QC_PASS' WHERE run_id= '${run_accession}'"
             sql.executeUpdate(updateQuery)
@@ -241,3 +261,4 @@ def updateFastqcStatus(String jdbcUrl, String username, String password, String 
     }
 
 }
+*/

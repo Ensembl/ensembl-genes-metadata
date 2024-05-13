@@ -29,21 +29,18 @@ class ResponseData {
     List<String> lines = []
 }
 
-include { setMetaRecord } from '../utils.nf'
 process GET_RUN_ACCESSIONS {
     label 'default'
     tag "$taxon_id:$gca"
-    storeDir "${params.outDir}/$taxon_id/"
-    publishDir "${params.outDir}/$taxon_id", mode: 'copy'
+    storeDir "${params.cacheDir}/$taxon_id/"
     afterScript "sleep $params.files_latency"  // Needed because of file system latency
 
     input:
     tuple val(taxon_id), val(gca), val(lastCheckedDate)
 
     output:
-    //val(runAccessionChannel), emit: runAccessionData
-    val(runAccessionList)
-    path("run_accession_list.txt")
+   stdout  
+//tuple val(runAccessionData),path(".csv")
     
     script:
   //  println("GET RUN ACCESSION")
@@ -54,8 +51,13 @@ process GET_RUN_ACCESSIONS {
     // Use provided dateQuery if available, otherwise use default
     def usedDateQuery = "first_created >='${lastCheckedDate.trim()}'"
 
+    //def query = [taxonQuery, instrumentQuery, layoutQuery, sourceQuery, usedDateQuery].join("%20AND%20")
+    //def encodedQuery = URLEncoder.encode(query, 'UTF-8')
+ //   def searchUrl = "https://www.ebi.ac.uk/ena/portal/api/search?display=report&query%3D${encodedQuery}&domain=read&result=read_run&fields=run_accession"
     def searchUrl = "https://www.ebi.ac.uk/ena/portal/api/search?result=read_run&query=${taxonQuery}%20AND%20instrument_platform=ILLUMINA%20AND%20library_layout=PAIRED%20AND%20library_source=TRANSCRIPTOMIC%20AND%20first_created%3E=${lastCheckedDate.trim()}&domain=read&fields=run_accession"
 
+    //def searchUrl = "https://www.ebi.ac.uk/ena/portal/api/search?result=read_run&query=${taxonQuery}%20AND%20${instrumentQuery}%20AND%20${layoutQuery}%20AND%20${sourceQuery}%20AND%20first_created%3E=${lastCheckedDate.trim()}&domain=read&fields=run_accession"
+//println(searchUrl)
     //try {
     // Open a connection to the URL
     URL url = new URL(searchUrl)
@@ -65,72 +67,46 @@ process GET_RUN_ACCESSIONS {
     connection.setConnectTimeout(5000) // 5 seconds
     connection.setReadTimeout(10000)   // 10 seconds
 
+    // Get the response
+    //def response = connection.getInputStream().text
+
     // Get the input stream
     BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()))
     
-    // Create a list to hold the run accession data
-    //List<Map<String, String>> runAccessionList = []
-    runAccessionList = []
-    // Create a string to accumulate the response content
-    StringBuilder responseContent = new StringBuilder()
+     // Create an object to hold the accumulated lines
+    ResponseData responseData = new ResponseData()
 
     // Process the response line by line
     String line
     while ((line = reader.readLine()) != null){
-        // Append each line to the response content
-
-        responseContent.append(line).append('\n')
-        
-        if (!line.startsWith("run_accession")) { // Skip header line
-            runAccessionList.add([taxon_id: taxon_id, gca: gca, run_accession: line])
-    //    println("Response7777: $line")
-        }
-      //  println("Response: $runAccessionList")
-    }
+        if(line != "run_accession") {
+        responseData.lines.add(line)
+        println("Response: $line")
+    }}
     reader.close()
-
-//    responseContent.toString().split('\n').each { row ->
-  //  if (!row.startsWith("run_accession")) {
-        //if (row !="run_accession") { // Skip header line
-    //        runAccessionList.add(['taxon_id': taxon_id, 'gca': gca, 'run_accession': row])
-      //      println("Response: $runAccessionList")
-       // }
-       // }
-    // Save the response content to a text file
-    //def responseFile = new File('response.txt')
-    //responseFile.text = responseContent.toString()
-//    println(runAccessionList)
-    // Create a channel from the list of run accessions
-//    runAccessionChannel = Channel.from(runAccessionList)
-    // Create a copy of runAccessionList
-  //  def runAccessionListCopy = runAccessionList.toList()
-
-    // Create a channel from the copied list
-//    runAccessionChannel = Channel.from(runAccessionListCopy)
-//    runAccessionChannel.view { item -> println(item) }
-    runAccessionToFile='run_accession_list.txt'
-    """
-    echo '${responseContent.toString()}' > $runAccessionToFile
-    """
-//echo '${responseContent.toString()}' > $runAccessionToFile
-//    def runAccessionList = []
+    def runAccessionList = []
     //def file = new File('run_accessions.csv')
     //file.withWriter { writer ->
-//        responseData.lines.each { lineData ->
+        responseData.lines.each { lineData ->
         //file.eachLine { line -> writer.writeLine([taxon_id: ${taxon_id}, gca: ${gca}, run_accession: lineData])}
-//       runAccessionList.add([taxon_id: taxon_id, gca: gca, run_accession: lineData])
+       runAccessionList.add([taxon_id: taxon_id, gca: gca, run_accession: lineData])
      //   writer.writeLine(lineData)
   //      println("Response: $lineData")
-    //}
+    }
    // }
+//    println(runAccessionList)
 
     //runAccessionData = Channel.from(responseData.lines)
       //                 .map { lineData -> [taxon_id: taxon_id, gca: gca, run_accession: lineData]}
-
-   setMetaRecord(taxon_id,'update')
-//runAccessionChannel.flatten().view { d -> "AAAA Taxon ID: ${d.taxon_id}, GCA: ${d.gca}, last date: ${d.run_accession}"} 
-//    } catch (Exception e) {
-    // Handle any exceptions
-  //  println("Error: ${e.message}")
+    runAccessionData = Channel.from(runAccessionList)
+    //.tee { data ->
+     //   data.saveAsText('run_accessions.txt')
    // }
+
+//    updateLastCheckedDate(taxon_id)
+   //runAccessionData.view { d -> "Taxon ID: ${d.taxon_id}, GCA: ${d.gca}, last date: ${d.run_accession}"} 
+    //} catch (Exception e) {
+    // Handle any exceptions
+    //println("Error: ${e.message}")
+    //}
 }

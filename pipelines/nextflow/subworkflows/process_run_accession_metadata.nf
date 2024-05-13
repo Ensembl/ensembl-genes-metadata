@@ -22,7 +22,6 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 
-includeConfig './pipelines/workflows/nextflow.config'
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     IMPORT LOCAL MODULES/SUBWORKFLOWS
@@ -44,16 +43,17 @@ include { GET_RUN_ACCESSION_METADATA } from '../modules/process_run_accession_me
 
 workflow PROCESS_RUN_ACCESSION_METADATA {
     take:
-    val taxon_id
-    val run_accession          
-
+    //taxon_id
+    //run_accession          
+    transcriptomic_meta
+    //tuple val(taxon_id), val(gca), val(run_accession)
     main:
 
     paired_fastq_files_path = Channel.empty()
     //it is an insert but we need to split the value 
     //so it might be  first function that split the values and another function INSERT
     //emit fasta_paired_files
-    run_accession_metadata = GET_RUN_ACCESSION_METADATA(taxon_id, run_accession)
+    run_accession_metadata = GET_RUN_ACCESSION_METADATA(transcriptomic_meta.flatten())
     //the following two in parallel?
     STORE_METADATA(run_accession_metadata.runAccessionsMetadataPath)
     paired_fastq_files_path=DOWNLOAD_PAIRED_FASTQ(taxon_id, run_accession)

@@ -16,7 +16,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-process DOWNLOAD_PAIRED_FASTQ {
+process DOWNLOAD_PAIRED_FASTQS {
     label "default"
     tag "download ${run_accession} fastqs"
     // Define input parameters
