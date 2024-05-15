@@ -38,8 +38,6 @@ create table run (
 	run_id int not null auto_increment,
 	taxon_id int not null,
 	run_accession varchar(255) not null,
-	species_taxon_id int not null,
-	genus_taxon_id int,
 	qc_status SET("NOT_CHECKED","QC_PASS","QC_FAIL","ALIGNED"),
 	sample_accession varchar(255) not null,
 	study_accession varchar(255) not null,
