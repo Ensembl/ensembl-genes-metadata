@@ -55,7 +55,7 @@ workflow PROCESS_RUN_ACCESSION_METADATA {
     def(runAccessionMedatadata, insertIntoRun, insertIntoStudy, queryDataFile) = GET_RUN_ACCESSION_METADATA(transcriptomic_meta.flatten())
     def updateValue= false
     STORE_RUN_METADATA(insertIntoRun, updateValue)
-    STORE_STUDY_METADATA(insertIntoStudy, updateValue )
+    STORE_STUDY_METADATA(insertIntoStudy, updateValue)
     pairedFastqFiles=DOWNLOAD_PAIRED_FASTQ(runAccessionMedatadata)
 
     emit:
