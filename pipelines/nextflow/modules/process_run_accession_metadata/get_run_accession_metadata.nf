@@ -20,38 +20,35 @@ process GET_RUN_ACCESSION_METADATA {
 
     label 'default'
     tag "$run_accession"
-    ipublishDir "${params.outDir}/$taxon_id/$run_accession", mode: 'copy'
+    publishDir "${params.outDir}/$taxon_id/$run_accession", mode: 'copy'
+    maxForks 10
     input:
     tuple val(taxon_id), val(gca), val(run_accession)
 
     output:
-    tuple val(taxon_id), val(gca), val(run_accession), path("metadata.json")
+    tuple val(taxon_id), val(gca), val(run_accession)
+    path("insert_into_run.json")
+    path("insert_into_study.json")
+    path("insert_into_data_file.json")
 
     script:
+    script:
     """
-    // Construct the command based on whether last_date is provided
-    def pythonScript = file("$projectDir/src/python/ensembl/genes/metadata/transcriptomic/get_metadata.py")
-    def command = "python ${pythonScript} ${run_accession}"
+    run_accession = '${run_accession}' // Access run_accession from input channel or parameters
 
-    // Execute the Python script
-    def process = command.execute()
-    process.waitFor()
-    
-    // Check if the script execution was successful
-    if (process.exitValue() != 0) {
-        throw new RuntimeException("Error executing Python script: ${pythonScript}")
+    log.info("Executing Python script to get metadata for run: $run_accession")
+    try {
+        def cmd = "python get_metadata.py --run $run_accession"
+        def proc = cmd.execute()
+        proc.waitFor()
+
+        if (proc.exitValue() != 0) {
+            throw new RuntimeException("Python script failed with exit code: ${proc.exitValue()}")
+        }
+    } catch (Exception e) {
+        log.error("Error executing Python script: ${e.message}")
+        throw e // Rethrow the exception to halt the process
     }
-
-    // Get the output of the script
-    def output = process.text.trim()
-
-    // Verify if the returned path exists
-    if (!new File(output).exists()) {
-        throw new RuntimeException("The returned path does not exist: ${output}")
-    }
-
-    // Emit the path to the JSON file
-    output
     """
 }
 
