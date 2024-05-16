@@ -16,8 +16,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+include { setMetaDataRecord } from '../utils.nf'
 
-// module description 
 process STORE_METADATA {
     scratch false
     label 'default'
