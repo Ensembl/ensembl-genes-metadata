@@ -35,6 +35,7 @@ process GET_RUN_ACCESSIONS {
     tag "$taxon_id:$gca"
     storeDir "${params.outDir}/$taxon_id/"
     publishDir "${params.outDir}/$taxon_id", mode: 'copy'
+    maxForks 10
     afterScript "sleep $params.files_latency"  // Needed because of file system latency
 
     input:
