@@ -41,7 +41,7 @@ def checkTaxonomy(String taxonId) {
     }
 }
 
-def getLastCheckedDate(String taxonId) {
+def getLastCheckDate(String taxonId) {
     def sql 
     sql = Sql.newInstance(jdbcUrl, params.transcriptomic_dbuser,params.transcriptomic_dbpassword,driver)
     def result
@@ -71,25 +71,8 @@ def getLastCheckedDate(String taxonId) {
     //return Channel.of(lastCheckedDate)
     return result
 }
-def updateLastCheckedDate(String taxonId) {
-    sql = Sql.newInstance(jdbcUrl, params.transcriptomic_dbuser,params.transcriptomic_dbpassword,driver)
-    try {
-        // Get the current date and time
-        def currentDate = LocalDateTime.now()
-        def dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
-        def formattedDate = currentDate.format(dateFormatter)
 
-        // Execute the SQL UPDATE statement
-        def updateQuery = "UPDATE meta SET last_checked_date = '${formattedDate}' WHERE taxon_id = '${taxonId}'"
-        sql.executeUpdate(updateQuery)
-    } catch (Exception ex) {
-        ex.printStackTrace()
-    }finally {
-        sql.close()
-    }
-
-}
-def setMetaRecord(String taxonId,String query_option) {
+def setLastCheckDate(String taxonId,String query_option) {
     def sql 
     sql = Sql.newInstance(jdbcUrl, params.transcriptomic_dbuser,params.transcriptomic_dbpassword,driver)
 
@@ -122,6 +105,8 @@ def setMetaRecord(String taxonId,String query_option) {
     }
 
 }
+
+def setMetaDataRecord(String query)
 def build_ncbi_path(gca, assembly_name) {
     final gca_splitted = gca.replaceAll("_","").tokenize(".")[0].split("(?<=\\G.{3})").join('/')
     return  'https://ftp.ncbi.nlm.nih.gov/genomes/all'  + '/' + gca_splitted + '/' + "$gca" +'_' + assembly_name.replaceAll(" ","_") + '/' + "$gca" + '_' + assembly_name.replaceAll(" ","_") + '_genomic.fna.gz'

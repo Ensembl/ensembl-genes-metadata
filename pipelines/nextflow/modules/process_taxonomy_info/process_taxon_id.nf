@@ -17,8 +17,8 @@ limitations under the License.
 */
 
 include { checkTaxonomy } from '../utils.nf'
-include { getLastCheckedDate } from '../utils.nf'
-include { setMetaRecord } from '../utils.nf'
+include { getLastCheckDate } from '../utils.nf'
+include { setLastCheckDate } from '../utils.nf'
 
 process PROCESS_TAXON_ID {
 
@@ -37,11 +37,11 @@ process PROCESS_TAXON_ID {
     def taxonomyExists = checkTaxonomy(taxon_id)
     if (taxonomyExists){
         // Retrieve new run accessions for short-read transcriptomic data published AFTER the last check date
-        lastCheckedDate = getLastCheckedDate(taxon_id)[0].last_check
+        lastCheckedDate = getLastCheckDate(taxon_id)[0].last_check
         //updateLastCheckedDate(params.jdbcUrl, params.transcriptomic_dbuser, params.transcriptomic_dbpassword, taxonId)
     }else{
         // Add the new taxon id and last_check=currentDate and retrieve all the run accessions for short-read transcriptomic data 
-        setMetaRecord(taxon_id,'insert')
+        setLastCheckDate(taxon_id,'insert')
         lastCheckedDate = '2019-01-01'
     }
 
