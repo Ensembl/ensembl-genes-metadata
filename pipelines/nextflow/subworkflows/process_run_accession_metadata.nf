@@ -53,8 +53,9 @@ workflow PROCESS_RUN_ACCESSION_METADATA {
     //so it might be  first function that split the values and another function INSERT
     //emit fasta_paired_files
     def(runAccessionMedatadata, insertIntoRun, insertIntoStudy, queryDataFile) = GET_RUN_ACCESSION_METADATA(transcriptomic_meta.flatten())
-    STORE_RUN_METADATA(insertIntoRun)
-    STORE_STUDY_METADATA(insertIntoStudy)
+    def updateValue= false
+    STORE_RUN_METADATA(insertIntoRun, updateValue)
+    STORE_STUDY_METADATA(insertIntoStudy, updateValue )
     pairedFastqFiles=DOWNLOAD_PAIRED_FASTQ(runAccessionMedatadata)
 
     emit:

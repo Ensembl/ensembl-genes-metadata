@@ -24,11 +24,29 @@ process STORE_METADATA {
     tag 'store_metadata'
     
     input:
-    file run_accession_metadata
+    path metadata2process
+    val mysqlUpdate
 
     script:
     """
-    //src/python/ensembl/genes/metadata/populate_metadata_tables.py ??
-    needs changes to adapt to get_metadata.py
+    log.info("Executing Python script to get metadata for run: $metadata2process")
+    try {
+    def cmd = "python write2db.py --file-path $run_accession --update $mysqlUpdate"
+    def proc = cmd.execute()
+    proc.waitFor()
+
+    if (proc.exitValue() != 0) {
+        throw new RuntimeException("Python script failed with exit code: ${proc.exitValue()}")
+    }
+
+    def output = proc.getText() // Capture the output of the process
+
+    // Now you can use the 'output' variable as needed
+    log.info("Output of the Python script: $output")
+    setMetaDataRecord(${output})
+    } catch (Exception e) {
+        log.error("Error executing Python script: ${e.message}")
+        throw e // Rethrow the exception to halt the process
+    }
     """
 }
