@@ -127,7 +127,7 @@ process GET_RUN_ACCESSIONS {
     //runAccessionData = Channel.from(responseData.lines)
       //                 .map { lineData -> [taxon_id: taxon_id, gca: gca, run_accession: lineData]}
 
-   setMetaRecord(taxon_id,'update')
+   //setMetaRecord(taxon_id,'update')
 //runAccessionChannel.flatten().view { d -> "AAAA Taxon ID: ${d.taxon_id}, GCA: ${d.gca}, last date: ${d.run_accession}"} 
 //    } catch (Exception e) {
     // Handle any exceptions
