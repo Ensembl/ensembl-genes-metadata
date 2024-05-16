@@ -16,62 +16,63 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+import org.apache.commons.codec.digest.DigestUtils
+
 process DOWNLOAD_PAIRED_FASTQS {
     label "default"
     tag "download ${run_accession} fastqs"
-    // Define input parameters
-    input:
-    tuple val(taxon_id), val(run_accession)
+    maxForks 10
+    publishDir "${params.outDir}/$taxon_id/$run_accession", mode: 'copy'
 
-    // Define output channel
+    input:
+    tuple val(taxon_id), val(gca), val(run_accession)
+
     output:
-    set pair1, pair2 into pairedFastqFiles
-    
+    tuple (val(taxon_id), val(gca), val(run_accession), path(*_1.fastq.gz ), path(*_2.fastq.gz))
+
+    when:
+    len(fileUrls.trim().split(';')) == 2
 
     script:
-    """
-    def srr = run_accession.take(6)
-    def first = srr.take(6)
-    def second = '00' + srr[-1]
-    def third = '0' + srr[-2..-1].join()
+    def fileUrls = getDataFileData(run_accession, "file_url")
+    def (file1, file2) = fileUrls.trim().split(';')
 
-    # Extract the SRR prefix from the run accession
-    srr_prefix=\$(echo ${run_accession} | cut -c1-6)
-    # Extract the last digit from the run accession
-    last_digit=\$(echo ${run_accession} | rev | cut -c1 | rev)
+    if (fileUrls.trim().split(';').size() != 2) {
+        println "Expected two file URLs, but found ${fileUrls.size()}. Skipping the process."
+        return
+    }
 
-    # Define the base URL for the FTP server
-    
-    def pair1 = "wget -qq ${params.ftpBaseUrl}/${first}/${second}/${srr}/${run_accession}_1.fastq.gz -P ${path}".execute().waitFor()
-    def pair2 = "wget -qq ${params.ftpBaseUrl}/${first}/${second}/${srr}/${run_accession}_2.fastq.gz -P ${path}".execute().waitFor()
+    def pair1Path = "${publishDir}/${run_accession}_1.fastq.gz"
+    def pair2Path = "${publishDir}/${run_accession}_2.fastq.gz"
 
-    if (pair1 != 0) {
-        // Retry with different URL pattern
-        pair1 = "wget -qq ${params.ftpBaseUrl}/${first}/${srr}/${run_accession}_1.fastq.gz -P ${path}".execute().waitFor()
-        pair2 = "wget -qq ${params.ftpBaseUrl}/${first}/${srr}/${run_accession}_2.fastq.gz -P ${path}".execute().waitFor()
+    def storedMd5 = getDataFileData(run_accession, "md5").trim().split(';')
+    def retryCount = 0
+    def maxRetries = 3
+    def md5Match = false
 
-        if (pair1 != 0) {
-            // Retry with another URL pattern
-            pair1 = "wget -qq ${params.ftpBaseUrl}/${first}/${third}/${srr}/${run_accession}_1.fastq.gz -P ${path}".execute().waitFor()
-            pair2 = "wget -qq ${params.ftpBaseUrl}/${first}/${third}/${srr}/${run_accession}_2.fastq.gz -P ${path}".execute().waitFor()
+    while (!md5Match && retryCount < maxRetries) {
+        // Download pair1
+        "wget -qq -O ${pair1Path} ftp://${file1}".execute().waitFor()
 
-            if (res != 0) {
-                // If all attempts fail, throw an error
-                throw new RuntimeException("Could not download ${run_accession}_1.fastq.gz")
-            }
+        // Download pair2
+        "wget -qq -O ${pair2Path} ftp://${file2}".execute().waitFor()
+
+        // Calculate MD5 checksums of downloaded files
+        def md5Pair1 = DigestUtils.md5Hex(new File(pair1Path))
+        def md5Pair2 = DigestUtils.md5Hex(new File(pair2Path))
+
+        // Check if both MD5 checksums are present in stored MD5 checksums
+        if (storedMd5.containsAll([md5Pair1, md5Pair2])) {
+            md5Match = true
+            println "MD5 checksums match!"
+        } else {
+            println "MD5 checksums do not match! Retrying..."
+            retryCount++
+            Thread.sleep(1000) // Wait for 1 second before retrying
         }
     }
 
-    # Download the paired FASTQ files
-    wget -qq -P joinPath(params.outDir, "${taxon_id}", "${run_accession}") \${pair1}
-    wget -qq -P joinPath(params.outDir, "${taxon_id}", "${run_accession}") \${pair2}
-  
-    // Construct file paths for pair1 and pair2
-    def pair1Path = joinPath(params.outDir, "${taxon_id}", "${run_accession}", "${run_accession}_1.fastq.gz")
-    def pair2Path = joinPath(params.outDir, "${taxon_id}", "${run_accession}", "${run_accession}_2.fastq.gz")
-
-    // Emit both paths
-    emit pair1: file(pair1Path), pair2: file(pair2Path)
-    """
+    if (!md5Match) {
+        throw new RuntimeException("MD5 checksums do not match after $maxRetries retries!")
+    }
 }
-

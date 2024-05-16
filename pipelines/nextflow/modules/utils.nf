@@ -149,6 +149,21 @@ def setMetaDataRecord(String mysqlQuery){
     }
     
 }
+
+def  getDataFileData(String run_accession, String dataFileKey){
+    def sql
+    sql = Sql.newInstance(jdbcUrl, params.transcriptomic_dbuser,params.transcriptomic_dbpassword,driver)
+    
+    try {
+        def query = "SELECT '${dataFileKey}' FROM data_file  INNER JOIN run ON run_id WHERE run_accession = ?" 
+        def result = sql.rows(query,[run_accession])
+        return result.size() > 0
+    } catch (Exception ex) {
+        ex.printStackTrace()}
+    finally {
+        sql.close()
+    }
+}
 def build_ncbi_path(gca, assembly_name) {
     final gca_splitted = gca.replaceAll("_","").tokenize(".")[0].split("(?<=\\G.{3})").join('/')
     return  'https://ftp.ncbi.nlm.nih.gov/genomes/all'  + '/' + gca_splitted + '/' + "$gca" +'_' + assembly_name.replaceAll(" ","_") + '/' + "$gca" + '_' + assembly_name.replaceAll(" ","_") + '_genomic.fna.gz'
