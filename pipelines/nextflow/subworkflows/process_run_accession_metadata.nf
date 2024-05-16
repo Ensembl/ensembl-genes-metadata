@@ -28,8 +28,8 @@ import java.time.format.DateTimeFormatter
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
-
-include { STORE_METADATA } from '../modules/store_metadata.nf'
+include { STORE_METADATA as STORE_RUN_METADATA } from '../modules/store_metadata.nf'
+include { STORE_METADATA as STORE_STUDY_METADATA} from '../modules/store_metadata.nf'
 include { DOWNLOAD_PAIRED_FASTQS } from '../modules/process_run_accession_metadata/download_paired_fastqs.nf'
 include { GET_RUN_ACCESSION_METADATA } from '../modules/process_run_accession_metadata/get_run_accession_metadata.nf'
 
@@ -49,16 +49,15 @@ workflow PROCESS_RUN_ACCESSION_METADATA {
     //tuple val(taxon_id), val(gca), val(run_accession)
     main:
 
-    paired_fastq_files_path = Channel.empty()
     //it is an insert but we need to split the value 
     //so it might be  first function that split the values and another function INSERT
     //emit fasta_paired_files
-    run_accession_metadata = GET_RUN_ACCESSION_METADATA(transcriptomic_meta.flatten())
-    //the following two in parallel?
-    STORE_METADATA(run_accession_metadata.runAccessionsMetadataPath)
-    paired_fastq_files_path=DOWNLOAD_PAIRED_FASTQ(taxon_id, run_accession)
+    def(runAccessionMedatadata, insertIntoRun, insertIntoStudy, queryDataFile) = GET_RUN_ACCESSION_METADATA(transcriptomic_meta.flatten())
+    STORE_RUN_METADATA(insertIntoRun)
+    STORE_STUDY_METADATA(insertIntoStudy)
+    pairedFastqFiles=DOWNLOAD_PAIRED_FASTQ(runAccessionMedatadata)
 
     emit:
-    taxon_id
-    pairedFastqFiles            = paired_fastq_files_path                  // channel: [path1, path2]
+    queryDataFile = insertIntoDataFile  // path
+    pairedFastqFiles            = pairedFastqFilesMetadata              // channel: [taxon_id, gca, run_accession, path1, path2]
 }
