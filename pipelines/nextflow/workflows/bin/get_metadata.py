@@ -20,7 +20,7 @@
     table : [
         metakey : metavalue,
         ...
-       ]
+        ]
 },...
 
 Returns:
@@ -28,101 +28,197 @@ Returns:
 """
 
 import argparse
-import requests
+import re
+from typing import Dict
 import json
+import requests
 
-def _request_data(run_accession,fields) -> str:
-    """This function, makes a HTTP request for the metadata of the given run_accession.
+
+def request_data(run_accession: str, fields: list) -> str:
+    """Make an HTTP request for the metadata of the given run_accession.
 
     Args:
-        run_accession (str): unique run aceession
-        fields (array): list of fields of interest to have
+        run_accession (str): Unique run accession.
+        fields (list): List of fields of interest.
 
     Returns:
-        str: tsv file containing said metadata
+        str: TSV file containing metadata.
     """
 
     query = 'run_accession="' + run_accession + '"'
 
     data = {
-    'result': 'read_run',
-    'query': query,
-    'fields': ",".join(fields),
-    'format': 'tsv',
+        "result": "read_run",
+        "query": query,
+        "fields": ",".join(fields),
+        "format": "tsv",
     }
 
-    request = requests.post('https://www.ebi.ac.uk/ena/portal/api/search', data=data)
-    response = request.text
+    try:
+        response = requests.post("https://www.ebi.ac.uk/ena/portal/api/search", data=data, timeout=10)
+        response.raise_for_status()
+        return response.text
+    except requests.RequestException as e:
+        raise RuntimeError(f"Error fetching metadata: {e}") from e
 
-    return response
 
-def _json_parse(response,fields) -> str:
-    """Parse response from http request into a readable json
+def json_parse(response: str, fields: list):
+    """Parse response from HTTP request into a list of JSON strings.
 
     Args:
-        data (str): tsv from the http request
-        fields (array): list of fields of interest to have
+        response (str): TSV from the HTTP request.
+        fields (list): List of fields of interest.
 
     Returns:
-        str: json formatted dictionary of metadata and values
+        list: List of JSON formatted dictionaries of metadata and values.
     """
-    
-    table = response.split('\n')
-    data = table[1].split('\t')
 
-    data_dict = {}
-    for key in fields:
-        for value in data:
-            data_dict[key] = value
-            data.remove(value)
-            break
+    table = response.split("\n")
+    meta_data = table[1].split("\t")
+    output_data = {}
+    for key, value in zip(fields, meta_data):
+        output_data[key] = value
 
-    return json.dumps(data_dict)
+    table_run = {
+        "run": {
+            "taxon_id": output_data["tax_id"],
+            "run_accession": output_data["run_accession"],
+            "qc_status": "NOT_CHECKED" if len(output_data["fastq_ftp"].split(";")) == 2 else "FILE_ISSUE",
+            "sample_accession": output_data["sample_accession"],
+            "study_accession": output_data["study_accession"],
+            "read_type": output_data["library_strategy"],
+            "platform": output_data["instrument_platform"],
+            "paired": output_data["library_layout"] == "PAIRED",
+            "experiment": "; ".join(
+                value
+                for value in [
+                    output_data["experiment_alias"],
+                    re.sub(r"[!\"#$%&()*\+,\-\'.\/:;<=>?@\[\]^`{|}~]", "", output_data["experiment_title"]),
+                ]
+                if value is not None
+            ).rstrip("; "),
+            "run_description": re.sub(
+                r"[!\"#$%&()*\+,\-\'.\/:;<=>?@\[\]^`{|}~]", "", output_data["description"]
+            )[:250],
+            "library_name": "; ".join(
+                value
+                for value in [output_data["library_source"], output_data["library_name"]]
+                if value is not None
+            ).rstrip("; "),
+            "library_selection": output_data["library_selection"],
+            "tissue": "; ".join(
+                value
+                for value in [
+                    re.sub(r"[!\"#$%&()*\+,\-\'.\/:;<=>?@\[\]^`{|}~]", "", output_data["tissue_type"]),
+                    re.sub(r"[!\"#$%&()*\+,\-\'.\/:;<=>?@\[\]^`{|}~]", "", output_data["tissue_lib"]),
+                ]
+                if value != ""
+            ).rstrip("; "),
+            "cell_line": re.sub(r"[!\"#$%&()*\+,\-\'.\/:;<=>?@\[\]^`{|}~]", "", output_data["cell_line"]),
+            "cell_type": output_data["cell_type"],
+            "strain": "; ".join(
+                value
+                for value in [
+                    output_data["strain"],
+                    output_data["cultivar"],
+                    output_data["ecotype"],
+                    output_data["isolate"],
+                ]
+                if value != ""
+            ).rstrip("; "),
+        }
+    }
+
+    table_study = {
+        "study": {
+            "study_accession": output_data["study_accession"],
+            "center_name": output_data["center_name"],
+        }
+    }
+
+    table_data_files: Dict[str, list[Dict[str, str]]] = {"data_files": []}
+
+    file_url = output_data["fastq_ftp"].split(";")
+    file_md5 = output_data["fastq_md5"].split(";")
+
+    # Assuming the expected length is 3
+    if len(file_url) == len(file_md5) == 3:
+        file_entries = [f for f in file_url if "_1.fastq.gz" in f or "_2.fastq.gz" in f]
+        md5_entries = [
+            md5 for md5, file in zip(file_md5, file_url) if "_1.fastq.gz" in file or "_2.fastq.gz" in file
+        ]
+        # md5_entries=[]
+        # for md5, file in zip(file_md5, file_url):
+        #    if "_1.fastq.gz" in file or "_2.fastq.gz" in file:
+        #       md5_entries.append(md5)
+        file_url = file_entries
+        file_md5 = md5_entries
+
+    for url, md5 in zip(file_url, file_md5):
+        extension_name = url.split("/")[-1]
+        base_name = extension_name.split(".")[0]
+        read = {"name": base_name, "url": url, "md5": md5}
+        table_data_files["data_files"].append(read)
+
+    json_run = json.dumps(table_run)
+    json_study = json.dumps(table_study)
+    json_data_files = json.dumps(table_data_files)
+
+    with open("insert_into_run.json", "w") as file:
+        file.write(json_run)
+    with open("insert_into_study.json", "w") as file:
+        file.write(json_study)
+    with open("insert_into_data_file.json", "w") as file:
+        file.write(json_data_files)
+
 
 def main() -> None:
     """Module's entry-point."""
 
-    fields = (
-        'run_accession',
-        'fastq_ftp',            # uses ftp, and contains both reads (if paired) separated by a semi colon (;)
-        'fastq_md5',            # \ again, both separated by semicolon (;)
-        'tax_id',
-        'sample_accession',
-        'study_accession',
-        'library_strategy',     # read_type (it refers to wether a run is rna-seq, wgs, ...)
-        'instrument_platform',  # platform
-        'library_layout',       # paired
-        'experiment_alias',     # \
-        'experiment_title',     #  \ go to the same place
-        'library_source',       # library_name (name is requested later, but it's often empty so we'll catch it still to fill tissue-related info if available but best to use source for this field)
-        'library_selection',    # is this really needed?
-        'tissue_type',          # \
-        'tissue_lib',           #  \ these both work towards filling the same field
-        'cell_line',            # \ 
-        'cell_type',            #  \ same as before
-        'library_name',         # see library_source note
-        'strain',
-        'cultivar',             # \
-        'ecotype',              #  \
-        'isolate',              #   \ these last ones are to cater for the different ways of expresin "strains"
-        'cage_protocol',        # this could be important to some farmed data, so added
-        'center_name'
-    )
+    fields = [
+        "run_accession",
+        "fastq_ftp",  # uses ftp, and contains both reads (if paired) separated by a semi colon (;)
+        "fastq_md5",  # both separated by semicolon (;)
+        "tax_id",
+        "sample_accession",
+        "study_accession",
+        "library_strategy",  # read_type (it refers to wether a run is rna-seq, wgs, ...)
+        "instrument_platform",  # platform
+        "library_layout",  # paired
+        "experiment_alias",
+        "experiment_title",
+        "description",
+        "library_source",  # library_name (name is requested later, but it's often empty \
+        # so we'll catch it still to fill tissue-related info if available but best to use \
+        # source for this field)
+        "library_selection",
+        "tissue_type",
+        "tissue_lib",
+        "cell_line",
+        "cell_type",
+        "library_name",  # see library_source note
+        "strain",
+        "cultivar",
+        "ecotype",
+        "isolate",  #  different ways of expression "strains"
+        # 'cage_protocol',       # this could be important to some farmed data, so added
+        "center_name",
+    ]
 
-    parser = argparse.ArgumentParser(prog='get_metadata.py',description='Get metadata for a given run accession from the ENA site')
+    parser = argparse.ArgumentParser(
+        prog="get_metadata.py", description="Get metadata for a given run accession from the ENA site"
+    )
     parser.add_argument(
-        '--run',
-        '-r',
-        default="SRR4240445",
+        "--run",
+        "-r",
+        default="SRR10059726",
         help="Run accession to grab metadata from",
     )
     args = parser.parse_args()
-    
-    data = _request_data(args.run,fields)
-    json = _json_parse(data,fields)
 
-    #return json # not sure if this is it, or for nextflow to grab the output it has to be printed... if it needs printing, next line would solve it...
-    print(json)
+    data = request_data(args.run, fields)
+    json_parse(data, fields)
+
 
 if __name__ == "__main__":
     main()
