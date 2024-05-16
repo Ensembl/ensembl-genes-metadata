@@ -54,3 +54,9 @@ create table run (
 	strain varchar(255),
 	primary key (run_id)
 );
+create table meta (
+	meta_id int not null auto_increment,
+	taxon_id int not null,
+	last_check DATE,
+	primary key (meta_id)
+);
