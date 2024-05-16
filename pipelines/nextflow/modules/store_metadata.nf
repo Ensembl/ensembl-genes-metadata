@@ -43,7 +43,20 @@ process STORE_METADATA {
 
     // Now you can use the 'output' variable as needed
     log.info("Output of the Python script: $output")
-    setMetaDataRecord(${output})
+
+    // Splitting the output into individual parts
+    def outputs = output.split('\n')
+
+    // Checking if there's only one output or multiple outputs
+    if (outputs.size() == 1) {
+        // Only one output, pass it directly
+        setMetaDataRecord(outputs[0])
+    } else {
+        // Multiple outputs, loop through and pass each one
+        outputs.each { singleOutput ->
+            setMetaDataRecord(singleOutput)
+        }
+    }
     } catch (Exception e) {
         log.error("Error executing Python script: ${e.message}")
         throw e // Rethrow the exception to halt the process

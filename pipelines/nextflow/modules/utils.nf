@@ -106,7 +106,49 @@ def setLastCheckDate(String taxonId,String query_option) {
 
 }
 
-def setMetaDataRecord(String query)
+def setMetaDataRecord(String mysqlQuery){
+    def sql 
+    sql = Sql.newInstance(jdbcUrl, params.transcriptomic_dbuser,params.transcriptomic_dbpassword,driver)
+
+    // Input string
+    //def inputString = "INSERT INTO run (run_id, taxon_id, run_accession, qc_status, sample_accession, study_accession, read_type, platform, paired, experiment, description, library_name, library_selection, tissue, cell_line, cell_type, strain) VALUES (NULL,'9940','SRR4240445','NOT_CHECKED','SAMN05728284','PRJNA342075','RNA-Seq','ILLUMINA','1','sheep liver; Illumina HiSeq 2000 sequencing: Sheep liver transcriptome','Illumina HiSeq 2000 sequencing Sheep liver transcriptome','TRANSCRIPTOMIC; ','PCR','liver',NULL,NULL,NULL) ;"
+
+    // Define a regular expression pattern to extract values within parentheses
+    def pattern = /\(([^)]+)\)/
+
+    // Match the pattern in the input string
+    def matcher = (mysqlQuery =~ pattern)
+
+    // Extract the values from the match
+    def paramValuesString = matcher.find().group(1)
+
+    // Split the values string by commas
+    def paramValues = paramValuesString.split(',')
+
+    // Trim whitespace and single quotes from each parameter value
+    paramValues = paramValues.collect { it.trim().replaceAll(/^'|'$/, '') }
+
+    // Add NULL for values that are represented as 'NULL' in the input string
+    paramValues = paramValues.collect { it == 'NULL' ? null : it }
+
+    // Print the parameter values
+    println "Parameter values: $paramValues"
+
+    // Remove the values string from the input string to get the query
+    def query = mysqlQuery.replaceFirst(paramValuesString, "?".repeat(paramValues.size()))
+
+    // Print the final query
+    println "Final query: $query"
+    try{
+        //def updateQuery = "UPDATE meta SET last_check = '${formattedDate}' WHERE taxon_id = '${taxonId}'"
+        sql.execute '${query}', [paramValues]
+    } catch (Exception ex) {
+        ex.printStackTrace()
+    } finally {
+        sql.close()
+    }
+    
+}
 def build_ncbi_path(gca, assembly_name) {
     final gca_splitted = gca.replaceAll("_","").tokenize(".")[0].split("(?<=\\G.{3})").join('/')
     return  'https://ftp.ncbi.nlm.nih.gov/genomes/all'  + '/' + gca_splitted + '/' + "$gca" +'_' + assembly_name.replaceAll(" ","_") + '/' + "$gca" + '_' + assembly_name.replaceAll(" ","_") + '_genomic.fna.gz'
