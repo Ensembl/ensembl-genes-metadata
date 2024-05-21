@@ -92,7 +92,7 @@ def json_parse(response: str, fields: list):
             "experiment": "; ".join(
                 value
                 for value in [
-                    output_data["experiment_alias"],
+                    re.sub(r"[!\"#$%&()*\+,\-\'.\/:;<=>?@\[\]^`{|}~]", "", output_data["experiment_alias"]),
                     re.sub(r"[!\"#$%&()*\+,\-\'.\/:;<=>?@\[\]^`{|}~]", "", output_data["experiment_title"]),
                 ]
                 if value is not None

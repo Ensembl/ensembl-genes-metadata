@@ -103,7 +103,7 @@ def insert_query(data_dict: Dict, table_name: str) -> str:
     table_var_string = ", ".join(list(data_dict.keys()))
     values_strings = ",".join([f"'{value}'" for value in list(data_dict.values())]).replace("''", "NULL")
 
-    return f"""INSERT INTO {table_name} ({table_var_string}) VALUES ({values_strings}) ;"""
+    return f"""INSERT IGNORE INTO {table_name} ({table_var_string}) VALUES ({values_strings}) ;"""
 
 
 def update_query(data_dict: Dict, table_name: str, table_conf: Dict[str, Dict[str, str]]) -> str:
@@ -180,7 +180,7 @@ def main():
     )
 
     parser.add_argument(
-        "--update", action="store_true", help="Set to True if the input data will be used to update"
+        "--update", type=str, choices=["True", "False"], default="False", help="Set to True if the input data will be used to update"
     )
 
     # Parsing arguments
@@ -188,7 +188,7 @@ def main():
     with open(str(args.file_path)) as input_file:
         input_data = json.load(input_file)
 
-    update = args.update
+    update = args.update == "True"
 
     # Module
     for table_name in input_data:

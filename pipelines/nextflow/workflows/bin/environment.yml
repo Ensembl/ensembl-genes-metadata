@@ -1,0 +1,10 @@
+name: short_reads
+channels:
+  - defaults
+  - conda-forge
+  - bioconda
+dependencies:
+  - pip
+  - pip:
+    - logging
+    - requests  

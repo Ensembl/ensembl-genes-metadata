@@ -15,13 +15,13 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-// pyhton env?
 process GET_RUN_ACCESSION_METADATA {
 
-    label 'default'
+    label 'python'
     tag "$run_accession"
     publishDir "${params.outDir}/$taxon_id/$run_accession", mode: 'copy'
-    maxForks 10
+    maxForks 5
+    //conda '${projectDir}/pipelines/nextflow/workflows/bin/environment.yml'
     input:
     tuple val(taxon_id), val(gca), val(run_accession)
 
@@ -32,23 +32,32 @@ process GET_RUN_ACCESSION_METADATA {
     path("insert_into_data_file.json")
 
     script:
-    script:
-    """
-    run_accession = '${run_accession}' // Access run_accession from input channel or parameters
-
     log.info("Executing Python script to get metadata for run: $run_accession")
-    try {
-        def cmd = "python get_metadata.py --run $run_accession"
-        def proc = cmd.execute()
-        proc.waitFor()
+    """
 
-        if (proc.exitValue() != 0) {
-            throw new RuntimeException("Python script failed with exit code: ${proc.exitValue()}")
-        }
-    } catch (Exception e) {
-        log.error("Error executing Python script: ${e.message}")
-        throw e // Rethrow the exception to halt the process
-    }
+
+    # Read each line in the requirements file
+    while read -r package; do \\
+    if ! pip show -q "\$package" &>/dev/null; then 
+        echo "\$package is not installed" 
+        pip install "\$package"
+    else
+        echo "\$package is already installed"
+    fi
+    done < ${projectDir}/bin/requirements.txt
+
+    # Check if Python dependencies are installed
+    #if ! pip show -q -f $projectDir/bin/requirements.txt; then
+        # Install Python dependencies using pip
+    #pip install -r $projectDir/bin/requirements.txt
+    #fi
+    # Check if dependencies are already installed in the cache
+    #if [ ! -d $HOME/.cache/pip ]; then
+        # If not, install Python dependencies using pip
+    #    pip install --cache-dir $HOME/.cache/pip requests numpy pandas
+    #fi
+    chmod +x $projectDir/bin/get_metadata.py  # Set executable permissions
+    get_metadata.py --run ${run_accession}
     """
 }
 

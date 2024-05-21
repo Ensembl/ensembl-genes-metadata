@@ -92,7 +92,7 @@ include { FETCH_GENOME } from '../modules/fetch_genome.nf'
 //
 
 include { PROCESS_TAXONOMY_INFO } from '../subworkflows/process_taxonomy_info.nf'
-//include { PROCESS_RUN_ACCESSION_METADATA } from '../subworkflows/process_run_accession_metadata.nf'
+include { PROCESS_RUN_ACCESSION_METADATA } from '../subworkflows/process_run_accession_metadata.nf'
 //include { FASTQC_PROCESSING } from '../subworkflows/fastqc_processing.nf'
 //include { RUN_ALIGNMENT } from '../subworkflows/run_alignment.nf'
 
@@ -105,7 +105,7 @@ include { PROCESS_TAXONOMY_INFO } from '../subworkflows/process_taxonomy_info.nf
 */
 
 workflow SHORT_READ {
-    data = Channel.fromPath(params.csvFile, type: 'file', checkIfExists: true)
+    def data = Channel.fromPath(params.csvFile, type: 'file', checkIfExists: true)
                 .splitCsv(sep:',', header:true)
                 .map { row -> [taxon_id:row.get('taxon_id'), gca:row.get('gca')]}
                 
@@ -113,10 +113,10 @@ workflow SHORT_READ {
     data1.each{ d-> d.view()}
     //taxon id present or not? if yes get all new short read data after this date if not add it for the first time
     //given taxon id, get list of run accession an 
-    runAccessionList= PROCESS_TAXONOMY_INFO(data)
-    rr=runAccessionList
-    rr.flatten().view { d -> "Taxon ID: ${d.taxon_id}, GCA: ${d.gca}, run accession: ${d.run_accession}"} 
-    //def processMetadata = PROCESS_RUN_ACCESSION_METADATA(params.taxon_id, accession)
+    def runAccessionList= PROCESS_TAXONOMY_INFO(data)
+    //rr=runAccessionList
+    //rr.flatten().view { d -> "Taxon ID: ${d.taxon_id}, GCA: ${d.gca}, run accession: ${d.run_accession}"} 
+    def processMetadata = PROCESS_RUN_ACCESSION_METADATA(runAccessionList)
     //Channel.of(runAccessionList).groupTuple(taxon_id).collect()
     //runAccessionList.view()
 
