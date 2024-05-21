@@ -61,3 +61,4 @@ create table meta (
 	last_check TIMESTAMP,
 	primary key (meta_id)
 );
+
