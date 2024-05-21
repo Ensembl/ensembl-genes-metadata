@@ -29,7 +29,7 @@ class ResponseData {
     List<String> lines = []
 }
 
-include { setMetaRecord } from '../utils.nf'
+include { setMetaDataRecord } from '../utils.nf'
 process GET_RUN_ACCESSIONS {
     label 'default'
     tag "$taxon_id:$gca"

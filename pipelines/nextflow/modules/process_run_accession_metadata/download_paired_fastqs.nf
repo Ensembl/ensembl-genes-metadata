@@ -28,13 +28,13 @@ process DOWNLOAD_PAIRED_FASTQS {
     tuple val(taxon_id), val(gca), val(run_accession)
 
     output:
-    tuple (val(taxon_id), val(gca), val(run_accession), path(*_1.fastq.gz ), path(*_2.fastq.gz))
+    tuple (val(taxon_id), val(gca), val(run_accession), path("*_1.fastq.gz"), path("*_2.fastq.gz"))
 
     when:
     len(fileUrls.trim().split(';')) == 2
 
     script:
-    def fileUrls = getDataFileData(run_accession, "file_url")
+    def fileUrls = getDataFileData(run_accession, "file_url")// controlla qc-status not FILE_ISSUE
     def (file1, file2) = fileUrls.trim().split(';')
 
     if (fileUrls.trim().split(';').size() != 2) {

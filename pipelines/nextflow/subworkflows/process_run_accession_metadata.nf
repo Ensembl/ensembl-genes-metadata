@@ -33,7 +33,7 @@ include { STORE_METADATA as STORE_STUDY_METADATA} from '../modules/store_metadat
 include { DOWNLOAD_PAIRED_FASTQS } from '../modules/process_run_accession_metadata/download_paired_fastqs.nf'
 include { GET_RUN_ACCESSION_METADATA } from '../modules/process_run_accession_metadata/get_run_accession_metadata.nf'
 
-
+include { setMetaDataRecord } from '../modules/utils.nf'
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -48,17 +48,49 @@ workflow PROCESS_RUN_ACCESSION_METADATA {
     transcriptomic_meta
     //tuple val(taxon_id), val(gca), val(run_accession)
     main:
-
+    def db_meta1=transcriptomic_meta
+    db_meta1.flatten().view { d -> "GCA: ${d.gca}, Taxon ID: ${d.taxon_id}, run: ${d.run_accession}"}
     //it is an insert but we need to split the value 
     //so it might be  first function that split the values and another function INSERT
     //emit fasta_paired_files
     def(runAccessionMedatadata, insertIntoRun, insertIntoStudy, queryDataFile) = GET_RUN_ACCESSION_METADATA(transcriptomic_meta.flatten())
-    def updateValue= false
-    STORE_RUN_METADATA(insertIntoRun, updateValue)
-    STORE_STUDY_METADATA(insertIntoStudy, updateValue)
-    pairedFastqFiles=DOWNLOAD_PAIRED_FASTQ(runAccessionMedatadata)
+    def updateValue = "False"
+    def (runAccessionMedatadata_1,insertIntoRunQuery) = STORE_RUN_METADATA(runAccessionMedatadata, insertIntoRun, updateValue)
+    def data1=insertIntoRunQuery
+    data1.flatten().view { d -> "query ${d}"}
+    insertIntoRunQuery.subscribe { line ->
+
+    setMetaDataRecord(line.toString())
+    }
+    /*
+    insertIntoRunQueryOutputs= insertIntoRunQuery.toString().split('\n')
+    if (insertIntoRunQueryOutputs.size() == 1) {
+        // Only one output, pass it directly
+        setMetaDataRecord(insertIntoRunQuery.toString())
+    } else {
+        // Multiple outputs, loop through and pass each one
+        insertIntoRunQueryOutputs.each { singleOutput ->
+            setMetaDataRecord(singleOutput)
+        }
+        }
+        */
+    def (runAccessionMedatadata_2, insertIntoStudyQuery) = STORE_STUDY_METADATA(runAccessionMedatadata_1, insertIntoStudy, updateValue)
+    setMetaDataRecord(insertIntoStudyQuery.toString())
+    /*
+    def insertIntoStudyQueryOutputs = insertIntoStudyQuery.toString().split('\n')
+    if (insertIntoStudyQueryOutputs.size() == 1) {
+        // Only one output, pass it directly
+        setMetaDataRecord(insertIntoStudyQuery.toString())
+    } else {
+        // Multiple outputs, loop through and pass each one
+        insertIntoStudyQueryOutputs.each { singleOutput ->
+            setMetaDataRecord(singleOutput)
+        }
+        }
+        */
+    pairedFastqFiles=DOWNLOAD_PAIRED_FASTQS(runAccessionMedatadata_2)
 
     emit:
-    queryDataFile = insertIntoDataFile  // path
-    pairedFastqFiles            = pairedFastqFilesMetadata              // channel: [taxon_id, gca, run_accession, path1, path2]
+    insertIntoDataFile =   queryDataFile   // path
+    pairedFastqFilesMetadata =   pairedFastqFiles      // channel: [taxon_id, gca, run_accession, path1, path2]
 }
