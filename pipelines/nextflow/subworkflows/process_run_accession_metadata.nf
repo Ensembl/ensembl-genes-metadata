@@ -65,9 +65,9 @@ workflow PROCESS_RUN_ACCESSION_METADATA {
     insertIntoStudyQuery.subscribe { line ->
         setMetaDataRecord(line.toString())
     }
-    pairedFastqFiles=DOWNLOAD_PAIRED_FASTQS(runAccessionMedatadata_2)
+    pairedFastqFiles=DOWNLOAD_PAIRED_FASTQS(runAccessionMedatadata_2,queryDataFile)
 
     emit:
-    insertIntoDataFile =   queryDataFile   // path
-    pairedFastqFilesMetadata =   pairedFastqFiles      // channel: [taxon_id, gca, run_accession, path1, path2]
+    //insertIntoDataFile =   queryDataFile   // path
+    pairedFastqFilesMetadata =   pairedFastqFiles      // channel: [taxon_id, gca, run_accession, path1, path2, data_file_query]
 }
