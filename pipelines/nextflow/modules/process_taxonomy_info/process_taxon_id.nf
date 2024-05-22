@@ -33,7 +33,6 @@ process PROCESS_TAXON_ID {
 
 
     script:
-    //def lastCheckedDate =[]
     def taxonomyExists = checkTaxonomy(taxon_id)
     if (taxonomyExists){
         // Retrieve new run accessions for short-read transcriptomic data published AFTER the last check date
@@ -45,7 +44,6 @@ process PROCESS_TAXON_ID {
         lastCheckedDate = '2019-01-01'
     }
 
-    //lastCheckedDate.view()
     """
     echo $lastCheckedDate
     """

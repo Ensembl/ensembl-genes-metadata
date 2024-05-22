@@ -29,7 +29,6 @@ class ResponseData {
     List<String> lines = []
 }
 
-include { setMetaDataRecord } from '../utils.nf'
 process GET_RUN_ACCESSIONS {
     label 'default'
     tag "$taxon_id:$gca"
@@ -84,54 +83,12 @@ process GET_RUN_ACCESSIONS {
         
         if (!line.startsWith("run_accession")) { // Skip header line
             runAccessionList.add([taxon_id: taxon_id, gca: gca, run_accession: line])
-    //    println("Response7777: $line")
         }
-      //  println("Response: $runAccessionList")
     }
     reader.close()
 
-//    responseContent.toString().split('\n').each { row ->
-  //  if (!row.startsWith("run_accession")) {
-        //if (row !="run_accession") { // Skip header line
-    //        runAccessionList.add(['taxon_id': taxon_id, 'gca': gca, 'run_accession': row])
-      //      println("Response: $runAccessionList")
-       // }
-       // }
-    // Save the response content to a text file
-    //def responseFile = new File('response.txt')
-    //responseFile.text = responseContent.toString()
-//    println(runAccessionList)
-    // Create a channel from the list of run accessions
-//    runAccessionChannel = Channel.from(runAccessionList)
-    // Create a copy of runAccessionList
-  //  def runAccessionListCopy = runAccessionList.toList()
-
-    // Create a channel from the copied list
-//    runAccessionChannel = Channel.from(runAccessionListCopy)
-//    runAccessionChannel.view { item -> println(item) }
     runAccessionToFile='run_accession_list.txt'
     """
     echo '${responseContent.toString()}' > $runAccessionToFile
     """
-//echo '${responseContent.toString()}' > $runAccessionToFile
-//    def runAccessionList = []
-    //def file = new File('run_accessions.csv')
-    //file.withWriter { writer ->
-//        responseData.lines.each { lineData ->
-        //file.eachLine { line -> writer.writeLine([taxon_id: ${taxon_id}, gca: ${gca}, run_accession: lineData])}
-//       runAccessionList.add([taxon_id: taxon_id, gca: gca, run_accession: lineData])
-     //   writer.writeLine(lineData)
-  //      println("Response: $lineData")
-    //}
-   // }
-
-    //runAccessionData = Channel.from(responseData.lines)
-      //                 .map { lineData -> [taxon_id: taxon_id, gca: gca, run_accession: lineData]}
-
-   //setMetaRecord(taxon_id,'update')
-//runAccessionChannel.flatten().view { d -> "AAAA Taxon ID: ${d.taxon_id}, GCA: ${d.gca}, last date: ${d.run_accession}"} 
-//    } catch (Exception e) {
-    // Handle any exceptions
-  //  println("Error: ${e.message}")
-   // }
 }
