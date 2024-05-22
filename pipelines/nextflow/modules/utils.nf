@@ -68,7 +68,6 @@ def getLastCheckDate(String taxonId) {
         sql.close()
     }
 
-    //return Channel.of(lastCheckedDate)
     return result
 }
 
@@ -89,14 +88,12 @@ def setLastCheckDate(String taxonId,String query_option) {
         sql.execute 'INSERT IGNORE INTO meta (taxon_id, last_check) VALUES (?, ?)', params
         //def insertQuery = "INSERT INTO meta (taxon_id, last_checked_date) VALUES ('${taxonId}', '${formattedDate}')"
         //sql.executeInsert(insertQuery)
-        println("sto facendo insert")
         }
         if(query_option =="update"){
         // Execute the SQL INSERT statement
         def params = [formattedDate, taxonId]
         //def updateQuery = "UPDATE meta SET last_check = '${formattedDate}' WHERE taxon_id = '${taxonId}'"
         sql.execute 'UPDATE meta SET last_check = ?  WHERE taxon_id = ?', params
-        println("sto facendo update")
         }
     } catch (Exception ex) {
         ex.printStackTrace()
@@ -110,12 +107,8 @@ def setMetaDataRecord(String mysqlQuery){
     def sql 
     sql = Sql.newInstance(jdbcUrl, params.transcriptomic_dbuser,params.transcriptomic_dbpassword,driver)
     
-    // Input string
-    //def inputString = "INSERT INTO run (run_id, taxon_id, run_accession, qc_status, sample_accession, study_accession, read_type, platform, paired, experiment, description, library_name, library_selection, tissue, cell_line, cell_type, strain) VALUES (NULL,'9940','SRR4240445','NOT_CHECKED','SAMN05728284','PRJNA342075','RNA-Seq','ILLUMINA','1','sheep liver; Illumina HiSeq 2000 sequencing: Sheep liver transcriptome','Illumina HiSeq 2000 sequencing Sheep liver transcriptome','TRANSCRIPTOMIC; ','PCR','liver',NULL,NULL,NULL) ;"
-
     // Define a regular expression pattern to extract values within parentheses /\(([^)]+)\)/
     def pattern = /\(([^)]+)\)/
-
     // Match the pattern in the input string
     def matcher = (mysqlQuery =~ pattern )
     // Track the number of matches found
@@ -124,63 +117,54 @@ def setMetaDataRecord(String mysqlQuery){
     while (matcher.find()) {
         matchCount++
         if (matchCount == 2) {
-    //if (matcher.find()) {
-     println("match found")
     
-   // Extract the values from the match
-    def paramValuesString = matcher.group(1)
-    log.info("Extracted paramValuesString: ${paramValuesString}")
-    // Split the values string by commas
-//    def paramValues = paramValuesString.split(',')
-    println("paramValues1")
-    // Trim whitespace and single quotes from each parameter value
-    def paramValues = paramValuesString.split(',').collect { it.trim().replaceAll(/^'|'$/, '') }
-   // println("Processed paramValues: ${paramValues}")
+        println("match found")
     
-    // Add NULL for values that are represented as 'NULL' in the input string
-    paramValues = paramValues.collect { it == 'NULL' ? null : it }.toList()
+        // Extract the values from the match
+        def paramValuesString = matcher.group(1)
+        log.info("Extracted paramValuesString: ${paramValuesString}")
+        // Split the values string by commas
+        println("paramValues1")
+        // Trim whitespace and single quotes from each parameter value
+        def paramValues = paramValuesString.split(',').collect { it.trim().replaceAll(/^'|'$/, '') }       
+        // Add NULL for values that are represented as 'NULL' in the input string
+        paramValues = paramValues.collect { it == 'NULL' ? null : it }.toList()
+        // Print the parameter values
+        log.info("Parameter values: ${paramValues}")
+        // Generate a comma-separated string of placeholders
+        def placeholders = paramValues.collect { "?" }.join(", ")
+        // Construct the query by replacing the values string with placeholders
+        def query = mysqlQuery.replaceFirst(paramValuesString, placeholders)
+        // Remove the values string from the input string to get the query
+        // query = mysqlQuery.replaceFirst(paramValuesString, "?".repeat(paramValues.size())).toString()
+        // Print the final query
+        log.info("Final query: $query")
+
+        try{
+            //def updateQuery = "UPDATE meta SET last_check = '${formattedDate}' WHERE taxon_id = '${taxonId}'"
+            sql.execute query, paramValues
+            //sql.execute """
+            //${mysqlQuery}
+            //"""
+        } catch (Exception ex) {
+            ex.printStackTrace()
+        } finally {
+            sql.close()
+        }
     
-
-    // Print the parameter values
-    log.info("Parameter values: ${paramValues}")
-
-    // Generate a comma-separated string of placeholders
-    def placeholders = paramValues.collect { "?" }.join(", ")
-
-    // Construct the query by replacing the values string with placeholders
-    def query = mysqlQuery.replaceFirst(paramValuesString, placeholders)
-
-    // Remove the values string from the input string to get the query
-    // query = mysqlQuery.replaceFirst(paramValuesString, "?".repeat(paramValues.size())).toString()
-
-    // Print the final query
-    log.info("Final query: $query")
-   
-   
-    try{
-        //def updateQuery = "UPDATE meta SET last_check = '${formattedDate}' WHERE taxon_id = '${taxonId}'"
-        sql.execute query, paramValues
-        //sql.execute """
-        //${mysqlQuery}
-        //"""
-    } catch (Exception ex) {
-        ex.printStackTrace()
-    } finally {
-        sql.close()
+    }else{
+    println("no match found")
     }
-    
-  }else{
-  println("no match found")
-  }
-  }
+}
 }
 
-def  getDataFileData(String run_accession, String dataFileKey){
+def  getDataFromTable(String run_accession, String queryTable, String tableKey){
     def sql
     sql = Sql.newInstance(jdbcUrl, params.transcriptomic_dbuser,params.transcriptomic_dbpassword,driver)
     
     try {
-        def query = "SELECT '${dataFileKey}' FROM data_file  INNER JOIN run ON run_id WHERE run_accession = ?" 
+        //def query = "SELECT '${dataFileKey}' FROM data_file  INNER JOIN run ON run_id WHERE run_accession = ?" 
+        def query = "SELECT '${tableKey}' FROM '${queryTable}'  INNER JOIN run ON run_id WHERE run_accession = ?" 
         def result = sql.rows(query,[run_accession])
         return result.size() > 0
     } catch (Exception ex) {
@@ -189,10 +173,7 @@ def  getDataFileData(String run_accession, String dataFileKey){
         sql.close()
     }
 }
-def build_ncbi_path(gca, assembly_name) {
-    final gca_splitted = gca.replaceAll("_","").tokenize(".")[0].split("(?<=\\G.{3})").join('/')
-    return  'https://ftp.ncbi.nlm.nih.gov/genomes/all'  + '/' + gca_splitted + '/' + "$gca" +'_' + assembly_name.replaceAll(" ","_") + '/' + "$gca" + '_' + assembly_name.replaceAll(" ","_") + '_genomic.fna.gz'
-}
+
 
 def getPairedFastqsURL(String jdbcUrl, String username, String password, String run_accession) {
     def sql = Sql.newInstance(jdbcUrl, username, password)

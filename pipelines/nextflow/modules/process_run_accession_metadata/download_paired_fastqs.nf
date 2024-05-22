@@ -16,6 +16,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+include { getDataFromTable } from '../modules/utils.nf'
+import groovy.json.JsonSlurper
 import org.apache.commons.codec.digest.DigestUtils
 
 process DOWNLOAD_PAIRED_FASTQS {
@@ -26,26 +28,45 @@ process DOWNLOAD_PAIRED_FASTQS {
 
     input:
     tuple val(taxon_id), val(gca), val(run_accession)
+    path(dataFileQuery)
 
     output:
-    tuple (val(taxon_id), val(gca), val(run_accession), path("*_1.fastq.gz"), path("*_2.fastq.gz"))
+    tuple (val(taxon_id), val(gca), val(run_accession), path("*_1.fastq.gz"), path("*_2.fastq.gz"),path(dataFileQuery))
 
     when:
-    len(fileUrls.trim().split(';')) == 2
+    dataFiles.size() == 2 && qc_status != 'FILE_ISSUE'
+
 
     script:
-    def fileUrls = getDataFileData(run_accession, "file_url")// controlla qc-status not FILE_ISSUE
-    def (file1, file2) = fileUrls.trim().split(';')
+    // Parse the JSON data
+    def parsedJson = new JsonSlurper().parseText(jsonData)
+    def dataFiles = parsedJson.data_files
 
-    if (fileUrls.trim().split(';').size() != 2) {
-        println "Expected two file URLs, but found ${fileUrls.size()}. Skipping the process."
+    // Check if there are exactly two data files
+    if (dataFiles.size() != 2) {
+        println "Expected two data files, but found ${dataFiles.size()}. Skipping the process."
         return
     }
 
+    def file1 = dataFiles[0]
+    def file2 = dataFiles[1]
+
+    // Extract URLs and MD5 checksums
+    def url1 = file1.url
+    def md5_1 = file1.md5
+    def url2 = file2.url
+    def md5_2 = file2.md5
+    def qc_status = getDataFromTable(run_accession, "run", "qc_status")
+    if (!url1 or !url2 or !md5_1 or !md5_2 or qc_status == 'FILE_ISSUE' ) {
+        println "Issue in metadata for ${run_accession}."
+        return
+    }
+    
+    
     def pair1Path = "${publishDir}/${run_accession}_1.fastq.gz"
     def pair2Path = "${publishDir}/${run_accession}_2.fastq.gz"
 
-    def storedMd5 = getDataFileData(run_accession, "md5").trim().split(';')
+    def storedMd5 = getDataFromTable(run_accession,"data_file","md5").trim().split(';')
     def retryCount = 0
     def maxRetries = 3
     def md5Match = false
@@ -75,4 +96,36 @@ process DOWNLOAD_PAIRED_FASTQS {
     if (!md5Match) {
         throw new RuntimeException("MD5 checksums do not match after $maxRetries retries!")
     }
+    /*
+     // Perform the download and MD5 checksum verification
+    """
+    # Download the first file
+    wget -O ${run_accession}_1.fastq.gz ${url1}
+    if [ $? -ne 0 ]; then
+        echo "Error downloading ${url1}"
+        exit 1
+    fi
+
+    # Verify the MD5 checksum of the first file
+    echo "${md5_1}  ${run_accession}_1.fastq.gz" | md5sum -c -
+    if [ $? -ne 0 ]; then
+        echo "MD5 checksum verification failed for ${run_accession}_1.fastq.gz"
+        exit 1
+    fi
+
+    # Download the second file
+    wget -O ${run_accession}_2.fastq.gz ${url2}
+    if [ $? -ne 0 ]; then
+        echo "Error downloading ${url2}"
+        exit 1
+    fi
+
+    # Verify the MD5 checksum of the second file
+    echo "${md5_2}  ${run_accession}_2.fastq.gz" | md5sum -c -
+    if [ $? -ne 0 ]; then
+        echo "MD5 checksum verification failed for ${run_accession}_2.fastq.gz"
+        exit 1
+    fi
+    """
+    */
 }
