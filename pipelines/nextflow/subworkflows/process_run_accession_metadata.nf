@@ -28,8 +28,8 @@ import java.time.format.DateTimeFormatter
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
-include { STORE_METADATA as STORE_RUN_METADATA } from '../modules/store_metadata.nf'
-include { STORE_METADATA as STORE_STUDY_METADATA} from '../modules/store_metadata.nf'
+include { BUILD_QUERY as BUILD_QUERY_RUN_METADATA } from '../modules/store_metadata.nf'
+include { BUILD_QUERY as BUILD_QUERY_STUDY_METADATA} from '../modules/store_metadata.nf'
 include { DOWNLOAD_PAIRED_FASTQS } from '../modules/process_run_accession_metadata/download_paired_fastqs.nf'
 include { GET_RUN_ACCESSION_METADATA } from '../modules/process_run_accession_metadata/get_run_accession_metadata.nf'
 
@@ -55,39 +55,16 @@ workflow PROCESS_RUN_ACCESSION_METADATA {
     //emit fasta_paired_files
     def(runAccessionMedatadata, insertIntoRun, insertIntoStudy, queryDataFile) = GET_RUN_ACCESSION_METADATA(transcriptomic_meta.flatten())
     def updateValue = "False"
-    def (runAccessionMedatadata_1,insertIntoRunQuery) = STORE_RUN_METADATA(runAccessionMedatadata, insertIntoRun, updateValue)
+    def (runAccessionMedatadata_1,insertIntoRunQuery) = BUILD_QUERY_RUN_METADATA(runAccessionMedatadata, insertIntoRun, updateValue)
     def data1=insertIntoRunQuery
     data1.flatten().view { d -> "query ${d}"}
     insertIntoRunQuery.subscribe { line ->
-
-    setMetaDataRecord(line.toString())
+        setMetaDataRecord(line.toString())
     }
-    /*
-    insertIntoRunQueryOutputs= insertIntoRunQuery.toString().split('\n')
-    if (insertIntoRunQueryOutputs.size() == 1) {
-        // Only one output, pass it directly
-        setMetaDataRecord(insertIntoRunQuery.toString())
-    } else {
-        // Multiple outputs, loop through and pass each one
-        insertIntoRunQueryOutputs.each { singleOutput ->
-            setMetaDataRecord(singleOutput)
-        }
-        }
-        */
-    def (runAccessionMedatadata_2, insertIntoStudyQuery) = STORE_STUDY_METADATA(runAccessionMedatadata_1, insertIntoStudy, updateValue)
-    setMetaDataRecord(insertIntoStudyQuery.toString())
-    /*
-    def insertIntoStudyQueryOutputs = insertIntoStudyQuery.toString().split('\n')
-    if (insertIntoStudyQueryOutputs.size() == 1) {
-        // Only one output, pass it directly
-        setMetaDataRecord(insertIntoStudyQuery.toString())
-    } else {
-        // Multiple outputs, loop through and pass each one
-        insertIntoStudyQueryOutputs.each { singleOutput ->
-            setMetaDataRecord(singleOutput)
-        }
-        }
-        */
+    def (runAccessionMedatadata_2, insertIntoStudyQuery) = BUILD_QUERY_STUDY_METADATA(runAccessionMedatadata_1, insertIntoStudy, updateValue)
+    insertIntoStudyQuery.subscribe { line ->
+        setMetaDataRecord(line.toString())
+    }
     pairedFastqFiles=DOWNLOAD_PAIRED_FASTQS(runAccessionMedatadata_2)
 
     emit:
