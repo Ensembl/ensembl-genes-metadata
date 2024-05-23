@@ -68,3 +68,75 @@ process ADAPTER_TRIMMING {
     emit(taxon_id, run_accession, trimmedFastqFiles)
     """
 }
+
+/*
+def run_trimming(
+    output_dir: Path,
+    short_read_fastq_dir: Path,
+    delete_pre_trim_fastq: bool = False,
+    num_threads: int = 1,
+    trim_galore_bin="trim_galore",
+) -> None:
+    """
+    Trim list of short read fastq files.
+    Args:
+        output_dir : Working directory path.
+        short_read_fastq_dir : Short read directory path.
+        delete_pre_trim_fastq : Removing original fastq file post trimming. Defaults to False.
+        num_threads : Number of threads.
+        trim_galore_bin : Software path.
+    """
+    check_exe(trim_galore_bin)
+    trim_dir = create_dir(output_dir, "trim_galore_output")
+
+    fastq_file_list = []
+    file_types = ("*.fastq", "*.fq", "*.fastq.gz", "*.fq.gz")
+    fastq_file_list = [
+        path for file_type in file_types for path in Path(short_read_fastq_dir).rglob(file_type)
+    ]
+    fastq_file_list = _create_paired_paths(fastq_file_list)
+
+    trim_galore_cmd = [
+        str(trim_galore_bin),
+        "--illumina",
+        "--quality",
+        "20",
+        "--length",
+        "50",
+        "--output_dir",
+        str(trim_dir),
+    ]
+
+    pool = multiprocessing.Pool(int(num_threads))  # pylint:disable=consider-using-with
+    for fastq_file in fastq_file_list:
+        if delete_pre_trim_fastq:
+            fastq_file.unlink()
+        pool.apply_async(
+            multiprocess_trim_galore,
+            args=(
+                trim_galore_cmd,
+                fastq_file,
+                trim_dir,
+            ),
+        )
+
+    pool.close()
+    pool.join()
+
+    trimmed_fastq_list = trim_dir.glob("*.fq.gz")
+
+    for trimmed_fastq_path in trimmed_fastq_list:
+        logging.info("Trimmed file path: %s", str(trimmed_fastq_path))
+        sub_patterns = re.compile(r"|".join(("_val_1.fq", "_val_2.fq", "_trimmed.fq")))
+        updated_file_path_name = sub_patterns.sub(".fq", trimmed_fastq_path.name)
+        updated_file_path = short_read_fastq_dir / updated_file_path_name
+        logging.info("Updated file path: %s", str(updated_file_path))
+        trimmed_fastq_path.rename(updated_file_path)
+
+    files_to_delete_list: List[Path] = []
+    for file_type in file_types:
+        files_to_delete_list.extend(short_read_fastq_dir.glob(file_type))
+
+    for file_to_delete in files_to_delete_list:
+        file_to_delete.unlink()
+        */

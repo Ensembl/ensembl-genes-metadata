@@ -17,30 +17,21 @@ limitations under the License.
 */
 
 process PROCESS_FASTQC_OUTPUT {
-    scratch true
-    label 'default'
-    tag "fastqc_output"
-
+    label 'python'
+    tag "$run_accession"
+    publishDir "${params.outDir}/$taxon_id/$run_accession", mode: 'copy'
     input:
-    tuple val(taxon_id), val(run_accession), path(fastqcOutput)
+    tuple val(taxon_id), val(gca), val(run_accession), path(pair1), path(pair2),path(dataFileQuery),path(fastqc_dir)
+    val runId
 
     output:
-    file(joinPath(params.outDir, "${taxon_id}", "${run_accession}", "fastqc","fastqc_metadata.json")) into fastqcMetadata
+    tuple val(taxon_id), val(gca), val(run_accession)
+    tuple path(pair1), path(pair2)
+    path("insert_into_data_file.json")
 
     script:
     """
-    // Construct the command based on whether last_date is provided
-    def pythonScript = file("$projectDir/convert_to_json.py")
-    def command = "python ${pythonScript} ${fastqcOutput}"
-
-    // Execute the Python script
-    def process = command.execute()
-    process.waitFor()
-    
-    // Check if the script execution was successful
-    if (process.exitValue() != 0) {
-        throw new RuntimeException("Error executing Python script: ${pythonScript}")
-    }
+    parse_fastqc.py --fastqc_results_path ${fastqc_dir} --data_file_json ${dataFileQuery} --run_id ${runId}
     """
 }
 

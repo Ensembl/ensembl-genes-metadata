@@ -15,27 +15,25 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-
+///nfs/production/flicek/ensembl/genebuild/swati/fastqc/
 // https://hub.docker.com/r/staphb/fastqc v12
 process RUN_FASTQC {
     scratch true
     label 'fastqc'
     tag "$taxon_id"
-
+    publishDir "${params.outDir}/$taxon_id/$run_accession/fastqc", mode: 'copy'
     input:
-    val taxon_id
-    val run_accession
-    set pair1, pair2 from pairedFastqFiles
+    val(taxon_id), val(gca), val(run_accession), path(pair1), path(pair2),path(dataFileQuery)
+    //val taxon_id
+    //val run_accession
+    //set pair1, pair2 from pairedFastqFiles
 
     output:
-    val taxon_id, emit: taxon_id
-    val run_accession, emit: run_accession
-    storeDir joinPath(params.outDir, "${taxon_id}", "${run_accession}", "fastqc"), emit: fastqcOutput
-
+    tuple val(taxon_id), val(gca), val(run_accession), path(pair1), path(pair2),path(dataFileQuery),path("fastqc")
 
     script:
     """
-    fastqc fastqc_output ${pair1} ${pair2} --quiet --extract --threads ${task.cpus}
+    fastqc  ${pair1} ${pair2} --quiet --extract --threads ${task.cpus} --outdir fastqc
     """
 
     

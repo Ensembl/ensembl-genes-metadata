@@ -174,7 +174,20 @@ def  getDataFromTable(String run_accession, String queryTable, String tableKey){
     }
 }
 
-
+def getRunId(String runAccession) {
+    def sql
+    sql = Sql.newInstance(jdbcUrl, params.transcriptomic_dbuser,params.transcriptomic_dbpassword,driver)
+    
+    try {
+        def query = "SELECT run_id FROM run WHERE run_accession = ? "
+        def result = sql.rows(query,[runAccession])
+        return result
+    } catch (Exception ex) {
+        ex.printStackTrace()}
+    finally {
+        sql.close()
+    }
+}
 def getPairedFastqsURL(String jdbcUrl, String username, String password, String run_accession) {
     def sql = Sql.newInstance(jdbcUrl, username, password)
     try {
