@@ -57,11 +57,12 @@ process DOWNLOAD_PAIRED_FASTQS {
     def url2 = file2.url
     def md5_2 = file2.md5
     def qc_status = getDataFromTable(run_accession, "run", "qc_status")
-    if (!url1 or !url2 or !md5_1 or !md5_2 or qc_status == 'FILE_ISSUE' ) {
+
+    // Check for file issues and QC status
+    if (!url1 || !url2 || !md5_1 || !md5_2 || qc_status == 'FILE_ISSUE') {
         println "Issue in metadata for ${run_accession}."
         return
     }
-    
     
     def pair1Path = "${publishDir}/${run_accession}_1.fastq.gz"
     def pair2Path = "${publishDir}/${run_accession}_2.fastq.gz"
