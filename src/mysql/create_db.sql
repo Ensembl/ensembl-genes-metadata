@@ -8,6 +8,7 @@ create table data_files (
 	md5 varchar(255) not null,
 	basic_statistics SET("PASS","FAIL","WARN"),
 	per_base_sequence_quality SET("PASS","FAIL","WARN"),
+	per_tile_sequence_quality SET("PASS","FAIL","WARN"),
 	per_sequence_quality_scores SET("PASS","FAIL","WARN"),
 	per_base_sequence_content SET("PASS","FAIL","WARN"),
 	per_sequence_gc_content SET("PASS","FAIL","WARN"),
