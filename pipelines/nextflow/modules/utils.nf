@@ -158,13 +158,13 @@ def setMetaDataRecord(String mysqlQuery){
 }
 }
 
-def  getDataFromTable(String run_accession, String queryTable, String tableKey){
+def getDataFromTable(String run_accession, String queryTable, String tableKey){
     def sql
     sql = Sql.newInstance(jdbcUrl, params.transcriptomic_dbuser,params.transcriptomic_dbpassword,driver)
     
     try {
         //def query = "SELECT '${dataFileKey}' FROM data_file  INNER JOIN run ON run_id WHERE run_accession = ?" 
-        def query = "SELECT '${tableKey}' FROM '${queryTable}'  INNER JOIN run ON run_id WHERE run_accession = ?" 
+        def query = "SELECT ${tableKey} FROM ${queryTable}  INNER JOIN run ON run_id WHERE run_accession = ?" 
         def result = sql.rows(query,[run_accession])
         return result.size() > 0
     } catch (Exception ex) {
@@ -174,12 +174,12 @@ def  getDataFromTable(String run_accession, String queryTable, String tableKey){
     }
 }
 
-def getRunId(String runAccession) {
+def getRunTable(String runAccession, String tableKey) {
     def sql
     sql = Sql.newInstance(jdbcUrl, params.transcriptomic_dbuser,params.transcriptomic_dbpassword,driver)
     
     try {
-        def query = "SELECT run_id FROM run WHERE run_accession = ? "
+        def query = "SELECT ${tableKey} FROM run WHERE run_accession = ? "
         def result = sql.rows(query,[runAccession])
         return result
     } catch (Exception ex) {
