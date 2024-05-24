@@ -28,6 +28,8 @@ create table study (
 	center_name varchar(255),
 	primary key (study_id)
 );
+ALTER TABLE study ADD UNIQUE (study_accession);
+
 create table align (
 	align_id int not null auto_increment,
 	run_id int not null,
@@ -55,6 +57,7 @@ create table run (
 	strain varchar(255),
 	primary key (run_id)
 );
+ALTER TABLE run ADD UNIQUE (run_accession);
 
 create table meta (
 	meta_id int not null auto_increment,
