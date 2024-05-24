@@ -33,16 +33,16 @@ include { PROCESS_TAXON_ID } from '../modules/process_taxonomy_info/process_taxo
 
 workflow PROCESS_TAXONOMY_INFO {
     take:
-    data
+    input_data
     
     main:
-    def data1=data
+    def data1=input_data
     data1.flatten().view { d -> "Taxon ID: ${d.taxon_id}, GCA: ${d.gca}"}
-    def taxonomyInfo = PROCESS_TAXON_ID(data.flatten())
-    def (runAccessionList, runAccessionFile)  = GET_RUN_ACCESSIONS(taxonomyInfo)
-    runAccessionList1= runAccessionList
+    def taxonomyInfo = PROCESS_TAXON_ID(input_data.flatten())
+    def (accessionList, runAccessionFile)  = GET_RUN_ACCESSIONS(taxonomyInfo)
+    runAccessionList1= accessionList
     runAccessionList1.flatten().view{ d -> "AAAATaxon ID: ${d.taxon_id}, GCA: ${d.gca}, run accession: ${d.run_accession}" }
 
     emit:
-    list_run_accession = runAccessionList
+    list_run_accession = accessionList
 }

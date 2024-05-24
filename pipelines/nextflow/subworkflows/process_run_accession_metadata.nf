@@ -28,8 +28,8 @@ import java.time.format.DateTimeFormatter
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
-include { BUILD_QUERY as BUILD_QUERY_RUN_METADATA } from '../modules/store_metadata.nf'
-include { BUILD_QUERY as BUILD_QUERY_STUDY_METADATA} from '../modules/store_metadata.nf'
+include { BUILD_QUERY as BUILD_QUERY_RUN_METADATA } from '../modules/build_query.nf'
+include { BUILD_QUERY as BUILD_QUERY_STUDY_METADATA} from '../modules/build_query.nf'
 include { DOWNLOAD_PAIRED_FASTQS } from '../modules/process_run_accession_metadata/download_paired_fastqs.nf'
 include { GET_RUN_ACCESSION_METADATA } from '../modules/process_run_accession_metadata/get_run_accession_metadata.nf'
 
@@ -45,15 +45,16 @@ workflow PROCESS_RUN_ACCESSION_METADATA {
     take:
     //taxon_id
     //run_accession          
-    transcriptomic_meta
+    //transcriptomic_meta
+    run_accession_list
     //tuple val(taxon_id), val(gca), val(run_accession)
     main:
-    def db_meta1=transcriptomic_meta
+    def db_meta1=run_accession_list
     db_meta1.flatten().view { d -> "GCA: ${d.gca}, Taxon ID: ${d.taxon_id}, run: ${d.run_accession}"}
     //it is an insert but we need to split the value 
     //so it might be  first function that split the values and another function INSERT
     //emit fasta_paired_files
-    def(runAccessionMedatadata, insertIntoRun, insertIntoStudy, queryDataFile) = GET_RUN_ACCESSION_METADATA(transcriptomic_meta.flatten())
+    def(runAccessionMedatadata, insertIntoRun, insertIntoStudy, queryDataFile) = GET_RUN_ACCESSION_METADATA(run_accession_list.flatten())
     def updateValue = "False"
     def (runAccessionMedatadata_1,insertIntoRunQuery) = BUILD_QUERY_RUN_METADATA(runAccessionMedatadata, insertIntoRun, updateValue)
     def data1=insertIntoRunQuery
