@@ -86,31 +86,33 @@ def parse_fastqc_data(fastqc_data_path: Path) -> Dict[str, int]:
     return fastqc_data
 
 
-def convert_to_json(fastqc_dir: str, data_file_json: str, run_id: int) -> None:
+def convert_to_json(run_accession_dir: str, data_file_json: str, run_id: int) -> None:
     """Convert FASTQC output to JSON format.
 
     Args:
         fastqc_dir (str): Path to the folder containing FASTQC results.
     """
     table_data_files: Dict[str, list[Dict[str, str]]] = {"data_files": []}
-    data = json.loads(data_file_json)
-
-    fastq_files = [file for file in os.listdir(fastqc_dir) if file.endswith((".fastq", ".gz"))]
+    with open(data_file_json,'r') as input_file:
+        data = json.load(input_file)
+    print(data)
+    fastq_files = [file for file in os.listdir(run_accession_dir) if file.endswith((".fastq", ".gz"))]
 
     for fastq_file in fastq_files:
         summary_path = (
-            Path(fastqc_dir)
+            Path(run_accession_dir)
             / "fastqc_results"
             / f'{fastq_file.replace(".fastq.gz", "_fastqc")}'
             / "summary.txt"
         )
         fastqc_data_path = Path(
-            Path(fastqc_dir) / "fastqc_results" / f'{fastq_file.replace(".fastq.gz", "_fastqc")}',
+            Path(run_accession_dir) / "fastqc_results" / f'{fastq_file.replace(".fastq.gz", "_fastqc")}',
             "fastqc_data.txt",
         )
+        print(fastq_file.replace(".fastq.gz", ""))
         # Find the dictionary with the matching name
         run_accession_dict: Optional[Dict[str, str]] = next(
-            (item for item in data["data_files"] if item["name"] == fastq_file.replace(".fastq.gz ", "")),
+            (item for item in data["data_files"] if item["name"] == fastq_file.replace(".fastq.gz", "")),
             None,
         )
         if run_accession_dict is None:
@@ -119,6 +121,8 @@ def convert_to_json(fastqc_dir: str, data_file_json: str, run_id: int) -> None:
 
         summary_data = parse_fastqc_summary(summary_path)
         fastqc_data = parse_fastqc_data(fastqc_data_path)
+        print(summary_data)
+        print(fastqc_data)
         # {"data_files": [{"name": "SRR10059726_1", "url": "ftp.sra.ebi.ac.uk/vol1/fastq/SRR100/026/SRR10059726/SRR10059726_1.fastq.gz", "md5": "98bde123250a8ed551063c4ed733bdf5"}, {"name": "SRR10059726_2", "url": "ftp.sra.ebi.ac.uk/vol1/fastq/SRR100/026/SRR10059726/SRR10059726_2.fastq.gz", "md5": "301e387275db5fb3ca9031cdf599fe38"}]}
         data_file: Dict[str, Any] = {
             "run_id": run_id,
