@@ -157,7 +157,7 @@ def json_parse(response: str, fields: list):
     for url, md5 in zip(file_url, file_md5):
         extension_name = url.split("/")[-1]
         base_name = extension_name.split(".")[0]
-        read = {"name": base_name, "url": url, "md5": md5}
+        read = {"file_name": base_name, "file_url": url, "md5": md5}
         table_data_files["data_files"].append(read)
 
     json_run = json.dumps(table_run)

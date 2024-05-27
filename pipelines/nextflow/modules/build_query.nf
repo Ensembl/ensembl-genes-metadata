@@ -32,6 +32,7 @@ process BUILD_QUERY {
     stdout
 
     script:
+    println(metadata2process)
     log.info("Executing Python script to build query for run: $run_accession")
     """
     chmod +x $projectDir/bin/write2db.py  # Set executable permissions

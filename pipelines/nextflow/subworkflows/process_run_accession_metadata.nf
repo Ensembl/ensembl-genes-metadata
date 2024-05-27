@@ -70,5 +70,5 @@ workflow PROCESS_RUN_ACCESSION_METADATA {
 
     emit:
     //insertIntoDataFile =   queryDataFile   // path
-    pairedFastqFilesMetadata =   pairedFastqFiles      // channel: [taxon_id, gca, run_accession, path1, path2, data_file_query]
+    pairedFastqFiles_metadata =   pairedFastqFiles      // channel: [taxon_id, gca, run_accession, path1, path2, data_file_query]
 }

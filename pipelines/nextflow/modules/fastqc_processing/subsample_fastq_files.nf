@@ -17,7 +17,7 @@ limitations under the License.
 */
 
 // module description 
-process SUBSAMPLE_FASTQC_FILES {
+process SUBSAMPLE_FASTQ_FILES {
     scratch true
     label 'default'
     tag 'subsampling '

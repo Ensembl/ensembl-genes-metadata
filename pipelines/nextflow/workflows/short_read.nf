@@ -93,7 +93,7 @@ include { FETCH_GENOME } from '../modules/fetch_genome.nf'
 
 include { PROCESS_TAXONOMY_INFO } from '../subworkflows/process_taxonomy_info.nf'
 include { PROCESS_RUN_ACCESSION_METADATA } from '../subworkflows/process_run_accession_metadata.nf'
-//include { FASTQC_PROCESSING } from '../subworkflows/fastqc_processing.nf'
+include { FASTQC_PROCESSING } from '../subworkflows/fastqc_processing.nf'
 //include { RUN_ALIGNMENT } from '../subworkflows/run_alignment.nf'
 
 
@@ -116,8 +116,12 @@ workflow SHORT_READ {
     def taxonomyResults= PROCESS_TAXONOMY_INFO(data)
     //rr=runAccessionList
     //rr.each { d -> "Taxon ID: ${d.taxon_id}, GCA: ${d.gca}, run accession: ${d.run_accession}"} 
-    def pairedFastqFilesMetadata  = PROCESS_RUN_ACCESSION_METADATA(taxonomyResults)
-//    def pippo = FASTQ_PROCESSING(pairedFastqFilesMetadata)
+    def fastqFilesMetadata  = PROCESS_RUN_ACCESSION_METADATA(taxonomyResults)
+    dd=fastqFilesMetadata
+    dd.each{ d-> d.view()}
+    def fastqMetadata = []
+    fastqMetadata.add(fastqFilesMetadata)
+    def pippo = FASTQC_PROCESSING(fastqFilesMetadata)
         
     //Channel.of(runAccessionList).groupTuple(taxon_id).collect()
     //runAccessionList.view()

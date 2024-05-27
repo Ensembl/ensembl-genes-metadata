@@ -82,7 +82,7 @@ def parse_fastqc_data(fastqc_data_path: Path) -> Dict[str, int]:
     sequence_length_match = re.search(sequence_length_pattern, data)
     if sequence_length_match:
         fastqc_data["sequence_length"] = int(sequence_length_match.group(1))
-
+    print(fastqc_data)
     return fastqc_data
 
 
@@ -101,18 +101,17 @@ def convert_to_json(run_accession_dir: str, data_file_json: str, run_id: int) ->
     for fastq_file in fastq_files:
         summary_path = (
             Path(run_accession_dir)
-            / "fastqc_results"
             / f'{fastq_file.replace(".fastq.gz", "_fastqc")}'
             / "summary.txt"
         )
         fastqc_data_path = Path(
-            Path(run_accession_dir) / "fastqc_results" / f'{fastq_file.replace(".fastq.gz", "_fastqc")}',
+            Path(run_accession_dir) / f'{fastq_file.replace(".fastq.gz", "_fastqc")}',
             "fastqc_data.txt",
         )
         print(fastq_file.replace(".fastq.gz", ""))
         # Find the dictionary with the matching name
         run_accession_dict: Optional[Dict[str, str]] = next(
-            (item for item in data["data_files"] if item["name"] == fastq_file.replace(".fastq.gz", "")),
+            (item for item in data["data_files"] if item["file_name"] == fastq_file.replace(".fastq.gz", "")),
             None,
         )
         if run_accession_dict is None:
@@ -137,7 +136,7 @@ def convert_to_json(run_accession_dir: str, data_file_json: str, run_id: int) ->
     table_data_files["data_files"].append(read)
     json_data = json.dumps(output_data, indent=2)
     """
-    with open("insert_into_data_file.json", "w") as file:
+    with open("complete_insert_into_data_file.json", "w") as file:
         file.write(json_data_files)
     # output_json_path = os.path.join(fastqc_dir, 'fastqc_results_summary.json')
     # with open(output_json_path, 'w') as json_file:

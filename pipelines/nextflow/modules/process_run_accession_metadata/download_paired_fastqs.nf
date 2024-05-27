@@ -27,20 +27,22 @@ process DOWNLOAD_PAIRED_FASTQS {
     label "default"
     tag "download ${run_accession} fastqs"
     maxForks 10
-    publishDir "${params.outDir}/$taxon_id/$run_accession", mode: 'copy'
+    storeDir "${params.outDir}/$taxon_id/$run_accession"
 
     input:
     tuple val(taxon_id), val(gca), val(run_accession)
     path(dataFileQuery)
 
     output:
-    tuple (val(taxon_id), val(gca), val(run_accession), path("*_1.fastq.gz"), path("*_2.fastq.gz"),path(dataFileQuery))
+    //val(fastqMetadata)
+    tuple (val(taxon_id), val(gca), val(run_accession), val("${params.outDir}/${taxon_id}/${run_accession}/${run_accession}_1.fastq.gz"), val("${params.outDir}/${taxon_id}/${run_accession}/${run_accession}_2.fastq.gz"),val("${params.outDir}/$taxon_id/$run_accession/${dataFileQuery}"))
 
     //when:
     //dataFiles.size() == 2 && qc_status != 'FILE_ISSUE'
 
 
     script:
+    //def fastqMetadata = []
     //def fileContent = Files.readString(dataFileQuery)
     //def parsedJson = new JsonSlurper().parseText(fileContent)
     //def dataFiles = parsedJson.data_files
@@ -60,9 +62,9 @@ process DOWNLOAD_PAIRED_FASTQS {
     println(file1)
     println(file2)
     // Extract URLs and MD5 checksums
-    def url1 = file1.url
+    def url1 = file1.file_url
     def md5_1 = file1.md5
-    def url2 = file2.url
+    def url2 = file2.file_url
     def md5_2 = file2.md5
     def qc_status = getRunTable(run_accession, "qc_status")
 
@@ -127,6 +129,7 @@ process DOWNLOAD_PAIRED_FASTQS {
     if (!md5Match) {
         throw new RuntimeException("MD5 checksums do not match after $maxRetries retries!")
     }
+    //fastqMetadata.add([taxon_id:taxon_id, gca:gca, run_accession:run_accession, file1:"${params.outDir}/${taxon_id}/${run_accession}/${run_accession}_1.fastq.gz", file2:"${params.outDir}/${taxon_id}/${run_accession}/${run_accession}_2.fastq.gz",query: "${params.outDir}/$taxon_id/$run_accession/${dataFileQuery}"])
     """
     cp ${pair1Path} .
     cp ${pair2Path} .

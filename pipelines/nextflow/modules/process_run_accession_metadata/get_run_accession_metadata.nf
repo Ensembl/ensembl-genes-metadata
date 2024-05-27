@@ -30,7 +30,9 @@ process GET_RUN_ACCESSION_METADATA {
     path("insert_into_run.json")
     path("insert_into_study.json")
     path("insert_into_data_file.json")
-
+    
+    //when:
+    //!file("${params.outDir}/$taxon_id/$run_accession/insert_into_run.json").exists()
     script:
     log.info("Executing Python script to get metadata for run: $run_accession")
     """
@@ -60,5 +62,3 @@ process GET_RUN_ACCESSION_METADATA {
     get_metadata.py --run ${run_accession}
     """
 }
-
-

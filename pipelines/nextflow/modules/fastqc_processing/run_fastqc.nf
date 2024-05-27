@@ -21,18 +21,20 @@ process RUN_FASTQC {
     scratch true
     label 'fastqc'
     tag "$taxon_id"
-    publishDir "${params.outDir}/$taxon_id/$run_accession/fastqc", mode: 'copy'
+    storeDir "${params.outDir}/$taxon_id/$run_accession/"
+    afterScript "sleep $params.files_latency"
     input:
-    val(taxon_id), val(gca), val(run_accession), path(pair1), path(pair2),path(dataFileQuery)
+    tuple val(taxon_id), val(gca), val(run_accession), val(pair1), val(pair2), val(dataFileQuery)
     //val taxon_id
     //val run_accession
     //set pair1, pair2 from pairedFastqFiles
 
     output:
-    tuple val(taxon_id), val(gca), val(run_accession), path(pair1), path(pair2),path(dataFileQuery),path("fastqc")
+    tuple(val(taxon_id), val(gca), val(run_accession), val(pair1), val(pair2),val(dataFileQuery),val("${params.outDir}/$taxon_id/$run_accession/fastqc"))
 
     script:
     """
+    mkdir -p fastqc
     fastqc  ${pair1} ${pair2} --quiet --extract --threads ${task.cpus} --outdir fastqc
     """
 

@@ -19,18 +19,19 @@ limitations under the License.
 process PROCESS_FASTQC_OUTPUT {
     label 'python'
     tag "$run_accession"
-    publishDir "${params.outDir}/$taxon_id/$run_accession", mode: 'copy'
+    publishDir "${params.outDir}/$taxon_id/$run_accession/fastqc", mode: 'copy'
     input:
-    tuple val(taxon_id), val(gca), val(run_accession), path(pair1), path(pair2),path(dataFileQuery),path(fastqc_dir)
-    val runId
+    tuple val(taxon_id), val(gca), val(run_accession), path(pair1), path(pair2),path(dataFileQuery),path(fastqc_dir), val(runId)
 
     output:
     tuple val(taxon_id), val(gca), val(run_accession)
     tuple path(pair1), path(pair2)
-    path("insert_into_data_file.json")
+    path("complete_insert_into_data_file.json")
 
     script:
     """
+    echo "Run ID: ${runId}"
+    chmod +x $projectDir/bin/parse_fastqc.py  # Set executable permissions
     parse_fastqc.py --fastqc_results_path ${fastqc_dir} --data_file_json ${dataFileQuery} --run_id ${runId}
     """
 }

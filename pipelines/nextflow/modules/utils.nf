@@ -180,8 +180,8 @@ def getRunTable(String runAccession, String tableKey) {
     
     try {
         def query = "SELECT ${tableKey} FROM run WHERE run_accession = ? "
-        def result = sql.rows(query,[runAccession])
-        return result
+        def result = sql.firstRow(query,[runAccession])
+        return result[tableKey].toString()
     } catch (Exception ex) {
         ex.printStackTrace()}
     finally {
