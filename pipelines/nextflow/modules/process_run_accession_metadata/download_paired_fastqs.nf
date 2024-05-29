@@ -28,7 +28,8 @@ process DOWNLOAD_PAIRED_FASTQS {
     tag "download ${run_accession} fastqs"
     maxForks 10
     storeDir "${params.outDir}/$taxon_id/$run_accession"
-
+    afterScript "sleep $params.files_latency"  // Needed because of file system latency
+    
     input:
     tuple val(taxon_id), val(gca), val(run_accession)
     path(dataFileQuery)
@@ -66,8 +67,8 @@ process DOWNLOAD_PAIRED_FASTQS {
     def md5_1 = file1.md5
     def url2 = file2.file_url
     def md5_2 = file2.md5
-    def qc_status = getRunTable(run_accession, "qc_status")
-
+    //def qc_status = getRunTable(run_accession, "qc_status")
+    def qc_status = getDataFromTable("qc_status", "run", "run_accession", run_accession)[0].run_id
     // Check for file issues and QC status
     if (!url1 || !url2 || !md5_1 || !md5_2 || qc_status == 'FILE_ISSUE') {
         println "Issue in metadata for ${run_accession}."
@@ -88,7 +89,7 @@ process DOWNLOAD_PAIRED_FASTQS {
         """
         wget -qq -c -O ${pair1Path} ftp://${url1}
         """.execute().waitFor()
-       
+    
         """
         wget -qq -c -O ${pair2Path} ftp://${url2}
         """.execute().waitFor()

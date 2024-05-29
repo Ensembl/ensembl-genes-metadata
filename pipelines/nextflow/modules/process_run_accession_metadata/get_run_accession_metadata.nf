@@ -21,7 +21,8 @@ process GET_RUN_ACCESSION_METADATA {
     tag "$run_accession"
     publishDir "${params.outDir}/$taxon_id/$run_accession", mode: 'copy'
     maxForks 5
-    //conda '${projectDir}/pipelines/nextflow/workflows/bin/environment.yml'
+    afterScript "sleep $params.files_latency"  // Needed because of file system latency
+    
     input:
     tuple val(taxon_id), val(gca), val(run_accession)
 

@@ -19,6 +19,7 @@ limitations under the License.
 include { checkTaxonomy } from '../utils.nf'
 include { getLastCheckDate } from '../utils.nf'
 include { setLastCheckDate } from '../utils.nf'
+include { getDataFromTable } from '../utils.nf'
 
 process PROCESS_TAXON_ID {
 
@@ -31,12 +32,15 @@ process PROCESS_TAXON_ID {
     output:
     tuple(val(taxon_id), val(gca), stdout)
 
-
     script:
-    def taxonomyExists = checkTaxonomy(taxon_id)
-    if (taxonomyExists){
+    def taxonomyExists = getDataFromTable('taxon_id', 'meta', 'taxon_id', taxon_id)
+    //def taxonomyExists = checkTaxonomy(taxon_id)
+    //if (taxonomyExists){
+    if (!taxonomyExists.isEmpty()) {  
+        //def getDataFromTable(String queryKey, String queryTable, String tableColumn, String tableValue){  
         // Retrieve new run accessions for short-read transcriptomic data published AFTER the last check date
-        lastCheckedDate = getLastCheckDate(taxon_id)[0].last_check
+        //lastCheckedDate = getLastCheckDate(taxon_id)[0].last_check
+        lastCheckedDate = getDataFromTable('last_check', 'meta',  'taxon_id',  taxon_id)[0].last_check
         //updateLastCheckedDate(params.jdbcUrl, params.transcriptomic_dbuser, params.transcriptomic_dbpassword, taxonId)
     }else{
         // Add the new taxon id and last_check=currentDate and retrieve all the run accessions for short-read transcriptomic data 
