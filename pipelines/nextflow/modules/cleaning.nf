@@ -19,15 +19,15 @@ limitations under the License.
 process CLEANING {
     scratch false
     label 'default'
-    tag "cleaning"
+    tag "cleaning $taxon_id/$run_accession"
 
     input:
-    val taxon_id
-    val run_accession
-
+    tuple val(taxon_id), val(gca), val(run_accession)
+    
+    dirToRemove = joinPath(${params.outDir}, "${taxon_id}", "${run_accession}")
     script:
     """
-    rm -rf joinPath(params.outDir, "${taxon_id}", "${run_accession}")
+    rm -rf ${dirToRemove}
     """
 }
 
