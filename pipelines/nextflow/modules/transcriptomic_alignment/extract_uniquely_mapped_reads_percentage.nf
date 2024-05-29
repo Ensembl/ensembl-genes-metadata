@@ -16,36 +16,32 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+include { getRunTable } from '../modules/utils.nf'
+include { getDataFromTable } from '../modules/utils.nf'
 
 process EXTRACT_UNIQUELY_MAPPED_READS_PERCENTAGE {
-    
+    label 'python'
+    tag "percentage mapped in  $run_accession"
+    publishDir "${params.outDir}/$taxon_id/$run_accession/star/", mode: 'copy'
+    afterScript "sleep $params.files_latency"  // Needed because of file system latency
+
     input:
-    file starOutputFile 
-    val run_accession
-    val gca
+    tuple val(taxon_id), val(gca), val(run_accession), val(starOutputFile)
+
 
     output:
-    file "${params.outDir}/${taxon_id}/${run_accession}/star_alignment/metadata.json", emit: star_metadata
-
+    tuple val(taxon_id), val(gca), val(run_accession)
+    path("insert_into_align.json")
 
     script:
+    def run_id = getDataFromTable("run_id", "run", "run_accession", run_accession)[0].run_id
+    //def run_Id = getRunTable(run_accession, 'run_id')
+    //def star_dir = "${params.outDir}/${taxon_id}/${run_accession}/star/"
+    def star_dir = new File(starOutputFile).parent
     """
-    def run_id=getRunId(params.jdbcUrl, params.transcriptomic_dbuser, params.transcriptomic_dbpassword, $run_accession)
-    def star_dir = new File(input_file).parent
-
-    // Construct the command based on whether last_date is provided
-    def pythonScript = file("$projectDir/ src/python/ensembl/genes/metadata/transcriptomic/parse_star_output.py")
-    def command = "python ${pythonScript} --file_path $starOutputFile --output_dir $star_dir \
-    --extra_parameters "{'run_accession': '$run_accession', 'assembly_accession': '$gca', 'run_id': '$run_id'}" \
+    chmod +x parse_star_output.py
+    parse_star_output.py --file_path ${starOutputFile} --output_dir ${star_dir}\
+    --extra_parameters "{'run_accession': '${run_accession}', 'assembly_accession': '${gca}', 'run_id': '${run_id}'}" \
     --uniquely_mapped_reads_percentage --percentage_reads_mapped_to_multiple_loci --percentage_reads_unmapped_too_short"
-
-    // Execute the Python script
-    def process = command.execute()
-    process.waitFor()
-    
-    // Check if the script execution was successful
-    if (process.exitValue() != 0) {
-        throw new RuntimeException("Error executing Python script: ${pythonScript}")
-    }
     """
 }
