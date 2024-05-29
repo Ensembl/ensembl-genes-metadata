@@ -41,7 +41,7 @@ process EXTRACT_UNIQUELY_MAPPED_READS_PERCENTAGE {
     """
     chmod +x parse_star_output.py
     parse_star_output.py --file_path ${starOutputFile} --output_dir ${star_dir}\
-    --extra_parameters "{'run_accession': '${run_accession}', 'assembly_accession': '${gca}', 'run_id': '${run_id}'}" \
+    --extra_parameters "{'run_id': '${run_id}',  'assembly_accession': '${gca}'}" \
     --uniquely_mapped_reads_percentage --percentage_reads_mapped_to_multiple_loci --percentage_reads_unmapped_too_short"
     """
 }
