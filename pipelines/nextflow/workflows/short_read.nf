@@ -121,8 +121,8 @@ workflow SHORT_READ {
     dd.each{ d-> d.view()}
     def fastqMetadata = []
     fastqMetadata.add(fastqFilesMetadata)
-    def pippo = FASTQC_PROCESSING(fastqFilesMetadata)
-        
+    def fastQCMetadata = FASTQC_PROCESSING(fastqFilesMetadata)
+    RUN_ALIGNMENT(fastQCMetadata)
     //Channel.of(runAccessionList).groupTuple(taxon_id).collect()
     //runAccessionList.view()
 
