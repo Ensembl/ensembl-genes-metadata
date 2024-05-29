@@ -16,56 +16,30 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// module description 
-process SUBSAMPLE_FASTQ_FILES {
-    scratch true
-    label 'default'
-    tag 'subsampling '
 
+process SUBSAMPLE_FASTQ_FILES {
+    label 'python'
+    tag "subsampling $run_accession"
+    publishDir "${params.outDir}/$taxon_id/$run_accession", mode: 'copy'
+    afterScript "sleep $params.files_latency"  // Needed because of file system latency
+    
     input:
-    tuple val(taxon_id), val(run_accession), val(pairedFastqFiles)
-    set pair1, pair2 from pairedFastqFiles
+    tuple val(taxon_id), val(gca), val(run_accession)
+    
+    tuple path(pair1), path(pair2)
 
     output:
-    tuple (taxon_id, run_accession, sampledFastqFiles) into subsampledFastqs
-    //no need to emit the path because the subsampled files will be in the run_accession dir _1_1
+    tuple val(taxon_id), val(gca), val(run_accession),\
+    val("${params.outDir}/${taxon_id}/${run_accession}/${run_accession}_1.fastq.gz.sub"),\
+    val("${params.outDir}/${taxon_id}/${run_accession}/${run_accession}_2.fastq.gz.sub")
+    //subsampled_fastq_files = [Path(f"{fastq_file_1}.sub"), Path(f"{fastq_file_2}.sub")]
 
     script:
     """
-    // Construct the command based on whether last_date is provided
-    def pythonScript = file("${params.enscode}/ensembl-anno/support_scripts/subsample_fastq.py ")
-
-    def command = "python ${pythonScript} "
-
-    // Execute the Python script
-    def process = command.execute()
-    process.waitFor()
-
-    // Check if the script execution was successful
-    if (process.exitValue() != 0) {
-        throw new RuntimeException("Error executing Python script: ${pythonScript}")
-    }
-
-    // Read the output of the Python script
-    def output = []
-    process.inputStream.eachLine { line ->
-            output.add(line.trim())
-        }
-
-    // Define the sampledFastqFiles array
-    def sampledFastqFiles = []
-
-    // Add the captured paths from the output array to sampledFastqFiles
-    output.each { path ->
-        sampledFastqFiles.add(new File(path))
-    }
-
-    // Check if the correct number of files were captured
-    if (sampledFastqFiles.size() != 2) {
-        throw new RuntimeException("Expected two paths from Python script, but received ${sampledFastqFiles.size()}")
-    }
-
-    // Emit the tuple
-    emit(taxon_id, run_accession, sampledFastqFiles)
+    chmod +x ${params.enscode}/ensembl-anno/src/python/ensembl/tools/anno/transcriptomic_annotation/star.py 
+            
+    python ${params.enscode}/ensembl-anno/src/python/ensembl/tools/anno/transcriptomic_annotation/star.py \
+        --run_subsampling True --paired_file_1 ${pair1} --paired_file_2 ${pair2} --sampling_via_read_limit_percentage\
+        --subsample_read_limit 100000 --subsample_percentage 0.10 --num_threads 2   
     """
 }

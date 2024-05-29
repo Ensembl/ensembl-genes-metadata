@@ -23,11 +23,9 @@ process RUN_FASTQC {
     tag "$taxon_id"
     storeDir "${params.outDir}/$taxon_id/$run_accession/"
     afterScript "sleep $params.files_latency"
+    
     input:
     tuple val(taxon_id), val(gca), val(run_accession), val(pair1), val(pair2), val(dataFileQuery)
-    //val taxon_id
-    //val run_accession
-    //set pair1, pair2 from pairedFastqFiles
 
     output:
     tuple(val(taxon_id), val(gca), val(run_accession), val(pair1), val(pair2),val(dataFileQuery),val("${params.outDir}/$taxon_id/$run_accession/fastqc"))
@@ -36,8 +34,6 @@ process RUN_FASTQC {
     """
     mkdir -p fastqc
     fastqc  ${pair1} ${pair2} --quiet --extract --threads ${task.cpus} --outdir fastqc
-    """
-
-    
+    """  
 }
 

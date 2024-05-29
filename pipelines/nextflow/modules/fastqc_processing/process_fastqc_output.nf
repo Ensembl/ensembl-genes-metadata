@@ -20,6 +20,8 @@ process PROCESS_FASTQC_OUTPUT {
     label 'python'
     tag "$run_accession"
     publishDir "${params.outDir}/$taxon_id/$run_accession/fastqc", mode: 'copy'
+    afterScript "sleep $params.files_latency"  // Needed because of file system latency
+    
     input:
     tuple val(taxon_id), val(gca), val(run_accession), path(pair1), path(pair2),path(dataFileQuery),path(fastqc_dir), val(runId)
 
@@ -30,7 +32,6 @@ process PROCESS_FASTQC_OUTPUT {
 
     script:
     """
-    echo "Run ID: ${runId}"
     chmod +x $projectDir/bin/parse_fastqc.py  # Set executable permissions
     parse_fastqc.py --fastqc_results_path ${fastqc_dir} --data_file_json ${dataFileQuery} --run_id ${runId}
     """
