@@ -19,7 +19,7 @@ import re
 import json
 import os
 import ast
-from typing import Dict, Union
+from typing import Any, Dict, Union
 
 # Add options for each key
 keys_to_extract = {
@@ -71,7 +71,8 @@ def parse_star_output(file_path:str, keys: dict, output_dir:str, extra_parameter
         str: _description_
     """
 
-    result = {}
+    table_align: Dict[str, list[Dict[str, str]]] = {"align": []}
+    result : Dict[str, Any] = {}
     for parameter, value in extra_parameters.items():
         result[parameter] = value
     with open(file_path, "r") as file:
@@ -80,7 +81,8 @@ def parse_star_output(file_path:str, keys: dict, output_dir:str, extra_parameter
                 match = re.search(f"{key}\s+\|\s+(.+)", line) #pylint: disable=anomalous-backslash-in-string
                 if match:
                     result[key] = match.group(1).strip()
-    output_file = os.path.join(output_dir, "star_output.json")
+    table_align["align"].append(result)            
+    output_file = os.path.join(output_dir, "insert_into_align.json")
     with open(output_file, "w") as json_file:
         json.dump(result, json_file, indent=4)
     return output_file
