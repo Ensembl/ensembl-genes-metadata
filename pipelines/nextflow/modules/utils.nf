@@ -26,12 +26,13 @@ import java.sql.Date
 binding.driver = 'com.mysql.cj.jdbc.Driver'
 binding.jdbcUrl = "jdbc:mysql://${params.transcriptomic_dbhost}:${params.transcriptomic_dbport}/${params.transcriptomic_dbname}"
 
+
 def checkTaxonomy(String taxonId) {
     def sql
     sql = Sql.newInstance(jdbcUrl, params.transcriptomic_dbuser,params.transcriptomic_dbpassword,driver)
     
     try {
-        def query = "SELECT * FROM meta  WHERE taxon_id = ? "
+        def query = "SELECT * FROM meta WHERE taxon_id = ? "
         def result = sql.rows(query,[taxonId])
         return result.size() > 0
     } catch (Exception ex) {
@@ -117,9 +118,7 @@ def setMetaDataRecord(String mysqlQuery){
     while (matcher.find()) {
         matchCount++
         if (matchCount == 2) {
-    
         println("match found")
-    
         // Extract the values from the match
         def paramValuesString = matcher.group(1)
         log.info("Extracted paramValuesString: ${paramValuesString}")
@@ -141,32 +140,26 @@ def setMetaDataRecord(String mysqlQuery){
         log.info("Final query: $query")
 
         try{
-            //def updateQuery = "UPDATE meta SET last_check = '${formattedDate}' WHERE taxon_id = '${taxonId}'"
             sql.execute query, paramValues
-            //sql.execute """
-            //${mysqlQuery}
-            //"""
         } catch (Exception ex) {
             ex.printStackTrace()
         } finally {
             sql.close()
         }
-    
     }else{
     println("no match found")
     }
 }
 }
 
-def getDataFromTable(String run_accession, String queryTable, String tableKey){
+
+def getRunTable(String runAccession, String tableKey) {
     def sql
     sql = Sql.newInstance(jdbcUrl, params.transcriptomic_dbuser,params.transcriptomic_dbpassword,driver)
-    
     try {
-        //def query = "SELECT '${dataFileKey}' FROM data_file  INNER JOIN run ON run_id WHERE run_accession = ?" 
-        def query = "SELECT ${tableKey} FROM ${queryTable}  INNER JOIN run ON run_id WHERE run_accession = ?" 
-        def result = sql.rows(query,[run_accession])
-        return result.size() > 0
+        def query = "SELECT ${tableKey} FROM run WHERE run_accession = ? "
+        def result = sql.firstRow(query,[runAccession])
+        return result[tableKey].toString()
     } catch (Exception ex) {
         ex.printStackTrace()}
     finally {
@@ -174,14 +167,118 @@ def getDataFromTable(String run_accession, String queryTable, String tableKey){
     }
 }
 
-def getRunTable(String runAccession, String tableKey) {
+def getDataFromTable(String queryKey, String queryTable, String tableColumn, String tableValue){
     def sql
     sql = Sql.newInstance(jdbcUrl, params.transcriptomic_dbuser,params.transcriptomic_dbpassword,driver)
-    
+    def result
     try {
-        def query = "SELECT ${tableKey} FROM run WHERE run_accession = ? "
-        def result = sql.firstRow(query,[runAccession])
-        return result[tableKey].toString()
+        def query = "SELECT ${queryKey} FROM ${queryTable}  WHERE ${tableColumn} = ?" 
+        result = sql.rows(query,[tableValue])
+        
+    } catch (Exception ex) {
+        ex.printStackTrace()}
+    finally {
+        sql.close()
+    }
+    return result
+}
+
+def updateTable(String queryKey, String queryValue, String queryTable, String tableColumn, String tableValue) {
+    def sql
+    sql = Sql.newInstance(jdbcUrl, params.transcriptomic_dbuser,params.transcriptomic_dbpassword,driver)
+    try {
+        def query = "UPDATE ${queryTable} SET ${tableColumn}  = ? WHERE ${queryKey} = ?"
+        def params = [tableValue, queryValue]
+        sql.execute query, params
+    } catch (Exception ex) {
+        ex.printStackTrace()}
+    finally {
+        sql.close()
+    }
+}
+def checkRunStatus(String runId) {
+    def sql
+    sql = Sql.newInstance(jdbcUrl, params.transcriptomic_dbuser,params.transcriptomic_dbpassword,driver)
+    def query_fastqc_results = """
+    SELECT 
+        CONCAT(
+            df1.basic_statistics, ', ', 
+            df2.basic_statistics, ', ', 
+            df1.per_base_sequence_quality, ', ',
+            df2.per_base_sequence_quality, ', ', 
+            df1.per_sequence_quality_scores, ', ', 
+            df2.per_sequence_quality_scores, ', ',
+            df1.per_base_sequence_content,  ', ', 
+            df2.per_base_sequence_content
+        ) AS formatted_results
+    FROM 
+        run r
+    JOIN 
+        data_files df1 ON r.run_id = df1.run_id
+    JOIN 
+        data_files df2 ON r.run_id = df2.run_id
+    WHERE 
+        r.run_id = ?
+        AND df1.file_id < df2.file_id
+    LIMIT 1;
+    """
+    def query_qc_status = """
+    UPDATE run 
+    SET qc_status = ?
+    WHERE run_id = ? ;
+    """
+    try {
+        def result = sql.firstRow(query_fastqc_results, [runId])
+        if (result && result.formatted_results) {
+            def statusList = result.formatted_results.split(', ').collect { it.trim() }
+            def finalStatus = statusList.any { it == 'FAIL' } ? 'QC_FAIL' : 'QC_PASS'
+            def params = [finalStatus, runId]
+            sql.execute query_qc_status, params
+            return finalStatus
+        } else {
+            return 'No data found'
+        }
+    } catch (Exception ex) {
+        ex.printStackTrace()
+        return 'Error'
+    } finally {
+        sql.close()
+    }
+}
+
+def checkOverrepresentedSequences(String run_accession) {
+    def sql = Sql.newInstance(jdbcUrl, username, password)
+    def query = """ SELECT overrepresented_sequences 
+                    FROM data_files df 
+                    INNER JOIN run r on df.run_id =r.run_id 
+                    WHERE r.run_id= ?
+        """
+    def overrepresented_sequences = false 
+
+    try {
+        def result = sql.rows(query,[run_accession])
+        // Process the results
+        results.each { row ->
+        def OverrepresentedSequences = row.overrepresented_sequences
+        if (OverrepresentedSequences=='WARN' || OverrepresentedSequences=='FAIL') {
+            overrepresented_sequences = true
+            }
+        }
+    } catch (Exception ex) {
+        ex.printStackTrace()}
+    finally {
+        sql.close()
+    }
+    return overrepresented_sequences
+}
+/*
+def getDataFromTable(String run_accession, String queryTable, String tableKey){
+    def sql
+    sql = Sql.newInstance(jdbcUrl, params.transcriptomic_dbuser,params.transcriptomic_dbpassword,driver)
+    try {
+        def query = "SELECT ${tableKey} FROM ${queryTable}  INNER JOIN run ON run_id WHERE run_accession = ?" 
+        def result = sql.rows(query,[run_accession])
+        return result.size() > 0
     } catch (Exception ex) {
         ex.printStackTrace()}
     finally {
@@ -201,7 +298,7 @@ def getPairedFastqsURL(String jdbcUrl, String username, String password, String 
 
     return result
 }
-/*
+
 def checkFastqc(String jdbcUrl, String username, String password, String run_accession) {
     def sql = Sql.newInstance(jdbcUrl, username, password)
     def query = """ SELECT basic_statistics, per_base_sequence_quality, per_sequence_quality_scores, \
@@ -255,35 +352,7 @@ def checkFastqc(String jdbcUrl, String username, String password, String run_acc
     return qc_status
 }
 
-def checkOverrepresentedSequences(String jdbcUrl, String username, String password, String run_accession) {
-    def sql = Sql.newInstance(jdbcUrl, username, password)
-    def query = """ SELECT overrepresented_sequences 
-        FROM data_files df 
-        INNER JOIN run r on df.run_id =r.run_id 
-        WHERE r.run_id= '${run_accession}'
-        """
-    def overrepresented_sequences = null 
 
-    try {
-        def result = sql.rows(query)
-        // Process the results
-        results.each { row ->
-        def OverrepresentedSequences = row.overrepresented_sequences
-        
-        if (OverrepresentedSequences=='WARN' OR OverrepresentedSequences=='FAIL') {
-            overrepresented_sequences = True
-            }
-        else {
-            overrepresented_sequences = False
-            }
-    }
-    } catch (Exception ex) {
-        ex.printStackTrace()}
-    finally {
-        sql.close()
-    }
-    return overrepresented_sequences
-}
 def concatString(string1, string2, string3){
     return string1 + '_'+string2 + '_'+string3
 }
