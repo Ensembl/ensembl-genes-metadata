@@ -82,7 +82,6 @@ def parse_fastqc_data(fastqc_data_path: Path) -> Dict[str, int]:
     sequence_length_match = re.search(sequence_length_pattern, data)
     if sequence_length_match:
         fastqc_data["sequence_length"] = int(sequence_length_match.group(1))
-    print(fastqc_data)
     return fastqc_data
 
 
@@ -95,7 +94,6 @@ def convert_to_json(run_accession_dir: str, data_file_json: str, run_id: int) ->
     table_data_files: Dict[str, list[Dict[str, str]]] = {"data_files": []}
     with open(data_file_json,'r') as input_file:
         data = json.load(input_file)
-    print(data)
     fastq_files = [file for file in os.listdir(run_accession_dir) if file.endswith((".fastq", ".gz"))]
 
     for fastq_file in fastq_files:
@@ -108,7 +106,7 @@ def convert_to_json(run_accession_dir: str, data_file_json: str, run_id: int) ->
             Path(run_accession_dir) / f'{fastq_file.replace(".fastq.gz", "_fastqc")}',
             "fastqc_data.txt",
         )
-        print(fastq_file.replace(".fastq.gz", ""))
+        
         # Find the dictionary with the matching name
         run_accession_dict: Optional[Dict[str, str]] = next(
             (item for item in data["data_files"] if item["file_name"] == fastq_file.replace(".fastq.gz", "")),
@@ -120,8 +118,7 @@ def convert_to_json(run_accession_dir: str, data_file_json: str, run_id: int) ->
 
         summary_data = parse_fastqc_summary(summary_path)
         fastqc_data = parse_fastqc_data(fastqc_data_path)
-        print(summary_data)
-        print(fastqc_data)
+
         # {"data_files": [{"name": "SRR10059726_1", "url": "ftp.sra.ebi.ac.uk/vol1/fastq/SRR100/026/SRR10059726/SRR10059726_1.fastq.gz", "md5": "98bde123250a8ed551063c4ed733bdf5"}, {"name": "SRR10059726_2", "url": "ftp.sra.ebi.ac.uk/vol1/fastq/SRR100/026/SRR10059726/SRR10059726_2.fastq.gz", "md5": "301e387275db5fb3ca9031cdf599fe38"}]}
         data_file: Dict[str, Any] = {
             "run_id": run_id,
@@ -131,11 +128,7 @@ def convert_to_json(run_accession_dir: str, data_file_json: str, run_id: int) ->
         }
         table_data_files["data_files"].append(data_file)
     json_data_files = json.dumps(table_data_files)
-    """
-    output_data = {"data_file": data_file}
-    table_data_files["data_files"].append(read)
-    json_data = json.dumps(output_data, indent=2)
-    """
+
     with open("complete_insert_into_data_file.json", "w") as file:
         file.write(json_data_files)
     # output_json_path = os.path.join(fastqc_dir, 'fastqc_results_summary.json')
