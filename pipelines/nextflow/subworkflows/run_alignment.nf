@@ -58,6 +58,7 @@ workflow {
         def run_Id = getDataFromTable("run_id", "run", "run_accession", run_accession)[0].run_id
         updateRunStatus(runId)
         updateTable("run_id", run_Id, "run", "qc_status", "ALIGNED")
+        setLastCheckDate(taxon_id,'update')
         return tuple(taxon_id, gca, run_accession)
     }
     CLEANING(runAccessionData_NewQCstatus)
