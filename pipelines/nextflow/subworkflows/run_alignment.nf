@@ -18,43 +18,49 @@ limitations under the License.
 
 nextflow.enable.dsl=2
 
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 
-
-includeConfig './pipelines/workflows/nextflow.config'
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    IMPORT LOCAL MODULES/SUBWORKFLOWS
+    RUN STAR ALIGNER
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
+include { FETCH_GENOME } from '../modules/transcriptomic_alignment/fetch_genome.nf'
+include { INDEX_GENOME } from '../modules/transcriptomic_alignment/index_genome.nf'
 include { RUN_STAR } from '../modules/transcriptomic_alignment/run_star.nf'
 include { EXTRACT_UNIQUELY_MAPPED_READS_PERCENTAGE } from '../modules/transcriptomic_alignment/extract_uniquely_mapped_reads_percentage.nf'
-include { STORE_METADATA } from '../modules/store_metadata.nf'
+include { BUILD_QUERY as BUILD_QUERY_ALIGN_METADATA } from '../modules/build_query.nf'
 include { CLEANING } from '../modules/cleaning.nf'
 
-/*
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    RUN MAIN WORKFLOW
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-*/
+include { setMetaDataRecord } from '../modules/utils.nf'
+include { getDataFromTable } from '../modules/utils.nf'
+include { updateTable } from '../modules/utils.nf'
+
 
 workflow {
     take:
-    val gca
-    val genome_file
-    tuple val(taxon_id), val(run_accession), val(pairedFastqFiles)
-    set fastqFile1, fastqFile2 from pairedFastqFiles
+    shortReadMetadata
 
     main:
-
-      genome_file=FETCH_GENOME(params.assembly_accession)
-    star_output = RUN_STAR(genome_file.gca, genome_file.genome_file, fastqFile1, fastqFile2 )
-    start_stats_json = EXTRACT_UNIQUELY_MAPPED_READS_PERCENTAGE(star_output.log_final_out, run_accession, gca)
-    STORE_METADATA(start_stats_json.star_metadata)
-    updateFastqcStatus(params.jdbcUrl, params.transcriptomic_dbuser, params.transcriptomic_dbpassword, run_accession)
-    CLEANING(taxon_id, run_accession)
+    def genomeAndDataToAlign = FETCH_GENOME(shortReadMetadata.flatten())
+    def genomeIndexAndDataToAlign = INDEX_GENOME(genomeAndDataToAlign)
+    def starOutput = RUN_STAR(genomeIndexAndDataToAlign)
+    def starMetadata, insertIntoAlign = EXTRACT_UNIQUELY_MAPPED_READS_PERCENTAGE(star_output.log_final_out, run_accession, gca)
+    def updateValue = "False"
+    def (runAccessionData_StarOutput,insertIntoAlignQuery) = BUILD_QUERY_ALIGN_METADATA(starMetadata, insertIntoAlign, updateValue)
+    def data3=insertIntoAlignQuery
+    data3.flatten().view { d -> "query ${d}"}
+    insertIntoAlignQuery.subscribe { line ->
+        setMetaDataRecord(line.toString())
+    }
+    def runAccessionData_NewQCstatus = runAccessionData_StarOutput.map { result ->
+        def (taxon_id, gca, run_accession) = result
+        def run_Id = getDataFromTable("run_id", "run", "run_accession", run_accession)[0].run_id
+        updateRunStatus(runId)
+        updateTable("run_id", run_Id, "run", "qc_status", "ALIGNED")
+        return tuple(taxon_id, gca, run_accession)
+    }
+    CLEANING(runAccessionData_NewQCstatus)
 
 }
 

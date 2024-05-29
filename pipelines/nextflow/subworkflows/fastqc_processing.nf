@@ -40,14 +40,15 @@ include { ADAPTER_TRIMMING } from '../modules/fastqc_processing/adapter_trimming
 include { CLEANING } from '../modules/cleaning.nf'
 
 include { setMetaDataRecord } from '../modules/utils.nf'
+include { checkRunStatus } from '../modules/utils.nf'
+include { checkOverrepresentedSequences } from '../modules/utils.nf'
 include { getDataFromTable } from '../modules/utils.nf'
-include { getRunTable } from '../modules/utils.nf'
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    RUN MAIN WORKFLOW
+    SUBWORKFLOW: FAST QC PROCESSING AND SUBSAMPLING
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-*/
+*/ 
 
 workflow FASTQC_PROCESSING{
     take:        
@@ -59,19 +60,20 @@ workflow FASTQC_PROCESSING{
     //bb.each{ d-> d.view()}
     //d -> "GCA: ${d.gca}, Taxon ID: ${d.taxon_id}, run: ${d.run_accession},${pair1},${pair2},${dataFileQuery}"}
     def fastqcOutput = RUN_FASTQC(pairedFastqFilesMetadata)
-    def processedOutput = fastqcOutput.map { result ->
+    def processedFastQCOutput = fastqcOutput.map { result ->
 //    getRunAccession.view { result ->
         def (taxon_id, gca, run_accession, pair1, pair2, dataFileQuery, fastqcPath) = result
         println "results: ${result}"
         println "Run Accession: ${run_accession}"
         // You can use run_accession here to get runId
-        def run_Id = getRunTable(run_accession, 'run_id')
+        def run_Id = getDataFromTable("run_id", "run", "run_accession", run_accession)[0].run_id
+        //def run_Id = getRunTable(run_accession, 'run_id')
         log.info "Run ID: ${run_Id}"
         return tuple(taxon_id, gca, run_accession, pair1, pair2, dataFileQuery, fastqcPath, run_Id.toString())
     }
     
     //def runId = getRunId(runAccession)
-    def (runAccessionData, pairedFastqFiles, insertIntoDataFile) = PROCESS_FASTQC_OUTPUT(processedOutput)
+    def (runAccessionData, pairedFastqFiles, insertIntoDataFile) = PROCESS_FASTQC_OUTPUT(processedFastQCOutput)
     def updateValue = "False"
     def (runAccessionData_output,insertIntoDataFileQuery) = BUILD_QUERY(runAccessionData, insertIntoDataFile, updateValue)
     insertIntoDataFileQuery.subscribe { line ->
@@ -79,59 +81,47 @@ workflow FASTQC_PROCESSING{
         setMetaDataRecord(queriesArray[0]+';')
         setMetaDataRecord(queriesArray[1]+';')
     } 
-    //def queriesArray = insertIntoDataFileQuery.split(";").collect { it.trim() + ";" }.findAll { it.trim() }
 
-    // Check if insertIntoDataFileQuery is a single string containing multiple queries
-    //if (insertIntoDataFileQuery instanceof String) {
-    // Split the string into individual queries based on semicolon followed by a newline
-    //log.info("insertIntoDataFileQuery ${insertIntoDataFileQuery}")
-    //log.info("insertIntoDataFileQuery AFTER SPLIT AND TRIM: ${queriesArray}")
-    //def queriesArray =  insertIntoDataFileQuery.toString().split(";")
-    //}
-    //log.info("insertIntoDataFileQuery DOPO ${insertIntoDataFileQuery}")
-    //queriesArray.each { line ->
-        //if (line.trim()) { // Ensure the line is not empty
-     //   log.info("Single query: ${line}")
-      //  setMetaDataRecord(line.toString()+';') // Pass the trimmed query to the function
-        //}
-    //}
-    //}
-    emit:
-    pluto = runAccessionData_output
-    /*
-    insertIntoDataFileQuery.each { line ->
-        println("single query ${line}")
-        setMetaDataRecord(line.toString())
+    def runAccessionData_QCstatus = runAccessionData_output.map { result ->
+        def (taxon_id, gca, run_accession) = result
+        def run_Id = getDataFromTable("run_id", "run", "run_accession", run_accession)[0].run_id
+        checkRunStatus(runId)
+        return tuple(taxon_id, gca, run_accession)
     }
 
-    def qc_status = getDataFromTable(runAccessionData_1.run_accession, "run", "qc_status")
+    //if (qc_status == 'QC_PASS') {
+    def subsamplingOutput = SUBSAMPLE_FASTQ_FILES(runAccessionData_QCstatus, pairedFastqFiles)
 
-    emit:
-    qc_status
-    if (qc_status == 'QC_PASS'){
-        subsampling = SUBSAMPLE_FASTQ_FILES(runAccessionData, pairedFastqFiles)
-        def  overrepresented_sequences = checkOverrepresentedSequences(params.jdbcUrl, params.transcriptomic_dbuser, params.transcriptomic_dbpassword, run_accession)
-
-        if (overrepresented_sequences == true){
-          trimming = ADAPTER_TRIMMING(subsampling.subsampledFastqs.taxon_id, subsampling.run_accession, subsampling.subsampledFastqs)
-          emit runAccessionFastqs(trimming.runTrimmedFastqs.taxon_id, trimming.runTrimmedFastqs.run_accession, trimming.runTrimmedFastqs.trimmedFastqFiles)
-        } else {
-          emit runAccessionFastqs(subsampling.sampledFastqFiles.taxon_id, subsampling.sampledFastqFiles.run_accession, subsampling.sampledFastqFiles.pairedFastqFiles)
-        }
-    } else if (qc_status == 'QC_FAIL'){
-      CLEANING(taxon_id, run_accession)
+    emit: subsamplingOutputMetadata : subsamplingOutput
+    /* NOT NEEDED FORE NOW
+    def processedSamplingOutput = subsamplingOutput.map { result ->
+        def (taxon_id, gca, run_accession, subPair1, subPair2) = result
+        println "results: ${result}"
+        println "Run Accession: ${run_accession}"
+        
+        def overrepresented_sequences = checkOverrepresentedSequences(run_accession)
+        log.info "overrepresented_sequences: ${overrepresented_sequences}"
+        
+        return [taxon_id, gca, run_accession, subPair1, subPair2, overrepresented_sequences]
     }
+    
+    // Separate outputs based on the overrepresented_sequences status
+    def subsampleWithOverrepresented = processedSamplingOutput.findAll { it[5] == true }
+    def subsampleWithoutOverrepresented = processedSamplingOutput.findAll { it[5] == false }
+    // overrepresented_sequences absent
+    if (!subsampleWithoutOverrepresented.isEmpty()) {
+        emit subsamplingOutputMetadata: subsampleWithoutOverrepresented
+    }
+    //overrepresented_sequences present, trimming needed
+    if (!subsampleWithOverrepresented.isEmpty()) {
+        def trimmingOutput = ADAPTER_TRIMMING(subsampleWithOverrepresented)
+        emit trimmingOutputMetadata: trimmingOutput
+    }
+    
+    //} else if (qc_status == 'QC_FAIL'){
+    //  CLEANING(runAccessionData_output)
+    //}
     */
+    
 }
-/*
-    insertIntoRunQueryOutputs= insertIntoRunQuery.toString().split('\n')
-    if (insertIntoRunQueryOutputs.size() == 1) {
-        // Only one output, pass it directly
-        setMetaDataRecord(insertIntoRunQuery.toString())
-    } else {
-        // Multiple outputs, loop through and pass each one
-        insertIntoRunQueryOutputs.each { singleOutput ->
-            setMetaDataRecord(singleOutput)
-        }
-        }
-        */
+
