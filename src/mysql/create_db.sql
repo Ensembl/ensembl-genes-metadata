@@ -34,9 +34,12 @@ create table align (
 	align_id int not null auto_increment,
 	run_id int not null,
 	assembly_accession varchar(255),
-	percent_mapped int,
+	uniquely_mapped_reads_percentage float,
+	percentage_reads_mapped_to_multiple_loci float,
+	percentage_reads_unmapped_too_short float,
 	primary key (align_id)
 );
+ALTER TABLE run ADD UNIQUE (run_id);
 create table run (
 	run_id int not null auto_increment,
 	taxon_id int not null,
