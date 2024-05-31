@@ -35,7 +35,7 @@ include { CLEANING } from '../modules/cleaning.nf'
 include { setMetaDataRecord } from '../modules/utils.nf'
 include { getDataFromTable } from '../modules/utils.nf'
 include { updateTable } from '../modules/utils.nf'
-
+include { setLastCheckDate } from '../modules/utils.nf'
 
 workflow RUN_ALIGNMENT{
     take:
@@ -55,7 +55,7 @@ workflow RUN_ALIGNMENT{
     }
     def runAccessionData_NewQCstatus = runAccessionData_StarOutput.map { result ->
         def (taxon_id, gca, run_accession) = result
-        def run_Id = getDataFromTable("run_id", "run", "run_accession", run_accession)[0].run_id
+        def run_Id = getDataFromTable("run_id", "run", "run_accession", run_accession)[0].run_id.toString()
         //updateRunStatus(runId)
         updateTable("run_id", run_Id, "run", "qc_status", "ALIGNED")
         setLastCheckDate(taxon_id,'update')
