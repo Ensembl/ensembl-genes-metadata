@@ -16,12 +16,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-include { getRunTable } from '../modules/utils.nf'
-include { getDataFromTable } from '../modules/utils.nf'
+include { getRunTable } from '../utils.nf'
+include { getDataFromTable } from '../utils.nf'
 
 process EXTRACT_UNIQUELY_MAPPED_READS_PERCENTAGE {
     label 'python'
-    tag "percentage mapped in  $run_accession"
+    tag "$run_accession"
     publishDir "${params.outDir}/$taxon_id/$run_accession/star/", mode: 'copy'
     afterScript "sleep $params.files_latency"  // Needed because of file system latency
 
@@ -39,9 +39,9 @@ process EXTRACT_UNIQUELY_MAPPED_READS_PERCENTAGE {
     //def star_dir = "${params.outDir}/${taxon_id}/${run_accession}/star/"
     def star_dir = new File(starOutputFile).parent
     """
-    chmod +x parse_star_output.py
-    parse_star_output.py --file_path ${starOutputFile} --output_dir ${star_dir}\
+    chmod +x $projectDir/bin/parse_star_output.py
+    parse_star_output.py --file_path ${starOutputFile} \
     --extra_parameters "{'run_id': '${run_id}',  'assembly_accession': '${gca}'}" \
-    --uniquely_mapped_reads_percentage --percentage_reads_mapped_to_multiple_loci --percentage_reads_unmapped_too_short"
+    --uniquely_mapped_reads_percentage --percentage_reads_mapped_to_multiple_loci --percentage_reads_unmapped_too_short
     """
 }

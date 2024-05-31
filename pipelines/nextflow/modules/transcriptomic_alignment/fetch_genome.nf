@@ -30,13 +30,13 @@ process FETCH_GENOME {
     
 
   output:
-  tuple val(taxon_id), val(gca), val(run_accession), val(par_1), val(par_2), path("*.fna")
+  tuple val(taxon_id), val(gca), val(run_accession), val(par_1), val(par_2), val("${params.outDir}/$taxon_id/$gca/ncbi_dataset/*.fna")
   
   script:
   """
   if [ ! -d "${params.outDir}/${taxon_id}/${gca}/ncbi_dataset" ]; then
-    echo "Directory $ncbi_datase does not exist. Proceeding with download..."
-    curl -X GET "${params_ncbiBaseUrl}/${gca}/download?include_annotation_type=GENOME_FASTA&hydrated=FULLY_HYDRATED" -H "Accept: application/zip" --output genome_file.zip
+    echo "Directory ncbi_dataset does not exist. Proceeding with download..."
+    curl -X GET "${params.ncbiBaseUrl}/${gca}/download?include_annotation_type=GENOME_FASTA&hydrated=FULLY_HYDRATED" -H "Accept: application/zip" --output genome_file.zip
     unzip -j genome_file.zip
   else
     echo "Directory ncbi_dataset already exists. Skipping download."

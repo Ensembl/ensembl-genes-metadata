@@ -19,27 +19,29 @@ limitations under the License.
 
 process INDEX_GENOME {
     label 'star'
-    tag "index genome $run_accession"
+    tag "$run_accession"
     publishDir "${params.outDir}/$taxon_id/$gca/ncbi_dataset/", mode: 'copy'
     afterScript "sleep $params.files_latency"  // Needed because of file system latency
 
     input:
-    tuple val(taxon_id), val(gca), val(run_accession), val(par_1), val(par_2), path(genome_file)
+    tuple val(taxon_id), val(gca), val(run_accession), val(par_1), val(par_2), val(genome_file)
 
     output:
-    tuple val(taxon_id), val(gca), val(run_accession),\
-    val("${params.outDir}/${taxon_id}/${run_accession}/${run_accession}_1.fastq.gz.sub"),\
-    val("${params.outDir}/${taxon_id}/${run_accession}/${run_accession}_2.fastq.gz.sub"),
-    val("${params.outDir}/$taxon_id/$gca/ncbi_dataset/")
+    tuple val(taxon_id), val(gca), val(run_accession), val(par_1), val(par_2), val("${params.outDir}/$taxon_id/$gca/ncbi_dataset/")
+//    val("${params.outDir}/${taxon_id}/${run_accession}/${run_accession}_1.fastq.gz.sub"),\
+//    val("${params.outDir}/${taxon_id}/${run_accession}/${run_accession}_2.fastq.gz.sub"),
+//    val("${params.outDir}/$taxon_id/$gca/ncbi_dataset/")
     //subsampled_fastq_files = [Path(f"{fastq_file_1}.sub"), Path(f"{fastq_file_2}.sub")]
 
     script:
+
     def genomeDir = "${params.outDir}/$taxon_id/$gca/ncbi_dataset/"
     """
     if [ ! -s "${params.outDir}/${taxon_id}/${gca}/ncbi_dataset/Genome" ]; \
-    then STAR --runThreadN ${params.cpus} --runMode genomeGenerate \
+    then STAR --runThreadN ${task.cpus} --runMode genomeGenerate \
     --outFileNamePrefix ${genomeDir} --genomeDir ${genomeDir} \
-    --genomeFastaFiles  ${genome_file};fi
+    --genomeFastaFiles  ${file(genome_file)};fi
+    
     """
 }
 /*

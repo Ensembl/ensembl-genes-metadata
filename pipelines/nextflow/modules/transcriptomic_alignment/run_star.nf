@@ -16,14 +16,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-includeConfig './pipelines/workflows/nextflow.config'
-include { calculateIndexBases} from './pipelines/modules/utils.nf'
 
 
 // module description 
 process RUN_STAR {
-    label "run_star: $run_accession"
-    tag 'star'
+    tag "$run_accession"
+    label 'star'
     publishDir "${params.outDir}/$taxon_id/$run_accession/star/", mode: 'copy'
     afterScript "sleep $params.files_latency"  // Needed because of file system latency
 
@@ -36,17 +34,19 @@ process RUN_STAR {
     val("${params.outDir}/${taxon_id}/${run_accession}/star/${run_accession}_Log.final.out")
 
     script:
-    def star_dir = new File(fastqFile1).parent
-    def starTmpDir =  star_dir +"/tmp"
+    //def star_dir = new File(fastqFile1).parent
+    def starTmpDir =  "${params.outDir}/${taxon_id}/${run_accession}/star/tmp"
     def outFileNamePrefix = "${params.outDir}/${taxon_id}/${run_accession}/star/${run_accession}_"
     """
+    rm -rf ${starTmpDir}
     STAR --limitSjdbInsertNsj 2000000 \
     --outFilterIntronMotifs RemoveNoncanonicalUnannotated \
-    --outSAMstrandField intronMotif --runThreadN ${params.cpus} \
+    --outSAMstrandField intronMotif --runThreadN ${task.cpus} \
     --twopassMode Basic --runMode alignReads --genomeDir ${file(genomeDir)} \
     --readFilesIn ${file(fastqFile1)} ${file(fastqFile2)} --outFileNamePrefix ${outFileNamePrefix} \
     --outSAMattrRGline "ID:${run_accession}" --outTmpDir ${starTmpDir} --outSAMtype BAM \
     SortedByCoordinate  --outBAMsortingBinsN 200 
+    
     """
     //--readFilesCommand zcat  after subsampling they should be unzipped
 }
