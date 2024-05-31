@@ -86,7 +86,6 @@ if (params.help) {
 //
 // MODULE
 //
-include { FETCH_GENOME } from '../modules/fetch_genome.nf'
 //
 // SUBWORKFLOW
 //
@@ -94,7 +93,7 @@ include { FETCH_GENOME } from '../modules/fetch_genome.nf'
 include { PROCESS_TAXONOMY_INFO } from '../subworkflows/process_taxonomy_info.nf'
 include { PROCESS_RUN_ACCESSION_METADATA } from '../subworkflows/process_run_accession_metadata.nf'
 include { FASTQC_PROCESSING } from '../subworkflows/fastqc_processing.nf'
-//include { RUN_ALIGNMENT } from '../subworkflows/run_alignment.nf'
+include { RUN_ALIGNMENT } from '../subworkflows/run_alignment.nf'
 
 
 
