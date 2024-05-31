@@ -68,7 +68,7 @@ process DOWNLOAD_PAIRED_FASTQS {
     def url2 = file2.file_url
     def md5_2 = file2.md5
     //def qc_status = getRunTable(run_accession, "qc_status")
-    def qc_status = getDataFromTable("qc_status", "run", "run_accession", run_accession)[0].run_id
+    def qc_status = getDataFromTable("qc_status", "run", "run_accession", run_accession)[0].qc_status
     // Check for file issues and QC status
     if (!url1 || !url2 || !md5_1 || !md5_2 || qc_status == 'FILE_ISSUE') {
         println "Issue in metadata for ${run_accession}."
