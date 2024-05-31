@@ -39,7 +39,7 @@ create table align (
 	percentage_reads_unmapped_too_short float,
 	primary key (align_id)
 );
-ALTER TABLE run ADD UNIQUE (run_id);
+ALTER TABLE align ADD UNIQUE (run_id);
 create table run (
 	run_id int not null auto_increment,
 	taxon_id int not null,
