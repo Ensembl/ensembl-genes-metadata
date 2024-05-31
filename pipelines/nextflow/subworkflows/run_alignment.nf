@@ -37,15 +37,15 @@ include { getDataFromTable } from '../modules/utils.nf'
 include { updateTable } from '../modules/utils.nf'
 
 
-workflow {
+workflow RUN_ALIGNMENT{
     take:
     shortReadMetadata
 
     main:
-    def genomeAndDataToAlign = FETCH_GENOME(shortReadMetadata.flatten())
+    def genomeAndDataToAlign = FETCH_GENOME(shortReadMetadata)
     def genomeIndexAndDataToAlign = INDEX_GENOME(genomeAndDataToAlign)
     def starOutput = RUN_STAR(genomeIndexAndDataToAlign)
-    def starMetadata, insertIntoAlign = EXTRACT_UNIQUELY_MAPPED_READS_PERCENTAGE(star_output.log_final_out, run_accession, gca)
+    def (starMetadata, insertIntoAlign) = EXTRACT_UNIQUELY_MAPPED_READS_PERCENTAGE(starOutput)
     def updateValue = "False"
     def (runAccessionData_StarOutput,insertIntoAlignQuery) = BUILD_QUERY_ALIGN_METADATA(starMetadata, insertIntoAlign, updateValue)
     def data3=insertIntoAlignQuery
@@ -56,7 +56,7 @@ workflow {
     def runAccessionData_NewQCstatus = runAccessionData_StarOutput.map { result ->
         def (taxon_id, gca, run_accession) = result
         def run_Id = getDataFromTable("run_id", "run", "run_accession", run_accession)[0].run_id
-        updateRunStatus(runId)
+        //updateRunStatus(runId)
         updateTable("run_id", run_Id, "run", "qc_status", "ALIGNED")
         setLastCheckDate(taxon_id,'update')
         return tuple(taxon_id, gca, run_accession)
