@@ -20,7 +20,7 @@ limitations under the License.
 process SUBSAMPLE_FASTQ_FILES {
     label 'python'
     tag "subsampling $run_accession"
-    publishDir "${params.outDir}/$taxon_id/$run_accession", mode: 'copy'
+    storeDir "${params.outDir}/$taxon_id/$run_accession"
     afterScript "sleep $params.files_latency"  // Needed because of file system latency
     
     input:
@@ -29,17 +29,19 @@ process SUBSAMPLE_FASTQ_FILES {
     tuple path(pair1), path(pair2)
 
     output:
-    tuple val(taxon_id), val(gca), val(run_accession),\
-    val("${params.outDir}/${taxon_id}/${run_accession}/${run_accession}_1.fastq.gz.sub"),\
+    tuple val(taxon_id), val(gca), val(run_accession), 
+    val("${params.outDir}/${taxon_id}/${run_accession}/${run_accession}_1.fastq.gz.sub"), \
     val("${params.outDir}/${taxon_id}/${run_accession}/${run_accession}_2.fastq.gz.sub")
     //subsampled_fastq_files = [Path(f"{fastq_file_1}.sub"), Path(f"{fastq_file_2}.sub")]
 
     script:
+    def enscode1="/nfs/production/flicek/ensembl/genebuild/ftricomi/test_mypy/"
     """
-    chmod +x ${params.enscode}/ensembl-anno/src/python/ensembl/tools/anno/transcriptomic_annotation/star.py 
+    chmod +x ${enscode1}/ensembl-anno/src/python/ensembl/tools/anno/transcriptomic_annotation/star.py 
             
-    python ${params.enscode}/ensembl-anno/src/python/ensembl/tools/anno/transcriptomic_annotation/star.py \
-        --run_subsampling True --paired_file_1 ${pair1} --paired_file_2 ${pair2} --sampling_via_read_limit_percentage\
-        --subsample_read_limit 100000 --subsample_percentage 0.10 --num_threads 2   
+    python ${enscode1}/ensembl-anno/src/python/ensembl/tools/anno/transcriptomic_annotation/star.py \
+        --run_subsampling True --paired_file_1 ${pair1} --paired_file_2 ${pair2} --sampling_via_read_limit_percentage True \
+        --subsample_read_limit 100000 --subsample_percentage 0.10 --num_threads 2  --output_dir "${params.outDir}/${taxon_id}/${run_accession}/" 
+    cp *.sub ${params.outDir}/${taxon_id}/${run_accession}/
     """
 }
