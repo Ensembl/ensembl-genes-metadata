@@ -76,23 +76,32 @@ workflow FASTQC_PROCESSING{
     def (runAccessionData, pairedFastqFiles, insertIntoDataFile) = PROCESS_FASTQC_OUTPUT(processedFastQCOutput)
     def updateValue = "False"
     def (runAccessionData_output,insertIntoDataFileQuery) = BUILD_QUERY(runAccessionData, insertIntoDataFile, updateValue)
-    insertIntoDataFileQuery.subscribe { line ->
-        def queriesArray = line.toString().split(";")
-        setMetaDataRecord(queriesArray[0]+';')
-        setMetaDataRecord(queriesArray[1]+';')
-    } 
+    //insertIntoDataFileQuery.subscribe { line ->
+    //    def queriesArray = line.toString().split(";")
+     //   setMetaDataRecord(queriesArray[0]+';')
+    //    setMetaDataRecord(queriesArray[1]+';')
+    //} 
 
     def runAccessionData_QCstatus = runAccessionData_output.map { result ->
         def (taxon_id, gca, run_accession) = result
-        def run_Id = getDataFromTable("run_id", "run", "run_accession", run_accession)[0].run_id
-        checkRunStatus(runId)
+        def filename_1 = getDataFromTable('file_name', 'data_files', 'file_name', run_accession+"_1")
+        def filename_2 = getDataFromTable('file_name', 'data_files', 'file_name', run_accession+"_2")
+        if (!filename_1.isEmpty() && !filename_2.isEmpty()){
+            insertIntoDataFileQuery.subscribe { line ->
+            def queriesArray = line.toString().split(";")
+            setMetaDataRecord(queriesArray[0]+';')
+            setMetaDataRecord(queriesArray[1]+';')
+            }
+        }
+        def run_Id = getDataFromTable("run_id", "run", "run_accession", run_accession)[0].run_id.toString()
+        checkRunStatus(run_Id)
         return tuple(taxon_id, gca, run_accession)
     }
 
     //if (qc_status == 'QC_PASS') {
     def subsamplingOutput = SUBSAMPLE_FASTQ_FILES(runAccessionData_QCstatus, pairedFastqFiles)
 
-    emit: subsamplingOutputMetadata : subsamplingOutput
+    emit: subsamplingOutputMetadata = subsamplingOutput
     /* NOT NEEDED FORE NOW
     def processedSamplingOutput = subsamplingOutput.map { result ->
         def (taxon_id, gca, run_accession, subPair1, subPair2) = result
