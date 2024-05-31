@@ -58,13 +58,12 @@ keys_to_extract = {
 }
 
 
-def parse_star_output(file_path:str, keys: dict, output_dir:str, extra_parameters: Dict[str, str])-> str:
+def parse_star_output(file_path:str, keys: dict, extra_parameters: Dict[str, str])-> str:
     """Parse STAR Log file
 
     Args:
         file_path (str): path Log.out
         keys (dict): keys to inspect
-        output_dir (str): Path outout dir
         extra_parameters (Dict[str, str]): Extra info to add to the json
 
     Returns:
@@ -77,14 +76,17 @@ def parse_star_output(file_path:str, keys: dict, output_dir:str, extra_parameter
         result[parameter] = value
     with open(file_path, "r") as file:
         for line in file:
-            for key in keys:
-                match = re.search(f"{key}\s+\|\s+(.+)", line) #pylint: disable=anomalous-backslash-in-string
+            for key, pattern in keys.items():
+            #for key in keys:
+                match = re.search(f"{pattern}\s+\|\s+(.+)", line) #pylint: disable=anomalous-backslash-in-string
                 if match:
-                    result[key] = match.group(1).strip()
-    table_align["align"].append(result)            
-    output_file = os.path.join(output_dir, "insert_into_align.json")
+
+                    result[key] = match.group(1).strip().replace('%', '')
+    table_align["align"].append(result)
+    print(table_align)
+    output_file = "insert_into_align.json"
     with open(output_file, "w") as json_file:
-        json.dump(result, json_file, indent=4)
+        json.dump(table_align, json_file, indent=4)
     return output_file
 
 
@@ -112,7 +114,6 @@ def parse_args():
     """Parse command line arguments."""
     parser = argparse.ArgumentParser(description="Parse STAR output and create JSON with specified keys")
     parser.add_argument("--file_path", required=True, type=str, help="Path to the STAR output file")
-    parser.add_argument("--output_dir", required=True, type=str, help="Output dir")
     parser.add_argument(
         "--extra_parameters", required=False, type=parse_extra_parameters, help="{'key':'value'}"
     )
@@ -129,12 +130,12 @@ def main():
     options = vars(args)
     # del options['file_path']
     # del options['run_accession']
-    # del options['output_dir']
     # if the corresponding key is present in the options dictionary
     # (meaning the user has provided the corresponding command-line argument)
-    keys_to_include = [value for key, value in keys_to_extract.items() if options.get(key)]
+    #keys_to_include = [value for key, value in keys_to_extract if options.get(key)]
+    keys_to_include = {key: keys_to_extract[key] for key in keys_to_extract if options.get(key)}
 
-    output_json = parse_star_output(args.file_path, keys_to_include, args.output_dir, args.extra_parameters)
+    output_json = parse_star_output(args.file_path, keys_to_include, args.extra_parameters)
     return output_json
 
 
