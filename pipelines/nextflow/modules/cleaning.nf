@@ -24,8 +24,9 @@ process CLEANING {
     input:
     tuple val(taxon_id), val(gca), val(run_accession)
     
-    dirToRemove = joinPath(${params.outDir}, "${taxon_id}", "${run_accession}")
     script:
+    dirToRemove = joinPath(params.outDir, taxon_id, run_accession)
+    
     """
     rm -rf ${dirToRemove}
     """
