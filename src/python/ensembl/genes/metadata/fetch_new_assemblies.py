@@ -13,6 +13,7 @@ import os
 from datetime import datetime
 import pymysql
 import argparse
+import logging
 
 def set_date(taxon, ncbi_params, file_path):
     """Set a date to retrival new assemblies from NCBI
@@ -26,9 +27,9 @@ def set_date(taxon, ncbi_params, file_path):
         dict: Updated NCBI API's parameters
         str: date to be used to retrieve assemblies 
     """
-    print('Checking date to retrive assemblies')
+    logging.info('Checking date to retrive assemblies')
     
-    release_date = "01/01/2019"
+    release_date = "04/04/2024"
 
     if os.path.exists(file_path):
         try:
@@ -37,20 +38,20 @@ def set_date(taxon, ncbi_params, file_path):
                     if int(line.split()[0]) == taxon:
                         release_date = line.split()[1]
                         ncbi_params['filters.first_release_date']= release_date
-                        print(f"Last update record found! {line.split()[1]} will be used to retrive new available assemblies for taxon {taxon}")
+                        logging.info(f"Last update record found! {line.split()[1]} will be used to retrive new available assemblies for taxon {taxon}")
                         break
                 else:
-                    print(f"There is not last update record saved for taxon {taxon}. Using {release_date} as default date to retrive assemblies")
+                    logging.info(f"There is not last update record saved for taxon {taxon}. Using {release_date} as default date to retrive assemblies")
 
         except (ValueError, IndexError):
-            print (f"Error: Unable to parse the file. Using {release_date} as default date to retrive assemblies")
+            logging.info(f"Error: Unable to parse the file. Using {release_date} as default date to retrive assemblies")
     else:
-        print(f"Last update file not found. Using {release_date} as default date to retrive assemblies")
-  
+        logging.info(f"Last update file not found. Using {release_date} as default date to retrive assemblies")
+
     return ncbi_params, release_date
 
 def fetch_gca_list (taxon, ncbi_params):
-    """Fetch a list of accessions avilable since the last update date 
+    """Fetch a list of accessions available since the last update date 
 
     Args:
         taxon (int): Taxon ID, by default it is 2759 (Eukaryote domain)
@@ -68,13 +69,13 @@ def fetch_gca_list (taxon, ncbi_params):
         uri = "https://api.ncbi.nlm.nih.gov/datasets/v2alpha/genome/taxon/"+str(taxon)+'/dataset_report'
 
     except ValueError:
-        print("Error: Please enter a valid taxon numeric value.")
+        logging.error("Error: Please enter a valid taxon numeric value.")
         
     except TypeError:
-        print(f"Error: Invalid taxon value to build query: {taxon}")
+        logging.error(f"Error: Invalid taxon value to build query: {taxon}")
         
     else:
-        print(f"Valid value to connect to NCBI API and access to genome reports per taxon: {taxon}")
+        logging.info(f"Valid value to connect to NCBI API and access to genome reports per taxon: {taxon}")
 
     # Connecting to API and Fetch GCA list
     while True:
@@ -85,7 +86,7 @@ def fetch_gca_list (taxon, ncbi_params):
         
         try:
             response = requests.get(uri, params=ncbi_params) # Sending query
-            # print(response.url)
+            #print(response.url)
             response.raise_for_status()  # Raises an HTTPError if the HTTP request returned an unsuccessful status code
             #print(response.url)
             data = response.json()
@@ -97,11 +98,11 @@ def fetch_gca_list (taxon, ncbi_params):
     
         # Error request
         except requests.exceptions.RequestException as e:
-            print(f"Error Request: {e}")
+            logging.error(f"Error Request: {e}")
         
         # Error in reading token, there are not more pages.
         except KeyError:
-            print('All available assemblies were retrived')
+            logging.info('All available assemblies were retrived')
             break
 
     return set(gca_list)       
@@ -170,10 +171,10 @@ def fetch_records_db(db_params, database, query):
         reg_gca = [output[i][0] for i in range(len(output))]
     
     except pymysql.err.InternalError as e:
-        print(str(e))
+        logging.info(str(e))
         
     except Exception as e:
-        print(str(e))  
+        logging.info(str(e))  
         
     finally:
         conn.close()
@@ -192,28 +193,25 @@ def get_gca_register(db, db_query, gca_list, output_path, db_params):
     """
     
     output_file = str(output_path) + "assemblies_to_register.txt"
-
     
     accessions_records = []
-
+    
     if db in ['asm_metadata', 'asm_registry']:
-        print(f'Assemblies will be updated according to {db} records only')
+        logging.info(f'Assemblies will be updated according to {db} records only')
         accessions_records = fetch_records_db(db_params=db_params, database=db_query[db]['db'], query=db_query[db]['query'] ) 
-        
-        
+    
     elif db == 'both':
-
-        print('Assemblies will be updated using the records from both databases')
+        logging.info('Assemblies will be updated using the records from both databases')
         for db in db_query:
             accessions_records = accessions_records + fetch_records_db(db_params=db_params, database=db_query[db]['db'], query=db_query[db]['query'] ) 
-            
+    
     accessions_to_register = gca_list - set(accessions_records)
     
     with open(output_file, 'w') as file:
         file.write('\n'.join(accessions_to_register))
     file.close()
         
-    print(f'Accessions to register: {len(accessions_to_register)}')
+    logging.info(f'Accessions to register: {len(accessions_to_register)}. Please note that some assemblies might belong to unspecified species. They could be filter our during the metadata retrieving')
     
 def main():
     """module's entry-point
@@ -225,9 +223,9 @@ def main():
                 'filters.has_annotation': 'false',
                 'filters.exclude_paired_reports': 'false',
                 'filters.exclude_atypical': 'true',
-                'filters.assembly_version': 'all_assemblies',
+                'filters.assembly_version': 'current',
                 'filters.assembly_level': ['scaffold', 'chromosome', 'complete_genome', 'contig'],
-                'filters.first_release_date': '01/01/2019',
+                'filters.first_release_date': '04/04/2024',
                 'filters.last_release_date': None,
                 'filters.search_text': None,
                 'filters.is_metagenome_derived': 'metagenome_derived_exclude',
@@ -246,9 +244,12 @@ def main():
         'user':'ensro',
         'port': '4527'
     }
+    
+    logging.basicConfig(filename="fetch_new_assemblies.log", level=logging.DEBUG, filemode='w',
+                    format="%(asctime)s:%(levelname)s:%(message)s")
             
     parser = argparse.ArgumentParser(prog='fetch_new_assemblies.py', 
-                                     description='Determinate which assemblies register')
+                                    description='Determinate which assemblies register')
     
     parser.add_argument('--taxon', 
                         default=2759,
@@ -257,15 +258,13 @@ def main():
     parser.add_argument('--file-path',
                         default='',
                         type=str,
-                        help="File with the last update date", 
-                        action='append')
+                        help="File with the last update date")
     parser.add_argument('--output-path',
                         type=str,
-                        help="Output path, file will be named as assemblies_to_register.txt", 
-                        action='append')
+                        help="Output path, file will be named as assemblies_to_register.txt")
     
     args = parser.parse_args()
-    #print(args)
+    logging.info(args)
     
     ncbi_params, release_date = set_date(args.taxon, ncbi_params, args.file_path)
     gca_list = fetch_gca_list(args.taxon, ncbi_params)
@@ -273,4 +272,4 @@ def main():
     get_gca_register('both', db_query, gca_list, args.output_path, db_params)
 
 if __name__ == '__main__':
-     main()
+    main()
