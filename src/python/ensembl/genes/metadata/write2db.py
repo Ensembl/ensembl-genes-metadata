@@ -89,7 +89,7 @@ def check_key(data_dict, table_name, update, table_conf):
     else:
         raise ValueError(f"Unexpected value {table_conf[table_name][key]} for table {table_name} table. Update {update}")
 
-def insert_query(data_dict, table_name):
+def insert_query(data_dict, table_name, table_conf, db_params):
     """This functions create a mysql insert queries using the input data provided
 
     Args:
@@ -99,11 +99,36 @@ def insert_query(data_dict, table_name):
     Returns:
         str: returns mysql query
     """
-    # crete basic query
-    table_var_string = ", ".join(list(data_dict.keys()))
-    values_strings = ','.join([f"'{value}'" for value in list(data_dict.values())]).replace("''" , "NULL" )
     
-    return f"""INSERT INTO {table_name} ({table_var_string}) VALUES ({values_strings}) ;"""
+    if table_conf[table_name]['method'] == 'per_row':
+        logging.info(f"{table_name} is an attribute table (key:value paris) ")
+        
+        dkey = table_conf[table_name]['dkey']
+        
+        # Getting columns names
+        conn = pymysql.connect(**db_params)
+        cur  = conn.cursor()
+        cur.execute(f"SHOW COLUMNS FROM {table_name}")
+        table_columns = cur.fetchall()
+        columns = [column[0] for column in table_columns if column[3] != 'PRI']
+        columns_string = ', '.join(columns)
+        #
+        value_list = []
+        dkey_value = data_dict[dkey]
+
+        for key,value in data_dict.items():
+            
+            if key !=  dkey: 
+                #print(f"the key {key}, the value {value}")
+                value_item = f"('{dkey_value}', '{key}', '{value}')"
+                value_list.append(value_item)
+                values_string =  ', '.join(value_list)
+        return f"""INSERT INTO {table_name} ({columns_string}) VALUES {values_string}"""
+    else:
+        # crete basic query
+        table_var_string = ", ".join(list(data_dict.keys()))
+        values_strings = ','.join([f"'{value}'" for value in list(data_dict.values())]).replace("''" , "NULL" )
+        return f"""INSERT INTO {table_name} ({table_var_string}) VALUES ({values_strings}) ;"""
 
 def update_query(data_dict, table_name, table_conf):
     """
@@ -127,7 +152,7 @@ def update_query(data_dict, table_name, table_conf):
     
     return f"UPDATE {table_name} SET {update_values} WHERE {condition} ;"
 
-def create_query(data_dict, table_name, update, table_conf):
+def create_query(data_dict, table_name, update, table_conf, db_params):
     """
     This function create an insert or update MySQL query depending if update argument was provided (True).
     It use the check_key function to determinate of the data provided has the enough keys to create the query.
@@ -146,7 +171,7 @@ def create_query(data_dict, table_name, update, table_conf):
     if update: #input data will be used to update a row
         query = update_query(data_dict, table_name, table_conf)
     else: # input data will be used to insert a new row
-        query = insert_query(data_dict, table_name)
+        query = insert_query(data_dict, table_name, table_conf, db_params)
     
     return query
 
@@ -174,7 +199,6 @@ def execute_query(query, db_params, table_name):
     conn.close()
     
     return id_value, id_name
-    
 
 def main():
     """Entry point"""
@@ -183,6 +207,7 @@ def main():
         "assembly": {"method": "per_col", "dkey":"None", "ukey": "None"},
         "organism": {"method": "per_col", "dkey":"None", "ukey": "None"},
         "species": {"method": "per_col", "dkey":"None", "ukey": "None"},
+        "assembly_metrics" :  {"method": "per_row", "dkey":"assembly_id", "ukey": "None"},
         }
     
     db_params = {
@@ -226,9 +251,10 @@ def main():
     # Output
     root_name, _ = os.path.splitext(args.file_path) 
     output = root_name + ".last_id"
-    with open(output, 'a') as file:
-        json.dump({}, file)
-    file.close()
+    with open(output, 'w') as file:
+        pass
+        #json.dump('', file)
+    #file.close()
     
     # Module 
     for table_name in input_data:
@@ -239,7 +265,7 @@ def main():
         if check:
             logging.info("List of dictionaries detected, processing each dictionary")
             for row in input_data[table_name]:
-                query = create_query(row, table_name, update, table_conf)
+                query = create_query(row, table_name, update, table_conf, db_params)
                 id_value, id_name= execute_query(query,db_params, table_name)
                 logging.info(f"Data was inserted in {table_name}. Last value of {id_name} is {id_value}")
                 # saving output
@@ -247,15 +273,15 @@ def main():
                     json.dump({id_name:id_value}, file)
                 file.close()
         else:
+            logging.info("Regular dictionary detected, processing key:value pair values")
             # Data is a dictionary (This part is not tested yet)
-            query = create_query(input_data[table_name], table_name, update, table_conf)
+            query = create_query(input_data[table_name], table_name, update, table_conf, db_params)
             id_value, id_name= execute_query(query,db_params,table_name )
             logging.info(f"Data was inserted in {table_name}. Last value of {id_name} is {id_value}")
             # saving output
             with open(output, 'a') as file:
                 json.dump({id_name:id_value}, file)
             file.close()
-
 
 if __name__ == "__main__":
     main()
