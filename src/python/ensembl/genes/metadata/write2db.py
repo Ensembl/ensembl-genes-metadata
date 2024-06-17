@@ -253,8 +253,8 @@ def main():
     output = root_name + ".last_id"
     with open(output, 'w') as file:
         pass
-        #json.dump('', file)
-    #file.close()
+    
+    last_id_dict = {}
     
     # Module 
     for table_name in input_data:
@@ -268,20 +268,22 @@ def main():
                 query = create_query(row, table_name, update, table_conf, db_params)
                 id_value, id_name= execute_query(query,db_params, table_name)
                 logging.info(f"Data was inserted in {table_name}. Last value of {id_name} is {id_value}")
-                # saving output
-                with open(output, 'a') as file:
-                    json.dump({id_name:id_value}, file)
-                file.close()
+                # saving last id in dict
+                last_id_dict.update({id_name:id_value})
+                
         else:
             logging.info("Regular dictionary detected, processing key:value pair values")
             # Data is a dictionary (This part is not tested yet)
             query = create_query(input_data[table_name], table_name, update, table_conf, db_params)
             id_value, id_name= execute_query(query,db_params,table_name )
             logging.info(f"Data was inserted in {table_name}. Last value of {id_name} is {id_value}")
-            # saving output
-            with open(output, 'a') as file:
-                json.dump({id_name:id_value}, file)
-            file.close()
+            # saving last id in dict
+            last_id_dict.update({id_name:id_value})
+    
+    # saving output       
+    with open(output, 'a') as file:
+        json.dump(last_id_dict, file)
+    file.close()
 
 if __name__ == "__main__":
     main()
