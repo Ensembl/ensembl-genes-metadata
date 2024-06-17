@@ -153,7 +153,7 @@ def main():
         
         # Save second json for next module
         #file2 = f"{args.output_path}/{args.accession}_metrics.json"
-        file2 = f"{accession}_metrics.json"
+        file2 = f"{accession}_metrics.tmp"
         with open(file2, 'w') as file:
             json.dump(dict2, file)
         file.close()

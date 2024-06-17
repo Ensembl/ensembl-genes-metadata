@@ -68,7 +68,7 @@ def main():
     logging.info("Updating keys")
     data_db = update_keys(data_db, last_id_dict, table_conf)
     
-    output_file = os.path.basename(args.json_path).replace('.tmp.json', '.json')
+    output_file = os.path.basename(args.json_path).replace('.tmp', '.json')
     
     logging.info(f"Saving output: {output_file}")
     with open(output_file, 'w') as file:
