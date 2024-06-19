@@ -62,7 +62,7 @@ process GET_RUN_ACCESSIONS {
     URLConnection connection = url.openConnection()
 
     // Set the connection and read timeouts (in milliseconds)
-    connection.setConnectTimeout(5000) // 5 seconds
+    connection.setConnectTimeout(10000) // 5 seconds
     connection.setReadTimeout(10000)   // 10 seconds
 
     // Get the input stream

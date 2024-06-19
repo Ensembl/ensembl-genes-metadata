@@ -18,29 +18,36 @@ limitations under the License.
 
 
 process FETCH_GENOME {
-  tag "$gca:genome"
+  tag "$taxon_id:$gca"
   label 'fetch_file'
   //storeDir "${params.cacheDir}/$gca/ncbi_dataset/"
   storeDir "${params.outDir}/$taxon_id/$gca/ncbi_dataset/"
+  //publishDir = [
+  //            path: { "${params.outDir}/$taxon_id/$gca/ncbi_dataset/" },
+  //                        mode: 'copy',
+  //                                    saveAs: { filename -> filename.toString().endsWith('.fna') ? null : filename }
+  //                                            ]
   afterScript "sleep $params.files_latency"  // Needed because of file system latency
-  maxForks 10
+  maxForks 1
 
   input:
-  tuple val(taxon_id), val(gca), val(run_accession), val(par_1), val(par_2)
+  tuple val(taxon_id), val(gca), val(run_accession), val(pair1), val(pair2)
     
 
   output:
-  tuple val(taxon_id), val(gca), val(run_accession), val(par_1), val(par_2), val("${params.outDir}/$taxon_id/$gca/ncbi_dataset/*.fna")
+  tuple val(taxon_id), val(gca), val(run_accession), val(pair1), val(pair2), val("${params.outDir}/$taxon_id/$gca/ncbi_dataset/")
   
   script:
   """
-  if [ ! -d "${params.outDir}/${taxon_id}/${gca}/ncbi_dataset" ]; then
+  if [ ! -s "${params.outDir}/${taxon_id}/${gca}/ncbi_dataset/*.fna" ]; then
     echo "Directory ncbi_dataset does not exist. Proceeding with download..."
-    curl -X GET "${params.ncbiBaseUrl}/${gca}/download?include_annotation_type=GENOME_FASTA&hydrated=FULLY_HYDRATED" -H "Accept: application/zip" --output genome_file.zip
+    curl --retry 3  -X GET "${params.ncbiBaseUrl}/${gca}/download?include_annotation_type=GENOME_FASTA&hydrated=FULLY_HYDRATED" -H "Accept: application/zip" --output genome_file.zip
     unzip -j genome_file.zip
+    mkdir -p ${params.outDir}/${taxon_id}/${gca}/ncbi_dataset && cp *.fna ${params.outDir}/${taxon_id}/${gca}/ncbi_dataset
   else
     echo "Directory ncbi_dataset already exists. Skipping download."
   fi
+  #find "${params.outDir}/${taxon_id}/${gca}/ncbi_dataset/" -maxdepth 1 -type f -name "*.fna" | head -n 1
   """
   //ncbi_dataset/data/GCA_963576655.1/GCA_963576655.1_icGasPoly1.1_genomic.fna 
 

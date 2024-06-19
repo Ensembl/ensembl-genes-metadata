@@ -22,6 +22,7 @@ create table data_files (
 	sequence_length int,
 	primary	key (file_id)
 );
+ALTER TABLE data_files ADD UNIQUE (file_name);
 create table study (
 	study_id int not null auto_increment,
 	study_accession varchar(255) not null,

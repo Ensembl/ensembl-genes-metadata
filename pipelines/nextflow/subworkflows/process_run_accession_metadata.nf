@@ -67,6 +67,13 @@ workflow PROCESS_RUN_ACCESSION_METADATA {
         setMetaDataRecord(line.toString())
     }
     pairedFastqFiles=DOWNLOAD_PAIRED_FASTQS(runAccessionMedatadata_2,queryDataFile)
+    //def pairedFastqFiles1 =[]
+    //pairedFastqFiles.map { f ->
+    //def (taxon_id, gca, run_accession, pair1, pair2, data_file_query) = f
+    //pairedFastqFiles1.add([taxon_id, gca, run_accession, pair1, pair2, data_file_query])
+    //}
+    check1 = pairedFastqFiles 
+    check1.flatten().view{ d -> "CCCTaxon ID: ${d.taxon_id}, GCA: ${d.gca}, run accession: ${d.run_accession}" }
 
     emit:
     //insertIntoDataFile =   queryDataFile   // path

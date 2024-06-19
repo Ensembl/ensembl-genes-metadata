@@ -23,11 +23,10 @@ process PROCESS_FASTQC_OUTPUT {
     afterScript "sleep $params.files_latency"  // Needed because of file system latency
     
     input:
-    tuple val(taxon_id), val(gca), val(run_accession), path(pair1), path(pair2),path(dataFileQuery),path(fastqc_dir), val(runId)
+    tuple val(taxon_id), val(gca), val(run_accession), path(dataFileQuery),path(fastqc_dir), val(runId)
 
     output:
     tuple val(taxon_id), val(gca), val(run_accession)
-    tuple path(pair1), path(pair2)
     path("complete_insert_into_data_file.json")
 
     script:

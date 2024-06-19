@@ -15,32 +15,44 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-
+import java.nio.file.*
 
 process INDEX_GENOME {
     label 'star'
-    tag "$run_accession"
+    tag "$taxon_id:$run_accession:$gca"
     publishDir "${params.outDir}/$taxon_id/$gca/ncbi_dataset/", mode: 'copy'
     afterScript "sleep $params.files_latency"  // Needed because of file system latency
-
+    maxForks 1
     input:
-    tuple val(taxon_id), val(gca), val(run_accession), val(par_1), val(par_2), val(genome_file)
-
+    tuple val(taxon_id), val(gca), val(run_accession), val(pair1), val(pair2), val(genomeDir)
     output:
-    tuple val(taxon_id), val(gca), val(run_accession), val(par_1), val(par_2), val("${params.outDir}/$taxon_id/$gca/ncbi_dataset/")
-//    val("${params.outDir}/${taxon_id}/${run_accession}/${run_accession}_1.fastq.gz.sub"),\
+    tuple val(taxon_id), val(gca), val(run_accession), val(pair1), val(pair2), val(genomeDir)
+    //    val("${params.outDir}/${taxon_id}/${run_accession}/${run_accession}_1.fastq.gz.sub"),\
 //    val("${params.outDir}/${taxon_id}/${run_accession}/${run_accession}_2.fastq.gz.sub"),
 //    val("${params.outDir}/$taxon_id/$gca/ncbi_dataset/")
     //subsampled_fastq_files = [Path(f"{fastq_file_1}.sub"), Path(f"{fastq_file_2}.sub")]
 
-    script:
+    
 
-    def genomeDir = "${params.outDir}/$taxon_id/$gca/ncbi_dataset/"
+    script:
+    def d= new File("${genomeDir}")
+    def genomefil=d.listFiles().find { it.name.endsWith('.fna') }
+    def genomeFile=genomefil.absolutePath
+    //genomeDirCopy=genomeDir
+    //genomeFile = genomeDirCopy.map{file -> 
+    //genomeFile = Channel.fromPath("${genomeDir}/*.fna")
+   // def genomeDirPath = file(genomeDir)
+    //def genomeFile = genomeDirPath.listFiles().find { it.name.endsWith('.fna') }
+    //def genomeDir = "${params.outDir}/${taxon_id}/${gca}/ncbi_dataset/"
+    // Find the first .fna file and assign it to genomeFile variable
+    //def genomeFile = """find ${genomeDir} -maxdepth 1 -type f -name '*.fna' | head -n 1""".execute().text.trim()
+    
+    //genomeFile=\$( find ${genomeDir} -type f -name '*.fna')
     """
-    if [ ! -s "${params.outDir}/${taxon_id}/${gca}/ncbi_dataset/Genome" ]; \
-    then STAR --runThreadN ${task.cpus} --runMode genomeGenerate \
+    if [ ! -s "${genomeDir}/Genome" ]; \
+    then  rm -rf ${genomeDir}/_STARtmp ; STAR --runThreadN ${task.cpus} --runMode genomeGenerate \
     --outFileNamePrefix ${genomeDir} --genomeDir ${genomeDir} \
-    --genomeFastaFiles  ${file(genome_file)};fi
+    --genomeFastaFiles  $genomeFile --outTmpDir _STARtmp;fi
     
     """
 }

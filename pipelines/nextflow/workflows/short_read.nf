@@ -115,12 +115,14 @@ workflow SHORT_READ {
     def taxonomyResults= PROCESS_TAXONOMY_INFO(data)
     //rr=runAccessionList
     //rr.each { d -> "Taxon ID: ${d.taxon_id}, GCA: ${d.gca}, run accession: ${d.run_accession}"} 
-    def fastqFilesMetadata  = PROCESS_RUN_ACCESSION_METADATA(taxonomyResults)
+    def fastqFilesMetadata  = PROCESS_RUN_ACCESSION_METADATA(taxonomyResults).collect()
     dd=fastqFilesMetadata
     dd.each{ d-> d.view()}
-    def fastqMetadata = []
-    fastqMetadata.add(fastqFilesMetadata)
-    def fastQCMetadata = FASTQC_PROCESSING(fastqFilesMetadata)
+    //def fastqMetadata = []
+    //fastqMetadata.add(fastqFilesMetadata)
+    //FASTQC_PROCESSING(fastqFilesMetadata)
+    def fastQCMetadata = FASTQC_PROCESSING(fastqFilesMetadata).collect()
+    
     RUN_ALIGNMENT(fastQCMetadata)
     //Channel.of(runAccessionList).groupTuple(taxon_id).collect()
     //runAccessionList.view()

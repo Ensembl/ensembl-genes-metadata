@@ -32,7 +32,7 @@ import re
 from typing import Dict
 import json
 import requests
-
+from tenacity import retry, stop_after_attempt, wait_fixed
 
 def request_data(run_accession: str, fields: list) -> str:
     """Make an HTTP request for the metadata of the given run_accession.
@@ -53,14 +53,20 @@ def request_data(run_accession: str, fields: list) -> str:
         "fields": ",".join(fields),
         "format": "tsv",
     }
-
+    @retry(stop=stop_after_attempt(3), wait=wait_fixed(5))
+    def make_request():
+        try:
+            response = requests.post("https://www.ebi.ac.uk/ena/portal/api/search", data=data, timeout=20)
+            response.raise_for_status()
+            return response.text
+        except requests.RequestException as e:
+            raise RuntimeError(f"Error fetching metadata: {e}") from e
     try:
-        response = requests.post("https://www.ebi.ac.uk/ena/portal/api/search", data=data, timeout=10)
-        response.raise_for_status()
-        return response.text
-    except requests.RequestException as e:
-        raise RuntimeError(f"Error fetching metadata: {e}") from e
-
+        result = make_request()
+        return result
+        # Further processing of result can be done here
+    except RuntimeError as e:
+        print("Error retriving data")
 
 def json_parse(response: str, fields: list):
     """Parse response from HTTP request into a list of JSON strings.

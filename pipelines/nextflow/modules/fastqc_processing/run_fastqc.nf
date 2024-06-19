@@ -18,22 +18,23 @@ limitations under the License.
 ///nfs/production/flicek/ensembl/genebuild/swati/fastqc/
 // https://hub.docker.com/r/staphb/fastqc v12
 process RUN_FASTQC {
-    scratch true
+    //scratch true
     label 'fastqc'
-    tag "$taxon_id"
+    tag "$taxon_id:$run_accession"
     storeDir "${params.outDir}/$taxon_id/$run_accession/"
     afterScript "sleep $params.files_latency"
-    
     input:
     tuple val(taxon_id), val(gca), val(run_accession), val(pair1), val(pair2), val(dataFileQuery)
 
     output:
-    tuple(val(taxon_id), val(gca), val(run_accession), val(pair1), val(pair2),val(dataFileQuery),val("${params.outDir}/$taxon_id/$run_accession/fastqc"))
+    tuple(val(taxon_id), val(gca), val(run_accession), val(dataFileQuery),val("${params.outDir}/$taxon_id/$run_accession/fastqc"))
 
     script:
+    log.info  "FASQCresults: ${pair1} ${pair2}"
     """
     mkdir -p fastqc
     fastqc  ${pair1} ${pair2} --quiet --extract --threads ${task.cpus} --outdir fastqc
+    cp -r fastqc ${params.outDir}/${taxon_id}/${run_accession}
     """  
 }
 

@@ -25,7 +25,7 @@ import java.nio.file.Path
 
 process DOWNLOAD_PAIRED_FASTQS {
     label "default"
-    tag "download ${run_accession} fastqs"
+    tag "${taxon_id}:${run_accession}"
     maxForks 10
     storeDir "${params.outDir}/$taxon_id/$run_accession"
     afterScript "sleep $params.files_latency"  // Needed because of file system latency
@@ -36,7 +36,8 @@ process DOWNLOAD_PAIRED_FASTQS {
 
     output:
     //val(fastqMetadata)
-    tuple (val(taxon_id), val(gca), val(run_accession), val("${params.outDir}/${taxon_id}/${run_accession}/${run_accession}_1.fastq.gz"), val("${params.outDir}/${taxon_id}/${run_accession}/${run_accession}_2.fastq.gz"),val("${params.outDir}/$taxon_id/$run_accession/${dataFileQuery}"))
+    val(download_OUT)
+    //tuple (val(taxon_id), val(gca), val(run_accession), val("${params.outDir}/${taxon_id}/${run_accession}/${run_accession}_1.fastq.gz"), val("${params.outDir}/${taxon_id}/${run_accession}/${run_accession}_2.fastq.gz"),val("${params.outDir}/$taxon_id/$run_accession/${dataFileQuery}"))
 
     //when:
     //dataFiles.size() == 2 && qc_status != 'FILE_ISSUE'
@@ -131,10 +132,19 @@ process DOWNLOAD_PAIRED_FASTQS {
         throw new RuntimeException("MD5 checksums do not match after $maxRetries retries!")
     }
     //fastqMetadata.add([taxon_id:taxon_id, gca:gca, run_accession:run_accession, file1:"${params.outDir}/${taxon_id}/${run_accession}/${run_accession}_1.fastq.gz", file2:"${params.outDir}/${taxon_id}/${run_accession}/${run_accession}_2.fastq.gz",query: "${params.outDir}/$taxon_id/$run_accession/${dataFileQuery}"])
+    //"""
+    //cp ${pair1Path} .
+    //cp ${pair2Path} .
+    //"""
+
+    download_OUT=[]
+    download_OUT.add([taxon_id:taxon_id, gca:gca, run_accession:run_accession, pair1:["${params.outDir}",taxon_id,run_accession,"${run_accession}_1.fastq.gz"].join("/"), pair2:["${params.outDir}",taxon_id,run_accession,"${run_accession}_2.fastq.gz"].join("/"),dataFileQuery:["${params.outDir}",taxon_id,run_accession,dataFileQuery].join("/")])
     """
     cp ${pair1Path} .
     cp ${pair2Path} .
+    echo '${download_OUT.toString()}'
     """
+    //return download_OUT
     /*
      // Perform the download and MD5 checksum verification
     """

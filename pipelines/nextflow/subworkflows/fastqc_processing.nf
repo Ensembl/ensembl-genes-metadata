@@ -56,24 +56,25 @@ workflow FASTQC_PROCESSING{
     
     main:
     //def run_Id = []
-    //def bb=pairedFastqFilesMetadata
-    //bb.each{ d-> d.view()}
-    //d -> "GCA: ${d.gca}, Taxon ID: ${d.taxon_id}, run: ${d.run_accession},${pair1},${pair2},${dataFileQuery}"}
-    def fastqcOutput = RUN_FASTQC(pairedFastqFilesMetadata)
+    def bb=pairedFastqFilesMetadata
+    bb.flatten().view {
+    d -> "GCA: ${d.gca}, Taxon ID: ${d.taxon_id}, run: ${d.run_accession},${d.pair1},${d.pair2},${d.dataFileQuery}"}
+    def fastqcOutput = RUN_FASTQC(pairedFastqFilesMetadata.flatten())
+    
     def processedFastQCOutput = fastqcOutput.map { result ->
 //    getRunAccession.view { result ->
-        def (taxon_id, gca, run_accession, pair1, pair2, dataFileQuery, fastqcPath) = result
+        def (taxon_id, gca, run_accession, dataFileQuery, fastqcPath) = result
         println "results: ${result}"
         println "Run Accession: ${run_accession}"
         // You can use run_accession here to get runId
         def run_Id = getDataFromTable("run_id", "run", "run_accession", run_accession)[0].run_id
         //def run_Id = getRunTable(run_accession, 'run_id')
         log.info "Run ID: ${run_Id}"
-        return tuple(taxon_id, gca, run_accession, pair1, pair2, dataFileQuery, fastqcPath, run_Id.toString())
+        return tuple(taxon_id, gca, run_accession, dataFileQuery, fastqcPath, run_Id.toString())
     }
     
     //def runId = getRunId(runAccession)
-    def (runAccessionData, pairedFastqFiles, insertIntoDataFile) = PROCESS_FASTQC_OUTPUT(processedFastQCOutput)
+    def (runAccessionData, insertIntoDataFile) = PROCESS_FASTQC_OUTPUT(processedFastQCOutput)
     def updateValue = "False"
     def (runAccessionData_output,insertIntoDataFileQuery) = BUILD_QUERY(runAccessionData, insertIntoDataFile, updateValue)
     //insertIntoDataFileQuery.subscribe { line ->
@@ -84,13 +85,29 @@ workflow FASTQC_PROCESSING{
 
     def runAccessionData_QCstatus = runAccessionData_output.map { result ->
         def (taxon_id, gca, run_accession) = result
-        def filename_1 = getDataFromTable('file_name', 'data_files', 'file_name', run_accession+"_1")
-        def filename_2 = getDataFromTable('file_name', 'data_files', 'file_name', run_accession+"_2")
-        if (!filename_1.isEmpty() && !filename_2.isEmpty()){
+        def filename_1 = getDataFromTable('file_name', 'data_files', 'file_name', run_accession.toString()+"_1")
+        def filename_2 = getDataFromTable('file_name', 'data_files', 'file_name', run_accession.toString()+"_2")
+        println("filename 1 ${filename_1}")
+        println("filename 2 ${filename_2}")
+        if (!filename_1[0] && !filename_2[0]){
             insertIntoDataFileQuery.subscribe { line ->
+            println("insertIntoDataFileQuery.subscribe   ${line}")
             def queriesArray = line.toString().split(";")
-            setMetaDataRecord(queriesArray[0]+';')
-            setMetaDataRecord(queriesArray[1]+';')
+            //println("queriesArray[0] ${queriesArray[0]}")
+            //println("queriesArray[1] ${queriesArray[1]}")
+            //setMetaDataRecord(queriesArray[0]+';')
+            //setMetaDataRecord(queriesArray[1]+';')
+            // Iterate over the queries array
+                queriesArray.eachWithIndex { query, index ->
+                     // Trim the query to remove any leading/trailing whitespace
+                     query = query.trim()
+
+                     // Check if the query is not empty
+                     if (query) {
+                     println("queriesArray[${index}] ${query};")
+                     setMetaDataRecord(query.toString() + ";")
+                     }
+                 }
             }
         }
         def run_Id = getDataFromTable("run_id", "run", "run_accession", run_accession)[0].run_id.toString()
@@ -99,9 +116,13 @@ workflow FASTQC_PROCESSING{
     }
 
     //if (qc_status == 'QC_PASS') {
-    def subsamplingOutput = SUBSAMPLE_FASTQ_FILES(runAccessionData_QCstatus, pairedFastqFiles)
-
-    emit: subsamplingOutputMetadata = subsamplingOutput
+    def subsamplingOutput = SUBSAMPLE_FASTQ_FILES(runAccessionData_QCstatus)
+    def subsampling_Output = subsamplingOutput.map { subsampling ->
+        def (taxon_id, gca, run_accession, sub1, sub2) = subsampling
+        return [taxon_id:taxon_id, gca:gca, run_accession:run_accession, pair1:sub1, pair2:sub2]
+    }    
+    emit: subsamplingOutputMetadata = subsampling_Output
+    
     /* NOT NEEDED FORE NOW
     def processedSamplingOutput = subsamplingOutput.map { result ->
         def (taxon_id, gca, run_accession, subPair1, subPair2) = result

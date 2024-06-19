@@ -121,7 +121,7 @@ def setMetaDataRecord(String mysqlQuery){
         println("match found")
         // Extract the values from the match
         def paramValuesString = matcher.group(1)
-        log.info("Extracted paramValuesString: ${paramValuesString}")
+        //log.info("Extracted paramValuesString: ${paramValuesString}")
         // Split the values string by commas
         println("paramValues1")
         // Trim whitespace and single quotes from each parameter value
@@ -129,7 +129,7 @@ def setMetaDataRecord(String mysqlQuery){
         // Add NULL for values that are represented as 'NULL' in the input string
         paramValues = paramValues.collect { it == 'NULL' ? null : it }.toList()
         // Print the parameter values
-        log.info("Parameter values: ${paramValues}")
+        //log.info("Parameter values: ${paramValues}")
         // Generate a comma-separated string of placeholders
         def placeholders = paramValues.collect { "?" }.join(", ")
         // Construct the query by replacing the values string with placeholders

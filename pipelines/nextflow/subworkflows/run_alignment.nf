@@ -42,7 +42,22 @@ workflow RUN_ALIGNMENT{
     shortReadMetadata
 
     main:
-    def genomeAndDataToAlign = FETCH_GENOME(shortReadMetadata)
+    def genomeAndDataToAlign = FETCH_GENOME(shortReadMetadata.flatten())
+    //def genomeAndDataToAlignGenomePath = genomeAndDataToAlign.map { result ->
+    //    def (taxon_id, gca, run_accession, pair1, pair2, genomeDir) = result
+    //    println "results: ${result}"
+    //    genomeFileChannel = Channel.fromPath("${genomeDir}/*.fna")
+        //Channel.fromPath('${genomeDir}/').map{
+        //input->
+         //   println("input:${input}")
+          //  def foo = input.listFiles().findAll { it.toString().contains(".fna") }
+          //  [foo]
+      //}
+      //  genomeFileChannel.subscribe { genomeFilePath ->
+      //  println "GENOME: ${genomeFilePath}"
+       // return tuple(taxon_id, gca, run_accession, pair1, pair2, genomeDir, genomeFilePath)
+       // }
+  //  }
     def genomeIndexAndDataToAlign = INDEX_GENOME(genomeAndDataToAlign)
     def starOutput = RUN_STAR(genomeIndexAndDataToAlign)
     def (starMetadata, insertIntoAlign) = EXTRACT_UNIQUELY_MAPPED_READS_PERCENTAGE(starOutput)

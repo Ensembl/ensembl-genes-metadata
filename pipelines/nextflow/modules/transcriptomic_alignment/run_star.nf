@@ -27,7 +27,7 @@ process RUN_STAR {
 
     input:
     tuple val(taxon_id), val(gca), val(run_accession), \
-    val(fastqFile1), val(fastqFile2), val(genomeDir)
+    val(pair1), val(pair2), val(genomeDir)
 
     output:
     tuple val(taxon_id), val(gca), val(run_accession),\
@@ -43,9 +43,9 @@ process RUN_STAR {
     --outFilterIntronMotifs RemoveNoncanonicalUnannotated \
     --outSAMstrandField intronMotif --runThreadN ${task.cpus} \
     --twopassMode Basic --runMode alignReads --genomeDir ${file(genomeDir)} \
-    --readFilesIn ${file(fastqFile1)} ${file(fastqFile2)} --outFileNamePrefix ${outFileNamePrefix} \
+    --readFilesIn ${pair1} ${pair2} --outFileNamePrefix ${outFileNamePrefix} \
     --outSAMattrRGline "ID:${run_accession}" --outTmpDir ${starTmpDir} --outSAMtype BAM \
-    SortedByCoordinate  --outBAMsortingBinsN 200 
+    SortedByCoordinate  
     
     """
     //--readFilesCommand zcat  after subsampling they should be unzipped

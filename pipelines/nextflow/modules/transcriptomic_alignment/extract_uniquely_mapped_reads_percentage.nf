@@ -43,5 +43,6 @@ process EXTRACT_UNIQUELY_MAPPED_READS_PERCENTAGE {
     parse_star_output.py --file_path ${starOutputFile} \
     --extra_parameters "{'run_id': '${run_id}',  'assembly_accession': '${gca}'}" \
     --uniquely_mapped_reads_percentage --percentage_reads_mapped_to_multiple_loci --percentage_reads_unmapped_too_short
+    cp insert_into_align.json ${params.outDir}/${taxon_id}/${run_accession}/star/
     """
 }
