@@ -18,7 +18,7 @@ limitations under the License.
 
 process CLEANING {
     label 'default'
-    tag "cleaning $taxon_id/$run_accession"
+    tag "$taxon_id/$run_accession"
 
     input:
     tuple val(taxon_id), val(gca), val(run_accession)
@@ -27,7 +27,7 @@ process CLEANING {
     //dirToRemove = joinPath(params.outDir, taxon_id, run_accession)
     
     """
-    rm -rf ${params.outDir}/${taxon_id}/${run_accession}
+    rm -rf ${params.outDir}/${taxon_id}/${run_accession};
     """
 }
 

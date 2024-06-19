@@ -18,11 +18,11 @@ limitations under the License.
 
 
 process SUBSAMPLE_FASTQ_FILES {
-    label 'seqtk'
-    tag "$taxon_id:$run_accession"
+    label 'python'
+    tag "subsampling $run_accession"
     storeDir "${params.outDir}/$taxon_id/$run_accession"
     afterScript "sleep $params.files_latency"  // Needed because of file system latency
-
+    cache false 
     input:
     tuple val(taxon_id), val(gca), val(run_accession)
     
@@ -36,6 +36,7 @@ process SUBSAMPLE_FASTQ_FILES {
     //subsampled_fastq_files = [Path(f"{fastq_file_1}.sub"), Path(f"{fastq_file_2}.sub")]
 
     script:
+    def enscode1="/nfs/production/flicek/ensembl/genebuild/ftricomi/test_mypy/"
     def output_dir = "${params.outDir}/${taxon_id}/${run_accession}/"
     def fastq1 = "${output_dir}${run_accession}_1.fastq.gz"
     def fastq2 = "${output_dir}${run_accession}_2.fastq.gz"
@@ -45,8 +46,12 @@ process SUBSAMPLE_FASTQ_FILES {
     subsample_OUT.add([taxon_id:taxon_id, gca:gca, run_accession:run_accession, pair1:["${params.outDir}",taxon_id,run_accession,"${run_accession}_1.fastq.gz.sub"].join("/"), pair2:["${params.outDir}",taxon_id,run_accession,"${run_accession}_2.fastq.gz.sub"].join("/")])
 
     """
-    seqtk sample -s100 ${fastq1} 50000 > ${subsampled_fastq1}
-    seqtk sample -s100 ${fastq2} 50000 > ${subsampled_fastq2}
+    chmod +x ${enscode1}/ensembl-anno/src/python/ensembl/tools/anno/transcriptomic_annotation/star.py
+    if [ ! -s ${subsampled_fastq1} ] && [ ! -s ${subsampled_fastq2} ]; then 
+       python3 ${enscode1}/ensembl-anno/src/python/ensembl/tools/anno/transcriptomic_annotation/star.py \
+        --run_subsampling True --paired_file_1 ${fastq1} --paired_file_2 ${fastq2} --sampling_via_read_limit_percentage True \
+        --subsample_read_limit 100000 --subsample_percentage 0.05 --num_threads 2  --output_dir ${output_dir};
+    fi
     cp  ${output_dir}*.sub .
     echo '${subsample_OUT.toString()}'
     """

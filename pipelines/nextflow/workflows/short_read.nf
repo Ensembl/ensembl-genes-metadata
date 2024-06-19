@@ -126,9 +126,9 @@ workflow SHORT_READ {
     RUN_ALIGNMENT(fastQCMetadata)
     //Channel.of(runAccessionList).groupTuple(taxon_id).collect()
     //runAccessionList.view()
-
-    //run_accession_list = key from PROCESS_TAXONOMY_INFO.runAccessionsPath.splitJson().flatten()
-    //run_accession_list = Channel.fromPath(PROCESS_TAXONOMY_INFO.runAccessionsPath).splitCsv()
+    if (params.backupDB) {
+        exec """pg_dump -h ${params.transcriptomic_host} -p ${params.transcriptomic_port} -U ${params.transcriptomic_dbuser} ${params.transcriptomic_dbname} | gzip > ${params.outDir}/${params.transcriptomic_dbname}_backup.sql.gz"""
+        }
    /* 
     run_accession_list.subscribe { accession ->
         // Generate a job for each accession

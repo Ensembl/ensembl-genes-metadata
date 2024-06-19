@@ -50,7 +50,7 @@ def getLastCheckDate(String taxonId) {
         def query = "SELECT last_check FROM meta WHERE taxon_id = ? "
         result = sql.rows(query, [taxonId])
         if (result.size() > 0) {
-            println("taxonomy present get last check")
+            log.info("taxonomy ${taxonId} present, get last check")
             // Assuming 'last_check' is yyyy-MM-dd format
             // Adjust the date format pattern based on the actual format in your database
             //def dateFormat = new SimpleDateFormat("yyyy-MM-dd") // Adjust the format if needed
@@ -129,7 +129,7 @@ def setMetaDataRecord(String mysqlQuery){
         // Add NULL for values that are represented as 'NULL' in the input string
         paramValues = paramValues.collect { it == 'NULL' ? null : it }.toList()
         // Print the parameter values
-        //log.info("Parameter values: ${paramValues}")
+        log.info("Parameter values: ${paramValues}")
         // Generate a comma-separated string of placeholders
         def placeholders = paramValues.collect { "?" }.join(", ")
         // Construct the query by replacing the values string with placeholders

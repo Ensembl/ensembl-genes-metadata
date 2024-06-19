@@ -76,7 +76,7 @@ workflow RUN_ALIGNMENT{
         setLastCheckDate(taxon_id,'update')
         return tuple(taxon_id, gca, run_accession)
     }
-    CLEANING(runAccessionData_NewQCstatus)
+    //CLEANING(runAccessionData_NewQCstatus)
 
 }
 
