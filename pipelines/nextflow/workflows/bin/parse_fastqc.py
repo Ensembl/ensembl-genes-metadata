@@ -15,7 +15,6 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-import os
 from pathlib import Path
 import re
 import json
@@ -98,8 +97,6 @@ def convert_to_json(run_accession_dir: Path, data_file_json: str, run_id: int) -
     fastq_files = [str(file.name) for file in run_accession_dir.iterdir() if file.suffix in ("_fastqc")]
 
     #fastq_files = [file for file in os.listdir(run_accession_dir) if file.endswith((".fastq", ".gz"))]
-    print("uuuuu")
-    print(fastq_files)
     for fastq_file in fastq_files:
         summary_path = (
             Path(run_accession_dir)
@@ -125,7 +122,6 @@ def convert_to_json(run_accession_dir: Path, data_file_json: str, run_id: int) -
         summary_data = parse_fastqc_summary(summary_path)
         fastqc_data = parse_fastqc_data(fastqc_data_path)
 
-        # {"data_files": [{"name": "SRR10059726_1", "url": "ftp.sra.ebi.ac.uk/vol1/fastq/SRR100/026/SRR10059726/SRR10059726_1.fastq.gz", "md5": "98bde123250a8ed551063c4ed733bdf5"}, {"name": "SRR10059726_2", "url": "ftp.sra.ebi.ac.uk/vol1/fastq/SRR100/026/SRR10059726/SRR10059726_2.fastq.gz", "md5": "301e387275db5fb3ca9031cdf599fe38"}]}
         data_file: Dict[str, Any] = {
             "run_id": run_id,
             **run_accession_dict,
@@ -138,9 +134,6 @@ def convert_to_json(run_accession_dir: Path, data_file_json: str, run_id: int) -
 
     with open("complete_insert_into_data_file.json", "w") as file:
         file.write(json_data_files)
-    # output_json_path = os.path.join(fastqc_dir, 'fastqc_results_summary.json')
-    # with open(output_json_path, 'w') as json_file:
-    #    json_file.write(json_data)
 
     logging.info("Summary data converted to JSON.")
 

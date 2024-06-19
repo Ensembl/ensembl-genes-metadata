@@ -67,6 +67,7 @@ def request_data(run_accession: str, fields: list) -> str:
         # Further processing of result can be done here
     except RuntimeError as e:
         print("Error retriving data")
+        return str(e)
 
 def json_parse(response: str, fields: list):
     """Parse response from HTTP request into a list of JSON strings.
