@@ -77,44 +77,55 @@ workflow FASTQC_PROCESSING{
     def (runAccessionData, insertIntoDataFile) = PROCESS_FASTQC_OUTPUT(processedFastQCOutput)
     def updateValue = "False"
     def (runAccessionData_output,insertIntoDataFileQuery) = BUILD_QUERY(runAccessionData, insertIntoDataFile, updateValue)
-    //insertIntoDataFileQuery.subscribe { line ->
-    //    def queriesArray = line.toString().split(";")
-     //   setMetaDataRecord(queriesArray[0]+';')
-    //    setMetaDataRecord(queriesArray[1]+';')
-    //} 
+    insertIntoDataFileQuery.subscribe { line ->
+        log.info("insertIntoDataFileQuery.subscribe ${line}")
+        def queriesArray = line.toString().split(";")
+        queriesArray.eachWithIndex { query, index ->
+            // Trim the query to remove any leading/trailing whitespace
+            query = query.trim()
+            // Check if the query is not empty
+            if (query) {
+                log.info("queriesArray[${index}] ${query};")
+                setMetaDataRecord(query.toString() + ";")
+            }
+    }
+    }
 
     def runAccessionData_QCstatus = runAccessionData_output.map { result ->
         def (taxon_id, gca, run_accession) = result
-        def filename_1 = getDataFromTable('file_name', 'data_files', 'file_name', run_accession.toString()+"_1")
-        def filename_2 = getDataFromTable('file_name', 'data_files', 'file_name', run_accession.toString()+"_2")
-        println("filename 1 ${filename_1}")
-        println("filename 2 ${filename_2}")
-        if (!filename_1[0] && !filename_2[0]){
-            insertIntoDataFileQuery.subscribe { line ->
-            println("insertIntoDataFileQuery.subscribe   ${line}")
-            def queriesArray = line.toString().split(";")
+        log.info("runAccessionData_QCstatus ${run_accession}")
+        //def filename_1 = getDataFromTable('file_name', 'data_files', 'file_name', run_accession.toString()+"_1")
+        //def filename_2 = getDataFromTable('file_name', 'data_files', 'file_name', run_accession.toString()+"_2")
+        //log.info("run_accession ${run_accession}")
+        //log.info("filename 1 ${filename_1}")
+        //log.info("filename 2 ${filename_2}")
+        //if (!filename_1[0] && !filename_2[0]){
+        //insertIntoDataFileQuery.subscribe { line ->
+            //println("insertIntoDataFileQuery.subscribe ${line}")
+            //def queriesArray = line.toString().split(";")
             //println("queriesArray[0] ${queriesArray[0]}")
             //println("queriesArray[1] ${queriesArray[1]}")
             //setMetaDataRecord(queriesArray[0]+';')
             //setMetaDataRecord(queriesArray[1]+';')
             // Iterate over the queries array
-                queriesArray.eachWithIndex { query, index ->
+            //queriesArray.eachWithIndex { query, index ->
                      // Trim the query to remove any leading/trailing whitespace
-                     query = query.trim()
-
+              //       query = query.trim()
+              //      sleep(100)
                      // Check if the query is not empty
-                     if (query) {
-                     println("queriesArray[${index}] ${query};")
-                     setMetaDataRecord(query.toString() + ";")
-                     }
-                 }
-            }
-        }
+             //        if (query) {
+               //      log.info("queriesArray[${index}] ${query};")
+                 //    setMetaDataRecord(query.toString() + ";")
+                     // Introduce a delay between each map operation if necessary
+                     //sleep(100)  // Delay in milliseconds, adjust as needed
+                    // }
+                // }
+           // }
+        //}
         def run_Id = getDataFromTable("run_id", "run", "run_accession", run_accession)[0].run_id.toString()
         checkRunStatus(run_Id)
         return tuple(taxon_id, gca, run_accession)
     }
-
     //if (qc_status == 'QC_PASS') {
     def subsamplingOutput = SUBSAMPLE_FASTQ_FILES(runAccessionData_QCstatus)
     def subsampling_Output = subsamplingOutput.map { subsampling ->

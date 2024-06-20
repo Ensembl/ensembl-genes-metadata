@@ -56,7 +56,7 @@ process DOWNLOAD_PAIRED_FASTQS {
     // Check if there are exactly two data files
     if (dataFiles.size() != 2) {
         println "Expected two data files, but found ${dataFiles.size()}. Skipping the process."
-        return
+        return []
     }
 
     def file1 = dataFiles[0]
@@ -73,7 +73,7 @@ process DOWNLOAD_PAIRED_FASTQS {
     // Check for file issues and QC status
     if (!url1 || !url2 || !md5_1 || !md5_2 || qc_status == 'FILE_ISSUE') {
         println "Issue in metadata for ${run_accession}."
-        return
+        return []
     }
    //${params.outDir}/$taxon_id/$run_accession/ 
     def pair1Path = "${params.outDir}/$taxon_id/$run_accession/${run_accession}_1.fastq.gz"

@@ -81,11 +81,12 @@ def setLastCheckDate(String taxonId,String query_option) {
         def currentDate = LocalDateTime.now()
         def dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
         def formattedDate = currentDate.format(dateFormatter)
+        def firstDate = "2019-01-01"
         if(query_option.contains("insert")){
         // Execute the SQL INSERT statement
         //def map = [taxon_id:'${taxonId}', last_checked_date:'${formattedDate}']
         //sql.execute "INSERT INTO meta (taxon_id, last_checked_date) VALUES ($map.taxon_id, $map.last_checked_date)"
-        def params = [taxonId, formattedDate]
+        def params = [taxonId, firstDate]
         sql.execute 'INSERT IGNORE INTO meta (taxon_id, last_check) VALUES (?, ?)', params
         //def insertQuery = "INSERT INTO meta (taxon_id, last_checked_date) VALUES ('${taxonId}', '${formattedDate}')"
         //sql.executeInsert(insertQuery)
@@ -231,6 +232,7 @@ def checkRunStatus(String runId) {
         def result = sql.firstRow(query_fastqc_results, [runId])
         if (result && result.formatted_results) {
             def statusList = result.formatted_results.split(', ').collect { it.trim() }
+            log.info("statusList ${statusList}")
             def finalStatus = statusList.any { it == 'FAIL' } ? 'QC_FAIL' : 'QC_PASS'
             def params = [finalStatus, runId]
             sql.execute query_qc_status, params

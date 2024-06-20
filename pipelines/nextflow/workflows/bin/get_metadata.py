@@ -90,7 +90,7 @@ def json_parse(response: str, fields: list):
         "run": {
             "taxon_id": output_data["tax_id"],
             "run_accession": output_data["run_accession"],
-            "qc_status": "NOT_CHECKED" if len(output_data["fastq_ftp"].split(";")) == 2 else "FILE_ISSUE",
+            "qc_status": "NOT_CHECKED" if len(output_data["fastq_ftp"].split(";")) >= 2 else "FILE_ISSUE",
             "sample_accession": output_data["sample_accession"],
             "study_accession": output_data["study_accession"],
             "read_type": output_data["library_strategy"],

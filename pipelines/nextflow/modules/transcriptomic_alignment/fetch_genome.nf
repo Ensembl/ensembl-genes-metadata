@@ -21,7 +21,7 @@ process FETCH_GENOME {
   tag "$taxon_id:$gca"
   label 'fetch_file'
   //storeDir "${params.cacheDir}/$gca/ncbi_dataset/"
-  storeDir "${params.outDir}/$taxon_id/$gca/ncbi_dataset/"
+  //storeDir "${params.outDir}/$taxon_id/$gca/ncbi_dataset/"
   //publishDir = [
   //            path: { "${params.outDir}/$taxon_id/$gca/ncbi_dataset/" },
   //                        mode: 'copy',
@@ -39,8 +39,9 @@ process FETCH_GENOME {
   
   script:
   """
-  if [ ! find "${params.outDir}/${taxon_id}/${gca}/ncbi_dataset" -name "*.fna" -type f -size +0c | grep -q .; then
-  //if [ ! -s "${params.outDir}/${taxon_id}/${gca}/ncbi_dataset/*.fna" ]; then
+  #found_files=\$(find "${params.outDir}/${taxon_id}/${gca}/ncbi_dataset" -name "*.fna" -type f)
+  #if [ !  -n "\$found_files" ]; then
+  if [ ! -d "${params.outDir}/${taxon_id}/${gca}/ncbi_dataset/" ]; then
     echo "Directory ncbi_dataset does not exist. Proceeding with download..."
     curl --retry 3  -X GET "${params.ncbiBaseUrl}/${gca}/download?include_annotation_type=GENOME_FASTA&hydrated=FULLY_HYDRATED" -H "Accept: application/zip" --output genome_file.zip
     unzip -j genome_file.zip

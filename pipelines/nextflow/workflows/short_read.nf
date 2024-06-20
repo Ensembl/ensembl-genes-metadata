@@ -126,9 +126,9 @@ workflow SHORT_READ {
     RUN_ALIGNMENT(fastQCMetadata)
     //Channel.of(runAccessionList).groupTuple(taxon_id).collect()
     //runAccessionList.view()
-    if (params.backupDB) {
-        exec """pg_dump -h ${params.transcriptomic_host} -p ${params.transcriptomic_port} -U ${params.transcriptomic_dbuser} ${params.transcriptomic_dbname} | gzip > ${params.outDir}/${params.transcriptomic_dbname}_backup.sql.gz"""
-        }
+//    if (params.backupDB) {
+ //       exec """pg_dump -h ${params.transcriptomic_dbhost} -p ${params.transcriptomic_dbport} -U ${params.transcriptomic_dbuser} ${params.transcriptomic_dbname} | gzip > ${params.outDir}/${params.transcriptomic_dbname}_backup.sql.gz"""
+   //     }
    /* 
     run_accession_list.subscribe { accession ->
         // Generate a job for each accession
@@ -145,4 +145,59 @@ workflow SHORT_READ {
 
 workflow.onComplete {
     log.info "Pipeline completed at: ${new Date().format('dd-MM-yyyy HH:mm:ss')}"
+    def cleaningCommand= ['rm','-rf', params.outDir+'/*']
+
+    log.info "Executing cleaning command: ${cleaningCommand.join(' ')}"
+
+    def cleaningProcess = new ProcessBuilder(cleaningCommand).start()
+    cleaningProcess.waitFor()
+    if (params.backupDB) {
+        def backupFilePath = "${params.outDir}/${params.transcriptomic_dbname}_backup.sql"
+def gzipFilePath = "${backupFilePath}.gz"
+
+// Define the database backup command as a list of arguments
+def mysqldumpCommand = [
+    'mysqldump',
+    '-h', params.transcriptomic_dbhost,
+    '-P', params.transcriptomic_dbport.toString(),
+    '-u', params.transcriptomic_dbuser,
+    '-p' + params.transcriptomic_dbpassword,
+    params.transcriptomic_dbname
+]
+
+log.info "Executing database backup command: ${mysqldumpCommand.join(' ')}"
+
+def processBuilder = new ProcessBuilder(mysqldumpCommand)
+processBuilder.redirectOutput(new File(backupFilePath))
+processBuilder.redirectErrorStream(true) // Combine stdout and stderr
+
+def mysqldumpProcess = processBuilder.start()
+mysqldumpProcess.waitFor()
+
+if (mysqldumpProcess.exitValue() != 0) {
+    log.error "Database backup failed. See error output for details."
+    mysqldumpProcess.inputStream.eachLine { line -> log.error line }
+} else {
+    log.info "Database backup completed successfully. Proceeding to gzip the backup file."
+    
+    def gzipCommand = [
+        'gzip', '-f', backupFilePath.toString()
+    ]
+
+    log.info "Executing gzip command: ${gzipCommand.join(' ')}"
+    
+    def gzipProcess = new ProcessBuilder(gzipCommand).start()
+    gzipProcess.waitFor()
+    
+    if (gzipProcess.exitValue() != 0) {
+        log.error "Gzip failed. See error output for details."
+        gzipProcess.inputStream.eachLine { line -> log.error line }
+    } else {
+        log.info "Gzip completed successfully. Backup file: ${gzipFilePath}"
+    }
+}
+
+            }
+            //mysqldump -h mysql-ens-genebuild-prod-1 -P 4527 -u ensadmin -pensembl transcriptomic_fra | gzip > transcriptomic_fra_backup.sql.gz
+              
 }
