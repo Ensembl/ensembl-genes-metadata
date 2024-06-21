@@ -15,10 +15,9 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-///nfs/production/flicek/ensembl/genebuild/swati/fastqc/
+
 // https://hub.docker.com/r/staphb/fastqc v12
 process RUN_FASTQC {
-    //scratch true
     label 'fastqc'
     tag "$taxon_id:$run_accession"
     storeDir "${params.outDir}/$taxon_id/$run_accession/"

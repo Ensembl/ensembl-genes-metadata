@@ -25,15 +25,9 @@ process SUBSAMPLE_FASTQ_FILES {
 
     input:
     tuple val(taxon_id), val(gca), val(run_accession)
-    
-    //tuple val(pair1), val(pair2)
 
     output:
-    //val(subsample_OUT)
     tuple val(taxon_id), val(gca), val(run_accession), path("*_1.fastq.gz.sub"),path("*_2.fastq.gz.sub")
-    //val("${params.outDir}/${taxon_id}/${run_accession}/${run_accession}_1.fastq.gz.sub"), \
-    //val("${params.outDir}/${taxon_id}/${run_accession}/${run_accession}_2.fastq.gz.sub")
-    //subsampled_fastq_files = [Path(f"{fastq_file_1}.sub"), Path(f"{fastq_file_2}.sub")]
 
     script:
     def output_dir = "${params.outDir}/${taxon_id}/${run_accession}/"
@@ -50,10 +44,5 @@ process SUBSAMPLE_FASTQ_FILES {
     cp  ${output_dir}*.sub .
     echo '${subsample_OUT.toString()}'
     """
-
-    //subsample_OUT.add([taxon_id:taxon_id, gca:gca, run_accession:run_accession, pair1:["${params.outDir}",taxon_id,run_accession,"${run_accession}_1.fastq.gz.sub"].join("/"), pair2:["${params.outDir}",taxon_id,run_accession,"${run_accession}_2.fastq.gz.sub"].join("/")])
 }
-    //"""
-    //cp  ${output_dir}*.sub .
-    //echo '${subsample_OUT.toString()}'
-    //"""
+
