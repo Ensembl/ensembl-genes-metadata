@@ -11,9 +11,9 @@ Output: json metadata file on filesystem
 FASTQ files
 Input: run accession to create query
 Output: fastq files on file system
-/hps/nobackup/flicek/ensembl/genebuild/transcriptomic_assessment/metadata_qc/<taxon_id>/<run_accession>/<run_accession>_1.fastq
+/hps/nobackup/flicek/ensembl/genebuild/transcriptomic_assessment/metadata_qc/<taxon_id>/<run_accession>?? <run_accession>_1.fastq
 AND
-/hps/nobackup/flicek/ensembl/genebuild/transcriptomic_assessment/metadata_qc/<taxon_id>/<run_accession>/<run_accession>_2.fastq
+/hps/nobackup/flicek/ensembl/genebuild/transcriptomic_assessment/metadata_qc/<taxon_id>/<run_accession>_2.fastq
 
 FASTQC
 Input: fastq files on filesystem (from above)
@@ -30,6 +30,14 @@ AND
 (NOTE: you can specify the output filenames or the default will appened "sub" to the filenames, see code: https://github.com/Ensembl/ensembl-anno/blob/a8764837454ce984e294e8d9aaae45a30958deab/support_scripts/subsample_fastq.py#L145)
 
 STAR
+
+
+if [ ! -e "/hps/nobackup/flicek/ensembl/genebuild/ftricomi/fish/large_yellow_croaker_annotation/larimichthys_crocea/GCA_004352675.2/genome_dumps/Genome" ]; then /hps/software/users/ensembl/ensw/C8-MAR21-sandybridge/linuxbrew/bin/STAR --runThreadN 12 --runMode genomeGenerate --outFileNamePrefix /hps/nobackup/flicek/ensembl/genebuild/ftricomi/fish/large_yellow_croaker_annotation/larimichthys_crocea/GCA_004352675.2//genome_dumps --genomeDir /hps/nobackup/flicek/ensembl/genebuild/ftricomi/fish/large_yellow_croaker_annotation/larimichthys_crocea/GCA_004352675.2//genome_dumps --genomeFastaFiles /hps/nobackup/flicek/ensembl/genebuild/ftricomi/fish/large_yellow_croaker_annotation/larimichthys_crocea/GCA_004352675.2//genome_dumps/larimichthys_crocea_toplevel.fa;fi
 Input: subsampled fastq files on filesystem (from above)
 Output: STAR directory/ subdirectories/ files
 /hps/nobackup/flicek/ensembl/genebuild/transcriptomic_assessment/metadata_qc/<taxon_id>/<run_accession>/star/<files?> (check names of files needed)
+
+
+
+test:
+/hps/nobackup/flicek/ensembl/genebuild/ftricomi/fish/mackerel_icefish_annotation/champsocephalus_gunnari/GCA_036324595.1/rnaseq/champsocephalus_gunnari_gen.csv 

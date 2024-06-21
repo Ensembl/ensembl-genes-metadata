@@ -1,0 +1,103 @@
+# Genebuild Transcriptomic pipeline
+
+This pipeline processes transcriptomic data for various taxon IDs, performing a series of steps to fetch data, perform quality checks, subsample files, run alignments, and store the results of each step in a database. The pipeline is designed for scalability and reproducibility using Nextflow.
+
+Steps in the Pipeline:
+1- Fetch Run Accessions from ENA: For each taxon ID, retrieve the list of run accessions from the ENA archive since January 1, 2019, or from the last check.
+2- Fetch Metadata and Perform Quality Checks: For each run accession, obtain metadata from ENA and conduct quality checks using FASTQC.
+3- Subsample FASTQ Files: Subsample the paired FASTQ files to reduce their size.
+4- Run STAR Alignment: Align the subsampled FASTQ files to the provided genome assembly using the STAR aligner.
+
+
+### Mandatory arguments
+
+#### `--csvFile`
+The structure of the file can cahnge according to the running options
+| csv file format |
+|-----------------|
+| taxon_id,gca (header)   | 
+| <taxon_id>,<gca>        |
+
+#### `--enscode`
+Path to the root directory containing the Perl repositories
+
+#### `--outDir`
+Path to the directory where to store the results of the pipeline
+
+#### `transcriptomic_dbname`
+The name of the transcriptomic db.
+
+#### `--transcriptomic_dbhost`
+The host name for the database 
+
+#### `--transcriptomic_dbport`
+The port number of the host 
+
+#### `--transcriptomic_dbuser`
+The read/wrote username for the host (admin user). 
+
+#### `--transcriptomic_dbpassword`
+The database password. 
+
+#### `--user_r`
+The read only username for the host. 
+
+
+```bash
+nextflow -C $ENSCODE/ensembl-genes-metadata/nextflow.config run $ENSCODE/ensembl-genes-metadata/pipelines/nextflow/workflows/short_read.nf -entry SHORT_READ --bioperl <bioperl_lib> --enscode $ENSCODE --csvFile <csv_file_path> --outDir <output_dir_path> --transcriptomic_dbname <db name> --transcriptomic_dbhost <mysql_host> --transcriptomic_dbport <mysql_port> --transcriptomic_dbuser <user> --user_r <read_user>  --transcriptomic_dbpassword <mysql_password> -profile slurm
+```
+
+
+### Optional arguments
+
+#### `--bioperl`
+Path to the directory containing the BioPerl 1.6.924 library. If not provided, the value passed to `--enscode` will be used as root, i.e. `<enscode>/bioperl-1.6.924`.
+
+#### `--cacheDir`
+Path to the directory to use as cache for the intermediate files. If not provided, the value passed to `--outDir` will be used as root, i.e. `<outDir>/cache`.
+
+#### `--files_latency`
+Sleep time (in seconds) after the genome and proteins have been fetched. Needed by several file systems due to their internal latency. By default, 60 seconds.
+
+### Pipeline configuration
+
+#### Using the provided nextflow.config
+We are using profiles to be able to run the pipeline on different HPC clusters. The default is `standard`.
+
+* `standard`: uses LSF to run the compute heavy jobs. It expects the usage of `scratch` to use a low latency filesystem.
+* `slurm`: uses SLURM to run the compute heavy jobs. It expects the usage of `scratch` to use a low latency filesystem.
+
+
+#### Using a local configuration file
+You can use a local config with `-c` to finely configure your pipeline. All parameters can be configured, we recommend setting these ones as well:
+
+* `process.scratch`: The patch to the scratch directory to use
+* `workDir`: The directory where nextflow stores any file
+
+### Information about all the parameters
+
+```bash
+nextflow run ./ensembl-genes-metadata/pipelines/nextflow/workflows/short_read.nf --help
+```
+
+
+#### Docker dependencies
+These are software required by this pipeline and downloaded as Singularities:
+
+| Software  | Docker image |  
+|-----------------|--------|
+| python  | python:3.9.19 |
+| [FastQC](https://github.com/s-andrews/FastQC/tree/master)  | staphb/fastqc:latest |
+| [seqtk](https://github.com/lh3/seqtk)  | nanozoo/seqtk:latest |
+| [STAR](https://github.com/alexdobin/STAR)  | ebileanne/star:latest |
+
+
+Remember that, following the instructions in [Ensembl's Perl API installation](http://www.ensembl.org/info/docs/api/api_installation.html), you will also need to have BioPerl v1.6.924 available in your system. If you do not, you can install it executing the following commands:
+
+```bash
+wget https://github.com/bioperl/bioperl-live/archive/release-1-6-924.zip
+unzip release-1-6-924.zip
+mv bioperl-live-release-1-6-924 bioperl-1.6.924
+```
+
+It is recommended to install it in the same folder as the Ensembl repositories.

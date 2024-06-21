@@ -52,6 +52,7 @@ if (!params.cacheDir) {
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     HELP
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 */
 
 if (params.help) {
@@ -60,7 +61,7 @@ if (params.help) {
     log.info '-------------------------------------------------------'
     log.info ''
     log.info 'Usage: '
-    log.info '  nextflow -C ...'
+    log.info ' nextflow -C ensembl-genes-metadata/nextflow.config run nextflow/workflows/short_read.nf -entry SHORT_READ  '
     log.info ''
     log.info 'Options:'
     log.info '  --transcriptomic_dbname STR                   Db name '
@@ -79,23 +80,13 @@ if (params.help) {
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     IMPORT LOCAL MODULES/SUBWORKFLOWS
-    https://github.com/Ensembl/ensembl-genomio/blob/main/pipelines/nextflow/workflows/dumper_pipeline/main.nf
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
-
-//
-// MODULE
-//
-//
-// SUBWORKFLOW
-//
 
 include { PROCESS_TAXONOMY_INFO } from '../subworkflows/process_taxonomy_info.nf'
 include { PROCESS_RUN_ACCESSION_METADATA } from '../subworkflows/process_run_accession_metadata.nf'
 include { FASTQC_PROCESSING } from '../subworkflows/fastqc_processing.nf'
 include { RUN_ALIGNMENT } from '../subworkflows/run_alignment.nf'
-
-
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -108,96 +99,68 @@ workflow SHORT_READ {
                 .splitCsv(sep:',', header:true)
                 .map { row -> [taxon_id:row.get('taxon_id'), gca:row.get('gca')]}
     data.each { dataRow -> dataRow.view() }            
-    //data1=data
-    //data1.each{ d-> d.view()}
     //taxon id present or not? if yes get all new short read data after this date if not add it for the first time
-    //given taxon id, get list of run accession an 
     def taxonomyResults= PROCESS_TAXONOMY_INFO(data)
-    //rr=runAccessionList
-    //rr.each { d -> "Taxon ID: ${d.taxon_id}, GCA: ${d.gca}, run accession: ${d.run_accession}"} 
     def fastqFilesMetadata  = PROCESS_RUN_ACCESSION_METADATA(taxonomyResults).collect()
     dd=fastqFilesMetadata
     dd.each{ d-> d.view()}
-    //def fastqMetadata = []
-    //fastqMetadata.add(fastqFilesMetadata)
-    //FASTQC_PROCESSING(fastqFilesMetadata)
     def fastQCMetadata = FASTQC_PROCESSING(fastqFilesMetadata).collect()
-    
     RUN_ALIGNMENT(fastQCMetadata)
-    //Channel.of(runAccessionList).groupTuple(taxon_id).collect()
-    //runAccessionList.view()
-//    if (params.backupDB) {
- //       exec """pg_dump -h ${params.transcriptomic_dbhost} -p ${params.transcriptomic_dbport} -U ${params.transcriptomic_dbuser} ${params.transcriptomic_dbname} | gzip > ${params.outDir}/${params.transcriptomic_dbname}_backup.sql.gz"""
-   //     }
-   /* 
-    run_accession_list.subscribe { accession ->
-        // Generate a job for each accession
-        def processMetadata = PROCESS_RUN_ACCESSION_METADATA(params.taxon_id, accession)
-        def processFastq = FASTQ_PROCESSING(processMetadata.taxon_id, accession, processMetadata.pairedFastqFiles)
-        RUN_ALIGNMENT(params.assembly_accession,genome_file,processFastq.runAccessionFastqs)
-    }
-*/
-    if (params.cleanCache) {
+    
+    //if (params.cleanCache) {
         // Clean cache directories
-        exec "rm -rf ${params.cacheDir}/*"
-    }
+    //    exec "rm -rf ${params.cacheDir}/*"
+    //}
 }  
 
 workflow.onComplete {
     log.info "Pipeline completed at: ${new Date().format('dd-MM-yyyy HH:mm:ss')}"
+
     def cleaningCommand= ['rm','-rf', params.outDir+'/*']
-
     log.info "Executing cleaning command: ${cleaningCommand.join(' ')}"
-
     def cleaningProcess = new ProcessBuilder(cleaningCommand).start()
     cleaningProcess.waitFor()
+
     if (params.backupDB) {
         def backupFilePath = "${params.outDir}/${params.transcriptomic_dbname}_backup.sql"
-def gzipFilePath = "${backupFilePath}.gz"
+        def gzipFilePath = "${backupFilePath}.gz"
 
-// Define the database backup command as a list of arguments
-def mysqldumpCommand = [
-    'mysqldump',
-    '-h', params.transcriptomic_dbhost,
-    '-P', params.transcriptomic_dbport.toString(),
-    '-u', params.transcriptomic_dbuser,
-    '-p' + params.transcriptomic_dbpassword,
-    params.transcriptomic_dbname
-]
+        // Define the database backup command as a list of arguments
+        def mysqldumpCommand = [
+            'mysqldump',
+            '-h', params.transcriptomic_dbhost,
+            '-P', params.transcriptomic_dbport.toString(),
+            '-u', params.transcriptomic_dbuser,
+            '-p' + params.transcriptomic_dbpassword,
+            params.transcriptomic_dbname
+        ]
 
-log.info "Executing database backup command: ${mysqldumpCommand.join(' ')}"
+        log.info "Executing database backup command: ${mysqldumpCommand.join(' ')}"
 
-def processBuilder = new ProcessBuilder(mysqldumpCommand)
-processBuilder.redirectOutput(new File(backupFilePath))
-processBuilder.redirectErrorStream(true) // Combine stdout and stderr
+        def processBuilder = new ProcessBuilder(mysqldumpCommand)
+        processBuilder.redirectOutput(new File(backupFilePath))
+        processBuilder.redirectErrorStream(true) // Combine stdout and stderr
 
-def mysqldumpProcess = processBuilder.start()
-mysqldumpProcess.waitFor()
+        def mysqldumpProcess = processBuilder.start()
+        mysqldumpProcess.waitFor()
 
-if (mysqldumpProcess.exitValue() != 0) {
-    log.error "Database backup failed. See error output for details."
-    mysqldumpProcess.inputStream.eachLine { line -> log.error line }
-} else {
-    log.info "Database backup completed successfully. Proceeding to gzip the backup file."
-    
-    def gzipCommand = [
-        'gzip', '-f', backupFilePath.toString()
-    ]
-
-    log.info "Executing gzip command: ${gzipCommand.join(' ')}"
-    
-    def gzipProcess = new ProcessBuilder(gzipCommand).start()
-    gzipProcess.waitFor()
-    
-    if (gzipProcess.exitValue() != 0) {
-        log.error "Gzip failed. See error output for details."
-        gzipProcess.inputStream.eachLine { line -> log.error line }
-    } else {
-        log.info "Gzip completed successfully. Backup file: ${gzipFilePath}"
-    }
-}
-
-            }
-            //mysqldump -h mysql-ens-genebuild-prod-1 -P 4527 -u ensadmin -pensembl transcriptomic_fra | gzip > transcriptomic_fra_backup.sql.gz
-              
+        if (mysqldumpProcess.exitValue() != 0) {
+            log.error "Database backup failed. See error output for details."
+            mysqldumpProcess.inputStream.eachLine { line -> log.error line }
+        } else {
+        log.info "Database backup completed successfully. Proceeding to gzip the backup file."
+        def gzipCommand = [
+            'gzip', '-f', backupFilePath.toString()
+        ]
+        log.info "Executing gzip command: ${gzipCommand.join(' ')}"
+        def gzipProcess = new ProcessBuilder(gzipCommand).start()
+        gzipProcess.waitFor()
+        if (gzipProcess.exitValue() != 0) {
+            log.error "Gzip failed. See error output for details."
+            gzipProcess.inputStream.eachLine { line -> log.error line }
+        } else {
+            log.info "Gzip completed successfully. Backup file: ${gzipFilePath}"
+        }
+        }
+    }          
 }
