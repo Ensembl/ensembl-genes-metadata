@@ -16,7 +16,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-include { getRunTable } from '../utils.nf'
 include { getDataFromTable } from '../utils.nf'
 
 process EXTRACT_UNIQUELY_MAPPED_READS_PERCENTAGE {
@@ -35,8 +34,6 @@ process EXTRACT_UNIQUELY_MAPPED_READS_PERCENTAGE {
 
     script:
     def run_id = getDataFromTable("run_id", "run", "run_accession", run_accession)[0].run_id
-    //def run_Id = getRunTable(run_accession, 'run_id')
-    //def star_dir = "${params.outDir}/${taxon_id}/${run_accession}/star/"
     def star_dir = new File(starOutputFile).parent
     """
     chmod +x $projectDir/bin/parse_star_output.py

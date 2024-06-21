@@ -16,17 +16,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-
 process FETCH_GENOME {
   tag "$taxon_id:$gca"
   label 'fetch_file'
-  //storeDir "${params.cacheDir}/$gca/ncbi_dataset/"
+
   //storeDir "${params.outDir}/$taxon_id/$gca/ncbi_dataset/"
-  //publishDir = [
-  //            path: { "${params.outDir}/$taxon_id/$gca/ncbi_dataset/" },
-  //                        mode: 'copy',
-  //                                    saveAs: { filename -> filename.toString().endsWith('.fna') ? null : filename }
-  //                                            ]
   afterScript "sleep $params.files_latency"  // Needed because of file system latency
   maxForks 1
 
@@ -39,8 +33,6 @@ process FETCH_GENOME {
   
   script:
   """
-  #found_files=\$(find "${params.outDir}/${taxon_id}/${gca}/ncbi_dataset" -name "*.fna" -type f)
-  #if [ !  -n "\$found_files" ]; then
   if [ ! -d "${params.outDir}/${taxon_id}/${gca}/ncbi_dataset/" ]; then
     echo "Directory ncbi_dataset does not exist. Proceeding with download..."
     curl --retry 3  -X GET "${params.ncbiBaseUrl}/${gca}/download?include_annotation_type=GENOME_FASTA&hydrated=FULLY_HYDRATED" -H "Accept: application/zip" --output genome_file.zip
@@ -49,8 +41,6 @@ process FETCH_GENOME {
   else
     echo "Directory ncbi_dataset already exists. Skipping download."
   fi
-  #find "${params.outDir}/${taxon_id}/${gca}/ncbi_dataset/" -maxdepth 1 -type f -name "*.fna" | head -n 1
   """
-  //ncbi_dataset/data/GCA_963576655.1/GCA_963576655.1_icGasPoly1.1_genomic.fna 
 
 }
