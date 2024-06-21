@@ -16,7 +16,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-include { getRunTable } from '../utils.nf'
 include { getDataFromTable } from '../utils.nf'
 import groovy.json.JsonSlurper
 import org.apache.commons.codec.digest.DigestUtils
