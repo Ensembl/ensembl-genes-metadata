@@ -34,6 +34,7 @@ import json
 import requests
 from tenacity import retry, stop_after_attempt, wait_fixed
 
+
 def request_data(run_accession: str, fields: list) -> str:
     """Make an HTTP request for the metadata of the given run_accession.
 
@@ -53,6 +54,7 @@ def request_data(run_accession: str, fields: list) -> str:
         "fields": ",".join(fields),
         "format": "tsv",
     }
+
     @retry(stop=stop_after_attempt(3), wait=wait_fixed(5))
     def make_request():
         try:
@@ -61,6 +63,7 @@ def request_data(run_accession: str, fields: list) -> str:
             return response.text
         except requests.RequestException as e:
             raise RuntimeError(f"Error fetching metadata: {e}") from e
+
     try:
         result = make_request()
         return result
@@ -68,6 +71,7 @@ def request_data(run_accession: str, fields: list) -> str:
     except RuntimeError as e:
         print("Error retriving data")
         return str(e)
+
 
 def json_parse(response: str, fields: list):
     """Parse response from HTTP request into a list of JSON strings.

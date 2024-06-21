@@ -92,24 +92,18 @@ def convert_to_json(run_accession_dir: Path, data_file_json: str, run_id: int) -
         fastqc_dir (str): Path to the folder containing FASTQC results.
     """
     table_data_files: Dict[str, list[Dict[str, str]]] = {"data_files": []}
-    with open(data_file_json,'r') as input_file:
+    with open(data_file_json, "r") as input_file:
         data = json.load(input_file)
     fastq_files = [str(file.name) for file in run_accession_dir.iterdir() if file.suffix in ("_fastqc")]
 
-    #fastq_files = [file for file in os.listdir(run_accession_dir) if file.endswith((".fastq", ".gz"))]
+    # fastq_files = [file for file in os.listdir(run_accession_dir) if file.endswith((".fastq", ".gz"))]
     for fastq_file in fastq_files:
-        summary_path = (
-            Path(run_accession_dir)
-            / fastq_file
-            / "summary.txt"
-        )
-        #f'{fastq_file.replace(".fastq.gz", "_fastqc")}'
+        summary_path = Path(run_accession_dir) / fastq_file / "summary.txt"
+        # f'{fastq_file.replace(".fastq.gz", "_fastqc")}'
         fastqc_data_path = Path(
-            Path(run_accession_dir)
-            / fastq_file
-            / "fastqc_data.txt",
+            Path(run_accession_dir) / fastq_file / "fastqc_data.txt",
         )
-        #f'{fastq_file.replace(".fastq.gz", "_fastqc")}'
+        # f'{fastq_file.replace(".fastq.gz", "_fastqc")}'
         # Find the dictionary with the matching name
         run_accession_dict: Optional[Dict[str, str]] = next(
             (item for item in data["data_files"] if item["file_name"] == fastq_file.replace("_fastqc", "")),

@@ -57,7 +57,7 @@ keys_to_extract = {
 }
 
 
-def parse_star_output(file_path:str, keys: dict, extra_parameters: Dict[str, str])-> str:
+def parse_star_output(file_path: str, keys: dict, extra_parameters: Dict[str, str]) -> str:
     """Parse STAR Log file
 
     Args:
@@ -70,17 +70,18 @@ def parse_star_output(file_path:str, keys: dict, extra_parameters: Dict[str, str
     """
 
     table_align: Dict[str, list[Dict[str, str]]] = {"align": []}
-    result : Dict[str, Any] = {}
+    result: Dict[str, Any] = {}
     for parameter, value in extra_parameters.items():
         result[parameter] = value
     with open(file_path, "r") as file:
         for line in file:
             for key, pattern in keys.items():
-            #for key in keys:
-                match = re.search(f"{pattern}\s+\|\s+(.+)", line) #pylint: disable=anomalous-backslash-in-string
+                # for key in keys:
+                match = re.search(
+                    f"{pattern}\s+\|\s+(.+)", line # pylint: disable=anomalous-backslash-in-string
+                )
                 if match:
-
-                    result[key] = match.group(1).strip().replace('%', '')
+                    result[key] = match.group(1).strip().replace("%", "")
     table_align["align"].append(result)
     print(table_align)
     output_file = "insert_into_align.json"
@@ -93,7 +94,7 @@ def parse_extra_parameters(param_str: Union[str, ast.AST]):
     """Check type Dict for extra parameters
 
     Args:
-        param_str Union[str, ast.AST]): extra_parameters 
+        param_str Union[str, ast.AST]): extra_parameters
 
     Raises:
         argparse.ArgumentTypeError: exception wrong format
@@ -104,7 +105,7 @@ def parse_extra_parameters(param_str: Union[str, ast.AST]):
     try:
         return ast.literal_eval(param_str)
     except ValueError:
-        raise argparse.ArgumentTypeError(#pylint:disable=raise-missing-from
+        raise argparse.ArgumentTypeError(  # pylint:disable=raise-missing-from
             "Invalid extra parameters format. Must be a valid Python dictionary."
         )
 
@@ -131,8 +132,8 @@ def main():
     # del options['run_accession']
     # if the corresponding key is present in the options dictionary
     # (meaning the user has provided the corresponding command-line argument)
-    #keys_to_include = [value for key, value in keys_to_extract if options.get(key)]
-    keys_to_include = {key: keys_to_extract[key] for key in keys_to_extract if options.get(key)}
+    # keys_to_include = [value for key, value in keys_to_extract if options.get(key)]
+    keys_to_include = {key: keys_to_extract[key] for key in keys_to_extract if options.get(key)} # pylint:disable=consider-using-dict-items
 
     output_json = parse_star_output(args.file_path, keys_to_include, args.extra_parameters)
     return output_json

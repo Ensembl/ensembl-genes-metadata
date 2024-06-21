@@ -180,7 +180,11 @@ def main():
     )
 
     parser.add_argument(
-        "--update", type=str, choices=["True", "False"], default="False", help="Set to True if the input data will be used to update"
+        "--update",
+        type=str,
+        choices=["True", "False"],
+        default="False",
+        help="Set to True if the input data will be used to update",
     )
 
     # Parsing arguments
