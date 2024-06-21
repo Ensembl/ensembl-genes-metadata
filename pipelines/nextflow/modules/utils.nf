@@ -249,3 +249,12 @@ def calculateIndexBases(genomeFile) {
     return indexBases
 }
 */
+def deleteRecursively(Path path) {
+    if (Files.isDirectory(path)) {
+        Files.newDirectoryStream(path).each { subPath ->
+            deleteRecursively(subPath)
+        }
+    }
+    Files.delete(path)
+    println "Deleted: ${path}"
+}
