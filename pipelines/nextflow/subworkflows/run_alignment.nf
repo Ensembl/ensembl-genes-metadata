@@ -43,21 +43,6 @@ workflow RUN_ALIGNMENT{
 
     main:
     def genomeAndDataToAlign = FETCH_GENOME(shortReadMetadata.flatten())
-    //def genomeAndDataToAlignGenomePath = genomeAndDataToAlign.map { result ->
-    //    def (taxon_id, gca, run_accession, pair1, pair2, genomeDir) = result
-    //    println "results: ${result}"
-    //    genomeFileChannel = Channel.fromPath("${genomeDir}/*.fna")
-        //Channel.fromPath('${genomeDir}/').map{
-        //input->
-         //   println("input:${input}")
-          //  def foo = input.listFiles().findAll { it.toString().contains(".fna") }
-          //  [foo]
-      //}
-      //  genomeFileChannel.subscribe { genomeFilePath ->
-      //  println "GENOME: ${genomeFilePath}"
-       // return tuple(taxon_id, gca, run_accession, pair1, pair2, genomeDir, genomeFilePath)
-       // }
-  //  }
     def genomeIndexAndDataToAlign = INDEX_GENOME(genomeAndDataToAlign)
     def starOutput = RUN_STAR(genomeIndexAndDataToAlign)
     def (starMetadata, insertIntoAlign) = EXTRACT_UNIQUELY_MAPPED_READS_PERCENTAGE(starOutput)
@@ -71,7 +56,6 @@ workflow RUN_ALIGNMENT{
     def runAccessionData_NewQCstatus = runAccessionData_StarOutput.map { result ->
         def (taxon_id, gca, run_accession) = result
         def run_Id = getDataFromTable("run_id", "run", "run_accession", run_accession)[0].run_id.toString()
-        //updateRunStatus(runId)
         updateTable("run_id", run_Id, "run", "qc_status", "ALIGNED")
         setLastCheckDate(taxon_id,'update')
         return tuple(taxon_id, gca, run_accession)

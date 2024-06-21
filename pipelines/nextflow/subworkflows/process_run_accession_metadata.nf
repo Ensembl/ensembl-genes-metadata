@@ -43,39 +43,28 @@ include { setMetaDataRecord } from '../modules/utils.nf'
 
 workflow PROCESS_RUN_ACCESSION_METADATA {
     take:
-    //taxon_id
-    //run_accession          
-    //transcriptomic_meta
     run_accession_list
     //tuple val(taxon_id), val(gca), val(run_accession)
     main:
     def db_meta1=run_accession_list
     db_meta1.flatten().view { d -> "GCA: ${d.gca}, Taxon ID: ${d.taxon_id}, run: ${d.run_accession}"}
-    //it is an insert but we need to split the value 
-    //so it might be  first function that split the values and another function INSERT
-    //emit fasta_paired_files
     def(runAccessionMedatadata, insertIntoRun, insertIntoStudy, queryDataFile) = GET_RUN_ACCESSION_METADATA(run_accession_list.flatten())
     def updateValue = "False"
     def (runAccessionMedatadata_1,insertIntoRunQuery) = BUILD_QUERY_RUN_METADATA(runAccessionMedatadata, insertIntoRun, updateValue)
+    
     def data1=insertIntoRunQuery
     data1.flatten().view { d -> "query ${d}"}
+    //insert in run table
     insertIntoRunQuery.subscribe { line ->
         setMetaDataRecord(line.toString())
     }
+    //insert in study table
     def (runAccessionMedatadata_2, insertIntoStudyQuery) = BUILD_QUERY_STUDY_METADATA(runAccessionMedatadata_1, insertIntoStudy, updateValue)
     insertIntoStudyQuery.subscribe { line ->
         setMetaDataRecord(line.toString())
     }
     pairedFastqFiles=DOWNLOAD_PAIRED_FASTQS(runAccessionMedatadata_2,queryDataFile)
-    //def pairedFastqFiles1 =[]
-    //pairedFastqFiles.map { f ->
-    //def (taxon_id, gca, run_accession, pair1, pair2, data_file_query) = f
-    //pairedFastqFiles1.add([taxon_id, gca, run_accession, pair1, pair2, data_file_query])
-    //}
-    check1 = pairedFastqFiles 
-    check1.flatten().view{ d -> "CCCTaxon ID: ${d.taxon_id}, GCA: ${d.gca}, run accession: ${d.run_accession}" }
 
     emit:
-    //insertIntoDataFile =   queryDataFile   // path
     pairedFastqFiles_metadata =   pairedFastqFiles      // channel: [taxon_id, gca, run_accession, path1, path2, data_file_query]
 }
