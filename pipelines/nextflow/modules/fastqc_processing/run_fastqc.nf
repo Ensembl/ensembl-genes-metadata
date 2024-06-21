@@ -29,7 +29,7 @@ process RUN_FASTQC {
     tuple(val(taxon_id), val(gca), val(run_accession), val(dataFileQuery),val("${params.outDir}/$taxon_id/$run_accession/fastqc"))
 
     script:
-    log.info  "FASQCresults: ${pair1} ${pair2}"
+    log.info  "FASTQCresults: ${pair1} ${pair2}"
     """
     mkdir -p fastqc
     fastqc  ${pair1} ${pair2} --quiet --extract --threads ${task.cpus} --outdir fastqc
