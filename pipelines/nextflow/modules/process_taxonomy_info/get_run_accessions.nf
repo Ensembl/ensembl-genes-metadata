@@ -24,10 +24,6 @@ import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.io.File
 import groovy.json.JsonOutput
-// Define a class or data structure to hold the accumulated lines
-class ResponseData {
-    List<String> lines = []
-}
 
 process GET_RUN_ACCESSIONS {
     label 'default'
@@ -41,22 +37,18 @@ process GET_RUN_ACCESSIONS {
     tuple val(taxon_id), val(gca), val(lastCheckedDate)
 
     output:
-    //val(runAccessionChannel), emit: runAccessionData
     val(runAccessionList)
     path("run_accession_list.txt")
     
     script:
-  //  println("GET RUN ACCESSION")
     def taxonQuery = "tax_eq(${taxon_id})"
     def instrumentQuery = "instrument_platform=ILLUMINA"
     def layoutQuery = "library_layout=PAIRED"
     def sourceQuery = "library_source=TRANSCRIPTOMIC"
-    // Use provided dateQuery if available, otherwise use default
     def usedDateQuery = "first_created >='${lastCheckedDate.trim()}'"
 
     def searchUrl = "https://www.ebi.ac.uk/ena/portal/api/search?result=read_run&query=${taxonQuery}%20AND%20instrument_platform=ILLUMINA%20AND%20library_layout=PAIRED%20AND%20library_source=TRANSCRIPTOMIC%20AND%20first_created%3E=${lastCheckedDate.trim()}&domain=read&fields=run_accession"
 
-    //try {
     // Open a connection to the URL
     URL url = new URL(searchUrl)
     URLConnection connection = url.openConnection()
@@ -69,7 +61,6 @@ process GET_RUN_ACCESSIONS {
     BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()))
     
     // Create a list to hold the run accession data
-    //List<Map<String, String>> runAccessionList = []
     runAccessionList = []
     // Create a string to accumulate the response content
     StringBuilder responseContent = new StringBuilder()
@@ -78,7 +69,6 @@ process GET_RUN_ACCESSIONS {
     String line
     while ((line = reader.readLine()) != null){
         // Append each line to the response content
-
         responseContent.append(line).append('\n')
         
         if (!line.startsWith("run_accession")) { // Skip header line
