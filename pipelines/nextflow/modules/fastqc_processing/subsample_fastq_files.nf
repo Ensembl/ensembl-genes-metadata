@@ -42,6 +42,8 @@ process SUBSAMPLE_FASTQ_FILES {
     seqtk sample -s100 ${fastq1} 50000 > ${subsampled_fastq1}
     seqtk sample -s100 ${fastq2} 50000 > ${subsampled_fastq2}
     cp  ${output_dir}*.sub .
+    rm ${fastq1}
+    rm ${fastq2}
     echo '${subsample_OUT.toString()}'
     """
 }
