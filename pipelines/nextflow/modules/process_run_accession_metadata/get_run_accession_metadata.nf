@@ -16,7 +16,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 process GET_RUN_ACCESSION_METADATA {
-
     label 'python'
     tag "$run_accession"
     publishDir "${params.outDir}/$taxon_id/$run_accession", mode: 'copy'
@@ -32,13 +31,10 @@ process GET_RUN_ACCESSION_METADATA {
     path("insert_into_study.json")
     path("insert_into_data_file.json")
     
-    //when:
-    //!file("${params.outDir}/$taxon_id/$run_accession/insert_into_run.json").exists()
     script:
     log.info("Executing Python script to get metadata for run: $run_accession")
     """
-
-
+    # Check if Python dependencies are installed
     # Read each line in the requirements file
     while read -r package; do \\
     if ! pip show -q "\$package" &>/dev/null; then 
@@ -49,16 +45,6 @@ process GET_RUN_ACCESSION_METADATA {
     fi
     done < ${projectDir}/bin/requirements.txt
 
-    # Check if Python dependencies are installed
-    #if ! pip show -q -f $projectDir/bin/requirements.txt; then
-        # Install Python dependencies using pip
-    #pip install -r $projectDir/bin/requirements.txt
-    #fi
-    # Check if dependencies are already installed in the cache
-    #if [ ! -d $HOME/.cache/pip ]; then
-        # If not, install Python dependencies using pip
-    #    pip install --cache-dir $HOME/.cache/pip requests numpy pandas
-    #fi
     chmod +x $projectDir/bin/get_metadata.py  # Set executable permissions
     get_metadata.py --run ${run_accession}
     """
