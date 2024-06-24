@@ -42,7 +42,7 @@ CREATE TABLE species (
   scientific_name varchar(225) NOT NULL,
   common_name varchar(225),
   parlance_name varchar(225),
-  stable_id_prefix varchar(20),
+  species_prefix varchar(20),
   clade varchar(25),
   PRIMARY KEY (`species_id`),
   FOREIGN KEY (`clade`) REFERENCES clade_settings(`clade`),
