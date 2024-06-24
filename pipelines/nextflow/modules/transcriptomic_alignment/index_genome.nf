@@ -31,17 +31,92 @@ process INDEX_GENOME {
     tuple val(taxon_id), val(gca), val(run_accession), val(pair1), val(pair2), val(genomeDir)
 
     script:
+    def genomeIndexFile = new File("${genomeDir}/Genome")
+    if (!genomeIndexFile.exists() || genomeIndexFile.length() == 0) {
+    // Read the .fna file and perform the calculations
     def d= new File("${genomeDir}")
     def genomefilePath=d.listFiles().find { it.name.endsWith('.fna') }
     def genomeFile=genomefilePath.absolutePath
-    
+    // Function to calculate the min value
+    //def min(a, b) {
+    //    return a < b ? a : b
+    //}
+    def min = { a, b -> a < b ? a : b }
+
+    // Initialize variables
+    def numberOfReferences = 0
+    def genomeLength = 0
+    // Read the FASTA file line by line
+    genomefilePath.eachLine { line ->
+        if (line.startsWith('>')) {
+            numberOfReferences++
+        } else {
+            genomeLength += line.trim().length()
+        }
+    }
+    log.info("numberOfReferences: ${numberOfReferences}")
+    log.info("genomeLength: ${genomeLength}")
+    // Read the FASTA file
+    //def fastaContent = genomefilePath.text
+
+    // Calculate the number of references
+    //def numberOfReferences = fastaContent.count('>')
+
+    // Calculate the genome length (excluding header lines)
+    //def genomeLength = fastaContent.split('\n').findAll { !it.startsWith('>') }.join('').length()
+
+    // Define read length (you may need to adjust this based on your data)
+    def readLength = 100
+
+    // Calculate genomeSAindexNbases
+    def genomeSAindexNbases = min(14, (Math.log(genomeLength as Double) / Math.log(2) / 2 - 1) as int)
+
+    // Calculate genomeChrBinNbits
+    //def genomeChrBinNbits = min(18, (Math.log(Math.max(genomeLength as Double/ numberOfReferences as Double, readLength as Double)) / Math.log(2)) as int)
+    def genomeChrBinNbits = min(18, (Math.log(Math.max((genomeLength / numberOfReferences) as Double, readLength as Double)) / Math.log(2)) as int)
+
+    // Print the calculated values for debugging
+    log.info("genomeSAindexNbases: ${genomeSAindexNbases}")
+    log.info("genomeChrBinNbits: ${genomeChrBinNbits}")
+
+    // Execute STAR command with calculated parameters
     """
+    #if [ ! -s "${genomeDir}/Genome" ]; then \
+    rm -rf ${genomeDir}/_STARtmp ; \
+    STAR  --runThreadN ${task.cpus} --runMode genomeGenerate \
+    --outFileNamePrefix ${genomeDir} --genomeDir ${genomeDir} \
+    --genomeSAindexNbases ${genomeSAindexNbases} \
+    --genomeChrBinNbits ${genomeChrBinNbits} \
+    --genomeFastaFiles  ${genomeFile} --outTmpDir _STARtmp;
+    """
+    } else {
+    echo "Genome index already exists, skipping STAR genomeGenerate step."
+    }
+
+    }
+/*
+    
     if [ ! -s "${genomeDir}/Genome" ]; \
     then  rm -rf ${genomeDir}/_STARtmp ; STAR --runThreadN ${task.cpus} --runMode genomeGenerate \
     --outFileNamePrefix ${genomeDir} --genomeDir ${genomeDir} \
     --genomeFastaFiles  $genomeFile --outTmpDir _STARtmp;fi
-    """
-}
+    
+                    str(star_bin),
+                    "--runThreadN",
+                    str(num_threads),
+                    "--runMode",
+                    "genomeGenerate",
+                    "--outFileNamePrefix",
+                    f"{star_dir}/",
+                    "--genomeDir",
+                    str(star_dir),
+                    "--genomeSAindexNbases",
+                    str(index_bases),
+                    "--genomeFastaFiles",
+                    str(genome_file),
+                    */
+
+
 /*
 STAR --runMode genomeGenerate --genomeDir ./${assembly}_star_index --genomeFastaFiles ${genome} --runThreadN 4
 if [ ! -e "/genome_dumps/Genome" ]; then /STAR --runThreadN 12 --runMode genomeGenerate 

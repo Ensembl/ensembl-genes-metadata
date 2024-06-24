@@ -21,7 +21,8 @@ process BUILD_QUERY {
     scratch false
     label 'python'
     tag "$run_accession"
-    
+    maxForks 5
+
     input:
     tuple val(taxon_id), val(gca), val(run_accession)
     path metadata2process

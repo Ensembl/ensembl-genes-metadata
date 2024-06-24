@@ -37,14 +37,18 @@ process DOWNLOAD_PAIRED_FASTQS {
     val(download_OUT)
 
     script:
+    download_OUT=[]
     // Parse the JSON data
     def parsedJson = new JsonSlurper().parse(file("${params.outDir}/$taxon_id/$run_accession/$dataFileQuery"))
     def dataFiles = parsedJson.data_files
+    download_OUT.add([taxon_id:taxon_id, gca:gca, run_accession:run_accession, pair1:["${params.outDir}",taxon_id,run_accession,"${run_accession}_1.fastq.gz"].join("/"), pair2:["${params.outDir}",taxon_id,run_accession,"${run_accession}_2.fastq.gz"].join("/"),dataFileQuery:["${params.outDir}",taxon_id,run_accession,dataFileQuery].join("/")])
 
     // Check if there are exactly two data files
     if (dataFiles.size() != 2) {
         println "Expected two data files, but found ${dataFiles.size()}. Skipping the process."
-        return []
+        return """
+        echo '${download_OUT.toString()}'
+        """
     }
 
     def file1 = dataFiles[0]
@@ -60,7 +64,9 @@ process DOWNLOAD_PAIRED_FASTQS {
     // Check for file issues and QC status
     if (!url1 || !url2 || !md5_1 || !md5_2 || qc_status == 'FILE_ISSUE') {
         println "Issue in metadata for ${run_accession}."
-        return []
+        retun """
+        echo '${download_OUT.toString()}'
+        """
     }
 
     def pair1Path = "${params.outDir}/$taxon_id/$run_accession/${run_accession}_1.fastq.gz"
@@ -104,8 +110,8 @@ process DOWNLOAD_PAIRED_FASTQS {
         throw new RuntimeException("MD5 checksums do not match after $maxRetries retries!")
     }
     //Running the process in parallel we need to collect the output of exh process and pass it to the next subworkflow
-    download_OUT=[]
-    download_OUT.add([taxon_id:taxon_id, gca:gca, run_accession:run_accession, pair1:["${params.outDir}",taxon_id,run_accession,"${run_accession}_1.fastq.gz"].join("/"), pair2:["${params.outDir}",taxon_id,run_accession,"${run_accession}_2.fastq.gz"].join("/"),dataFileQuery:["${params.outDir}",taxon_id,run_accession,dataFileQuery].join("/")])
+    //download_OUT=[]
+    //download_OUT.add([taxon_id:taxon_id, gca:gca, run_accession:run_accession, pair1:["${params.outDir}",taxon_id,run_accession,"${run_accession}_1.fastq.gz"].join("/"), pair2:["${params.outDir}",taxon_id,run_accession,"${run_accession}_2.fastq.gz"].join("/"),dataFileQuery:["${params.outDir}",taxon_id,run_accession,dataFileQuery].join("/")])
     """
     cp ${pair1Path} .
     cp ${pair2Path} .

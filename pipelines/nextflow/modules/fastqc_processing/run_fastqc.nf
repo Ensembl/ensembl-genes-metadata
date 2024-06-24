@@ -27,6 +27,9 @@ process RUN_FASTQC {
 
     output:
     tuple(val(taxon_id), val(gca), val(run_accession), val(dataFileQuery),val("${params.outDir}/$taxon_id/$run_accession/fastqc"))
+    
+    when:
+    file(pair1).exists()
 
     script:
     log.info  "FASTQCresults: ${pair1} ${pair2}"

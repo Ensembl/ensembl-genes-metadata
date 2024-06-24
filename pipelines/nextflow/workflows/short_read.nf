@@ -90,7 +90,6 @@ include { PROCESS_TAXONOMY_INFO } from '../subworkflows/process_taxonomy_info.nf
 include { PROCESS_RUN_ACCESSION_METADATA } from '../subworkflows/process_run_accession_metadata.nf'
 include { FASTQC_PROCESSING } from '../subworkflows/fastqc_processing.nf'
 include { RUN_ALIGNMENT } from '../subworkflows/run_alignment.nf'
-include { deleteRecursively } from '../modules/utils.nf'
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     MAIN WORKFLOW
@@ -118,6 +117,7 @@ workflow SHORT_READ {
 
 workflow.onComplete {
     log.info "Pipeline completed at: ${new Date().format('dd-MM-yyyy HH:mm:ss')}"
+    
     try {
         def outDir = Paths.get(params.outDir)
 
@@ -129,7 +129,7 @@ workflow.onComplete {
     } catch (Exception e) {
         log.error "Exception occurred while executing cleaning command: ${e.message}", e
     }
-
+    
     if (params.backupDB) {
         def backupFilePath = "${params.outDir}/${params.transcriptomic_dbname}_backup.sql"
         def gzipFilePath = "${backupFilePath}.gz"
@@ -172,4 +172,14 @@ workflow.onComplete {
         }
         }
     }          
+}
+
+def deleteRecursively(Path path) {
+    if (Files.isDirectory(path)) {
+        Files.newDirectoryStream(path).each { subPath ->
+            deleteRecursively(subPath)
+        }
+    }
+    Files.delete(path)
+    //println "Deleted: ${path}"
 }

@@ -126,14 +126,14 @@ def json_parse(response: str, fields: list):
                 if value != ""
             ).rstrip("; "),
             "cell_line": re.sub(r"[!\"#$%&()*\+,\-\'.\/:;<=>?@\[\]^`{|}~]", "", output_data["cell_line"]),
-            "cell_type": output_data["cell_type"],
+            "cell_type": re.sub(r"[!\"#$%&()*\+,\-\'.\/:;<=>?@\[\]^`{|}~]", "", output_data["cell_type"]),
             "strain": "; ".join(
                 value
                 for value in [
-                    output_data["strain"],
-                    output_data["cultivar"],
-                    output_data["ecotype"],
-                    output_data["isolate"],
+                    re.sub(r"[!\"#$%&()*\+,\-\'.\/:;<=>?@\[\]^`{|}~]", "",output_data["strain"]),
+                    re.sub(r"[!\"#$%&()*\+,\-\'.\/:;<=>?@\[\]^`{|}~]", "",output_data["cultivar"]),
+                    re.sub(r"[!\"#$%&()*\+,\-\'.\/:;<=>?@\[\]^`{|}~]", "",output_data["ecotype"]),
+                    re.sub(r"[!\"#$%&()*\+,\-\'.\/:;<=>?@\[\]^`{|}~]", "",output_data["isolate"]),
                 ]
                 if value != ""
             ).rstrip("; "),
