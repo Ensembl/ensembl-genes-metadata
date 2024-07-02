@@ -14,6 +14,7 @@ CREATE TABLE assembly (
   refseq_accession varchar(30),
   release_date date,
   submitter varchar(225),
+  stable_id_prefix smallint(3)
   PRIMARY KEY (`assembly_id`),
   CONSTRAINT gca_accession UNIQUE (gca_chain, gca_version)
 ) ENGINE=MyISAM AUTO_INCREMENT=1 DEFAULT CHARSET=latin1;
@@ -40,10 +41,9 @@ CREATE TABLE species (
   species_taxon_id int(15) NOT NULL,
   scientific_name varchar(225) NOT NULL,
   common_name varchar(225),
-  dtol_prefix varchar(25),
-  clade varchar(25),
   parlance_name varchar(225),
-  stable_id_prefix varchar(20),
+  species_prefix varchar(20),
+  clade varchar(25),
   PRIMARY KEY (`species_id`),
   FOREIGN KEY (`clade`) REFERENCES clade_settings(`clade`),
   FOREIGN KEY (`lowest_taxon_id`) REFERENCES assembly(`lowest_taxon_id`)
@@ -77,9 +77,6 @@ CREATE TABLE bioproject_lineage (
 ) ENGINE=MyISAM AUTO_INCREMENT=1 DEFAULT CHARSET=latin1;
 
 
-
-
-
 DROP TABLE IF EXISTS external_data
 
 CREATE TABLE external_data (
@@ -92,10 +89,6 @@ CREATE TABLE external_data (
 ) ENGINE=MyISAM AUTO_INCREMENT=1 DEFAULT CHARSET=latin1;
 
 
-
-
-
-
 DROP TABLE IF EXISTS stable_id_space
 
 CREATE TABLE stable_id_space (
@@ -106,7 +99,6 @@ CREATE TABLE stable_id_space (
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
 
 
-
 DROP TABLE IF EXISTS species_space_log
 
 CREATE TABLE species_space_log (
@@ -115,7 +107,6 @@ CREATE TABLE species_space_log (
   FOREIGN KEY (`lowest_taxon_id`) REFERENCES assembly(`lowest_taxon_id`),
   FOREIGN KEY (`stable_id_space_id`) REFERENCES stable_id_space(`stable_id_space_id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
-
 
 
 DROP TABLE IF EXISTS clade_settings
@@ -130,7 +121,6 @@ CREATE TABLE clade_settings (
   rfam_search_term varchar(55),
   PRIMARY KEY (`clade`)
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
-
 
 
 DROP TABLE IF EXISTS genebuild
@@ -151,7 +141,6 @@ CREATE TABLE genebuild (
   FOREIGN KEY (`assembly_id`) REFERENCES assembly(`assembly_id`),
   FOREIGN KEY (`genebuilder_id`) REFERENCES genebuilder(`genebuilder_id`)
 ) ENGINE=MyISAM AUTO_INCREMENT=1 DEFAULT CHARSET=latin1;
-
 
 
 DROP TABLE IF EXISTS genebuild_metrics
@@ -175,7 +164,6 @@ CREATE TABLE genebuilder (
 ) ENGINE=MyISAM AUTO_INCREMENT=1 DEFAULT CHARSET=latin1;
 
 
-
 DROP TABLE IF EXISTS bioproject_lineage
 
 CREATE TABLE bioproject_lineage (
@@ -184,5 +172,3 @@ CREATE TABLE bioproject_lineage (
   bioproject_name varchar(225),
   PRIMARY KEY (`bioproject_id`)
 ) ENGINE=MyISAM AUTO_INCREMENT=1 DEFAULT CHARSET=latin1;
-
-
