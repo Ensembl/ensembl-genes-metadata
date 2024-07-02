@@ -175,24 +175,68 @@ def create_query(data_dict, table_name, update, table_conf, db_params):
     
     return query
 
-def execute_query(query, db_params, table_name):
+def retrieve_row_id(data_dict, table_name, db_params):
+    # Establishing connection to DB
+    conn = pymysql.connect(**db_params)
+    cur  = conn.cursor()
+
+    # Getting id key name
+    query = f"SHOW KEYS FROM {table_name} WHERE Key_name = 'PRIMARY'"
+    cur.execute(query)
+    id_name = cur.fetchone()[4]
+    logging.info(f"Retrieving value of {id_name} from {table_name}")
+
+    # Getting constraint keys
+    constraint_query = f"""SELECT column_name FROM information_schema.key_column_usage
+    WHERE
+        table_schema = 'gb_assembly_metadata_testing'
+        AND table_name = '{table_name}'
+        AND constraint_name != 'PRIMARY'
+        AND referenced_table_name IS NULL;"""
+    cur.execute(constraint_query)
+    constraint= cur.fetchall()
+    logging.info(f" Detected uniqueness constrains: {constraint}")
+
+    # Building conditionals based on uniqueness constrain 
+    condition_list = []
+    for key in constraint:
+        condition_list.append(f"{key[0]} = '{data_dict[key[0]]}'")
+
+    condition_string = ' AND '.join(condition_list)
+
+    retrieving_query = f"SELECT {id_name} FROM {table_name} WHERE {condition_string} ;" 
+    cur.execute(retrieving_query)
+    last_id_tmp = cur.fetchall()
+    last_id_tmp
+
+    if len(last_id_tmp) > 1:
+        raise ValueError(f"The query retrieves more than more value, unique value expected {retrieving_query}")
+    else:
+        last_id = last_id_tmp[0][0]
+        
+    return last_id
+
+def execute_query(query, db_params, table_name, data_dict):
     # Connecting to db 
     conn = pymysql.connect(**db_params)
     cur  = conn.cursor()
+    # Getting id name
+    cur.execute(f"SHOW KEYS FROM {table_name} WHERE Key_name = 'PRIMARY'")
+    id_name = cur.fetchone()[4]
     
     try:
         # Execute query 
         cur.execute(query)
-        
         # Getting id 
         id_value = cur.lastrowid
         
-        # Getting id name
-        cur.execute(f"SHOW KEYS FROM {table_name} WHERE Key_name = 'PRIMARY'")
-        id_name = cur.fetchone()[4]
+    except pymysql.IntegrityError as e:
+        if e.args[0] == 1062:
+            # Retrieve value of a already exiting row
+            id_value = retrieve_row_id(data_dict, table_name, db_params)
         
-    except Exception as e:
-        print(f'Error: {e}')
+    except Exception as ee:
+        print(f'Error: {ee}')
         raise ValueError
     
     cur.close()
@@ -263,10 +307,10 @@ def main():
         check = check_dict_structure(input_data[table_name])
         #logging.info(check)
         if check:
-            logging.info("List of dictionaries detected, processing each dictionary")
+            logging.info("Lists of dictionaries detected, processing each dictionary")
             for row in input_data[table_name]:
                 query = create_query(row, table_name, update, table_conf, db_params)
-                id_value, id_name= execute_query(query,db_params, table_name)
+                id_value, id_name= execute_query(query,db_params, table_name, input_data[table_name])
                 logging.info(f"Data was inserted in {table_name}. Last value of {id_name} is {id_value}")
                 # saving last id in dict
                 last_id_dict.update({id_name:id_value})
@@ -275,7 +319,7 @@ def main():
             logging.info("Regular dictionary detected, processing key:value pair values")
             # Data is a dictionary (This part is not tested yet)
             query = create_query(input_data[table_name], table_name, update, table_conf, db_params)
-            id_value, id_name= execute_query(query,db_params,table_name )
+            id_value, id_name= execute_query(query,db_params,table_name, input_data[table_name])
             logging.info(f"Data was inserted in {table_name}. Last value of {id_name} is {id_value}")
             # saving last id in dict
             last_id_dict.update({id_name:id_value})
