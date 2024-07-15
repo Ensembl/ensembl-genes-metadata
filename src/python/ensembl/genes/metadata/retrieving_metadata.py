@@ -158,7 +158,7 @@ def main():
             json.dump(dict2, file)
         file.close()
         
-        file3 = f"{accession}_species.json"
+        file3 = f"{accession}_species.tmp"
         with open(file3, 'w') as file:
             json.dump(dict3, file)
         file.close()
