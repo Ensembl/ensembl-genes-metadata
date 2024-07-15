@@ -175,7 +175,7 @@ def create_query(data_dict, table_name, update, table_conf, db_params):
     
     return query
 
-def retrieve_row_id(data_dict, table_name, db_params):
+def retrieve_row_id(data_dict, table_name, db_params, table_conf):
     # Establishing connection to DB
     conn = pymysql.connect(**db_params)
     cur  = conn.cursor()
@@ -196,27 +196,61 @@ def retrieve_row_id(data_dict, table_name, db_params):
     cur.execute(constraint_query)
     constraint= cur.fetchall()
     logging.info(f" Detected uniqueness constrains: {constraint}")
+    
+    # Per row method
+    if table_conf[table_name]['method'] == 'per_row':
+        print(f"{table_name} is an attribute table (key:value paris) ")
+        dkey = table_conf[table_name]['dkey']
+        
+        # Getting columns names
+        conn = pymysql.connect(**db_params)
+        cur  = conn.cursor()
+        cur.execute(f"SHOW COLUMNS FROM {table_name}")
+        table_columns = cur.fetchall()
+        columns = [column[0] for column in table_columns if column[3] != 'PRI']
+        
+        dkey_value = data_dict[dkey]
+        
+        for key,value in data_dict.items():
+            if key !=  dkey: 
+                condition_string = f"{columns[0]} = '{dkey_value}' AND {columns[1]} =  '{key}' AND {columns[2]} = '{value}'"
+                
+                conn = pymysql.connect(**db_params)
+                cur  = conn.cursor()
+                retrieving_query = f"SELECT {id_name} FROM {table_name} WHERE {condition_string} ;" 
+                cur.execute(retrieving_query)
+                last_id_tmp = cur.fetchall()
+                cur.close()
 
-    # Building conditionals based on uniqueness constrain 
-    condition_list = []
-    for key in constraint:
-        condition_list.append(f"{key[0]} = '{data_dict[key[0]]}'")
+                if len(last_id_tmp) > 1:
+                    raise ValueError(f"The query retrieves more than more value, unique value expected {retrieving_query}")
+                else:
+                    last_id = last_id_tmp[0][0]
+    
+    elif table_conf[table_name]['method'] == 'per_col':
+        # Building conditionals based on uniqueness constrain 
+        condition_list = []
+        for key in constraint:
+            condition_list.append(f"{key[0]} = '{data_dict[key[0]]}'")
 
-    condition_string = ' AND '.join(condition_list)
+        condition_string = ' AND '.join(condition_list)
 
-    retrieving_query = f"SELECT {id_name} FROM {table_name} WHERE {condition_string} ;" 
-    cur.execute(retrieving_query)
-    last_id_tmp = cur.fetchall()
-    last_id_tmp
+        retrieving_query = f"SELECT {id_name} FROM {table_name} WHERE {condition_string} ;" 
+        cur.execute(retrieving_query)
+        last_id_tmp = cur.fetchall()
+        last_id_tmp
 
-    if len(last_id_tmp) > 1:
-        raise ValueError(f"The query retrieves more than more value, unique value expected {retrieving_query}")
+        if len(last_id_tmp) > 1:
+            raise ValueError(f"The query retrieves more than more value, unique value expected {retrieving_query}")
+        else:
+            last_id = last_id_tmp[0][0]
+        
     else:
-        last_id = last_id_tmp[0][0]
+        raise ValueError(f"Failed check of {table_name} configuration")
         
     return last_id
 
-def execute_query(query, db_params, table_name, data_dict):
+def execute_query(query, db_params, table_name, data_dict, table_conf):
     # Connecting to db 
     conn = pymysql.connect(**db_params)
     cur  = conn.cursor()
@@ -233,7 +267,7 @@ def execute_query(query, db_params, table_name, data_dict):
     except pymysql.IntegrityError as e:
         if e.args[0] == 1062:
             # Retrieve value of a already exiting row
-            id_value = retrieve_row_id(data_dict, table_name, db_params)
+            id_value = retrieve_row_id(data_dict, table_name, db_params, table_conf)
         
     except Exception as ee:
         print(f'Error: {ee}')
@@ -310,7 +344,7 @@ def main():
             logging.info("Lists of dictionaries detected, processing each dictionary")
             for row in input_data[table_name]:
                 query = create_query(row, table_name, update, table_conf, db_params)
-                id_value, id_name= execute_query(query,db_params, table_name, input_data[table_name])
+                id_value, id_name= execute_query(query,db_params, table_name, input_data[table_name], table_conf)
                 logging.info(f"Data was inserted in {table_name}. Last value of {id_name} is {id_value}")
                 # saving last id in dict
                 last_id_dict.update({id_name:id_value})
@@ -319,7 +353,7 @@ def main():
             logging.info("Regular dictionary detected, processing key:value pair values")
             # Data is a dictionary (This part is not tested yet)
             query = create_query(input_data[table_name], table_name, update, table_conf, db_params)
-            id_value, id_name= execute_query(query,db_params,table_name, input_data[table_name])
+            id_value, id_name= execute_query(query,db_params,table_name, input_data[table_name], table_conf)
             logging.info(f"Data was inserted in {table_name}. Last value of {id_name} is {id_value}")
             # saving last id in dict
             last_id_dict.update({id_name:id_value})
