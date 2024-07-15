@@ -51,11 +51,11 @@ def parse_data(data):
         refseq_accession = ""
         
     try:
-        intra_name = list(data['reports'][0]['organism']['infraspecific_names'].keys())[0].replace("'", "''")
-        intra_type = list(data['reports'][0]['organism']['infraspecific_names'].values())[0]  
+        infra_name = list(data['reports'][0]['organism']['infraspecific_names'].keys())[0].replace("'", "''")
+        infra_type = list(data['reports'][0]['organism']['infraspecific_names'].values())[0]  
     except:
-        intra_name = ""
-        intra_type = ""
+        infra_name = ""
+        infra_type = ""
     
     # Building dictionaries for assembly metadata tables
     data_dict['assembly'].update({
@@ -81,8 +81,8 @@ def parse_data(data):
     data_dict['organism'].update({
         'biosample_id' : data['reports'][0]['assembly_info']['biosample']['accession'],
         'bioproject_id' : data['reports'][0]['assembly_info']['bioproject_accession'],
-        'intra_type':intra_name,
-        'intra_name':intra_type
+        'infra_type':infra_name,
+        'infra_name':infra_type
     })
     
     data_dict_2.update({'assembly_metrics':data['reports'][0]['assembly_stats']})
