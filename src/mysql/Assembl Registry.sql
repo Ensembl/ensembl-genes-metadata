@@ -57,21 +57,20 @@ CREATE TABLE organism (
   biosample_id varchar(225) NOT NULL,
   bioproject_id varchar(225),
   dtol_id varchar(30),
-  intra_type ENUM ('', 'strain', 'breed', 'cultivar' , 'ecotype' ),
-  intra_name varchar(225),
+  infra_type ENUM ('', 'strain', 'breed', 'cultivar' , 'ecotype' ),
+  infra_name varchar(225),
   PRIMARY KEY (`organism_id`),
   FOREIGN KEY (`biosample_id`) REFERENCES assembly(`biosample_id`),
   CONSTRAINT biosample_project UNIQUE (biosample_id, bioproject_id)
 ) ENGINE=MyISAM AUTO_INCREMENT=1 DEFAULT CHARSET=latin1;
 
 
-DROP TABLE IF EXISTS bioproject_lineage
+DROP TABLE IF EXISTS bioproject_lineage ;
 
 CREATE TABLE bioproject_lineage (
   lineage_id int NOT NULL AUTO_INCREMENT,
   assembly_id int NOT NULL,
   bioproject_accession varchar(50) NOT NULL,
-  bioproject_name varchar(225) NOT NUll,
   PRIMARY KEY (`lineage_id`),
   FOREIGN KEY (`assembly_id`) REFERENCES assembly(`assembly_id`)
 ) ENGINE=MyISAM AUTO_INCREMENT=1 DEFAULT CHARSET=latin1;
