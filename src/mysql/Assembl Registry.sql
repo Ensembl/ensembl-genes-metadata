@@ -72,7 +72,8 @@ CREATE TABLE bioproject_lineage (
   assembly_id int NOT NULL,
   bioproject_accession varchar(50) NOT NULL,
   PRIMARY KEY (`lineage_id`),
-  FOREIGN KEY (`assembly_id`) REFERENCES assembly(`assembly_id`)
+  FOREIGN KEY (`assembly_id`) REFERENCES assembly(`assembly_id`),
+  CONSTRAINT lineage UNIQUE (assembly_id, bioproject_accession)
 ) ENGINE=MyISAM AUTO_INCREMENT=1 DEFAULT CHARSET=latin1;
 
 
