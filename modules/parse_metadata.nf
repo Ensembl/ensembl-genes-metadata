@@ -8,7 +8,7 @@ process PARSE_METADATA {
     output:
     val gca, emit: gca
     path("${gca}_metadata.json"), emit: metadata
-    path("${gca}_metrics.tmp"), emit: metrics_tmp
+    path("${gca}_metrics_bioproject.tmp"), emit: metrics_tmp
     path("${gca}_species.tmp"), emit: species_tmp
 
     script:
