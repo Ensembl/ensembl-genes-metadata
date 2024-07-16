@@ -32,7 +32,8 @@ def parse_data(data):
     }
     
     data_dict_2 = {
-        'assembly_metrics': {}
+        'assembly_metrics': {},
+        'bioproject_lineage': {}
     }
     
     data_dict_3 = {
@@ -88,19 +89,19 @@ def parse_data(data):
     data_dict_2.update({'assembly_metrics':data['reports'][0]['assembly_stats']})
     
     # Parsing bioproject metadata 
-    bioproject_lineage = {} ### Create empty dictionary to later add to 
-    seen_accessions = set() ### Need to 
+    bioproject_lineage = {} 
+    seen_accessions = set()
     
     bioproject_dict = data['reports'][0]['assembly_info']['bioproject_lineage'][0]['bioprojects']
     for item in bioproject_dict:
-        accession = item['accession'] # bioproject accession PRJEBXXXX
+        accession = item['accession']
         title = item['title'].replace("'", "")
         # Check if accession is not seen before
         if accession not in seen_accessions:
             seen_accessions.add(accession)
             bioproject_lineage[accession] = title
     
-    #data_dict_2.update({'bioproject_lineage':bioproject_lineage})
+    data_dict_2.update({'bioproject_lineage':bioproject_lineage})
     
     return data_dict, data_dict_2, data_dict_3
 
@@ -153,7 +154,7 @@ def main():
         
         # Save second json for next module
         #file2 = f"{args.output_path}/{args.accession}_metrics.json"
-        file2 = f"{accession}_metrics.tmp"
+        file2 = f"{accession}_metrics_bioproject.tmp"
         with open(file2, 'w') as file:
             json.dump(dict2, file)
         file.close()
