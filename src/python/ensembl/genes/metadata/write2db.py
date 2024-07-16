@@ -100,7 +100,7 @@ def insert_query(data_dict, table_name, table_conf, db_params):
         str: returns mysql query
     """
     
-    if table_conf[table_name]['method'] == 'per_row':
+    if table_conf[table_name]['method'] in ['per_row', 'per_row_key']:
         logging.info(f"{table_name} is an attribute table (key:value pairs) ")
         
         dkey = table_conf[table_name]['dkey']
@@ -115,41 +115,21 @@ def insert_query(data_dict, table_name, table_conf, db_params):
         #
         value_list = []
         dkey_value = data_dict[dkey]
-
+        
         for key,value in data_dict.items():
-            
             if key !=  dkey: 
-                #print(f"the key {key}, the value {value}")
-                value_item = f"('{dkey_value}', '{key}', '{value}')"
+                if table_conf[table_name]['method'] in ['per_row']:
+                    value_item = f"('{dkey_value}', '{key}', '{value}')"
+                elif table_conf[table_name]['method'] in ['per_row_key']:
+                    logging.info(f"{table_name} is an attribute table (key only) ")
+                    value_item = f"('{dkey_value}', '{key}')"
+                else:
+                    raise ValueError(f"Invalid value in table config - method: {table_conf[table_name]['method'] } ")   
+                
                 value_list.append(value_item)
                 values_string =  ', '.join(value_list)
         return f"""INSERT INTO {table_name} ({columns_string}) VALUES {values_string}"""
-    
-    elif table_conf[table_name]['method'] == 'per_row_key':
-        logging.info(f"{table_name} is an attribute table (key only) ")
-        
-        dkey = table_conf[table_name]['dkey']
-        
-        # Getting columns names
-        conn = pymysql.connect(**db_params)
-        cur  = conn.cursor()
-        cur.execute(f"SHOW COLUMNS FROM {table_name}")
-        table_columns = cur.fetchall()
-        columns = [column[0] for column in table_columns if column[3] != 'PRI']
-        columns_string = ', '.join(columns)
-        #
-        value_list = []
-        dkey_value = data_dict[dkey]
 
-        for key,value in data_dict.items():
-            
-            if key !=  dkey: 
-                #print(f"the key {key}, the value {value}")
-                value_item = f"('{dkey_value}', '{key}')"
-                value_list.append(value_item)
-                values_string =  ', '.join(value_list)
-        return f"""INSERT INTO {table_name} ({columns_string}) VALUES {values_string}"""
-    
     else:
         # crete basic query
         table_var_string = ", ".join(list(data_dict.keys()))
@@ -224,7 +204,7 @@ def retrieve_row_id(data_dict, table_name, db_params, table_conf):
     logging.info(f" Detected uniqueness constrains: {constraint}")
     
     # Per row method
-    if table_conf[table_name]['method'] == 'per_row':
+    if table_conf[table_name]['method'] in ['per_row', 'per_row_key']:
         print(f"{table_name} is an attribute table (key:value paris) ")
         dkey = table_conf[table_name]['dkey']
         
@@ -239,7 +219,13 @@ def retrieve_row_id(data_dict, table_name, db_params, table_conf):
         
         for key,value in data_dict.items():
             if key !=  dkey: 
-                condition_string = f"{columns[0]} = '{dkey_value}' AND {columns[1]} =  '{key}' AND {columns[2]} = '{value}'"
+                
+                if table_conf[table_name]['method'] in ['per_row']:
+                    condition_string = f"{columns[0]} = '{dkey_value}' AND {columns[1]} =  '{key}' AND {columns[2]} = '{value}'"
+                elif table_conf[table_name]['method'] in ['per_row_key']:
+                    condition_string = f"{columns[0]} = '{dkey_value}' AND {columns[1]} =  '{key}'"
+                else:
+                    raise ValueError(f"Invalid value in table config - method: {table_conf[table_name]['method'] } ")
                 
                 conn = pymysql.connect(**db_params)
                 cur  = conn.cursor()
