@@ -57,7 +57,7 @@ CREATE TABLE organism (
   biosample_id varchar(225) NOT NULL,
   bioproject_id varchar(225),
   dtol_id varchar(30),
-  infra_type ENUM ('', 'strain', 'breed', 'cultivar' , 'ecotype' ),
+  infra_type ENUM ('', 'strain', 'breed', 'cultivar' , 'ecotype', 'isolate' ),
   infra_name varchar(225),
   PRIMARY KEY (`organism_id`),
   FOREIGN KEY (`biosample_id`) REFERENCES assembly(`biosample_id`),
