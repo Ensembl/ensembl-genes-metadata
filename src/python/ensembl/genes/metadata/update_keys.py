@@ -5,7 +5,7 @@ import logging
 import argparse
 
 def update_keys(data_db, last_id_dict, table_conf):
-    """Add keys to an already exiting dicionary
+    """Add keys to an already exiting dictionary
 
     Args:
         data_db (dict): It contains the data that intents to be insert/update to the DB
@@ -27,7 +27,7 @@ def update_keys(data_db, last_id_dict, table_conf):
         
         data_db[table_name].update({dkey:dkey_value})
         
-        return data_db
+    return data_db
 
 def main():
     """Entry point"""
@@ -37,6 +37,7 @@ def main():
         "organism": {"method": "per_col", "dkey":"None", "ukey": "None"},
         "species": {"method": "per_col", "dkey":"None", "ukey": "None"},
         "assembly_metrics" :  {"method": "per_row", "dkey":"assembly_id", "ukey": "None"},
+        "bioproject_lineage": {"method": "per_row_key", "dkey":"assembly_id", "ukey": "None"},
         }
     
     logging.basicConfig(filename="update_keys.log", level=logging.DEBUG, filemode='w',
