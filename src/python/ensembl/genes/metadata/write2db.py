@@ -101,7 +101,7 @@ def insert_query(data_dict, table_name, table_conf, db_params):
     """
     
     if table_conf[table_name]['method'] == 'per_row':
-        logging.info(f"{table_name} is an attribute table (key:value paris) ")
+        logging.info(f"{table_name} is an attribute table (key:value pairs) ")
         
         dkey = table_conf[table_name]['dkey']
         
@@ -124,6 +124,32 @@ def insert_query(data_dict, table_name, table_conf, db_params):
                 value_list.append(value_item)
                 values_string =  ', '.join(value_list)
         return f"""INSERT INTO {table_name} ({columns_string}) VALUES {values_string}"""
+    
+    elif table_conf[table_name]['method'] == 'per_row_key':
+        logging.info(f"{table_name} is an attribute table (key only) ")
+        
+        dkey = table_conf[table_name]['dkey']
+        
+        # Getting columns names
+        conn = pymysql.connect(**db_params)
+        cur  = conn.cursor()
+        cur.execute(f"SHOW COLUMNS FROM {table_name}")
+        table_columns = cur.fetchall()
+        columns = [column[0] for column in table_columns if column[3] != 'PRI']
+        columns_string = ', '.join(columns)
+        #
+        value_list = []
+        dkey_value = data_dict[dkey]
+
+        for key,value in data_dict.items():
+            
+            if key !=  dkey: 
+                #print(f"the key {key}, the value {value}")
+                value_item = f"('{dkey_value}', '{key}')"
+                value_list.append(value_item)
+                values_string =  ', '.join(value_list)
+        return f"""INSERT INTO {table_name} ({columns_string}) VALUES {values_string}"""
+    
     else:
         # crete basic query
         table_var_string = ", ".join(list(data_dict.keys()))
@@ -286,6 +312,7 @@ def main():
         "organism": {"method": "per_col", "dkey":"None", "ukey": "None"},
         "species": {"method": "per_col", "dkey":"None", "ukey": "None"},
         "assembly_metrics" :  {"method": "per_row", "dkey":"assembly_id", "ukey": "None"},
+        "bioproject_lineage" :  {"method": "per_row_key", "dkey":"assembly_id", "ukey": "None"},
         }
     
     db_params = {
