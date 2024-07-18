@@ -13,3 +13,11 @@ REGISTRY_RPARAMS = {
     'port': 4527,
     'database': 'gb_assembly_registry'
 }
+
+METADATA_WPARAMS = {
+    "host":"mysql-ens-genebuild-prod-1",
+    "user":"ensadmin",
+    "password":"ensembl",
+    "port": 4527,
+    "database" : "gb_assembly_metadata_testing"
+}
