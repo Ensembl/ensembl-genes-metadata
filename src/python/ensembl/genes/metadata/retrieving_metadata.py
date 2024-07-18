@@ -1,29 +1,51 @@
-## Pending: 
-## - bioproject
-## - retry connection to NCBI API
-## - choose a better raise exception 
+#  See the NOTICE file distributed with this work for additional information
+#  regarding copyright ownership.
+#
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#  http://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
 
-"""_summary_
-
-    Raises:
-        ValueError: _description_
+"""This module retrieves metadata from the NCBI API for a given GCA accession 
+        and stores it in JSON files to be inserted in the database.
+        
+    Args:
+        accession (str): GCA accession to retrieve metadata
 
     Returns:
-        _type_: _description_
+        str: json file with assembly's metadata
+        str: json-like file with metrics and bioproject lineage with .tmp extension
+        str: json-like file with species data with .tmp extension
 """
 
 import requests
 import argparse
 import json
+import logging
+from tenacity import retry, stop_after_attempt, wait_random
+from typing import Dict, List
 
-def parse_data(data):
+@retry(stop=stop_after_attempt(5), wait=wait_random(min=1, max=10))
+def connection_ncbi(uri: str) -> requests.Response:
+    response = requests.get(uri)
+    response.raise_for_status()
+    return response
+
+def parse_data(data: Dict) -> List[Dict]:
     """Parse NCBI results and provides a useful dictionary containing all relevant information 
     
     Args:
-        data (dict): json/dictionary obtained from NCBI API
+        data (dict): original report obtained from NCBI API
     
     Returns:
-        list[dict]: A list of two dictionaries with relevant metadata to store in db
+        list[dict]: a list of three dictionaries with relevant metadata to store in db
     """
     
     data_dict = {
@@ -106,65 +128,44 @@ def parse_data(data):
     return data_dict, data_dict_2, data_dict_3
 
 def main():
+    """Module's entry-point
+    """
+    logging.basicConfig(filename="retrieving_metadata.log", level=logging.DEBUG, filemode='w',
+                    format="%(asctime)s:%(levelname)s:%(message)s")
     
     parser = argparse.ArgumentParser(prog='retrieving_metadata.py', 
-                                    description="Retrieves accession's metadata and store it in JSON files")
+                                    description="Retrieve metadata from NCBI API for a given GCA accession and store it in JSON files to be inserted in the database.")
     
     parser.add_argument('--accession', 
-                        default="GCA_036172605.1",
                         type=str,
-                        help='Valid GCA accession')
-    
-    parser.add_argument('--output-path',
-                        default="/Users/vianey/Documents",
-                        type=str,
-                        help="Output path, file will be named with the accession as prefix")
+                        help='GCA accession to retrieve metadata')
     
     args = parser.parse_args()
+    logging.info(args)
     accession = args.accession.strip()
     
-    attempt_num = 1
-    success=True
-    """
-    while success == True or attempt_num<=3:
-        uri = f"https://api.ncbi.nlm.nih.gov/datasets/v2alpha/genome/accession/{str(args.accession).strip()}/dataset_report"
-        response = requests.get(uri)
-        response.raise_for_status()
-        
-        if response.raise_for_status()is None:
-            success = True
-        else:
-            attempt_num+=1
-    """
     uri = f"https://api.ncbi.nlm.nih.gov/datasets/v2alpha/genome/accession/{accession}/dataset_report"
-    response = requests.get(uri)
-    response.raise_for_status()
+    response = connection_ncbi(uri)
+    data = response.json()
     
-    if success:
-        data = response.json()
-        
-        dict1, dict2, dict3 = parse_data(data)
-        
-        # Save first json for insert
-        #file1 = f"{args.output_path}/{args.accession}_metadata.json"
-        file1 = f"{accession}_metadata.json"
-        with open(file1, 'w') as file:
-            json.dump(dict1, file)
-        file.close()
-        
-        # Save second json for next module
-        #file2 = f"{args.output_path}/{args.accession}_metrics.json"
-        file2 = f"{accession}_metrics_bioproject.tmp"
-        with open(file2, 'w') as file:
-            json.dump(dict2, file)
-        file.close()
-        
-        file3 = f"{accession}_species.tmp"
-        with open(file3, 'w') as file:
-            json.dump(dict3, file)
-        file.close()
-    else:
-        raise ValueError(f"It was not possible to connect to NCBI API datasets for {accession}")
+    logging.info(f"Retrieved data for {accession}")
+    dict1, dict2, dict3 = parse_data(data)
+    
+    logging.info("Saving data in JSON files")
+    file1 = f"{accession}_metadata.json"
+    with open(file1, 'w') as file:
+        json.dump(dict1, file)
+    file.close()
+    
+    file2 = f"{accession}_metrics_bioproject.tmp"
+    with open(file2, 'w') as file:
+        json.dump(dict2, file)
+    file.close()
+    
+    file3 = f"{accession}_species.tmp"
+    with open(file3, 'w') as file:
+        json.dump(dict3, file)
+    file.close()
 
 if __name__ == '__main__':
     main()
