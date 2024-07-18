@@ -1,25 +1,52 @@
 
+#  See the NOTICE file distributed with this work for additional information
+#  regarding copyright ownership.
+#
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at
+#  http://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  See the License for the specific language governing permissions and
+#  limitations under the License.
+
+"""The module will update the keys of a .tmp file. The keys are extracted from a JSON file created by write2db.py. 
+    The new JSON file are saved with the same name as the input file but with the .json extension.
+    
+Args:
+    json_path (str): Path to the JSON-like file with .tmp extension to be updated 
+    file_id_path (str): Path to the JSON file containing the keys to be added
+
+Returns:
+    str: a JSON file with the updated keys
+"""
+
 import json
 import os
 import logging
 import argparse
+from typing import Dict, Any
+from db_table_conf import TABLE_CONF
 
-def update_keys(data_db, last_id_dict, table_conf):
-    """Add keys to an already exiting dictionary
+def update_keys(data_db: Dict[str, Any], last_id_dict: Dict[str, Any]) -> Dict[str, Any]: 
+    """Insert the missing keys in the data_db dictionary using the last_id_dict dictionary.
 
     Args:
-        data_db (dict): It contains the data that intents to be insert/update to the DB
-        last_id_dict (dict): It contain the table name and the respective row id value (primary key or foreign key)
-        table_conf (dict): describe population method and dependant keys of the DB's table
+        data_db (dict): data that intents to be insert/update to the DB and is missing a key
+        last_id_dict (dict): dictionary with the table name as key and the row id value as value 
 
     Returns:
-        file: an updated json file containing the required keys
+        dict: an updated dictionary containing the data and required keys
     """
     
     for table_name in data_db:
         logging.info(f"Table found in JSON: {table_name}")
         
-        dkey = table_conf[table_name]['dkey']
+        dkey = TABLE_CONF[table_name]['dkey']
         logging.info(f"Dependant key required for this table: {dkey}")
         
         dkey_value = last_id_dict[dkey]
@@ -30,30 +57,23 @@ def update_keys(data_db, last_id_dict, table_conf):
     return data_db
 
 def main():
-    """Entry point"""
-    
-    table_conf = {
-        "assembly": {"method": "per_col", "dkey":"None", "ukey": "None"},
-        "organism": {"method": "per_col", "dkey":"None", "ukey": "None"},
-        "species": {"method": "per_col", "dkey":"None", "ukey": "None"},
-        "assembly_metrics" :  {"method": "per_row", "dkey":"assembly_id", "ukey": "None"},
-        "bioproject_lineage": {"method": "per_row_key", "dkey":"assembly_id", "ukey": "None"},
-        }
+    """Module's entry point"""
     
     logging.basicConfig(filename="update_keys.log", level=logging.DEBUG, filemode='w',
                     format="%(asctime)s:%(levelname)s:%(message)s")
     
     parser = argparse.ArgumentParser(prog="update_keys.py", 
-                                    description="Update the keys of an existing json file")
+                                    description="Update keys in a JSON-like file. The keys are extracted from a JSON file created by write2db.py. The new JSON file is saved with the same name as the input file but with the .json extension.")
     
     parser.add_argument("--json-path", type=str,
-                        help="Path to the JSON to be updated")
+                        help="Path to the JSON-like file (.tmp) to be updated")
     
     parser.add_argument("--file-id-path", type=str,
-                        help="Path to the JSON file containing the keys to be added")
+                        help="Path to the JSON file containing the keys to be added. File is the output of write2db.py")
         
     # Parsing arguments 
     args = parser.parse_args()
+    logging.info(args)
     
     # Loading files
     logging.info(f"Loading files: {args.json_path}, {args.file_id_path}")
@@ -67,7 +87,7 @@ def main():
         file.close()
     
     logging.info("Updating keys")
-    data_db = update_keys(data_db, last_id_dict, table_conf)
+    data_db = update_keys(data_db, last_id_dict, TABLE_CONF)
     
     output_file = os.path.basename(args.json_path).replace('.tmp', '.json')
     
