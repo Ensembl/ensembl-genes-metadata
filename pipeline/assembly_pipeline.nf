@@ -24,6 +24,7 @@ nextflow.enable.dsl=2
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
+include { FETCH_GCA } from '../modules/fetch_gca.nf' 
 include { PARSE_METADATA } from '../modules/parse_metadata.nf' 
 include { WRITE2DB_METADATA } from '../modules/write2db_metadata.nf' 
 include { UPDATE_KEYS_METRICS } from '../modules/update_keys_metrics.nf' 
@@ -38,13 +39,13 @@ include { WRITE2DB_SPECIES } from '../modules/write2db_species.nf'
 */
 
 workflow {
+
+    FETCH_GCA(params.taxon, params.last_update)
+
+    gca = FETCH_GCA.out.splitText().map{it -> it.trim()}
+
+    PARSE_METADATA(gca)
     
-    gca_line = Channel
-        .fromPath(params.gca_list_path)
-        .splitText().map{it -> it.trim()}
-
-    PARSE_METADATA(gca_line)
-
     WRITE2DB_METADATA(PARSE_METADATA.out.gca, PARSE_METADATA.out.metadata, PARSE_METADATA.out.metrics_tmp, PARSE_METADATA.out.species_tmp)
 
     UPDATE_KEYS_METRICS(WRITE2DB_METADATA.out.gca, WRITE2DB_METADATA.out.metrics_tmp, WRITE2DB_METADATA.out.last_id, WRITE2DB_METADATA.out.species_tmp)
@@ -55,7 +56,9 @@ workflow {
 
     WRITE2DB_SPECIES(SPECIES_CHECKER.out.gca, SPECIES_CHECKER.out.species)
 
+    /*
     WRITE2DB_SPECIES.out.gca.view()
     WRITE2DB_METRICS.out.last_id.view()
+    */
 
 }
