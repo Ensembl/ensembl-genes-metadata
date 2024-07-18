@@ -1,5 +1,5 @@
 process WRITE2DB_METRICS {
-    tag "Metrics: $gca"
+    tag "$gca"
     publishDir "${params.output_dir}/nextflow_output/$gca", mode: 'copy'
 
     input:
@@ -13,7 +13,6 @@ process WRITE2DB_METRICS {
     path species_tmp, emit: species_tmp 
 
     script:
-    log.info("Executing Python script to populate Assembly metrics table: $gca")
     """
     python /Users/vianey/Documents/ensembl-genes-metadata/src/python/ensembl/genes/metadata/write2db.py --file-path $metrics
     """

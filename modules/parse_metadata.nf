@@ -12,7 +12,6 @@ process PARSE_METADATA {
     path("${gca}_species.tmp"), emit: species_tmp
 
     script:
-    log.info("Executing Python script to get metadata for assembly: $gca")
     """
     python /Users/vianey/Documents/ensembl-genes-metadata/src/python/ensembl/genes/metadata/retrieving_metadata.py --accession $gca
     """

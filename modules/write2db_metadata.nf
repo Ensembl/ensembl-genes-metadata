@@ -1,5 +1,5 @@
 process WRITE2DB_METADATA {
-    tag "Metadata: $gca"
+    tag "$gca"
     publishDir "${params.output_dir}/nextflow_output/$gca", mode: 'copy'
 
     input:
@@ -15,7 +15,6 @@ process WRITE2DB_METADATA {
     path species_tmp, emit: species_tmp 
 
     script:
-    log.info("Executing Python script to populate or update DB: $gca")
     """
     python /Users/vianey/Documents/ensembl-genes-metadata/src/python/ensembl/genes/metadata/write2db.py --file-path $metadata
     """
