@@ -4,7 +4,7 @@ METADATA_RPARAMS = {
     'host': 'mysql-ens-genebuild-prod-1',
     'user': 'ensro',
     'port': 4527,
-    'database': 'gb_assembly_metadata_testing'
+    'database': 'gb_assembly_metadata'
 }
 
 REGISTRY_RPARAMS = {
@@ -19,5 +19,5 @@ METADATA_WPARAMS = {
     "user":"ensadmin",
     "password":"ensembl",
     "port": 4527,
-    "database" : "gb_assembly_metadata_testing"
+    "database" : "gb_assembly_metadata"
 }
