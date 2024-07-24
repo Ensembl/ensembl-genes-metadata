@@ -161,10 +161,10 @@ def update_query(data_dict: Dict, table_name: str) -> str:
     """
     update_list = []
     for key, value in data_dict.items():
-        if TABLE_CONF[table_name]['ukey'] != key:
-            update_list.append(f"{key} = {value}")
-        else:
+        if TABLE_CONF[table_name]['ukey'] == key:
             condition = f"{key} = {value}"
+        else:
+            update_list.append(f"{key} = '{value}'")
         
     update_values = ','.join(update_list)
     
@@ -191,6 +191,7 @@ def create_query(data_dict: Dict, table_name: str, update: bool) -> str:
     else: # input data will be used to insert a new row
         query = insert_query(data_dict, table_name)
     
+    logging.info(f"Query created: {query}")
     return query
 
 def retrieve_row_id(data_dict: Dict, table_name: str) -> int:
