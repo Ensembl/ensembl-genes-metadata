@@ -87,7 +87,7 @@ def main():
         file.close()
     
     logging.info("Updating keys")
-    data_db = update_keys(data_db, last_id_dict, TABLE_CONF)
+    data_db = update_keys(data_db, last_id_dict)
     
     output_file = os.path.basename(args.json_path).replace('.tmp', '.json')
     
