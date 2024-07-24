@@ -63,7 +63,7 @@ def species_taxon(lowest_taxon_id:str) -> str:
     
     try:
         taxonomy = taxon_data['reports'][0]['taxonomy']['rank']
-        if taxonomy in ['SUBSPECIES', 'STRAIN', 'VARIETAS', 'GENOTYPE', 'ISOLATE']:
+        if taxonomy in ['SUBSPECIES', 'STRAIN', 'VARIETAS', 'GENOTYPE', 'ISOLATE', 'FORMA']:
             species_taxon_id = taxon_data['reports'][0]['taxonomy']['classification']['species']['id']
             logging.info(f"The assembly is a infraspecific taxon {taxonomy}")
         elif taxonomy == 'SPECIES':
