@@ -48,14 +48,12 @@ def parse_data(data: Dict) -> List[Dict]:
         list[dict]: a list of three dictionaries with relevant metadata to store in db
     """
     
-    data_dict = {
-    'assembly': {},
-    'organism': {}
-    }
+    data_dict = {'assembly': {}}
     
     data_dict_2 = {
+        'organism': {},
         'assembly_metrics': {},
-        'bioproject_lineage': {}
+        'bioproject': {}
     }
     
     data_dict_3 = {
@@ -74,16 +72,24 @@ def parse_data(data: Dict) -> List[Dict]:
         refseq_accession = ""
         
     try:
-        infra_name = list(data['reports'][0]['organism']['infraspecific_names'].keys())[0].replace("'", "''")
-        infra_type = list(data['reports'][0]['organism']['infraspecific_names'].values())[0]  
+        infra_type = list(data['reports'][0]['organism']['infraspecific_names'].keys())[0]
+        infra_name = list(data['reports'][0]['organism']['infraspecific_names'].values())[0].replace("'", "''")  
+        if infra_type == 'sex':
+            logging.info("Assembly have incorrect infraspecific type: sex. Setting to empty")
+            infra_type = ""
+            infra_name = ""
     except:
         infra_name = ""
         infra_type = ""
+        
+    try:
+        biosample_id = data['reports'][0]['assembly_info']['biosample']['accession']
+    except:
+        biosample_id = ""
     
     # Building dictionaries for assembly metadata tables
     data_dict['assembly'].update({
         'lowest_taxon_id' : data['reports'][0]['organism']['tax_id'],
-        'biosample_id' : data['reports'][0]['assembly_info']['biosample']['accession'],
         'gca_chain' : data['reports'][0]['accession'].split('.')[0],
         'gca_version' : data['reports'][0]['accession'].split('.')[1],
         'is_current' : data['reports'][0]['assembly_info']['assembly_status'],
@@ -92,20 +98,20 @@ def parse_data(data: Dict) -> List[Dict]:
         'asm_name' : data['reports'][0]['assembly_info']['assembly_name'],
         'refseq_accession': refseq_accession,
         'release_date' : data['reports'][0]['assembly_info']['release_date'],
-        'submitter' : data['reports'][0]['assembly_info']['submitter']
+        'submitter' : data['reports'][0]['assembly_info']['submitter'].replace("'", "''")  
     })
     
     data_dict_3['species'].update({
         'lowest_taxon_id' : data['reports'][0]['organism']['tax_id'],
-        'scientific_name' : data['reports'][0]['organism']['organism_name'],
+        'scientific_name' : data['reports'][0]['organism']['organism_name'].replace("'", "''") ,
         'common_name' : common_name
     })
     
-    data_dict['organism'].update({
-        'biosample_id' : data['reports'][0]['assembly_info']['biosample']['accession'],
+    data_dict_2['organism'].update({
+        'biosample_id' : biosample_id,
         'bioproject_id' : data['reports'][0]['assembly_info']['bioproject_accession'],
-        'infra_type':infra_name,
-        'infra_name':infra_type
+        'infra_type':infra_type,
+        'infra_name':infra_name
     })
     
     data_dict_2.update({'assembly_metrics':data['reports'][0]['assembly_stats']})
@@ -123,7 +129,7 @@ def parse_data(data: Dict) -> List[Dict]:
             seen_accessions.add(accession)
             bioproject_lineage[accession] = title
     
-    data_dict_2.update({'bioproject_lineage':bioproject_lineage})
+    data_dict_2.update({'bioproject':bioproject_lineage})
     
     return data_dict, data_dict_2, data_dict_3
 
@@ -152,12 +158,12 @@ def main():
     dict1, dict2, dict3 = parse_data(data)
     
     logging.info("Saving data in JSON files")
-    file1 = f"{accession}_metadata.json"
+    file1 = f"{accession}_assembly.json"
     with open(file1, 'w') as file:
         json.dump(dict1, file)
     file.close()
     
-    file2 = f"{accession}_metrics_bioproject.tmp"
+    file2 = f"{accession}_metadata.tmp"
     with open(file2, 'w') as file:
         json.dump(dict2, file)
     file.close()
