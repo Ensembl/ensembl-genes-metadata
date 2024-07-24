@@ -5,13 +5,11 @@ process WRITE2DB_METADATA {
     input:
     val gca
     path metadata
-    path metrics_tmp
     path species_tmp
 
     output:
     val gca, emit: gca
     path "${metadata.baseName}.last_id", emit: last_id
-    path metrics_tmp, emit: metrics_tmp
     path species_tmp, emit: species_tmp 
 
     script:
