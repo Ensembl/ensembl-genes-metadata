@@ -21,12 +21,28 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.text.SimpleDateFormat;
 import java.sql.Date
+import java.util.concurrent.TimeUnit
 
 // Define global variable in the script binding
 binding.driver = 'com.mysql.cj.jdbc.Driver'
 binding.jdbcUrl = "jdbc:mysql://${params.transcriptomic_dbhost}:${params.transcriptomic_dbport}/${params.transcriptomic_dbname}"
 
-
+class RetryUtil {
+    static def retry(int maxAttempts, long delayMillis, Closure closure) {
+        int attempt = 0
+        while (attempt < maxAttempts) {
+            try {
+                return closure.call()
+            } catch (Exception e) {
+                attempt++
+                if (attempt >= maxAttempts) {
+                    throw e
+                }
+                TimeUnit.MILLISECONDS.sleep(delayMillis)
+            }
+        }
+    }
+}
 def checkTaxonomy(String taxonId) {
     def sql
     sql = Sql.newInstance(jdbcUrl, params.transcriptomic_dbuser,params.transcriptomic_dbpassword,driver)
@@ -93,6 +109,7 @@ def setLastCheckDate(String taxonId,String query_option) {
 }
 
 def setMetaDataRecord(String mysqlQuery){
+    synchronized(this) {
     def sql 
     sql = Sql.newInstance(jdbcUrl, params.transcriptomic_dbuser,params.transcriptomic_dbpassword,driver)
     
@@ -124,7 +141,11 @@ def setMetaDataRecord(String mysqlQuery){
         log.info("Final query: $query")
 
         try{
-            sql.execute query, paramValues
+             RetryUtil.retry(5, 1000) {   
+                    sql.withTransaction {
+                        sql.execute query, paramValues
+                }
+             } 
         } catch (Exception ex) {
             ex.printStackTrace()
         } finally {
@@ -135,22 +156,40 @@ def setMetaDataRecord(String mysqlQuery){
     }
 }
 }
+}
 
 
 def getDataFromTable(String queryKey, String queryTable, String tableColumn, String tableValue){
     def sql
     sql = Sql.newInstance(jdbcUrl, params.transcriptomic_dbuser,params.transcriptomic_dbpassword,driver)
     def result
-    try {
-        def query = "SELECT ${queryKey} FROM ${queryTable}  WHERE ${tableColumn} = ?" 
-        result = sql.rows(query,[tableValue])
+    def retries = 5 // Set the number of retries
+    def retryCount = 0
+    def sleepTime = 2000 // Set the initial sleep time in milliseconds (2 seconds)
+
+    while (retryCount < retries) {
+        try {
+            def query = "SELECT ${queryKey} FROM ${queryTable}  WHERE ${tableColumn} = ?" 
+            result = sql.rows(query,[tableValue])
+            if (result) {
+                return result // Return the result if it's not null
+            } else {
+               println("No result found, retrying... (${retryCount + 1}/${retries})")
+               retryCount++
+               Thread.sleep(sleepTime) // Wait before retrying
+            }                                                                                            
         
     } catch (Exception ex) {
-        ex.printStackTrace()}
-    finally {
+        ex.printStackTrace()
+        retryCount++
+        Thread.sleep(sleepTime) // Wait before retrying
+    }finally {
         sql.close()
     }
-    return result
+    }
+    //return result
+    println("Failed to retrieve data after ${retries} attempts")
+    return null
 }
 
 def updateTable(String queryKey, String queryValue, String queryTable, String tableColumn, String tableValue) {

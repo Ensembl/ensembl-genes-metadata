@@ -78,7 +78,7 @@ process GET_RUN_ACCESSIONS {
     reader.close()
 
     runAccessionToFile='run_accession_list.txt'
-    """
+    """ 
     echo '${responseContent.toString()}' > $runAccessionToFile
     """
 }

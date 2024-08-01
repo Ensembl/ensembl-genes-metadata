@@ -176,9 +176,11 @@ def main():
     parser = argparse.ArgumentParser(prog="write.py", description="Write JSON files to DB")
 
     parser.add_argument(
-        "--file-path", type=str, help="Path to the JSON file containing data to insert/update in a DB"
+        "--file_path", type=str, help="Path to the JSON file containing data to insert/update in a DB"
     )
-
+    parser.add_argument(
+                    "--output_dir", type=str, help="Output directory"
+                        )
     parser.add_argument(
         "--update",
         type=str,
@@ -193,21 +195,27 @@ def main():
         input_data = json.load(input_file)
 
     update = args.update == "True"
+    #with open(str(args.output_dir)+'/output_query.txt', 'w') as output_file:
 
-    # Module
+        # Module
     for table_name in input_data:
-        logging.info("Processing input data, loading %s table", table_name)
-        # Check input data structure
-        check = check_dict_structure(input_data[table_name])
-        if check:
-            logging.info("List of dictionaries detected, processing each dictionary")
-            for row in input_data[table_name]:
-                query = create_query(row, table_name, update, table_conf)
+            logging.info("Processing input data, loading %s table", table_name)
+            # Check input data structure
+            check = check_dict_structure(input_data[table_name])
+            if check:
+                logging.info("List of dictionaries detected, processing each dictionary")
+                for row in input_data[table_name]:
+                    query = create_query(row, table_name, update, table_conf)
+                    print(query)
+                    #output_file.write(query + '\n')  # Write query to file
+            else:
+                # Data is a dictionary
+                query = create_query(input_data[table_name], table_name, update, table_conf)
                 print(query)
-        else:
-            # Data is a dictionary
-            query = create_query(input_data[table_name], table_name, update, table_conf)
-            print(query)
+                #output_file.write(query + '\n')  # Write query to file
+
+    # Close the file after writing all queries
+    #output_file.close()
 
 
 if __name__ == "__main__":

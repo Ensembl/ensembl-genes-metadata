@@ -81,7 +81,7 @@ def parse_fastqc_data(fastqc_data_path: Path) -> Dict[str, int]:
     sequence_length_match = re.search(sequence_length_pattern, data)
     if sequence_length_match:
         fastqc_data["sequence_length"] = int(sequence_length_match.group(1))
-    print(fastqc_data)
+    #print(fastqc_data)
     return fastqc_data
 
 
@@ -122,14 +122,14 @@ def convert_to_json(run_accession_dir: Path, data_file_json: str, run_id: int) -
             **summary_data,
             **fastqc_data,
         }
-        print(data_file)
+        #print(data_file)
         table_data_files["data_files"].append(data_file)
     json_data_files = json.dumps(table_data_files)
 
     with open("complete_insert_into_data_file.json", "w") as file:
         file.write(json_data_files)
 
-    logging.info("Summary data converted to JSON.")
+    #logging.info("Summary data converted to JSON.")
 
 
 def parse_args() -> argparse.Namespace:

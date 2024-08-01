@@ -32,7 +32,7 @@ import re
 from typing import Dict
 import json
 import requests
-from tenacity import retry, stop_after_attempt, wait_fixed
+from tenacity import retry, stop_after_attempt, wait_fixed,wait_exponential_jitter,wait_exponential,wait_random
 
 
 def request_data(run_accession: str, fields: list) -> str:
@@ -54,8 +54,8 @@ def request_data(run_accession: str, fields: list) -> str:
         "fields": ",".join(fields),
         "format": "tsv",
     }
-
-    @retry(stop=stop_after_attempt(3), wait=wait_fixed(5))
+    #@retry(stop=stop_after_attempt(3), wait=wait_fixed(5))
+    @retry(stop=stop_after_attempt(5), wait=wait_exponential(multiplier=1, min=5, max=60) + wait_random(min=0, max=5))
     def make_request():
         try:
             response = requests.post("https://www.ebi.ac.uk/ena/portal/api/search", data=data, timeout=20)

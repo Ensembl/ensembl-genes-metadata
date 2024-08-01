@@ -79,10 +79,9 @@ process INDEX_GENOME {
     log.info("genomeSAindexNbases: ${genomeSAindexNbases}")
     log.info("genomeChrBinNbits: ${genomeChrBinNbits}")
 
-    // Execute STAR command with calculated parameters
+    // Execute STAR command with calculated parameters #if [ ! -s "${genomeDir}/Genome" ]; then \
     """
-    #if [ ! -s "${genomeDir}/Genome" ]; then \
-    rm -rf ${genomeDir}/_STARtmp ; \
+    rm -rf ${genomeDir}/_STARtmp ; 
     STAR  --runThreadN ${task.cpus} --runMode genomeGenerate \
     --outFileNamePrefix ${genomeDir} --genomeDir ${genomeDir} \
     --genomeSAindexNbases ${genomeSAindexNbases} \
@@ -90,7 +89,9 @@ process INDEX_GENOME {
     --genomeFastaFiles  ${genomeFile} --outTmpDir _STARtmp;
     """
     } else {
+    """
     echo "Genome index already exists, skipping STAR genomeGenerate step."
+    """
     }
 
     }

@@ -106,9 +106,9 @@ workflow SHORT_READ {
     def fastqFilesMetadata  = PROCESS_RUN_ACCESSION_METADATA(taxonomyResults).collect()
     dd=fastqFilesMetadata
     dd.each{ d-> d.view()}
-    def fastQCMetadata = FASTQC_PROCESSING(fastqFilesMetadata).collect()
-    RUN_ALIGNMENT(fastQCMetadata)
-    
+    //def fastQCMetadata = FASTQC_PROCESSING(fastqFilesMetadata).collect()
+    //RUN_ALIGNMENT(fastQCMetadata)
+    RUN_ALIGNMENT(fastqFilesMetadata)
     //if (params.cleanCache) {
         // Clean cache directories
     //    exec "rm -rf ${params.cacheDir}/*"
@@ -117,7 +117,7 @@ workflow SHORT_READ {
 
 workflow.onComplete {
     log.info "Pipeline completed at: ${new Date().format('dd-MM-yyyy HH:mm:ss')}"
-    
+    if (params.cleanOutputDir) {    
     try {
         def outDir = Paths.get(params.outDir)
 
@@ -129,7 +129,7 @@ workflow.onComplete {
     } catch (Exception e) {
         log.error "Exception occurred while executing cleaning command: ${e.message}", e
     }
-    
+    }
     if (params.backupDB) {
         def backupFilePath = "${params.outDir}/${params.transcriptomic_dbname}_backup.sql"
         def gzipFilePath = "${backupFilePath}.gz"

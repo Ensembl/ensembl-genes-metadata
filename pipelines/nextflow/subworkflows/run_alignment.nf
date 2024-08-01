@@ -30,6 +30,7 @@ include { INDEX_GENOME } from '../modules/transcriptomic_alignment/index_genome.
 include { RUN_STAR } from '../modules/transcriptomic_alignment/run_star.nf'
 include { EXTRACT_UNIQUELY_MAPPED_READS_PERCENTAGE } from '../modules/transcriptomic_alignment/extract_uniquely_mapped_reads_percentage.nf'
 include { BUILD_QUERY as BUILD_QUERY_ALIGN_METADATA } from '../modules/build_query.nf'
+include { STORE_INTO_DB } from '../modules/store_into_db.nf'
 include { CLEANING } from '../modules/cleaning.nf'
 
 include { setMetaDataRecord } from '../modules/utils.nf'
@@ -45,14 +46,15 @@ workflow RUN_ALIGNMENT{
     def genomeAndDataToAlign = FETCH_GENOME(shortReadMetadata.flatten())
     def genomeIndexAndDataToAlign = INDEX_GENOME(genomeAndDataToAlign)
     def starOutput = RUN_STAR(genomeIndexAndDataToAlign)
-    def (starMetadata, insertIntoAlign) = EXTRACT_UNIQUELY_MAPPED_READS_PERCENTAGE(starOutput)
+    def (insertIntoAlign) = EXTRACT_UNIQUELY_MAPPED_READS_PERCENTAGE(starOutput)
     def updateValue = "False"
-    def (runAccessionData_StarOutput,insertIntoAlignQuery) = BUILD_QUERY_ALIGN_METADATA(starMetadata, insertIntoAlign, updateValue)
-    def data3=insertIntoAlignQuery
-    data3.flatten().view { d -> "query ${d}"}
-    insertIntoAlignQuery.subscribe { line ->
-        setMetaDataRecord(line.toString())
-    }
+    def (runAccessionDataQuery) = BUILD_QUERY_ALIGN_METADATA(insertIntoAlign, updateValue)
+    def (runAccessionData_StarOutput) = STORE_INTO_DB(runAccessionDataQuery)
+    //def data3=insertIntoAlignQuery
+    //data3.flatten().view { d -> "query ${d}"}
+    //insertIntoAlignQuery.subscribe { line ->
+    //    setMetaDataRecord(line.toString())
+    //}
     def runAccessionData_NewQCstatus = runAccessionData_StarOutput.map { result ->
         def (taxon_id, gca, run_accession) = result
         def run_Id = getDataFromTable("run_id", "run", "run_accession", run_accession)[0].run_id.toString()

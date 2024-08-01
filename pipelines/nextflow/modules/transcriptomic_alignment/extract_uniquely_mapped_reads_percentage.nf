@@ -29,8 +29,7 @@ process EXTRACT_UNIQUELY_MAPPED_READS_PERCENTAGE {
 
 
     output:
-    tuple val(taxon_id), val(gca), val(run_accession)
-    path("insert_into_align.json")
+    tuple val(taxon_id), val(gca), val(run_accession), path("insert_into_align.json")
 
     script:
     def run_id = getDataFromTable("run_id", "run", "run_accession", run_accession)[0].run_id

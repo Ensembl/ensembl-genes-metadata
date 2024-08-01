@@ -45,7 +45,7 @@ create table run (
 	run_id int not null auto_increment,
 	taxon_id int not null,
 	run_accession varchar(255) not null,
-	qc_status SET("NOT_CHECKED","FILE_ISSUE","QC_PASS","QC_FAIL","ALIGNED"),
+	qc_status SET("NOT_CHECKED","FILE_ISSUE","QC_PASS","QC_FAIL","ALIGNED", "DOWNLOAD_FAILED"),
 	sample_accession varchar(255) not null,
 	study_accession varchar(255) not null,
 	read_type varchar(255),

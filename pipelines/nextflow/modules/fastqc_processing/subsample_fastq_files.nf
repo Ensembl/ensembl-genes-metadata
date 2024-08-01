@@ -20,7 +20,7 @@ limitations under the License.
 process SUBSAMPLE_FASTQ_FILES {
     label 'seqtk'
     tag "$taxon_id:$run_accession"
-    storeDir "${params.outDir}/$taxon_id/$run_accession"
+    publishDir "${params.outDir}/$taxon_id/$run_accession", mode:'copy'
     afterScript "sleep $params.files_latency"  // Needed because of file system latency
 
     input:
@@ -35,16 +35,25 @@ process SUBSAMPLE_FASTQ_FILES {
     def fastq2 = "${output_dir}${run_accession}_2.fastq.gz"
     def subsampled_fastq1 = "${output_dir}${run_accession}_1.fastq.gz.sub"
     def subsampled_fastq2 = "${output_dir}${run_accession}_2.fastq.gz.sub"
-    subsample_OUT=[]
-    subsample_OUT.add([taxon_id:taxon_id, gca:gca, run_accession:run_accession, pair1:["${params.outDir}",taxon_id,run_accession,"${run_accession}_1.fastq.gz.sub"].join("/"), pair2:["${params.outDir}",taxon_id,run_accession,"${run_accession}_2.fastq.gz.sub"].join("/")])
 
     """
-    seqtk sample -s100 ${fastq1} 50000 > ${subsampled_fastq1}
-    seqtk sample -s100 ${fastq2} 50000 > ${subsampled_fastq2}
-    cp  ${output_dir}*.sub .
-    rm ${fastq1}
+    seqtk sample -s100 ${fastq1} 50000 > ${subsampled_fastq1}; \
+    seqtk sample -s100 ${fastq2} 50000 > ${subsampled_fastq2}; \
+    cp  ${subsampled_fastq1} . ;\
+    cp  ${subsampled_fastq2} . ;\
+    rm ${fastq1}; \
     rm ${fastq2}
-    echo '${subsample_OUT.toString()}'
+    echo "subsampled  ${subsampled_fastq2}"
     """
+    //new File("${fastq1}").delete()
+    //new File("${fastq2}").delete()
+    
+
+    //rm ${fastq1}
+    //rm ${fastq2}
+    //echo '${subsample_OUT.toString()}'
+    //"""
+    //subsample_OUT.add([taxon_id:taxon_id, gca:gca, run_accession:run_accession, pair1:["${params.outDir}",taxon_id,run_accession,"${run_accession}_1.fastq.gz.sub"].join("/"), pair2:["${params.outDir}",taxon_id,run_accession,"${run_accession}_2.fastq.gz.sub"].join("/")])
+    //cp  ${subsampled_fastq1} .
 }
 

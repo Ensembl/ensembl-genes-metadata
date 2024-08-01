@@ -16,27 +16,64 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+import java.nio.file.Files
+
 // https://hub.docker.com/r/staphb/fastqc v12
 process RUN_FASTQC {
     label 'fastqc'
     tag "$taxon_id:$run_accession"
-    storeDir "${params.outDir}/$taxon_id/$run_accession/"
+    publishDir "${params.outDir}/$taxon_id/$run_accession/", mode: 'copy'
     afterScript "sleep $params.files_latency"
     input:
-    tuple val(taxon_id), val(gca), val(run_accession), val(pair1), val(pair2), val(dataFileQuery)
+    tuple val(taxon_id), val(gca), val(run_accession), val(pair1), val(pair2), path(dataFileQuery)
 
     output:
-    tuple(val(taxon_id), val(gca), val(run_accession), val(dataFileQuery),val("${params.outDir}/$taxon_id/$run_accession/fastqc"))
+    //val(fastqcOUT)
+    tuple val(taxon_id), val(gca), val(run_accession), path(dataFileQuery),val("${params.outDir}/$taxon_id/$run_accession/fastqc")
     
     when:
-    file(pair1).exists()
+    def file1 = new File(pair1)
+    def file2 = new File(pair2)
+    file1.exists() && file2.exists()
 
     script:
-    log.info  "FASTQCresults: ${pair1} ${pair2}"
     """
-    mkdir -p fastqc
-    fastqc  ${pair1} ${pair2} --quiet --extract --threads ${task.cpus} --outdir fastqc
+    if [ ! -d "${params.outDir}/${taxon_id}/${run_accession}/fastqc/" ]; then
+    mkdir -p fastqc 
+    fastqc  ${pair1} ${pair2} --quiet --extract --threads ${task.cpus} --outdir fastqc; \
     cp -r fastqc ${params.outDir}/${taxon_id}/${run_accession}
-    """  
+    else
+    echo "Directory fastqc already exists. Skipping process"
+    fi
+    """
+    
+   /* 
+    log.info  "FASTQCresults: ${pair1} ${pair2}"
+    //fastqcOUT=[[taxon_id:taxon_id, gca:gca, run_accession:run_accession, dataFileQuery:dataFileQuery, fastqc_dir:["${params.outDir}",taxon_id,run_accession,"fastqc"].join("/")]]
+    def fastqcDir = new File("${params.outDir}/${taxon_id}/${run_accession}/fastqc")
+    if (!fastqcDir.exists() || !(fastqcDir.isDirectory() && fastqcDir.list().length > 0)){
+    fastqcDir.mkdirs()
+    //dirPath = file("${params.outDir}/${taxon_id}/${run_accession}")
+    // Get query file
+    //dataFileQuery = dirPath.listFiles().findAll { it.name.endsWith('complete_insert_into_data_file.json') }
+    //if (dataFileQuery.size() == 0){
+    log.info("RunFASTQC on paired files for ${run_accession}")
+     
+        // Create fastqc directory if it does not exist
+    //    new File("fastqc").mkdirs()
+   //  if [ ! -d ${params.outDir}/${taxon_id}/${run_accession}/fastqc ]; then \ 
+    """
+    fastqc  ${pair1} ${pair2} --quiet --extract --threads ${task.cpus} --outdir fastqc; \
+    cp -r fastqc ${params.outDir}/${taxon_id}/${run_accession}
+    """
+    //return """
+    //echo '${fastqcOUT.toString()}'
+    //"""
+
+    }
+    """
+    echo "Fastqc completed"
+    """
+*/
 }
 

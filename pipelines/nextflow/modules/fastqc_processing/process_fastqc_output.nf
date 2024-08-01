@@ -23,16 +23,16 @@ process PROCESS_FASTQC_OUTPUT {
     afterScript "sleep $params.files_latency"  // Needed because of file system latency
     
     input:
-    tuple val(taxon_id), val(gca), val(run_accession), path(dataFileQuery),path(fastqc_dir), val(runId)
+    tuple val(taxon_id), val(gca), val(run_accession), path(dataFileQuery), val(fastqc_dir), val(runId)
 
     output:
-    tuple val(taxon_id), val(gca), val(run_accession)
-    path("complete_insert_into_data_file.json")
+    tuple val(taxon_id), val(gca), val(run_accession), val("${fastqc_dir}/complete_insert_into_data_file.json")
 
     script:
     """
     chmod +x $projectDir/bin/parse_fastqc.py  # Set executable permissions
     parse_fastqc.py --fastqc_results_path ${fastqc_dir} --data_file_json ${dataFileQuery} --run_id ${runId}
+    cp complete_insert_into_data_file.json ${fastqc_dir}
     """
 }
 

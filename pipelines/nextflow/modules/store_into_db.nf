@@ -18,34 +18,38 @@ limitations under the License.
 import java.nio.file.Files
 import java.nio.file.Paths
 import groovy.io.FileType
+ import java.util.concurrent.TimeUnit
 include { setMetaDataRecord } from './utils.nf'
-process BUILD_QUERY {
+process STORE_INTO_DB {
     scratch false
-    label 'python'
+    label 'default'
     tag "$run_accession"
-    //maxForks 50
+    //maxForks 20
 
     input:
-    tuple val(taxon_id), val(gca), val(run_accession), path(metadata2process)
-    val mysqlUpdate
+    tuple val(taxon_id), val(gca), val(run_accession), val(query)
     
     output:
-    tuple val(taxon_id), val(gca), val(run_accession), stdout
-    //tuple val(taxon_id), val(gca), val(run_accession), val("${params.outDir}/${taxon_id}/${run_accession}/output_query.txt")
-    //val(queryOutput)
-//    stdout
+    tuple val(taxon_id), val(gca), val(run_accession)
 
     script:
-    """
-    chmod +x $projectDir/bin/write2db.py;
-    $projectDir/bin/write2db.py --file_path ${metadata2process} --update ${mysqlUpdate} 
-    """
-    /*
-     --output_dir ${params.outDir}/${taxon_id}/${run_accession}
-     ${params.outDir}/${taxon_id}/${run_accession}/${metadata2process}
-    output = Files.newInputStream(file("${params.outDir}/${taxon_id}/${run_accession}/output_query.txt"))
-    queriesArray = output.text.trim().toString().replaceAll('; ', ' ').split(";")
-    log.info("Queries Array: ${gca} ${metadata2process} ${queriesArray}")
+//    int maxRetries = 5
+  //  int retryCount = 0
+    //while (retryCount < maxRetries) {
+      //  if (file(query).exists()) {
+        //    break
+       // }
+       // println "File ${query} does not exist yet. Retrying in 5 seconds..."
+       // TimeUnit.SECONDS.sleep(5)
+        //retryCount++
+    //}
+    //if (retryCount == maxRetries) {
+      //  println "File ${query} was not found after ${maxRetries} attempts. Exiting."
+       // exit 1
+    //}
+    //output = new File(query).text.trim()
+    queriesArray = query.replaceAll('; ', ' ').split(";")
+    log.info("Queries Array:  ${run_accession}  ${queriesArray} ")
     if (queriesArray.size() == 1) {
     setMetaDataRecord(queriesArray[0].trim().toString())
     } else if (queriesArray.size() > 1) {
@@ -61,52 +65,8 @@ process BUILD_QUERY {
     }
 
     """
-    
-    
-    buildQueryPY=false
-    queryOutput=[]
-    queryOutput.add([taxon_id:taxon_id, gca:gca, run_accession:run_accession])
-    log.info("Executing Python script to build query for run: $run_accession $metadata2process")
-    outputFilePath = file("${params.outDir}/${taxon_id}/${run_accession}/output_query.txt")
-    while (!outputFilePath.exists()){
-
-
+    echo "${queriesArray.toString().trim()}"
     """
-    chmod +x $projectDir/bin/write2db.py;
-    """.execute().waitFor()
-    """
-    $projectDir/bin/write2db.py --file_path ${params.outDir}/${taxon_id}/${run_accession}/${metadata2process} --update ${mysqlUpdate} --output_dir ${params.outDir}/${taxon_id}/${run_accession} 
-    """.execute().waitFor()
-}
-    output = Files.newInputStream(file("${params.outDir}/${taxon_id}/${run_accession}/output_query.txt")).text.trim()
-    //queriesArray = output.tokenize(';')
-    //println(queriesArray)
-    // Split the output based on semicolons not within quotes or parentheses
-    //queriesArray = output.split(/(?<![;\)\]])\s*;\s*(?![;\(\[])/).collect { it.trim() }
-    //queriesArray = output.split(/(?<![;\)\]])\s*;\s*(?![;\(\[])/).collect { it.trim().replaceAll(/,\s+/, ', ') }
-    queriesArray = output.toString().replaceAll('; ', ' ').split(";")
-    //queriesArray = output.split(/(?<![\(\[]\);(?![^\(\[]*[\)\]])/).collect { it.trim() }
-    //queriesArray =output.tokenize(/(?<!;)\s*;\s*(?!['"])/)
-                    log.info("Queries Array: ${queriesArray}")
-    // Determine if we have one or multiple queries
-if (queriesArray.size() == 1) {
-    setMetaDataRecord(queriesArray[0].trim().toString())
-    } else if (queriesArray.size() > 1) {
-    queriesArray.each { query ->
-            // Trim the query to remove any leading/trailing whitespace
-            query = query.trim()
-            // Check if the query is not empty
-            if (query) {
-                //log.info("queriesArray[${index}] ${query};")
-                setMetaDataRecord(query.toString())
-            }
-        }
-        }
-    log.info("ARRIVPO AL PRINT??")
-    """
-    echo '${queryOutput.toString()}'
-    """
-    */
     /*
     // Loop through the queriesArray and log information
         queriesArray.each { query ->
