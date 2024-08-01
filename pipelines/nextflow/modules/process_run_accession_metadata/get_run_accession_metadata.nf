@@ -37,6 +37,7 @@ process GET_RUN_ACCESSION_METADATA {
 
     script:
     //log.info("Executing Python script to get metadata for run: $run_accession")
+    //cp insert_into*  ${params.outDir}/${taxon_id}/${run_accession}
     """
     if [ ! -s "${params.outDir}/${taxon_id}/${run_accession}/insert_into_run.json" ] || \
        [ ! -s "${params.outDir}/${taxon_id}/${run_accession}/insert_into_study.json" ] || \
@@ -55,7 +56,6 @@ process GET_RUN_ACCESSION_METADATA {
 
     chmod +x $projectDir/bin/get_metadata.py  # Set executable permissions
     get_metadata.py --run ${run_accession}
-    cp insert_into*  ${params.outDir}/${taxon_id}/${run_accession}
     else
         echo "Metadata already exist.";
         cp ${params.outDir}/${taxon_id}/${run_accession}/insert_into* .
