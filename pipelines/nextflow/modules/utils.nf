@@ -89,7 +89,7 @@ def setLastCheckDate(String taxonId,String query_option) {
         def currentDate = LocalDateTime.now()
         def dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
         def formattedDate = currentDate.format(dateFormatter)
-        def firstDate = "2019-01-01"
+        def firstDate = Date.valueOf("2019-01-01")
         if(query_option.contains("insert")){
         // Execute the SQL INSERT statement
         def params = [taxonId, firstDate]
@@ -160,18 +160,20 @@ def setMetaDataRecord(String mysqlQuery){
 
 
 def getDataFromTable(String queryKey, String queryTable, String tableColumn, String tableValue){
-    def sql
-    sql = Sql.newInstance(jdbcUrl, params.transcriptomic_dbuser,params.transcriptomic_dbpassword,driver)
+    //def sql
+    //sql = Sql.newInstance(jdbcUrl, params.transcriptomic_dbuser,params.transcriptomic_dbpassword,driver)
     def result
     def retries = 5 // Set the number of retries
     def retryCount = 0
     def sleepTime = 2000 // Set the initial sleep time in milliseconds (2 seconds)
 
     while (retryCount < retries) {
+        def sql
         try {
+            sql = Sql.newInstance(jdbcUrl, params.transcriptomic_dbuser,params.transcriptomic_dbpassword,driver)
             def query = "SELECT ${queryKey} FROM ${queryTable}  WHERE ${tableColumn} = ?" 
             result = sql.rows(query,[tableValue])
-            if (result) {
+            if (result && !result.isEmpty()) {
                 return result // Return the result if it's not null
             } else {
                println("No result found, retrying... (${retryCount + 1}/${retries})")
@@ -189,7 +191,7 @@ def getDataFromTable(String queryKey, String queryTable, String tableColumn, Str
     }
     //return result
     println("Failed to retrieve data after ${retries} attempts")
-    return null
+    return 
 }
 
 def updateTable(String queryKey, String queryValue, String queryTable, String tableColumn, String tableValue) {

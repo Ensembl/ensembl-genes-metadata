@@ -32,7 +32,8 @@ process PROCESS_TAXON_ID {
 
     script:
     def taxonomyExists = getDataFromTable('taxon_id', 'meta', 'taxon_id', taxon_id)
-    if (!taxonomyExists.isEmpty()) {  
+    if (taxonomyExists && !taxonomyExists.isEmpty()) {
+    //if (!taxonomyExists.isEmpty()) {  
         lastCheckedDate = getDataFromTable('last_check', 'meta',  'taxon_id',  taxon_id)[0].last_check
     }else{
         // Add the new taxon id and last_check='2019-01-01'

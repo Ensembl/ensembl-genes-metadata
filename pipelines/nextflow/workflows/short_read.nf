@@ -43,9 +43,9 @@ if (!params.transcriptomic_dbuser) {
     exit 1, "Undefined --transcriptomic_dbuser parameter. Please provide the server user for the db connection"
 }
 
-if (!params.enscode) {
-    exit 1, "Undefined --enscode parameter. Please provide the enscode path"
-}
+//if (!params.enscode) {
+//    exit 1, "Undefined --enscode parameter. Please provide the enscode path"
+//}
 
 if (!params.cacheDir) {
     exit 1, "Undefined --cacheDir parameter. Please provide the cache dir directory's path"
