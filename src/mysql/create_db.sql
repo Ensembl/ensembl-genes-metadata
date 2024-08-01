@@ -66,7 +66,7 @@ ALTER TABLE run ADD UNIQUE (run_accession);
 create table meta (
 	meta_id int not null auto_increment,
 	taxon_id int not null,
-	last_check TIMESTAMP,
+	last_check DATE,
 	primary key (meta_id)
 );
 
