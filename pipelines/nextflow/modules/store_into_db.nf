@@ -24,7 +24,7 @@ process STORE_INTO_DB {
     scratch false
     label 'default'
     tag "$run_accession"
-    //maxForks 20
+    maxForks 10
 
     input:
     tuple val(taxon_id), val(gca), val(run_accession), val(query)
@@ -58,7 +58,7 @@ process STORE_INTO_DB {
             query = query.trim()
             // Check if the query is not empty
             if (query) {
-                //log.info("queriesArray[${index}] ${query};")
+                log.info("STORE INTO DB  ${query};")
                 setMetaDataRecord(query.toString())
             }
         }

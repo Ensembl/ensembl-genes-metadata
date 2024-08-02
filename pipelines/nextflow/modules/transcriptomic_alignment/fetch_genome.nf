@@ -22,7 +22,7 @@ process FETCH_GENOME {
 
   //storeDir "${params.outDir}/$taxon_id/$gca/ncbi_dataset/"
   afterScript "sleep $params.files_latency"  // Needed because of file system latency
-  maxForks 1
+  maxForks 10
 
   input:
   tuple val(taxon_id), val(gca), val(run_accession), val(pair1), val(pair2)

@@ -109,7 +109,7 @@ def setLastCheckDate(String taxonId,String query_option) {
 }
 
 def setMetaDataRecord(String mysqlQuery){
-    synchronized(this) {
+  //  synchronized(this) {
     def sql 
     sql = Sql.newInstance(jdbcUrl, params.transcriptomic_dbuser,params.transcriptomic_dbpassword,driver)
     
@@ -156,7 +156,7 @@ def setMetaDataRecord(String mysqlQuery){
     }
 }
 }
-}
+//}
 
 
 def getDataFromTable(String queryKey, String queryTable, String tableColumn, String tableValue){

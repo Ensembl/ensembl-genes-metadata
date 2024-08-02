@@ -22,7 +22,7 @@ process INDEX_GENOME {
     tag "$taxon_id:$gca"
     publishDir "${params.outDir}/$taxon_id/$gca/ncbi_dataset/", mode: 'copy'
     afterScript "sleep $params.files_latency"  // Needed because of file system latency
-    maxForks 1
+    maxForks 10
 
     input:
     tuple val(taxon_id), val(gca), val(run_accession), val(pair1), val(pair2), val(genomeDir)
