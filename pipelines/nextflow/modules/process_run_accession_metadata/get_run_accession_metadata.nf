@@ -29,19 +29,12 @@ process GET_RUN_ACCESSION_METADATA {
     tuple val(taxon_id), val(gca), val(run_accession), path("insert_into_run.json")
     tuple val(taxon_id), val(gca), val(run_accession), path("insert_into_study.json")
     tuple val(taxon_id), val(gca), val(run_accession), path("insert_into_data_file.json")
-    
-    //when:
-    //!file("${params.outDir}/${taxon_id}/${run_accession}/insert_into_run.json").exists() ||
-    //!file("${params.outDir}/${taxon_id}/${run_accession}/insert_into_study.json").exists() ||
-    //!file("${params.outDir}/${taxon_id}/${run_accession}/insert_into_data_file.json").exists()
 
     script:
-    //log.info("Executing Python script to get metadata for run: $run_accession")
-    //cp insert_into*  ${params.outDir}/${taxon_id}/${run_accession}
     """
     if [ ! -s "${params.outDir}/${taxon_id}/${run_accession}/insert_into_run.json" ] || \
-       [ ! -s "${params.outDir}/${taxon_id}/${run_accession}/insert_into_study.json" ] || \
-       [ ! -s "${params.outDir}/${taxon_id}/${run_accession}/insert_into_data_file.json" ]; then
+        [ ! -s "${params.outDir}/${taxon_id}/${run_accession}/insert_into_study.json" ] || \
+        [ ! -s "${params.outDir}/${taxon_id}/${run_accession}/insert_into_data_file.json" ]; then
 
     # Check if Python dependencies are installed
     # Read each line in the requirements file
