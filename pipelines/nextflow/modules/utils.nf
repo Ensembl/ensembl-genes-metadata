@@ -141,11 +141,11 @@ def setMetaDataRecord(String mysqlQuery){
         log.info("Final query: $query")
 
         try{
-             RetryUtil.retry(5, 1000) {   
+            RetryUtil.retry(5, 1000) {   
                     sql.withTransaction {
                         sql.execute query, paramValues
                 }
-             } 
+            } 
         } catch (Exception ex) {
             ex.printStackTrace()
         } finally {
@@ -156,7 +156,6 @@ def setMetaDataRecord(String mysqlQuery){
     }
 }
 }
-//}
 
 
 def getDataFromTable(String queryKey, String queryTable, String tableColumn, String tableValue){
@@ -176,9 +175,9 @@ def getDataFromTable(String queryKey, String queryTable, String tableColumn, Str
             if (result && !result.isEmpty()) {
                 return result // Return the result if it's not null
             } else {
-               println("No result found, retrying... (${retryCount + 1}/${retries})")
-               retryCount++
-               Thread.sleep(sleepTime) // Wait before retrying
+                println("No result found, retrying... (${retryCount + 1}/${retries})")
+                retryCount++
+                Thread.sleep(sleepTime) // Wait before retrying
             }                                                                                            
         
     } catch (Exception ex) {
