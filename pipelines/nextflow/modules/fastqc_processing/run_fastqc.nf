@@ -46,34 +46,5 @@ process RUN_FASTQC {
     echo "Directory fastqc already exists. Skipping process"
     fi
     """
-    
-   /* 
-    log.info  "FASTQCresults: ${pair1} ${pair2}"
-    //fastqcOUT=[[taxon_id:taxon_id, gca:gca, run_accession:run_accession, dataFileQuery:dataFileQuery, fastqc_dir:["${params.outDir}",taxon_id,run_accession,"fastqc"].join("/")]]
-    def fastqcDir = new File("${params.outDir}/${taxon_id}/${run_accession}/fastqc")
-    if (!fastqcDir.exists() || !(fastqcDir.isDirectory() && fastqcDir.list().length > 0)){
-    fastqcDir.mkdirs()
-    //dirPath = file("${params.outDir}/${taxon_id}/${run_accession}")
-    // Get query file
-    //dataFileQuery = dirPath.listFiles().findAll { it.name.endsWith('complete_insert_into_data_file.json') }
-    //if (dataFileQuery.size() == 0){
-    log.info("RunFASTQC on paired files for ${run_accession}")
-     
-        // Create fastqc directory if it does not exist
-    //    new File("fastqc").mkdirs()
-   //  if [ ! -d ${params.outDir}/${taxon_id}/${run_accession}/fastqc ]; then \ 
-    """
-    fastqc  ${pair1} ${pair2} --quiet --extract --threads ${task.cpus} --outdir fastqc; \
-    cp -r fastqc ${params.outDir}/${taxon_id}/${run_accession}
-    """
-    //return """
-    //echo '${fastqcOUT.toString()}'
-    //"""
-
-    }
-    """
-    echo "Fastqc completed"
-    """
-*/
 }
 

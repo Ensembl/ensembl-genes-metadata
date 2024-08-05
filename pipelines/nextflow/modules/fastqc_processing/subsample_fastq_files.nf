@@ -45,15 +45,5 @@ process SUBSAMPLE_FASTQ_FILES {
     rm ${fastq2}
     echo "subsampled  ${subsampled_fastq2}"
     """
-    //new File("${fastq1}").delete()
-    //new File("${fastq2}").delete()
-    
-
-    //rm ${fastq1}
-    //rm ${fastq2}
-    //echo '${subsample_OUT.toString()}'
-    //"""
-    //subsample_OUT.add([taxon_id:taxon_id, gca:gca, run_accession:run_accession, pair1:["${params.outDir}",taxon_id,run_accession,"${run_accession}_1.fastq.gz.sub"].join("/"), pair2:["${params.outDir}",taxon_id,run_accession,"${run_accession}_2.fastq.gz.sub"].join("/")])
-    //cp  ${subsampled_fastq1} .
 }
 

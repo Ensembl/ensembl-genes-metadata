@@ -33,26 +33,18 @@ process DOWNLOAD_PAIRED_FASTQS {
     
     input:
     tuple val(taxon_id), val(gca), val(run_accession)
-    //path(dataFileQuery)
 
     output:
     //val(download_OUT)
     tuple val(taxon_id), val(gca), val(run_accession), val("${params.outDir}/$taxon_id/$run_accession/${run_accession}_1.fastq.gz"), val("${params.outDir}/$taxon_id/$run_accession/${run_accession}_2.fastq.gz" ), val("${params.outDir}/$taxon_id/$run_accession/insert_into_data_file.json")
     
-    //!file("${params.outDir}/${taxon_id}/${run_accession}/${run_accession}_1.fastq.gz}").exists() ||
-    //!file("${params.outDir}/${taxon_id}/${run_accession}/${run_accession}_2.fastq.gz").exists() 
-   script: 
+
+    script: 
     // Parse the JSON data
     def parsedJson = new JsonSlurper().parse(file("${params.outDir}/$taxon_id/$run_accession/insert_into_data_file.json"))
     def dataFiles = parsedJson.data_files
     //def download_OUT = [[taxon_id:taxon_id, gca:gca, run_accession:run_accession, pair1:["${params.outDir}",taxon_id,run_accession,"${run_accession}_1.fastq.gz"].join("/"), pair2:["${params.outDir}",taxon_id,run_accession,"${run_accession}_2.fastq.gz"].join("/"),dataFileQuery:["${params.outDir}",taxon_id,run_accession,dataFileQuery].join("/")]]
 
-    // Check if there are exactly two data files
-    //if (dataFiles.size() != 2) {
-    //    return """
-    //    echo '${download_OUT.toString()}'
-    //    """
-    //}
     if (dataFiles.size() == 2){
     def file1 = dataFiles[0]
     def file2 = dataFiles[1]
@@ -66,81 +58,61 @@ process DOWNLOAD_PAIRED_FASTQS {
     if(!url1 || !url2 || !md5_1 || !md5_2){
             log.error("Metadata corrupted")
     }else{
-    def pair1Path = "${params.outDir}/$taxon_id/$run_accession/${run_accession}_1.fastq.gz"
-    def pair2Path = "${params.outDir}/$taxon_id/$run_accession/${run_accession}_2.fastq.gz"
-    def pair1SubPath = "${params.outDir}/$taxon_id/$run_accession/${run_accession}_1.fastq.gz.sub"
-    def pair2SubPath = "${params.outDir}/$taxon_id/$run_accession/${run_accession}_2.fastq.gz.sub"
-    def retryCount = 0
-    def maxRetries = 3
-    def md5Match = false
-    def filesValid = false
-    //def qc_status = getDataFromTable("qc_status", "run", "run_accession", run_accession)[0].qc_status
-    def dirPath = file("${params.outDir}/${taxon_id}/${run_accession}")
-    // List and filter .gz files
-    def gzFiles = dirPath.listFiles().findAll { it.name.endsWith('.gz') }
-    // List and filter .gz.sub files
-    def subFiles = dirPath.listFiles().findAll { it.name.endsWith('.gz.sub') }
-    log.info("subFiles ${subFiles} gzFiles ${gzFiles}")
-    if (gzFiles.size() !=2 || subFiles.size() !=2){
-        filesValid = true
-      //  return """
-      //  echo '${download_OUT.toString()}'
-      //  """
-    //}
-    // Check for file issues and QC status
-    //if (!url1 || !url2 || !md5_1 || !md5_2) { // || qc_status == 'FILE_ISSUE') {
-    //    return 
-    //    """
-    //    echo '${download_OUT.toString()}'
-    //    """
-    //}
+        def retryCount = 0
+        def maxRetries = 3
+        def md5Match = false
+        def filesValid = false
+        def dirPath = file("${params.outDir}/${taxon_id}/${run_accession}")
+        // List and filter .gz files
+        def gzFiles = dirPath.listFiles().findAll { it.name.endsWith('.gz') }
+        // List and filter .gz.sub files
+        def subFiles = dirPath.listFiles().findAll { it.name.endsWith('.gz.sub') }
+        log.info("subFiles ${subFiles} gzFiles ${gzFiles}")
+        if (gzFiles.size() !=2 || subFiles.size() !=2){
+            filesValid = true
+        
+            while (!md5Match && retryCount < maxRetries) {
+                """
+                wget -qq -c -O ${pair1Path} ftp://${url1}
+                """.execute().waitFor()
+            
+                """
+                wget -qq -c -O ${pair2Path} ftp://${url2}
+                """.execute().waitFor()
 
-    while (!md5Match && retryCount < maxRetries) {
-        """
-        wget -qq -c -O ${pair1Path} ftp://${url1}
-        """.execute().waitFor()
-    
-        """
-        wget -qq -c -O ${pair2Path} ftp://${url2}
-        """.execute().waitFor()
+                // Calculate MD5 checksums of downloaded files
+                md5Pair1 = DigestUtils.md5Hex(Files.newInputStream(file(pair1Path)))
+                md5Pair2 = DigestUtils.md5Hex(Files.newInputStream(file(pair2Path)))
 
-        // Calculate MD5 checksums of downloaded files
-        md5Pair1 = DigestUtils.md5Hex(Files.newInputStream(file(pair1Path)))
-        md5Pair2 = DigestUtils.md5Hex(Files.newInputStream(file(pair2Path)))
+                // Check if both MD5 checksums are present in stored MD5 checksums
+                if ([md5_1, md5_2].containsAll([md5Pair1, md5Pair2])) {
+                    md5Match = true
+                    log.info("MD5 checksums match!")
+                } else {
+                    log.info("MD5 checksums do not match! Retrying...")
+                    """
+                    rm ${pair1Path}
+                    """.execute().waitFor()
+                    """
+                    rm ${pair2Path}
+                    """.execute().waitFor()
+                    retryCount++
+                    Thread.sleep(1000) // Wait for 1 second before retrying
+                }
+            }
 
-        // Check if both MD5 checksums are present in stored MD5 checksums
-        if ([md5_1, md5_2].containsAll([md5Pair1, md5Pair2])) {
-            md5Match = true
-            log.info("MD5 checksums match!")
+        if (!md5Match) {
+            //throw new RuntimeException("MD5 checksums do not match after $maxRetries retries!")
+            log.info("MD5 checksums do not match after $maxRetries retries!")
+            updateTable("run_accession", run_accession, "run", "qc_status", "DOWNLOAD_FAILED")
         } else {
-            log.info("MD5 checksums do not match! Retrying...")
-            """
-            rm ${pair1Path}
-            """.execute().waitFor()
-            """
-            rm ${pair2Path}
-            """.execute().waitFor()
-            retryCount++
-            Thread.sleep(1000) // Wait for 1 second before retrying
+        //download_OUT.add([taxon_id:taxon_id, gca:gca, run_accession:run_accession, pair1:["${params.outDir}",taxon_id,run_accession,"${run_accession}_1.fastq.gz"].join("/"), pair2:["${params.outDir}",taxon_id,run_accession,"${run_accession}_2.fastq.gz"].join("/"),dataFileQuery:["${params.outDir}",taxon_id,run_accession,dataFileQuery].join("/")])
+        """
+        cp ${pair1Path} .
+        cp ${pair2Path} .
+        """
         }
-    }
-
-    if (!md5Match) {
-        //throw new RuntimeException("MD5 checksums do not match after $maxRetries retries!")
-        log.info("MD5 checksums do not match after $maxRetries retries!")
-        updateTable("run_accession", run_accession, "run", "qc_status", "DOWNLOAD_FAILED")
-        //return """
-        //echo '${download_OUT.toString()}'
-        //"""
-    } else {
-    //download_OUT=[]
-    //download_OUT.add([taxon_id:taxon_id, gca:gca, run_accession:run_accession, pair1:["${params.outDir}",taxon_id,run_accession,"${run_accession}_1.fastq.gz"].join("/"), pair2:["${params.outDir}",taxon_id,run_accession,"${run_accession}_2.fastq.gz"].join("/"),dataFileQuery:["${params.outDir}",taxon_id,run_accession,dataFileQuery].join("/")])
-    """
-    cp ${pair1Path} .
-    cp ${pair2Path} .
-    """
-       }
-    }
+        }
     }
     }
     """
