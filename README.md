@@ -2,11 +2,13 @@
 
 This pipeline processes transcriptomic data for various taxon IDs, performing a series of steps to fetch data, perform quality checks, subsample files, run alignments, and store the results of each step in a database. The pipeline is designed for scalability and reproducibility using Nextflow.
 
+![plot](./plot.jpeg)
+
 Steps in the Pipeline:
 1- Fetch Run Accessions from ENA: For each taxon ID, retrieve the list of run accessions from the ENA archive since January 1, 2019, or from the last check.
-2- Fetch Metadata and Perform Quality Checks: For each run accession, obtain metadata from ENA and conduct quality checks using FASTQC.
+2- Fetch Metadata and Perform Quality Checks: For each run accession, get metadata from ENA and conduct quality checks using FASTQC, store results into the db.
 3- Subsample FASTQ Files: Subsample the paired FASTQ files to reduce their size.
-4- Run STAR Alignment: Align the subsampled FASTQ files to the provided genome assembly using the STAR aligner.
+4- Run STAR Alignment: Align the subsampled FASTQ files to the provided genome assembly using the STAR aligner, store results into the db.
 
 
 ### Mandatory arguments
@@ -18,8 +20,6 @@ The structure of the file can cahnge according to the running options
 | taxon_id,gca (header)   | 
 | <taxon_id>,<gca>        |
 
-#### `--enscode`
-Path to the root directory containing the Perl repositories
 
 #### `--outDir`
 Path to the directory where to store the results of the pipeline
@@ -44,20 +44,24 @@ The read only username for the host.
 
 
 ```bash
-nextflow -C $ENSCODE/ensembl-genes-metadata/nextflow.config run $ENSCODE/ensembl-genes-metadata/pipelines/nextflow/workflows/short_read.nf -entry SHORT_READ --bioperl <bioperl_lib> --enscode $ENSCODE --csvFile <csv_file_path> --outDir <output_dir_path> --transcriptomic_dbname <db name> --transcriptomic_dbhost <mysql_host> --transcriptomic_dbport <mysql_port> --transcriptomic_dbuser <user> --user_r <read_user>  --transcriptomic_dbpassword <mysql_password> -profile slurm
+nextflow -C $ENSCODE/ensembl-genes-metadata/nextflow.config run $ENSCODE/ensembl-genes-metadata/pipelines/nextflow/workflows/short_read.nf -entry SHORT_READ  --csvFile <csv_file_path> --outDir <output_dir_path> --transcriptomic_dbname <db name> --transcriptomic_dbhost <mysql_host> --transcriptomic_dbport <mysql_port> --transcriptomic_dbuser <user> --user_r <read_user>  --transcriptomic_dbpassword <mysql_password> -profile slurm
 ```
 
 
 ### Optional arguments
 
-#### `--bioperl`
-Path to the directory containing the BioPerl 1.6.924 library. If not provided, the value passed to `--enscode` will be used as root, i.e. `<enscode>/bioperl-1.6.924`.
 
 #### `--cacheDir`
 Path to the directory to use as cache for the intermediate files. If not provided, the value passed to `--outDir` will be used as root, i.e. `<outDir>/cache`.
 
 #### `--files_latency`
 Sleep time (in seconds) after the genome and proteins have been fetched. Needed by several file systems due to their internal latency. By default, 60 seconds.
+
+#### `--cleanOutputDir`
+Clean outDir, default False.
+
+#### `--backupDB`
+Backup database using day and time id, default True.
 
 ### Pipeline configuration
 

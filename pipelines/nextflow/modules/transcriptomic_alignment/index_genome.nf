@@ -31,9 +31,9 @@ process INDEX_GENOME {
     tuple val(taxon_id), val(gca), val(run_accession), val(pair1), val(pair2), val(genomeDir)
 
     script:
-    def genomeDirPath= new File("${genomeDir}")
+    def genomeDirPath= new File(genomeDir)
     def genomeIndexFile = genomeDirPath.listFiles().find { it.name.endsWith('Genome') }
-    if (genomeIndexFile.size()>0 || genomeIndexFile[0].length() == 0) {
+    if (!genomeIndexFile || genomeIndexFile.length() == 0) {
     //new File("${genomeDir}/Genome")
     //if (!genomeIndexFile.exists() || genomeIndexFile.length() == 0) {
     // Read the .fna file and perfor

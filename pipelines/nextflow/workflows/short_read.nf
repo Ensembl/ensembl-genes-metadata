@@ -76,7 +76,6 @@ if (params.help) {
     log.info '  --enscode STR                Enscode path '
     log.info '  --outDir STR                 Output directory. Default is workDir'
     log.info '  --csvFile STR                Path for the csv containing the db name' 
-    log.info '  --bioperl STR                BioPerl path (optional)'
     exit 1
 }
 
