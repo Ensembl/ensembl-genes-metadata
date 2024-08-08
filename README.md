@@ -4,11 +4,16 @@ This pipeline processes transcriptomic data for various taxon IDs, performing a 
 
 ![plot](./plot.jpeg)
 
-Steps in the Pipeline:
-1- Fetch Run Accessions from ENA: For each taxon ID, retrieve the list of run accessions from the ENA archive since January 1, 2019, or from the last check.
-2- Fetch Metadata and Perform Quality Checks: For each run accession, get metadata from ENA and conduct quality checks using FASTQC, store results into the db.
-3- Subsample FASTQ Files: Subsample the paired FASTQ files to reduce their size.
-4- Run STAR Alignment: Align the subsampled FASTQ files to the provided genome assembly using the STAR aligner, store results into the db.
+## Steps in the Pipeline:
+
+1. **Fetch Run Accessions from ENA**: For each taxon ID, retrieve the list of run accessions from the ENA archive since January 1, 2019, or from the last check.
+
+2. **Fetch Metadata and Perform Quality Checks**: For each run accession, get metadata from ENA and conduct quality checks using FASTQC, then store the results into the database.
+
+3. **Subsample FASTQ Files**: Subsample the paired FASTQ files to reduce their size.
+
+4. **Run STAR Alignment**: Align the subsampled FASTQ files to the provided genome assembly using the STAR aligner, then store the results into the database.
+
 
 
 ### Mandatory arguments
