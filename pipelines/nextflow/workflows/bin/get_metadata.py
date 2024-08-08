@@ -113,7 +113,8 @@ def json_parse(response: str, fields: list):
             )[:250],
             "library_name": "; ".join(
                 value
-                for value in [output_data["library_source"], output_data["library_name"]]
+                for value in [re.sub(r"[!\"#$%&()*\+,\-\'.\/:;<=>?@\[\]^`{|}~]", "",output_data["library_source"]),
+                            re.sub(r"[!\"#$%&()*\+,\-\'.\/:;<=>?@\[\]^`{|}~]", "",output_data["library_name"])]
                 if value is not None
             ).rstrip("; "),
             "library_selection": output_data["library_selection"],
