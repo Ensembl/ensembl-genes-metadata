@@ -33,6 +33,7 @@ process INDEX_GENOME {
     script:
     def genomeDirPath= new File(genomeDir)
     def genomeIndexFile = genomeDirPath.listFiles().find { it.name.endsWith('Genome') }
+    log.info("${genomeIndexFile}")
     if (!genomeIndexFile || genomeIndexFile.length() == 0) {
     //new File("${genomeDir}/Genome")
     //if (!genomeIndexFile.exists() || genomeIndexFile.length() == 0) {
@@ -55,7 +56,7 @@ process INDEX_GENOME {
         }
     }
     log.info("numberOfReferences: ${numberOfReferences}")
-    log.info("genomeLength: ${genomeLength}")
+    log.info("genomeLength: ${genomeLength.abs()}")
     // Read the FASTA file
     //def fastaContent = genomefilePath.text
 
@@ -69,11 +70,11 @@ process INDEX_GENOME {
     def readLength = 100
 
     // Calculate genomeSAindexNbases
-    def genomeSAindexNbases = min(14, (Math.log(genomeLength as Double) / Math.log(2) / 2 - 1) as int)
+    def genomeSAindexNbases = min(14, (Math.log(genomeLength.abs() as Double) / Math.log(2) / 2 - 1) as int)
 
     // Calculate genomeChrBinNbits
     //def genomeChrBinNbits = min(18, (Math.log(Math.max(genomeLength as Double/ numberOfReferences as Double, readLength as Double)) / Math.log(2)) as int)
-    def genomeChrBinNbits = min(18, (Math.log(Math.max((genomeLength / numberOfReferences) as Double, readLength as Double)) / Math.log(2)) as int)
+    def genomeChrBinNbits = min(18, (Math.log(Math.max((genomeLength.abs() / numberOfReferences) as Double, readLength as Double)) / Math.log(2)) as int)
 
     // Print the calculated values for debugging
     log.info("genomeSAindexNbases: ${genomeSAindexNbases}")
@@ -81,12 +82,14 @@ process INDEX_GENOME {
 
     // Execute STAR command with calculated parameters #if [ ! -s "${genomeDir}/Genome" ]; then \
     """
+    if [ ! -s "${genomeDir}/Genome" ]; \
+    then
     rm -rf ${genomeDir}/_STARtmp ; 
     STAR  --runThreadN ${task.cpus} --runMode genomeGenerate \
     --outFileNamePrefix ${genomeDir} --genomeDir ${genomeDir} \
     --genomeSAindexNbases ${genomeSAindexNbases} \
     --genomeChrBinNbits ${genomeChrBinNbits} \
-    --genomeFastaFiles  ${genomeFile} --outTmpDir _STARtmp;
+    --genomeFastaFiles  ${genomeFile} --outTmpDir _STARtmp;fi
     """
     } else {
     """
