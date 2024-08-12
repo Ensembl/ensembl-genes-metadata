@@ -20,6 +20,8 @@ nextflow.enable.dsl=2
 
 import java.nio.file.*
 import java.nio.file.attribute.BasicFileAttributes
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 // Show help message
 params.help = false
@@ -121,16 +123,20 @@ workflow.onComplete {
         def outDir = Paths.get(params.outDir)
 
         Files.newDirectoryStream(outDir, "*").each { path ->
-        deleteRecursively(path)
+        if (!path.toString().endsWith(".gz")) {
+            deleteRecursively(path)
+            }
         }
-
         log.info "Cleaning process completed successfully."
     } catch (Exception e) {
         log.error "Exception occurred while executing cleaning command: ${e.message}", e
     }
     }
     if (params.backupDB) {
-        def backupFilePath = "${params.outDir}/${params.transcriptomic_dbname}_backup.sql"
+        //def backupFilePath = "${params.outDir}/${params.transcriptomic_dbname}_backup.sql"
+        // Generate a timestamp
+        def timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"))
+        def backupFilePath = "${params.outDir}/${params.transcriptomic_dbname}_backup_${timestamp}.sql"
         def gzipFilePath = "${backupFilePath}.gz"
 
         // Define the database backup command as a list of arguments
