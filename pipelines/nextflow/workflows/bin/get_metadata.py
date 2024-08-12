@@ -121,8 +121,8 @@ def json_parse(response: str, fields: list):
             "tissue": "; ".join(
                 value
                 for value in [
-                    re.sub(r"[!\"#$%&()*\+,\-\'.\/:;<=>?@\[\]^`{|}~]", "", output_data["tissue_type"]),
-                    re.sub(r"[!\"#$%&()*\+,\-\'.\/:;<=>?@\[\]^`{|}~]", "", output_data["tissue_lib"]),
+                    re.sub(r"[!\"#$%&()*\+,\-\'.\/:;<=>?@\[\]^`{|}~]", "", output_data["tissue_type"]).lower(),
+                    re.sub(r"[!\"#$%&()*\+,\-\'.\/:;<=>?@\[\]^`{|}~]", "", output_data["tissue_lib"]).lower(),
                 ]
                 if value != ""
             ).rstrip("; "),
