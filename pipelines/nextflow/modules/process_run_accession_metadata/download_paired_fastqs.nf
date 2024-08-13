@@ -58,6 +58,8 @@ process DOWNLOAD_PAIRED_FASTQS {
     if(!url1 || !url2 || !md5_1 || !md5_2){
             log.error("Metadata corrupted")
     }else{
+        def pair1Path = "${params.outDir}/$taxon_id/$run_accession/${run_accession}_1.fastq.gz"
+        def pair2Path = "${params.outDir}/$taxon_id/$run_accession/${run_accession}_2.fastq.gz"
         def retryCount = 0
         def maxRetries = 3
         def md5Match = false
