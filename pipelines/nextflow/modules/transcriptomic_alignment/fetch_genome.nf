@@ -33,7 +33,7 @@ process FETCH_GENOME {
   
   script:
   """
-  if [ ! -d "${params.outDir}/${taxon_id}/${gca}/ncbi_dataset/" ]; then
+  if [ ! -d "${params.outDir}/${taxon_id}/${gca}/ncbi_dataset/"  ]  ||  [ ! -n "\$(find "\${params.outDir}/${taxon_id}/${gca}/ncbi_dataset/" -type f -name '*.fna' 2>/dev/null)" ]; then
     echo "Directory ncbi_dataset does not exist. Proceeding with download..."
     curl --retry 3  -X GET "${params.ncbiBaseUrl}/${gca}/download?include_annotation_type=GENOME_FASTA&hydrated=FULLY_HYDRATED" -H "Accept: application/zip" --output genome_file.zip
     unzip -j genome_file.zip
