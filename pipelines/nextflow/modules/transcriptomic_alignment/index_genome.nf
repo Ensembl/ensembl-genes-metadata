@@ -39,7 +39,7 @@ process INDEX_GENOME {
     //if (!genomeIndexFile.exists() || genomeIndexFile.length() == 0) {
     // Read the .fna file and perfor
     // d= new File("${genomeDir}")
-    def genomefilePath=d.listFiles().find { it.name.endsWith('.fna') }
+    def genomefilePath=genomeDirPath.listFiles().find { it.name.endsWith('.fna') }
     def genomeFile=genomefilePath.absolutePath
     // Function to calculate the min value
     def min = { a, b -> a < b ? a : b }
