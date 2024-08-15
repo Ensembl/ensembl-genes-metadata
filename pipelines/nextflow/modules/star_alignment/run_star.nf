@@ -27,7 +27,7 @@ process RUN_STAR {
     val(pair1), val(pair2), val(genomeDir)
 
     output:
-    tuple val(taxon_id), val(gca), val(run_accession), val(genomeDir)\
+    tuple val(taxon_id), val(gca), val(run_accession), val(genomeDir),\
     val("${params.outDir}/${taxon_id}/${run_accession}/star/${run_accession}_Aligned.sortedByCoord.out.bam")
     // val("${params.outDir}/${taxon_id}/${run_accession}/star/${run_accession}_SJ.out.tab")
 
@@ -46,20 +46,3 @@ process RUN_STAR {
     """
     
 }
-/*
-linuxbrew/bin/STAR  --limitBAMsortRAM 2006305390 --outBAMsortingThreadN 30
---limitSjdbInsertNsj 2000000 --outFilterIntronMotifs RemoveNoncanonicalUnannotated
---outSAMstrandField intronMotif --runThreadN 30 --twopassMode Basic 
---runMode alignReads --genomeDir /hps/nobackup/flicek/ensembl/genebuild/
-ftricomi/fish/mummichog_annotation/fundulus_heteroclitus/GCA_011125445.2
-/genome_dumps --readFilesIn /hps/nobackup/flicek/ensembl/genebuild/ftricomi
-/fish/mummichog_annotation/fundulus_heteroclitus/GCA_011125445.2//rnaseq/input/
-SRR12475462_1.fastq.gz /hps/nobackup/flicek/ensembl/genebuild/ftricomi/fish/
-mummichog_annotation/fundulus_heteroclitus/GCA_011125445.2//rnaseq/input/S
-RR12475462_2.fastq.gz --outFileNamePrefix /hps/nobackup/flicek/ensembl/genebuild/
-ftricomi/fish/mummichog_annotation/fundulus_heteroclitus/GCA_011125445.2/rnaseq/
-output/SRR12475462_   --outSAMattrRGline "ID:SRR12475462" 
---outTmpDir /hps/nobackup/flicek/ensembl/genebuild/ftricomi/fish/
-mummichog_annotation/fundulus_heteroclitus/GCA_011125445.2/rnaseq/output
-/SRR12475462_tmp --outSAMtype BAM SortedByCoordinate --outBAMsortingBinsN 200
-*/
