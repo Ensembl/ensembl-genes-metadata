@@ -56,11 +56,11 @@ process DOWNLOAD_PAIRED_FASTQS {
         
             while (!md5Match && retryCount < maxRetries) {
                 """
-                wget -qq -c -O ${pair1Path} ftp://${url1}
+                wget -qq -c -O ${pair1Path} ${url1}
                 """.execute().waitFor()
             
                 """
-                wget -qq -c -O ${pair2Path} ftp://${url2}
+                wget -qq -c -O ${pair2Path} ${url2}
                 """.execute().waitFor()
 
                 // Calculate MD5 checksums of downloaded files
