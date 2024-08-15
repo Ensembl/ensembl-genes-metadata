@@ -16,21 +16,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-process INDEX_BAM {
+process INDEX_CRAM {
     tag "$run_accession"
     label 'samtools'
     storeDir "${params.outDir}/$taxon_id/$run_accession/star/"
     afterScript "sleep $params.files_latency"  // Needed because of file system latency
 
     input:
-    tuple val(taxon_id), val(gca), val(run_accession), val(genomeDir),val(bamFile)
-
-    output:
-    tuple val(taxon_id), val(gca), val(run_accession), val(genomeDir),val(bamFile)
+    tuple val(taxon_id), val(gca), val(run_accession), val(genomeDir),path(cramFile)
 
     script:
     """
-    samtools index ${bamFile} ${bamFile}.bai
+    samtools index ${cramFile} ${cramFile}.crai
     """
     
 }

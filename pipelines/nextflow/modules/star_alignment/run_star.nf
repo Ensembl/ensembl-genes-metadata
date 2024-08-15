@@ -27,9 +27,9 @@ process RUN_STAR {
     val(pair1), val(pair2), val(genomeDir)
 
     output:
-    tuple val(taxon_id), val(gca), val(run_accession),\
-    val("${params.outDir}/${taxon_id}/${run_accession}/star/${run_accession}_Aligned.sortedByCoord.out.bam"), \
-    val("${params.outDir}/${taxon_id}/${run_accession}/star/${run_accession}_SJ.out.tab")
+    tuple val(taxon_id), val(gca), val(run_accession), val(genomeDir)\
+    val("${params.outDir}/${taxon_id}/${run_accession}/star/${run_accession}_Aligned.sortedByCoord.out.bam")
+    // val("${params.outDir}/${taxon_id}/${run_accession}/star/${run_accession}_SJ.out.tab")
 
     script:
     def starTmpDir =  "${params.outDir}/${taxon_id}/${run_accession}/star/tmp"

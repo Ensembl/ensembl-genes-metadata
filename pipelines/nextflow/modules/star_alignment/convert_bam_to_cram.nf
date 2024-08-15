@@ -16,7 +16,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-process INDEX_BAM {
+process CONVERT_BAM_TO_CRAM {
     tag "$run_accession"
     label 'samtools'
     storeDir "${params.outDir}/$taxon_id/$run_accession/star/"
@@ -26,11 +26,14 @@ process INDEX_BAM {
     tuple val(taxon_id), val(gca), val(run_accession), val(genomeDir),val(bamFile)
 
     output:
-    tuple val(taxon_id), val(gca), val(run_accession), val(genomeDir),val(bamFile)
+    tuple val(taxon_id), val(gca), val(run_accession), path('*.cram')
 
     script:
+    def genomeDirPath= new File(genomeDir)
+    def genomeIndexFile = genomeDirPath.listFiles().find { it.name.endsWith('Genome') }
     """
-    samtools index ${bamFile} ${bamFile}.bai
+    samtools view -C -T reference.fa -o output.cram input.bam
+
     """
     
 }

@@ -35,6 +35,10 @@ process INDEX_GENOME {
     def genomeIndexFile = genomeDirPath.listFiles().find { it.name.endsWith('Genome') }
     log.info("${genomeIndexFile}")
     if (!genomeIndexFile || genomeIndexFile.length() == 0) {
+    //new File("${genomeDir}/Genome")
+    //if (!genomeIndexFile.exists() || genomeIndexFile.length() == 0) {
+    // Read the .fna file and perfor
+    // d= new File("${genomeDir}")
     def genomefilePath=d.listFiles().find { it.name.endsWith('.fna') }
     def genomeFile=genomefilePath.absolutePath
     // Function to calculate the min value
@@ -43,11 +47,15 @@ process INDEX_GENOME {
     // Initialize variables
     def numberOfReferences = 0
     def genomeLength = 0
-    // Read the FASTA file line by line
-    genomefilePath.eachLine { line ->
-        if (line.startsWith('>')) {
-            numberOfReferences++
-        } else {
+    def retryCount = 0
+    def maxRetries = 3
+    def filesValid = false
+    while (!filesValid && retryCount < maxRetries) {
+        // Read the FASTA file line by line
+        genomefilePath.eachLine { line ->
+            if (line.startsWith('>')) {
+                numberOfReferences++
+            } else {
             genomeLength += line.trim().length()
         }
     }
@@ -62,6 +70,10 @@ process INDEX_GENOME {
     // Calculate the genome length (excluding header lines)
     //def genomeLength = fastaContent.split('\n').findAll { !it.startsWith('>') }.join('').length()
 
+    if (genomeLength != 0) {
+        filesValid = true
+        }
+    }
     // Define read length (you may need to adjust this based on your data)
     def readLength = 100
 
