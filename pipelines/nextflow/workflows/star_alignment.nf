@@ -91,8 +91,8 @@ workflow STAR_ALIGNMENT {
 
     def genomeAndDataToAlign = FETCH_GENOME(data.flatten())
     def genomeIndexAndDataToAlign = INDEX_GENOME(genomeAndDataToAlign)
-    def pairedFastqFiles=DOWNLOAD_PAIRED_FASTQS(runAccessionMetadataRunOutput)
-    def starOutput = RUN_STAR(genomeIndexAndDataToAlign)  
+    def pairedFastqFiles=DOWNLOAD_PAIRED_FASTQS(genomeIndexAndDataToAlign)
+    def starOutput = RUN_STAR(pairedFastqFiles)  
     def indexBamOutput = INDEX_BAM (starOutput)   
     if (params.bam2cram){
         def cramFile = CONVERT_BAM_TO_CRAM (indexBamOutput)
