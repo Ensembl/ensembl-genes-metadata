@@ -30,24 +30,9 @@ if (params.help){
     exit 0
 }
 
-if (!params.transcriptomic_dbname) {
+if (!params.bam2cram) {
     exit 1, "Undefined --params.transcriptomic_dbname parameter. Please provide the server host for the db connection"
 }
-
-if (!params.transcriptomic_dbhost) {
-    exit 1, "Undefined --transcriptomic_dbhost parameter. Please provide the server host for the db connection"
-}
-
-if (!params.transcriptomic_dbport) {
-    exit 1, "Undefined --transcriptomic_dbport parameter. Please provide the server port for the db connection"
-}
-if (!params.transcriptomic_dbuser) {
-    exit 1, "Undefined --transcriptomic_dbuser parameter. Please provide the server user for the db connection"
-}
-
-//if (!params.enscode) {
-//    exit 1, "Undefined --enscode parameter. Please provide the enscode path"
-//}
 
 if (!params.cacheDir) {
     exit 1, "Undefined --cacheDir parameter. Please provide the cache dir directory's path"
@@ -66,16 +51,10 @@ if (params.help) {
     log.info '-------------------------------------------------------'
     log.info ''
     log.info 'Usage: '
-    log.info ' nextflow -C ensembl-genes-metadata/nextflow.config run nextflow/workflows/short_read.nf -entry SHORT_READ  '
+    log.info ' nextflow -C ensembl-genes-metadata/nextflow_star.config run nextflow/workflows/star_alignment.nf -entry STAR_ALIGNMENT  '
     log.info ''
     log.info 'Options:'
-    log.info '  --transcriptomic_dbname STR                   Db name '
-    log.info '  --transcriptomic_dbhost STR                   Db host server '
-    log.info '  --transcriptomic_dbport INT                   Db port  '
-    log.info '  --transcriptomic_dbuser STR                   Db user  '
-    log.info '  --transcriptomic_dbpassword STR                   Db password  '
-    log.info '  --user_r STR                 Db user read_only'
-    log.info '  --enscode STR                Enscode path '
+    log.info '  --bam2cram STR                   Oprion to convert BAM file to CRAM format  '
     log.info '  --outDir STR                 Output directory. Default is workDir'
     log.info '  --csvFile STR                Path for the csv containing the db name' 
     exit 1
@@ -87,33 +66,39 @@ if (params.help) {
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
-include { PROCESS_TAXONOMY_INFO } from '../subworkflows/process_taxonomy_info.nf'
-include { PROCESS_RUN_ACCESSION_METADATA } from '../subworkflows/process_run_accession_metadata.nf'
-include { FASTQC_PROCESSING } from '../subworkflows/fastqc_processing.nf'
-include { RUN_ALIGNMENT } from '../subworkflows/run_alignment.nf'
+
+include { FETCH_GENOME } from '../modules/star_alignment/fetch_genome.nf'
+include { INDEX_GENOME } from '../modules/star_alignment/index_genome.nf'
+include { DOWNLOAD_PAIRED_FASTQS } from '../modules/star_alignment/download_paired_fastqs.nf'
+include { RUN_STAR } from '../modules/star_alignment/run_star.nf'
+include { INDEX_BAM } from '../modules/star_alignment/index_bam.nf'
+include { CONVERT_BAM_TO_CRAM } from '../modules/star_alignment/convert_bam_to_cram.nf'
+include { INDEX_CRAM } from '../modules/star_alignment/index_cram.nf'
+
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     MAIN WORKFLOW
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
-workflow SHORT_READ {
+workflow STAR_ALIGNMENT {
     def data = Channel.fromPath(params.csvFile, type: 'file', checkIfExists: true)
                 .splitCsv(sep:',', header:true)
-                .map { row -> [taxon_id:row.get('taxon_id'), gca:row.get('gca')]}
-    data.each { dataRow -> dataRow.view() }            
-    //taxon id present or not? if yes get all new short read data after this date if not add it for the first time
-    def taxonomyResults= PROCESS_TAXONOMY_INFO(data)
-    def fastqFilesMetadata  = PROCESS_RUN_ACCESSION_METADATA(taxonomyResults).collect()
-    dd=fastqFilesMetadata
-    dd.each{ d-> d.view()}
-    //def fastQCMetadata = FASTQC_PROCESSING(fastqFilesMetadata).collect()
-    //RUN_ALIGNMENT(fastQCMetadata)
-    RUN_ALIGNMENT(fastqFilesMetadata)
-    //if (params.cleanCache) {
-        // Clean cache directories
-    //    exec "rm -rf ${params.cacheDir}/*"
-    //}
+                .map { row -> [taxon_id:row.get('taxon_id'), gca:row.get('gca'), \
+                run_accession:row.get('run_accession'), pair1:row.get('pair1'),
+                pair2:row.get('pair2'),md5_1:row.get('md5_1'),md5_2:row.get('md5_2')]}
+    data.each { dataRow -> dataRow.view() }    
+
+    def genomeAndDataToAlign = FETCH_GENOME(data.flatten())
+    def genomeIndexAndDataToAlign = INDEX_GENOME(genomeAndDataToAlign)
+    def pairedFastqFiles=DOWNLOAD_PAIRED_FASTQS(runAccessionMetadataRunOutput)
+    def starOutput = RUN_STAR(genomeIndexAndDataToAlign)  
+    def indexBamOutput = INDEX_BAM (starOutput)   
+    if (params.bam2cram){
+        def cramFile = CONVERT_BAM_TO_CRAM (indexBamOutput)
+        def indexCramFile =  INDEX_CRAM (cramFile)
+    }   
+
 }  
 
 workflow.onComplete {
@@ -132,51 +117,6 @@ workflow.onComplete {
         log.error "Exception occurred while executing cleaning command: ${e.message}", e
     }
     }
-    if (params.backupDB) {
-        //def backupFilePath = "${params.outDir}/${params.transcriptomic_dbname}_backup.sql"
-        // Generate a timestamp
-        def timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"))
-        def backupFilePath = "${params.outDir}/${params.transcriptomic_dbname}_backup_${timestamp}.sql"
-        def gzipFilePath = "${backupFilePath}.gz"
-
-        // Define the database backup command as a list of arguments
-        def mysqldumpCommand = [
-            'mysqldump',
-            '-h', params.transcriptomic_dbhost,
-            '-P', params.transcriptomic_dbport.toString(),
-            '-u', params.transcriptomic_dbuser,
-            '-p' + params.transcriptomic_dbpassword,
-            params.transcriptomic_dbname
-        ]
-
-        log.info "Executing database backup command: ${mysqldumpCommand.join(' ')}"
-
-        def processBuilder = new ProcessBuilder(mysqldumpCommand)
-        processBuilder.redirectOutput(new File(backupFilePath))
-        processBuilder.redirectErrorStream(true) // Combine stdout and stderr
-
-        def mysqldumpProcess = processBuilder.start()
-        mysqldumpProcess.waitFor()
-
-        if (mysqldumpProcess.exitValue() != 0) {
-            log.error "Database backup failed. See error output for details."
-            mysqldumpProcess.inputStream.eachLine { line -> log.error line }
-        } else {
-        log.info "Database backup completed successfully. Proceeding to gzip the backup file."
-        def gzipCommand = [
-            'gzip', '-f', backupFilePath.toString()
-        ]
-        log.info "Executing gzip command: ${gzipCommand.join(' ')}"
-        def gzipProcess = new ProcessBuilder(gzipCommand).start()
-        gzipProcess.waitFor()
-        if (gzipProcess.exitValue() != 0) {
-            log.error "Gzip failed. See error output for details."
-            gzipProcess.inputStream.eachLine { line -> log.error line }
-        } else {
-            log.info "Gzip completed successfully. Backup file: ${gzipFilePath}"
-        }
-        }
-    }          
 }
 
 def deleteRecursively(Path path) {
@@ -186,5 +126,4 @@ def deleteRecursively(Path path) {
         }
     }
     Files.delete(path)
-    //println "Deleted: ${path}"
 }
