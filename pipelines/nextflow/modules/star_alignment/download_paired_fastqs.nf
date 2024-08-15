@@ -26,7 +26,7 @@ process DOWNLOAD_PAIRED_FASTQS {
     label "default"
     tag "${taxon_id}:${run_accession}"
     maxForks 25
-    //storeDir "${params.outDir}/$taxon_id/$run_accession"
+    storeDir "${params.outDir}/$taxon_id/$run_accession"
     afterScript "sleep $params.files_latency"  // Needed because of file system latency
     
     input:
