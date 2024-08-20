@@ -62,8 +62,8 @@ def set_date(taxon:int, ncbi_params: Dict[str, Any], file_path:str) -> Tuple[Dic
                     release_date = line.split()[1]
                     ncbi_params['filters.first_release_date'] = release_date
                     logging.info(f"Last update record found! {line.split()[1]} will be used to retrieve new available assemblies for taxon {taxon}")
-            else:
-                logging.info(f"There is not last update record saved for taxon {taxon}. Using {release_date} as default date to retrieve assemblies")
+                else:
+                    logging.info(f"There is not last update record saved for taxon {taxon}. Using {release_date} as default date to retrieve assemblies")
     else:
         logging.info(f"Last update file not found. Using {release_date} as default date to retrieve assemblies")
 
