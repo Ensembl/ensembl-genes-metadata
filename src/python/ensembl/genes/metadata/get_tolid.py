@@ -59,7 +59,13 @@ def get_tolid(taxon: int) -> str:
     uri = f"https://id.tol.sanger.ac.uk/api/v2/species?taxonomyId={taxon}"
     response = connection_TolID(uri)
     data = response.json()
-    tolid_prefix = data['species'][0]['prefix']
+    logging.info(f"Response from ToLID API: {data}")
+    
+    if data['totalNumSpecies']==0:
+        logging.info(f"No species found for taxon {taxon}")
+        tolid_prefix = ""
+    else:
+        tolid_prefix = data['species'][0]['prefix']
     
     return tolid_prefix
 
