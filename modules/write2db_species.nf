@@ -1,6 +1,7 @@
 process WRITE2DB_SPECIES {
     tag "$gca"
     publishDir "${params.output_dir}/nextflow_output/$gca", mode: 'copy'
+    maxForks 1
 
     input:
     val gca
