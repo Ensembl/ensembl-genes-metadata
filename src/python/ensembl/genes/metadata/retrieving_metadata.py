@@ -98,7 +98,7 @@ def parse_data(data: Dict) -> List[Dict]:
         'asm_name' : data['reports'][0]['assembly_info']['assembly_name'],
         'refseq_accession': refseq_accession,
         'release_date' : data['reports'][0]['assembly_info']['release_date'],
-        'submitter' : data['reports'][0]['assembly_info']['submitter'].replace("'", "''")  
+        'submitter' : data['reports'][0]['assembly_info']['submitter'].replace("'", "''").lstrip('\ufeff')
     })
     
     data_dict_3['species'].update({
