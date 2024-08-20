@@ -61,9 +61,10 @@ def species_taxon(lowest_taxon_id:str) -> str:
     response = connection_ncbi(uri)
     taxon_data = response.json()
     
+    taxon_exists = True
     try:
         taxonomy = taxon_data['reports'][0]['taxonomy']['rank']
-        if taxonomy in ['SUBSPECIES', 'STRAIN', 'VARIETAS', 'GENOTYPE', 'ISOLATE', 'FORMA']:
+        if taxonomy in ['SUBSPECIES', 'STRAIN', 'VARIETAS', 'GENOTYPE', 'ISOLATE', 'FORMA', 'FORMA_SPECIALIS']:
             species_taxon_id = taxon_data['reports'][0]['taxonomy']['classification']['species']['id']
             logging.info(f"The assembly is a infraspecific taxon {taxonomy}")
         elif taxonomy == 'SPECIES':
@@ -72,10 +73,17 @@ def species_taxon(lowest_taxon_id:str) -> str:
         else:
             raise ValueError(f"Incorrect taxonomy ({taxonomy})")
     except KeyError:
-        logging.info(f'Taxon do not have Rank available, retrieving information from another section of the report')
-        species_taxon_id = taxon_data['reports'][0]['taxonomy']['classification']['species']['id']
-    
-    return species_taxon_id
+        if 'errors' in taxon_data['reports'][0]:
+            species_taxon_id = 0
+            taxon_exists = False
+            logging.info(f"Taxon {lowest_taxon_id} is not a recognized NCBI Taxonomy name")
+        elif 'taxonomy' in taxon_data['reports'][0]:
+            logging.info(f'Taxon do not have Rank available, retrieving information from another section of the report')
+            species_taxon_id = taxon_data['reports'][0]['taxonomy']['classification']['species']['id']
+        else:
+            raise KeyError(f"Taxon {taxonomy} retrieves an unexpected report")
+            
+    return species_taxon_id, taxon_exists
 
 def get_parlance_name(sci_name: str) -> str:
     """
@@ -229,9 +237,15 @@ def main():
     
     # Retrieve missing information to add keys to species json
     logging.info(f"Getting key values for the species: {species_dict['species']['scientific_name']}")
-    species_taxon_id = species_taxon(species_dict['species']['lowest_taxon_id'])
-    parlance_name = get_parlance_name(species_dict['species']['scientific_name'])
-    species_prefix = get_species_prefix(species_dict['species']['lowest_taxon_id'])
+    species_taxon_id, taxon_exists  = species_taxon(species_dict['species']['lowest_taxon_id'])
+    if taxon_exists:
+        parlance_name = get_parlance_name(species_dict['species']['scientific_name'])
+        species_prefix = get_species_prefix(species_dict['species']['lowest_taxon_id'])
+    else:
+        logging.info("Taxon do not exist in taxonomy: invalid lowest taxon id or assembly should be suppressed")
+        logging.info("Setting values to NA/NULL to later be detected by the integrity check")
+        parlance_name = ""
+        species_prefix = ""
     
     # Update species dictionary with new values
     logging.info("Updating keys for species table")
