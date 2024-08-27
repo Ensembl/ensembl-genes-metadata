@@ -75,6 +75,28 @@ CREATE TABLE bioproject (
   CONSTRAINT lineage UNIQUE (assembly_id, bioproject_id)
 ) ENGINE=MyISAM AUTO_INCREMENT=1 DEFAULT CHARSET=latin1;
 
+DROP TABLE IF EXISTS custom_group
+
+CREATE TABLE custom_group (
+  group_id int NOT NULL AUTO_INCREMENT,
+  group_name varchar(30) NOT NULL,
+  group_type ENUM('taxon', 'assembly') NOT NULL,
+  item varchar(30) NOT NULL,
+  PRIMARY KEY (`group_id`),
+  CONSTRAINT group_item UNIQUE (group_name, item)
+) ENGINE=MyISAM DEFAULT CHARSET=latin1;
+
+
+DROP TABLE IF EXISTS group_assembly ;
+
+CREATE TABLE group_assembly (
+  group_assembly_id int NOT NULL AUTO_INCREMENT,
+  assembly_id int NOT NULL,
+  group_name varchar(30) NOT NULL,
+  PRIMARY KEY (`group_assembly_id`),
+  FOREIGN KEY (`assembly_id`) REFERENCES assembly(`assembly_id`),
+  CONSTRAINT group_asm UNIQUE (assembly_id, group_name)
+
 
 DROP TABLE IF EXISTS stable_space
 
