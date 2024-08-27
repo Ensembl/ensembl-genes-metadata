@@ -346,6 +346,9 @@ def main():
     parser.add_argument('--update', action='store_true',
                         help="If this option is added it indicates the input data will be used to update")
     
+    parser.add_argument('--empty', action='store_true',
+                        help="If this option is added it indicates empty input data is allowed")
+    
     # Parsing arguments 
     args = parser.parse_args()
     logging.info(f"Arguments: {args}")
@@ -356,6 +359,12 @@ def main():
     input_data = json.load(file)
     file.close()
     
+    if not input_data and args.empty:
+        logging.info("Input data is empty. There is not data to process")
+    elif not input_data and not args.empty:
+        logging.info("Input data is empty. Data was expected in the file")
+        raise ValueError("Input file is empty. Data expected or empty option was not provided")
+        
     # Update optional command 
     update = args.update
     
