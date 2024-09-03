@@ -34,13 +34,25 @@ process GET_RUN_ACCESSIONS {
     afterScript "sleep $params.files_latency"  // Needed because of file system latency
 
     input:
-    tuple val(taxon_id), val(gca), val(lastCheckedDate)
+    tuple val(taxon_id), val(gca), val(run_accession_batch), val(lastCheckedDate)
 
     output:
     val(runAccessionList)
     path("run_accession_list.txt")
     
     script:
+    //def runAccessionBatch = run_accession_batch ? run_accession_batch : null 
+     runAccessionList = []    
+    runAccessionToFile='run_accession_list.txt' 
+    def fileBatch=new File(run_accession_batch)
+    if (fileBatch.exists()){
+        fileBatch.eachLine { line ->
+                runAccessionList.add([taxon_id: taxon_id, gca: gca, run_accession: line])
+}   
+    """
+    cat ${run_accession_batch.toString()} > $runAccessionToFile
+    """
+    } else {
     def taxonQuery = "tax_eq(${taxon_id})"
     def instrumentQuery = "instrument_platform=ILLUMINA"
     def layoutQuery = "library_layout=PAIRED"
@@ -61,7 +73,7 @@ process GET_RUN_ACCESSIONS {
     BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()))
     
     // Create a list to hold the run accession data
-    runAccessionList = []
+    //runAccessionList = []
     // Create a string to accumulate the response content
     StringBuilder responseContent = new StringBuilder()
 
@@ -77,8 +89,11 @@ process GET_RUN_ACCESSIONS {
     }
     reader.close()
 
-    runAccessionToFile='run_accession_list.txt'
+//    runAccessionToFile='run_accession_list.txt'
+    //cp $run_accession_batch $runAccessionToFile
+    log.info("BATCH FILE ${run_accession_batch}")
     """ 
     echo '${responseContent.toString()}' > $runAccessionToFile
     """
+}
 }

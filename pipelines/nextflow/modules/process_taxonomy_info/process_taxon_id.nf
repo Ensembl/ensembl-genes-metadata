@@ -25,10 +25,10 @@ process PROCESS_TAXON_ID {
     tag "$taxon_id"
 
     input:
-    tuple val(taxon_id), val(gca)
+    tuple val(taxon_id), val(gca), val(run_accession_batch)
 
     output:
-    tuple(val(taxon_id), val(gca), stdout)
+    tuple(val(taxon_id), val(gca), val(run_accession_batch), stdout)
 
     script:
     def taxonomyExists = getDataFromTable('taxon_id', 'meta', 'taxon_id', taxon_id)

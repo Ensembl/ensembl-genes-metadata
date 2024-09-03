@@ -37,7 +37,7 @@ workflow PROCESS_TAXONOMY_INFO {
     
     main:
     def data1=input_data
-    data1.flatten().view { d -> "Taxon ID: ${d.taxon_id}, GCA: ${d.gca}"}
+    data1.flatten().view { d -> "Taxon ID: ${d.taxon_id}, GCA: ${d.gca} batch: ${d.run_accession_batch}"}
     def taxonomyInfo = PROCESS_TAXON_ID(input_data.flatten())
     def (accessionList, runAccessionFile)  = GET_RUN_ACCESSIONS(taxonomyInfo)
     runAccessionList1= accessionList

@@ -100,7 +100,7 @@ include { RUN_ALIGNMENT } from '../subworkflows/run_alignment.nf'
 workflow SHORT_READ {
     def data = Channel.fromPath(params.csvFile, type: 'file', checkIfExists: true)
                 .splitCsv(sep:',', header:true)
-                .map { row -> [taxon_id:row.get('taxon_id'), gca:row.get('gca')]}
+                .map { row -> [taxon_id:row.get('taxon_id'), gca:row.get('gca'),run_accession_batch:row.get('runs_file')]}
     data.each { dataRow -> dataRow.view() }            
     //taxon id present or not? if yes get all new short read data after this date if not add it for the first time
     def taxonomyResults= PROCESS_TAXONOMY_INFO(data)
