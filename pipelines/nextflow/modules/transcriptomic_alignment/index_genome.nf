@@ -70,8 +70,8 @@ process INDEX_GENOME {
     // Calculate the genome length (excluding header lines)
     //def genomeLength = fastaContent.split('\n').findAll { !it.startsWith('>') }.join('').length()
 
-     if (genomeLength != 0) {
-       filesValid = true
+    if (genomeLength != 0) {
+        filesValid = true
         }
     }
     // Define read length (you may need to adjust this based on your data)

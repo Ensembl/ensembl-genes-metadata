@@ -41,14 +41,13 @@ process GET_RUN_ACCESSIONS {
     path("run_accession_list.txt")
     
     script:
-    //def runAccessionBatch = run_accession_batch ? run_accession_batch : null 
-     runAccessionList = []    
+    runAccessionList = []    
     runAccessionToFile='run_accession_list.txt' 
     def fileBatch=new File(run_accession_batch)
     if (fileBatch.exists()){
         fileBatch.eachLine { line ->
                 runAccessionList.add([taxon_id: taxon_id, gca: gca, run_accession: line])
-}   
+    }   
     """
     cat ${run_accession_batch.toString()} > $runAccessionToFile
     """
@@ -89,8 +88,6 @@ process GET_RUN_ACCESSIONS {
     }
     reader.close()
 
-//    runAccessionToFile='run_accession_list.txt'
-    //cp $run_accession_batch $runAccessionToFile
     log.info("BATCH FILE ${run_accession_batch}")
     """ 
     echo '${responseContent.toString()}' > $runAccessionToFile
