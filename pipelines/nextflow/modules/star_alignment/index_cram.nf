@@ -23,7 +23,7 @@ process INDEX_CRAM {
     afterScript "sleep $params.files_latency"  // Needed because of file system latency
 
     input:
-    tuple val(taxon_id), val(gca), val(run_accession), val(genomeDir),path(cramFile)
+    tuple val(taxon_id), val(gca), val(run_accession), val(cramFile)
 
     script:
     """

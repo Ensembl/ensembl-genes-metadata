@@ -19,7 +19,7 @@ limitations under the License.
 process INDEX_BAM {
     tag "$run_accession"
     label 'samtools'
-    storeDir "${params.outDir}/$taxon_id/$run_accession/star/"
+    publishDir "${params.outDir}/$taxon_id/$run_accession/star/", mode: 'copy'
     afterScript "sleep $params.files_latency"  // Needed because of file system latency
 
     input:

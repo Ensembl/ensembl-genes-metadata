@@ -98,7 +98,6 @@ workflow STAR_ALIGNMENT {
         def cramFile = CONVERT_BAM_TO_CRAM (indexBamOutput)
         def indexCramFile =  INDEX_CRAM (cramFile)
     }   
-
 }  
 
 workflow.onComplete {

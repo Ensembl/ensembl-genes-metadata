@@ -41,7 +41,7 @@ process RUN_STAR {
     --outSAMstrandField intronMotif --runThreadN ${task.cpus} \
     --twopassMode Basic --runMode alignReads --genomeDir ${file(genomeDir)} \
     --readFilesIn ${pair1} ${pair2} --outFileNamePrefix ${outFileNamePrefix} \
-    --outSAMattrRGline "ID:${run_accession}" --outTmpDir ${starTmpDir} --outSAMtype BAM \
+    --readFilesCommand zcat --outSAMattrRGline "ID:${run_accession}" --outTmpDir ${starTmpDir} --outSAMtype BAM \
     SortedByCoordinate  
     """
     
