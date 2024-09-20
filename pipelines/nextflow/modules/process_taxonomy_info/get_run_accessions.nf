@@ -43,8 +43,9 @@ process GET_RUN_ACCESSIONS {
     script:
     runAccessionList = []    
     runAccessionToFile='run_accession_list.txt' 
-    def fileBatch=new File(run_accession_batch)
-    if (fileBatch.exists()){
+    //def fileBatch=new File(run_accession_batch)
+    //if (fileBatch.exists()){
+    if (run_accession_batch && file(run_accession_batch).exists()){
         fileBatch.eachLine { line ->
                 runAccessionList.add([taxon_id: taxon_id, gca: gca, run_accession: line])
     }   
