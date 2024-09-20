@@ -53,12 +53,11 @@ process DOWNLOAD_PAIRED_FASTQS {
         log.info("gzFiles ${gzFiles}")
         log.info("pair1Path ${pair1Path} ${url1}")
         if (gzFiles.size() !=2 ){
-             def outputDir = new File("${params.outDir}/${taxon_id}/${run_accession}")
-             if (!outputDir.exists()) {
-        outputDir.mkdirs()
-    }
+            def outputDir = new File("${params.outDir}/${taxon_id}/${run_accession}")
+            if (!outputDir.exists()) {
+                outputDir.mkdirs()
+            }
 
-       log.info("SONO QUI") 
             while (!md5Match && retryCount < maxRetries) {
                 """
                 wget -qq -c -O ${pair1Path} ftp://${url1}
@@ -67,11 +66,11 @@ process DOWNLOAD_PAIRED_FASTQS {
                 """
                 wget -qq -c -O ${pair2Path} ftp://${url2}
                 """.execute().waitFor()
-                log.info("SONO QUI1")
+
                 // Calculate MD5 checksums of downloaded files
                 md5Pair1 = DigestUtils.md5Hex(Files.newInputStream(file(pair1Path)))
                 md5Pair2 = DigestUtils.md5Hex(Files.newInputStream(file(pair2Path)))
-                log.info("SONO QUI2")
+
                 // Check if both MD5 checksums are present in stored MD5 checksums
                 if ([md5_1, md5_2].containsAll([md5Pair1, md5Pair2])) {
                     md5Match = true
