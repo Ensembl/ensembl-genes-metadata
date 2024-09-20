@@ -51,7 +51,7 @@ process GET_RUN_ACCESSION_METADATA {
     get_metadata.py --run ${run_accession}
     else
         echo "Metadata already exist.";
-        cp ${params.outDir}/${taxon_id}/${run_accession}/insert_into* .
+        cp -r ${params.outDir}/${taxon_id}/${run_accession}/insert_into* .
     fi
     """
 }
