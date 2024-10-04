@@ -1,0 +1,12 @@
+{
+    "server_details" : {
+	"db_name" : "gb_transcriptomic_registry",
+	"db_host" : "mysql-ens-genebuild-prod-1",
+	"db_user" : "ensadmin",
+	"db_port" : 4527,
+	"db_pass" : ""
+    },
+    "tissue_types" : {
+	"prioritise" : ["heart", "lung", "brain", "ovary", "ovaries", "testes", "testis", "gonad", "gonads"] 
+    }
+}
