@@ -17,6 +17,7 @@
 
 import argparse
 from collections import Counter
+import csv
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 import json
@@ -62,7 +63,7 @@ def select_data(
     prioritise_tissues: bool,
     max_num_runs: int,
     config: Dict[str, Any],
-) -> List[str]:
+) -> Dict[str, Dict[str, Any]]:
     """
     Select the best data to align to the genome.
 
@@ -77,7 +78,7 @@ def select_data(
         A list of selected run accession IDs.
     """
 
-    selected_runs: List[str] = []
+    selected_runs: Dict[str, Dict[str, Any]] = {}
     # select the runs from the database that have passed QC and the percent_mapped reads
     # is greater than reads_mapped_cutoff
     data_query = (
@@ -95,7 +96,7 @@ def select_data(
     )
     if not data_fetch:
         print("No data fetched or an error occurred.")
-        return []
+        return {}
 
     # Prepare a dictionary to store the fetched run data
     run_dict: Dict[str, Dict[str, Any]] = {
@@ -122,11 +123,15 @@ def select_data(
             additional_runs = random.sample(list(remaining_runs.items()), sample_size)
             prioritised_runs.update(dict(additional_runs))
 
-        selected_runs = list(prioritised_runs.keys())[:max_num_runs]
+        #selected_runs = prioritised_runs.keys()[:max_num_runs]
+        selected_runs = {k: prioritised_runs[k] for k in list(prioritised_runs.keys())[:max_num_runs]}
     else:
-        sorted_runs: List[str] = sorted(run_dict, key=lambda x: run_dict[x]["percent_mapped"], reverse=True)
-        selected_runs = sorted_runs[:max_num_runs]
+        #sorted_runs: List[str] = sorted(run_dict, key=lambda x: run_dict[x]["percent_mapped"], reverse=True)
+        #selected_runs = sorted_runs[:max_num_runs]
+        sorted_runs = dict(sorted(run_dict.items(), key=lambda item: item[1]["percent_mapped"], reverse=True))
+        selected_runs = {k: sorted_runs[k] for k in list(sorted_runs.keys())[:max_num_runs]}  # Slice to get top runs
 
+    print(list(selected_runs))
     return selected_runs
 
 
@@ -134,7 +139,7 @@ def parse_args():
     """Parse command line arguments."""
     parser = argparse.ArgumentParser(description="Parameters")
     parser.add_argument("-t", "--taxon_id", required=True, help="Taxon ID")
-
+    parser.add_argument("--output_dir",  help="Output directory")
     parser.add_argument(
         "--reads_mapped_cutoff", type=int, default=50, help="The minimum allowed for percent_mapped reads."
     )
@@ -173,8 +178,23 @@ def main() -> None:
     runs_to_use = select_data(
         args.taxon_id, args.reads_mapped_cutoff, args.prioritise_tissues, args.max_num_runs, config
     )
-    print(runs_to_use)
 
+    # Ensure output directory exists
+    output_csv = Path(args.output_dir) / args.taxon_id / "run_accession.csv"
+    output_csv.parent.mkdir(parents=True, exist_ok=True)
+
+    # Write the selected runs to a CSV file
+    with open(output_csv, "w", newline="") as csvfile:
+        fieldnames = ["Run Accession", "Tissue", "Percent Mapped"]
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+
+        writer.writeheader()
+        for run_accession, run_data in runs_to_use.items():
+            writer.writerow({
+                "Run Accession": run_accession,
+                "Tissue": run_data["tissue"],
+                "Percent Mapped": run_data["percent_mapped"]
+            })
 
 if __name__ == "__main__":
     main()
