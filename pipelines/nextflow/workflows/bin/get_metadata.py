@@ -143,8 +143,8 @@ def json_parse(response: str, fields: list):
 
     table_study = {
         "study": {
-            "study_accession": re.sub(r"[!\"#$%&()*\+,\-\'.\/:;<=>?@\[\]^`{|}~]", "",output_data["study_accession"]),
-            "center_name": re.sub(r"[!\"#$%&()*\+,\-\'.\/:;<=>?@\[\]^`{|}~]", "",output_data["center_name"]),
+            "study_accession": re.sub(r"[!\"#$%&()*\+,\-\'.\/:;<=>?@\[\]^`{|}~]", "",output_data["study_accession"])  if output_data["study_accession"] else None,
+            "center_name": re.sub(r"[!\"#$%&()*\+,\-\'.\/:;<=>?@\[\]^`{|}~]", "",output_data["center_name"]) if output_data["center_name"] else None,
         }
     }
 
