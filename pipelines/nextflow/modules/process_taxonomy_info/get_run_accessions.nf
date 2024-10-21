@@ -24,6 +24,7 @@ import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.io.File
 import groovy.json.JsonOutput
+import java.nio.file.*
 
 process GET_RUN_ACCESSIONS {
     label 'default'
@@ -45,7 +46,9 @@ process GET_RUN_ACCESSIONS {
     runAccessionToFile='run_accession_list.txt' 
     //def fileBatch=new File(run_accession_batch)
     //if (fileBatch.exists()){
-    if (run_accession_batch && file(run_accession_batch).exists()){
+    if (run_accession_batch){
+        run_accession_batch = run_accession_batch.trim()
+        fileBatch=file(run_accession_batch)
         fileBatch.eachLine { line ->
                 runAccessionList.add([taxon_id: taxon_id, gca: gca, run_accession: line])
     }   
