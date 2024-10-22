@@ -11,7 +11,9 @@ process GET_TOLID {
 
     script:
     """
-    python /Users/vianey/Documents/ensembl-genes-metadata/src/python/ensembl/genes/metadata/get_tolid.py --accession $gca
+    chmod +x $projectDir/../src/python/ensembl/genes/metadata/get_tolid.py
+    python $projectDir/../src/python/ensembl/genes/metadata/get_tolid.py \
+    --accession $gca --metadata ${params.metadata_params}
     """
 
 

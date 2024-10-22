@@ -3,14 +3,19 @@ process FETCH_GCA {
 
     input:
     val taxon
-    path last_update
+    val last_update
+
 
     output:
     stdout
 
     script:
     """
-    python /Users/vianey/Documents/ensembl-genes-metadata/src/python/ensembl/genes/metadata/fetch_new_assemblies.py --taxon $taxon --file-path $last_update
+    chmod +x $projectDir/../src/python/ensembl/genes/metadata/fetch_new_assemblies.py
+    python $projectDir/../src/python/ensembl/genes/metadata/fetch_new_assemblies.py \
+    --taxon $taxon --date_update ${params.last_update} --db asm_metadata \
+    --registry ${params.registry_params} --metadata ${params.metadata_params} \
+    --ncbi ${params.ncbi_params} --ncbi_url ${params.ncbi_url} 
     """
 
 }

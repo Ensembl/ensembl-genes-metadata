@@ -13,6 +13,8 @@ process WRITE2DB_SPECIES {
 
     script:
     """
-    python /Users/vianey/Documents/ensembl-genes-metadata/src/python/ensembl/genes/metadata/write2db.py --file-path $species
+    chmod +x $projectDir/../src/python/ensembl/genes/metadata/write2db.py
+    python $projectDir/../src/python/ensembl/genes/metadata/write2db.py \
+    --file-path $species --metadata ${params.metadata_params} --config ${params.db_table_conf}
     """
 }

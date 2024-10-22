@@ -13,6 +13,9 @@ process SPECIES_CHECKER {
 
     script:
     """
-    python /Users/vianey/Documents/ensembl-genes-metadata/src/python/ensembl/genes/metadata/species_checker.py --json-path $species_tmp
+    chmod +x $projectDir/../src/python/ensembl/genes/metadata/species_checker.py
+    python $projectDir/../src/python/ensembl/genes/metadata/species_checker.py \
+    --json-path $species_tmp --ncbi_url ${params.ncbi_url} --enscode ${params.enscode} \
+    --registry ${params.registry_params} --metadata ${params.metadata_params}
     """
 }

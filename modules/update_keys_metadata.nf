@@ -15,6 +15,9 @@ process UPDATE_KEYS_METADATA {
 
     script:
     """
-    python /Users/vianey/Documents/ensembl-genes-metadata/src/python/ensembl/genes/metadata/update_keys.py --json-path $metadata_tmp --file-id-path $last_id
+    chmod +x $projectDir/../src/python/ensembl/genes/metadata/update_keys.py
+    python $projectDir/../src/python/ensembl/genes/metadata/update_keys.py \
+    --json-path $metadata_tmp --file-id-path $last_id \
+    --config ${params.db_table_conf}
     """
 }

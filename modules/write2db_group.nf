@@ -12,6 +12,8 @@ process WRITE2DB_GROUP {
 
     script:
     """
-    python /Users/vianey/Documents/ensembl-genes-metadata/src/python/ensembl/genes/metadata/write2db.py --file-path $group --empty
+    chmod +x $projectDir/../src/python/ensembl/genes/metadata/write2db.py
+    python $projectDir/../src/python/ensembl/genes/metadata/write2db.py \
+    --file-path $group --empty --metadata ${params.metadata_params} --config ${params.db_table_conf}
     """
 }

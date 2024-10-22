@@ -13,6 +13,8 @@ process PARSE_METADATA {
 
     script:
     """
-    python /Users/vianey/Documents/ensembl-genes-metadata/src/python/ensembl/genes/metadata/retrieving_metadata.py --accession $gca
+    chmod +x $projectDir/../src/python/ensembl/genes/metadata/retrieving_metadata.py
+    python $projectDir/../src/python/ensembl/genes/metadata/retrieving_metadata.py \
+    --accession $gca --ncbi_url ${params.ncbi_url}
     """
 }
