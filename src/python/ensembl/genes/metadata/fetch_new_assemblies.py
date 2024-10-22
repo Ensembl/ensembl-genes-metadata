@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+# pylint: disable=missing-module-docstring
 #  See the NOTICE file distributed with this work for additional information
 #  regarding copyright ownership.
 #
@@ -27,6 +29,7 @@ Returns:
 
 import requests
 import os
+import json
 from datetime import datetime
 import pymysql
 import argparse
@@ -34,10 +37,7 @@ import logging
 from tenacity import retry, stop_after_attempt, wait_random
 from typing import Dict, List, Any, Tuple
 
-from gb_db_params import METADATA_RPARAMS, REGISTRY_RPARAMS
-from ncbi_params import NCBI_PARAMS
-
-def set_date(taxon:int, ncbi_params: Dict[str, Any], file_path:str) -> Tuple[Dict[str, str], str]:
+def set_date(taxon:int, ncbi_params: Dict[str, Any], date_update:str) -> Tuple[Dict[str, str], str]:
     """
     Set a date to retrieve new assemblies from NCBI. If a file with the last update date is provided, 
     date will be used to retrieve new assemblies. Otherwise, a default date (01/01/2019) will be used.
@@ -45,7 +45,7 @@ def set_date(taxon:int, ncbi_params: Dict[str, Any], file_path:str) -> Tuple[Dic
     Args:
         taxon (int): Taxon ID, by default it is 2759 (Eukaryote domain)
         ncbi_params (dict): NCBI API's parameters
-        file_path (str): path with the last database update (optional) 
+        date_update (str): date to be used to retrieve assemblies. optional.  
 
     Returns:
         dict: Updated NCBI API's parameters
@@ -54,18 +54,13 @@ def set_date(taxon:int, ncbi_params: Dict[str, Any], file_path:str) -> Tuple[Dic
     logging.info('Checking date to retrieve assemblies')
     
     release_date = "01/01/2019"
-
-    if file_path:
-        with open(file_path, 'r') as file:
-            for line in file:
-                if int(line.split()[0]) == taxon:
-                    release_date = line.split()[1]
-                    ncbi_params['filters.first_release_date'] = release_date
-                    logging.info(f"Last update record found! {line.split()[1]} will be used to retrieve new available assemblies for taxon {taxon}")
-                else:
-                    logging.info(f"There is not last update record saved for taxon {taxon}. Using {release_date} as default date to retrieve assemblies")
+    
+    if date_update:
+        ncbi_params['filters.first_release_date'] = date_update
+        logging.info(f"Using {date_update} as date to retrieve assemblies")
     else:
-        logging.info(f"Last update file not found. Using {release_date} as default date to retrieve assemblies")
+        ncbi_params['filters.first_release_date'] = release_date
+        logging.info("No date provided. Using default date to retrieve assemblies")
 
     return ncbi_params, release_date
 
@@ -75,7 +70,7 @@ def connection_ncbi(uri: str, params: Dict[str, str]) -> requests.Response:
     response.raise_for_status()
     return response
 
-def fetch_gca_list(taxon: int, ncbi_params: Dict[str, str]) -> List[str]:
+def fetch_gca_list(taxon: int, ncbi_params: Dict[str, str], ncbi_url ) -> List[str]:
     """
     Fetch a list of GCA accession from NCBI API based on the taxon ID
     
@@ -88,7 +83,7 @@ def fetch_gca_list(taxon: int, ncbi_params: Dict[str, str]) -> List[str]:
     """
     gca_list = [] 
     page_token=None
-    uri = f"https://api.ncbi.nlm.nih.gov/datasets/v2alpha/genome/taxon/{str(taxon)}/dataset_report"
+    uri = f"{ncbi_url}/genome/taxon/{str(taxon)}/dataset_report"
     next_page = True
     
     while next_page:
@@ -166,7 +161,7 @@ def fetch_records_db(db_params: Dict[str, Any], query: str) -> List[str]:
             
     return reg_gca
 
-def get_gca_register(db: str, db_query: Dict[str, Any], gca_list: List[str]) -> List[str]:
+def get_gca_register(db: str, db_query: Dict[str, Any], gca_list: List[str], metadata_params, registry_params) -> List[str]:
     """ Get list of GCA assemblies to register
 
     Args:
@@ -181,10 +176,10 @@ def get_gca_register(db: str, db_query: Dict[str, Any], gca_list: List[str]) -> 
     
     if db in ['asm_metadata', 'both']:
         logging.info('Getting assemblies from assembly metadata database')
-        records_metadata = fetch_records_db(METADATA_RPARAMS, query=db_query['asm_metadata']['query'] )
+        records_metadata = fetch_records_db(metadata_params, query=db_query['asm_metadata']['query'] )
     elif db in ['asm_registry', 'both']:
         logging.info('Getting assemblies from assembly registry database')
-        records_registry = fetch_records_db(REGISTRY_RPARAMS, query=db_query['asm_registry']['query'] )
+        records_registry = fetch_records_db(registry_params, query=db_query['asm_registry']['query'] )
         
     accessions_records = records_metadata + records_registry
     accessions_to_register = gca_list - set(accessions_records)
@@ -209,9 +204,22 @@ def main():
                         default='both',
                         type=str,
                         help='Database to compare the assemblies (asm_metadata, asm_registry, both). Default is "both"')
-    parser.add_argument('--file-path',
+    parser.add_argument('--date_update',
                         type=str,
-                        help="File with the last update date")
+                        help="Last update date")
+    parser.add_argument('--registry',
+                        type=str,
+                        help="Path to the registry database params in json format")
+    parser.add_argument('--metadata',
+                        type=str,
+                        help="Path to the metadata database params in json format")
+    parser.add_argument('--ncbi',
+                        type=str,
+                        help="Path to the NCBI API params in json format")
+    parser.add_argument('--ncbi_url',
+                        type=str,
+                        help="NCBI API URL")
+    
 
     args = parser.parse_args()
     logging.info(args)
@@ -224,18 +232,42 @@ def main():
     if args.db not in ['asm_metadata', 'asm_registry', 'both']:
         raise ValueError("Please enter a valid database name (asm_metadata, asm_registry, both)")
     
-    if args.file_path:
-        if not os.path.exists(args.file_path):
-            raise ValueError("Please enter a valid file path")
+    if args.registry:
+        if not os.path.exists(args.registry):
+            raise ValueError("Please enter a valid file path for registry database parameters")
+        else :
+            with open(args.registry, 'r') as file:
+                registy_params = json.load(file)
+    
+    if args.metadata:
+        if not os.path.exists(args.metadata):
+            raise ValueError("Please enter a valid file path for metadata database parameters")
+        else:
+            with open(args.metadata, 'r') as file:
+                metadata_params = json.load(file)
+    
+    if args.ncbi:
+        if not os.path.exists(args.ncbi):
+            raise ValueError("Please enter a valid file path for NCBI API parameters")
+        else:
+            with open(args.ncbi, 'r') as file:
+                ncbi_params = json.load(file)
+    
+    if args.ncbi_url:
+        ncbi_url = args.ncbi_url
+    else:
+        raise ValueError("Please enter a valid URL for NCBI API")
+        
+    if args.date_update:
+        if not datetime.strptime(args.date_update, '%m/%d/%Y'):
+            raise ValueError("Please enter a valid date format (mm/dd/yyyy)")    
     else:
         logging.info("Default date will be used to retrieve assemblies")
     
-    ncbi_params = NCBI_PARAMS
-    
-    ncbi_params, release_date = set_date(taxon, ncbi_params, args.file_path)
-    gca_list = fetch_gca_list(taxon, ncbi_params)
+    ncbi_params, release_date = set_date(taxon, ncbi_params, args.date_update)
+    gca_list = fetch_gca_list(taxon, ncbi_params, ncbi_url)
     db_query = build_db_query(release_date)
-    accessions_to_register = get_gca_register(args.db, db_query, gca_list)
+    accessions_to_register = get_gca_register(args.db, db_query, gca_list, metadata_params, registy_params)
     
     with open("assemblies_to_register.txt", 'w') as file:
         for accession in accessions_to_register:
