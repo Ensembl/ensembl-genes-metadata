@@ -19,6 +19,43 @@ limitations under the License.
 nextflow.enable.dsl=2
 
 /*
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+VALIDATE INPUTS
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+*/  
+
+
+if (!params.output_dir) {
+    exit 1, "Undefined --output_dir parameter. Please provide the output directory's path"
+}
+
+if (!params.enscode) {
+    exit 1, "Undefined --enscode parameter. Please provide the enscode path"
+}
+
+/*
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    HELP
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+*/
+
+if (params.help) {
+    log.info ''
+    log.info 'Pipeline to run Assembly metadata pipeline'
+    log.info '-------------------------------------------------------'
+    log.info ''
+    log.info 'Usage: '
+    log.info 'nextflow -C ensembl-genes-metadata/conf/assembly_pipeline.config \
+                run ensembl-genes-metadata/pipeline/assembly_pipeline.nf \
+                --enscode $ENSCODE --output_dir <OutDir>--taxon <taxon>'
+    log.info ''
+    log.info 'Options:'
+    log.info '  --enscode STR               ENSCODE directory path'    
+    log.info '  --output_dir STR            Output directory path'
+    log.info '  --taxon INT                 NCBI taxon id. Default is 2759'
+}
+
+/*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     IMPORT LOCAL MODULES/SUBWORKFLOWS
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -26,15 +63,19 @@ nextflow.enable.dsl=2
 
 include { FETCH_GCA } from '../modules/fetch_gca.nf' 
 include { PARSE_METADATA } from '../modules/parse_metadata.nf' 
-include { WRITE2DB_METADATA } from '../modules/write2db_metadata.nf' 
-include { UPDATE_KEYS_METRICS } from '../modules/update_keys_metrics.nf' 
-include { WRITE2DB_METRICS } from '../modules/write2db_metrics.nf'
+include { WRITE2DB_ASSEMBLY } from '../modules/write2db_assembly.nf' 
+include { UPDATE_KEYS_METADATA } from '../modules/update_keys_metadata.nf' 
+include { WRITE2DB_METADATA } from '../modules/write2db_metadata.nf'
 include { SPECIES_CHECKER } from '../modules/species_checker.nf' 
 include { WRITE2DB_SPECIES } from '../modules/write2db_species.nf'
+include { GET_TOLID } from '../modules/get_tolid.nf'
+include { WRITE2DB_TOLID } from '../modules/write2db_tolid.nf'
+include { CUSTOM_GROUP } from '../modules/custom_groups.nf'
+include { WRITE2DB_GROUP } from '../modules/write2db_group.nf'
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    WORKFLOW: REGISTER NEW ASSEMBLIES IN DB
+WORKFLOW: REGISTER NEW ASSEMBLIES IN DB
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
@@ -46,19 +87,22 @@ workflow {
 
     PARSE_METADATA(gca)
     
-    WRITE2DB_METADATA(PARSE_METADATA.out.gca, PARSE_METADATA.out.metadata, PARSE_METADATA.out.metrics_tmp, PARSE_METADATA.out.species_tmp)
-
-    UPDATE_KEYS_METRICS(WRITE2DB_METADATA.out.gca, WRITE2DB_METADATA.out.metrics_tmp, WRITE2DB_METADATA.out.last_id, WRITE2DB_METADATA.out.species_tmp)
-
-    WRITE2DB_METRICS(UPDATE_KEYS_METRICS.out.gca, UPDATE_KEYS_METRICS.out.metrics, UPDATE_KEYS_METRICS.out.species_tmp)
-
-    SPECIES_CHECKER(WRITE2DB_METRICS.out.gca, WRITE2DB_METRICS.out.species_tmp)
-
+    WRITE2DB_ASSEMBLY(PARSE_METADATA.out.gca, PARSE_METADATA.out.assembly, PARSE_METADATA.out.metadata_tmp, PARSE_METADATA.out.species_tmp)
+    
+    UPDATE_KEYS_METADATA(WRITE2DB_ASSEMBLY.out.gca, WRITE2DB_ASSEMBLY.out.metadata_tmp, WRITE2DB_ASSEMBLY.out.last_id, WRITE2DB_ASSEMBLY.out.species_tmp)
+    
+    WRITE2DB_METADATA(UPDATE_KEYS_METADATA.out.gca, UPDATE_KEYS_METADATA.out.metadata, UPDATE_KEYS_METADATA.out.species_tmp)
+    
+    SPECIES_CHECKER(WRITE2DB_METADATA.out.gca, WRITE2DB_METADATA.out.species_tmp)
+    
     WRITE2DB_SPECIES(SPECIES_CHECKER.out.gca, SPECIES_CHECKER.out.species)
-
-    /*
-    WRITE2DB_SPECIES.out.gca.view()
-    WRITE2DB_METRICS.out.last_id.view()
-    */
+    
+    GET_TOLID(WRITE2DB_SPECIES.out.gca)
+    
+    WRITE2DB_TOLID(GET_TOLID.out.gca, GET_TOLID.out.tolid)
+    
+    CUSTOM_GROUP(WRITE2DB_TOLID.out.gca)
+    
+    WRITE2DB_GROUP(CUSTOM_GROUP.out.gca, CUSTOM_GROUP.out.group)
 
 }
