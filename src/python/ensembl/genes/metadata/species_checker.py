@@ -34,7 +34,6 @@ import string
 import random
 import os
 from tenacity import retry, stop_after_attempt, wait_random
-from gb_db_params import METADATA_RPARAMS, REGISTRY_RPARAMS
 
 @retry(stop=stop_after_attempt(5), wait=wait_random(min=1, max=10))
 def connection_ncbi(uri: str) -> requests.Response:
@@ -42,7 +41,7 @@ def connection_ncbi(uri: str) -> requests.Response:
     response.raise_for_status()
     return response
 
-def species_taxon(lowest_taxon_id:str) -> str:
+def species_taxon(lowest_taxon_id:str, ncbi_url) -> str:
     """
     This functions checks if the lowest taxon id is a species or a infraspecific taxon rank. 
     It returns the species taxon id to be used in the species table.
@@ -57,7 +56,7 @@ def species_taxon(lowest_taxon_id:str) -> str:
         str: species taxon id, it could be the same lowest taxon id value
     """
     
-    uri = f"https://api.ncbi.nlm.nih.gov/datasets/v2alpha/taxonomy/taxon/{lowest_taxon_id}/dataset_report"
+    uri = f"{ncbi_url}/taxonomy/taxon/{lowest_taxon_id}/dataset_report"
     response = connection_ncbi(uri)
     taxon_data = response.json()
     
@@ -85,7 +84,7 @@ def species_taxon(lowest_taxon_id:str) -> str:
             
     return species_taxon_id, taxon_exists
 
-def get_parlance_name(sci_name: str) -> str:
+def get_parlance_name(sci_name: str, enscode) -> str:
     """
     Search in the snp_static.txt file from the core_meta_update repository the parlance name 
     for the scientific name provided
@@ -97,7 +96,7 @@ def get_parlance_name(sci_name: str) -> str:
         str: _description_
     """
     
-    parlance_file = "/Users/vianey/Documents/GitHub/core_meta_updates/scripts/metadata/snp_static.txt"
+    parlance_file = f"{enscode}/ensembl-genes/src/python/ensembl/genes/metadata/snp_static.txt"
     data_dict = {}
     
     logging.info("Reading parlance name file (snp_static.txt) to look for a match")
@@ -110,7 +109,7 @@ def get_parlance_name(sci_name: str) -> str:
             
     return parlance_name
 
-def create_prefix() -> str:
+def create_prefix(registy_params, metadata_params) -> str:
     """
     It creates a unique species prefix. The prefix is the particle ENS plus a combination of 3 (or 4) random letters.
     To ensure the uniqueness of the prefix, it checks the existing prefixes in the registry and metadata databases.
@@ -120,14 +119,14 @@ def create_prefix() -> str:
     """
     
     # Getting existing prefix from registry db
-    conn = pymysql.connect(**REGISTRY_RPARAMS)
+    conn = pymysql.connect(**registy_params)
     cur  = conn.cursor()
     cur.execute("SELECT DISTINCT species_prefix FROM assembly")
     prefix_registry = cur.fetchall() 
     cur.close()
     
     # Getting existing prefix from metadata db
-    conn = pymysql.connect(**METADATA_RPARAMS)
+    conn = pymysql.connect(**metadata_params)
     cur  = conn.cursor()
     cur.execute("SELECT DISTINCT species_prefix FROM species")
     prefix_metadata = cur.fetchall() 
@@ -147,7 +146,7 @@ def create_prefix() -> str:
     
     return prefix
 
-def get_species_prefix(taxon_id:str) -> str:
+def get_species_prefix(taxon_id:str, registy_params, metadata_params) -> str:
     """
     This function retrieves the species prefix from the assembly registry and metadata databases.
     If the prefix is not found, it creates a new one. There are special cases where the prefix is predefined.
@@ -180,7 +179,7 @@ def get_species_prefix(taxon_id:str) -> str:
         logging.info(f"search prefix or create a new one for {taxon_id}")
         
         # Search prefix in DB (gb_assembly_registry)
-        conn = pymysql.connect(**REGISTRY_RPARAMS)
+        conn = pymysql.connect(**registy_params)
         cur  = conn.cursor()
         query = f"SELECT DISTINCT species_prefix FROM assembly WHERE taxonomy = {taxon_id}"
         cur.execute(query)
@@ -188,7 +187,7 @@ def get_species_prefix(taxon_id:str) -> str:
         cur.close()
         
         # Search prefix in DB (gb_assembly_metadata)
-        conn = pymysql.connect(**METADATA_RPARAMS)
+        conn = pymysql.connect(**metadata_params)
         cur  = conn.cursor()
         query = f"SELECT DISTINCT species_prefix FROM species WHERE lowest_taxon_id = {taxon_id}"
         cur.execute(query)
@@ -202,7 +201,7 @@ def get_species_prefix(taxon_id:str) -> str:
         # no prefix, create new prefix
         if len(prefix_list) == 0:
             logging.info(f"Getting a new prefix for taxon id: {taxon_id}")
-            species_prefix = create_prefix()
+            species_prefix = create_prefix(registy_params, metadata_params)
         # unique prefix detected
         elif len(prefix_list) == 1:
             logging.info(f"Unique prefix detected for taxon id: {taxon_id}")
@@ -226,6 +225,20 @@ def main():
     parser.add_argument("--json-path", type=str,
                         help="Path to the JSON-like (.tmp) species file")
     
+    parser.add_argument('--registry',
+                        type=str,
+                        help="Path to the registry database params in json format")
+    
+    parser.add_argument('--metadata',
+                        type=str,
+                        help="Path to the metadata database params in json format")
+    
+    parser.add_argument('--ncbi_url', type=str,
+                        help='NCBI API URL')
+    
+    parser.add_argument('--enscode', type=str,
+                        help='ENSCODE path' )
+    
     args = parser.parse_args()
     
     logging.info(f"Loading file: {args.json_path}")
@@ -235,12 +248,36 @@ def main():
         species_dict = json.load(file)
     file.close()
     
+    # Loading database parameters 
+    if args.registry:
+        if not os.path.exists(args.registry):
+            raise ValueError("Please enter a valid file path for registry database parameters")
+        else :
+            with open(args.registry, 'r') as file:
+                registy_params = json.load(file)
+    
+    if args.metadata:
+        if not os.path.exists(args.metadata):
+            raise ValueError("Please enter a valid file path for metadata database parameters")
+        else:
+            with open(args.metadata, 'r') as file:
+                metadata_params = json.load(file)
+    
+    if args.enscode:
+        enscode = args.enscode
+    else:
+        raise ValueError("Please enter a valid path for ENSCODE")                
+    
+    # Loading NCBI API URL
+    if args.ncbi_url:
+        ncbi_url = args.ncbi_url
+    
     # Retrieve missing information to add keys to species json
     logging.info(f"Getting key values for the species: {species_dict['species']['scientific_name']}")
-    species_taxon_id, taxon_exists  = species_taxon(species_dict['species']['lowest_taxon_id'])
+    species_taxon_id, taxon_exists  = species_taxon(species_dict['species']['lowest_taxon_id'], ncbi_url)
     if taxon_exists:
-        parlance_name = get_parlance_name(species_dict['species']['scientific_name'])
-        species_prefix = get_species_prefix(species_dict['species']['lowest_taxon_id'])
+        parlance_name = get_parlance_name(species_dict['species']['scientific_name'], enscode)
+        species_prefix = get_species_prefix(species_dict['species']['lowest_taxon_id'], registy_params, metadata_params)
     else:
         logging.info("Taxon do not exist in taxonomy: invalid lowest taxon id or assembly should be suppressed")
         logging.info("Setting values to NA/NULL to later be detected by the integrity check")

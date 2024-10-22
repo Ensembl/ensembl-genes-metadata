@@ -145,12 +145,20 @@ def main():
     parser.add_argument('--accession', 
                         type=str,
                         help='GCA accession to retrieve metadata')
+    parser.add_argument('--ncbi_url', 
+                        type=str,
+                        help='NCBI API URL')
     
     args = parser.parse_args()
     logging.info(args)
     accession = args.accession.strip()
     
-    uri = f"https://api.ncbi.nlm.nih.gov/datasets/v2alpha/genome/accession/{accession}/dataset_report"
+    if args.ncbi_url:
+        ncbi_url = args.ncbi_url
+    else:
+        raise ValueError("NCBI API URL is required")
+    
+    uri = f"{ncbi_url}/genome/accession/{accession}/dataset_report"
     response = connection_ncbi(uri)
     data = response.json()
     

@@ -16,9 +16,10 @@
 import argparse
 import pymysql
 import logging
-from gb_db_params import METADATA_RPARAMS, METADATA_WPARAMS
+import json
+import os
 
-def delete_assembly(assembly_id: int):
+def delete_assembly(assembly_id: int, metadata_params: dict):
     """
     Delete records from metadata database for a given assembly_id.
     Affects assembly, assembly_metrics, organism and bioproject tables
@@ -26,7 +27,7 @@ def delete_assembly(assembly_id: int):
     Args:
         assembly_id (int): Assembly ID to be deleted
     """
-    con = pymysql.connect(**METADATA_WPARAMS)  
+    con = pymysql.connect(**metadata_params)  
     cur = con.cursor()
     
     # Delete records from all metadata tables
@@ -37,10 +38,10 @@ def delete_assembly(assembly_id: int):
     print(f"Records for assembly_id {assembly_id} were deleted")
     con.close()
 
-def integrity_mode(delete):
+def integrity_mode(delete, metadata_params):
     
     logging.info("Connecting to Assembly metadata database to retrieve a list of assembly_ids ")
-    con = pymysql.connect(**METADATA_RPARAMS)  
+    con = pymysql.connect(**metadata_params)  
     cur = con.cursor()
     cur.execute("SELECT assembly_id, CONCAT(GCA_chain, '.', gca_version) FROM assembly")
     gca_list = cur.fetchall()
@@ -49,7 +50,7 @@ def integrity_mode(delete):
     
     for assembly_id, gca in gca_list:
         #logging.info(f"Checking records for assembly_id {assembly_id} in assembly_metrics, organism and bioproject tables")
-        con = pymysql.connect(**METADATA_RPARAMS)  
+        con = pymysql.connect(**metadata_params)  
         cur = con.cursor()
         
         cur.execute(f"SELECT * FROM assembly_metrics WHERE assembly_id = '{assembly_id}'")
@@ -71,12 +72,12 @@ def integrity_mode(delete):
             print(msg)
             logging.info(msg)
             if delete:
-                delete_assembly(assembly_id)
+                delete_assembly(assembly_id, metadata_params)
 
-def per_gca_mode(gca_list):
+def per_gca_mode(gca_list, metadata_params):
     for gca in gca_list:
         logging.info(f"Connecting to metadata database to retrieve assembly_id for {gca}")
-        con = pymysql.connect(**METADATA_RPARAMS)  
+        con = pymysql.connect(**metadata_params)  
         cur = con.cursor()
         query = f"SELECT assembly_id FROM assembly WHERE CONCAT(GCA_chain, '.', gca_version) = '{gca}'"
         #logging.info(query)
@@ -97,7 +98,7 @@ def per_gca_mode(gca_list):
             # If all checks are passed, delete records
             asm_id = result[0][0]
             logging.info(f"Deleting records for assembly_id {asm_id}: {gca}")
-            delete_assembly(asm_id)
+            delete_assembly(asm_id, metadata_params)
             
         else:
             msg = f"No records found for {gca} in assembly table"
@@ -124,16 +125,26 @@ def main():
                         default=False,
                         action='store_true',
                         help='Delete records with missing data')
+    parser.add_argument('--metadata',
+                        help='Path to metadata database connection parameters')
     
     args = parser.parse_args()
     logging.info(args)
+    
+    if args.metadata:
+        if not os.path.exists(args.metadata):
+            raise ValueError("Metadata params json file does not exist")
+        else:
+            with open(args.metadata, 'r') as f:
+                metadata_params = json.load(f)
+                f.close()
     
     if not args.integrity and not args.file_list:
         raise ValueError("No action was provided")
     
     if args.integrity:
         logging.info("Checking integrity of the records")
-        integrity_mode(args.delete)
+        integrity_mode(args.delete, metadata_params)
     
     if args.file_list:
         logging.info(f"Reading GCA list from {args.file_list}")
@@ -145,7 +156,7 @@ def main():
         msg = f"Number of GCAs in the list: {len(gca_list)}"
         logging.info(msg)
         print(msg)
-        per_gca_mode(gca_list)
+        per_gca_mode(gca_list, metadata_params)
 
 if __name__ == "__main__":
     main()

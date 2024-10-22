@@ -14,22 +14,22 @@
 #  limitations under the License.
 
 import argparse
+import os
 import pymysql
 import json
 import logging
-from gb_db_params import METADATA_RPARAMS
 from typing import Tuple
 
-def connect_db(query:str) -> Tuple:
+def connect_db(query:str, metadata_params) -> Tuple:
     logging.info(f"Querying metadata database with: {query}")
-    conn = pymysql.connect(**METADATA_RPARAMS)
+    conn = pymysql.connect(**metadata_params)
     with conn.cursor() as cursor:
         cursor.execute(query)
         result = cursor.fetchall()
     conn.close()
     return result
 
-def get_group(asm_id:int, gca_chain:str, lowest_taxon:str, species_taxon:str) -> dict:
+def get_group(asm_id:int, gca_chain:str, lowest_taxon:str, species_taxon:str, metadata_params) -> dict:
     """
     This function query the custom_group table to retrieve the group name for a given assembly or taxon.
     If no custom group available, it returns an empty dictionary.
@@ -49,14 +49,14 @@ def get_group(asm_id:int, gca_chain:str, lowest_taxon:str, species_taxon:str) ->
     
     logging.info(f"Retrieving custom group by assembly: {gca_chain}")
     asm_query = f"SELECT group_name FROM custom_group where item = '{gca_chain}'"
-    rg1 = connect_db(asm_query)
+    rg1 = connect_db(asm_query, metadata_params)
     
     logging.info(f"Retrieving custom group by taxon: {species_taxon}")
     species_query = f"SELECT group_name FROM custom_group where item = '{species_taxon}'"
-    rg2 =connect_db(species_query)
+    rg2 =connect_db(species_query, metadata_params)
 
     taxon_query = f"SELECT group_name FROM custom_group where item = '{lowest_taxon}'"
-    rg3 = connect_db(taxon_query)
+    rg3 = connect_db(taxon_query, metadata_params)
     
     results = set([rg1, rg2, rg3])
     non_empty_results = [res for res in results if res]
@@ -76,7 +76,7 @@ def get_group(asm_id:int, gca_chain:str, lowest_taxon:str, species_taxon:str) ->
     
     return group_asm   
 
-def update_db(group_df: Tuple ) -> None:
+def update_db(group_df: Tuple, metadata_params ) -> None:
     
     
     list_group_asm = []
@@ -85,7 +85,7 @@ def update_db(group_df: Tuple ) -> None:
         # Assembly based groups
         if group_type == 'assembly':
             query = f"SELECT assembly_id FROM assembly where gca_chain = '{item}'"
-            results = connect_db(query)
+            results = connect_db(query, metadata_params)
             
         # Taxon based groups
         if group_type == 'taxon':
@@ -95,14 +95,14 @@ def update_db(group_df: Tuple ) -> None:
             ON assembly.lowest_taxon_id = species.lowest_taxon_id
             WHERE (species.lowest_taxon_id = '{item}' OR species.species_taxon_id = '{item}')
             """
-            results = connect_db(query)
+            results = connect_db(query, metadata_params)
         
         # Processing results, and filtering out the ones that are already in the group_assembly table
         for asm in results:
             assembly_id = asm[0]
             
             query = f"SELECT * FROM group_assembly WHERE group_name = '{group_name}' AND assembly_id = {assembly_id}"
-            result= connect_db(query)
+            result= connect_db(query, metadata_params)
 
             if len(result) == 0:
                 list_group_asm.append(
@@ -129,8 +129,17 @@ def main():
     parser.add_argument('--update_db',
                         action='store_true',
                         help='Update previous loaded assemblies' )
+    parser.add_argument('--metadata',
+                        help = 'JSON file with metadata database parameters')
+    
     args = parser.parse_args()
     logging.info(args)
+    
+    if os.path.exists(args.metadata):
+        with open(args.metadata, "r") as file:
+            metadata_params = json.load(file)
+    else:
+        raise FileNotFoundError("Metadata file not found")
     
     if args.accession and args.update_db:
         logging.info("Both accession and update_db flags are provided. Please provide only one")
@@ -148,11 +157,11 @@ def main():
         INNER JOIN species sp
         on asm.lowest_taxon_id = sp.lowest_taxon_id 
         where asm.gca_chain = '{gca_chain}' ;"""
-        asm_id, lowest_taxon, gca_chain, species_taxon = connect_db(query)[0]
+        asm_id, lowest_taxon, gca_chain, species_taxon = connect_db(query, metadata_params)[0]
         
         logging.info(f"The lowest taxon id is {lowest_taxon}, the species taxon is {species_taxon} and the gca chain is {gca_chain}")
         
-        group_asm = get_group(asm_id, gca_chain, lowest_taxon, species_taxon)
+        group_asm = get_group(asm_id, gca_chain, lowest_taxon, species_taxon, metadata_params)
         
         logging.info(f"Saving custom group json for {args.accession}")
         with open(f"{args.accession}_group.json", "w") as file:
@@ -162,10 +171,10 @@ def main():
     if args.update_db:
         # Querying the custom_group table
         item_query = f""" SELECT group_name, group_type, item FROM custom_group"""
-        group_df = connect_db(item_query)
+        group_df = connect_db(item_query, metadata_params)
         
         # Getting values to update the group_assembly table
-        group_asm = update_db(group_df)
+        group_asm = update_db(group_df, metadata_params)
         
         logging.info(f"Saving custom group json for general update")
         with open("update_db_group.json", "w") as file:

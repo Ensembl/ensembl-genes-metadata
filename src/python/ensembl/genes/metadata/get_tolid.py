@@ -19,9 +19,9 @@ import pymysql
 import json
 from tenacity import retry, stop_after_attempt, wait_random
 import logging
-from gb_db_params import METADATA_RPARAMS
+import os
 
-def connect_db(query:str) -> tuple:
+def connect_db(query:str, metadata_params) -> tuple:
     """
     Connect to the assembly metadata database and execute a query
 
@@ -32,7 +32,7 @@ def connect_db(query:str) -> tuple:
         tuple: results from the query's execution
     """
     logging.info(f"Querying metadata database with: {query}")
-    con = pymysql.connect(**METADATA_RPARAMS)
+    con = pymysql.connect(**metadata_params)
     with con.cursor() as cursor:
         cursor.execute(query)
         data = cursor.fetchone()
@@ -81,20 +81,31 @@ def main():
     parser.add_argument('--accession', 
                         type=str,
                         help='Full GCA assembly accession')
+    
+    parser.add_argument('--metadata',
+                        help='JSON file with metadata database connection parameters')
+    
     args = parser.parse_args()
     logging.info(args)
+    
+    if args.metadata:
+        if os.path.exists(args.metadata):
+            with open(args.metadata, 'r') as file:
+                metadata_params = json.load(file)
+        else:
+            raise ValueError("Metadata params json file does not exist")
     
     logging.info(f"Connecting to metadata database to retrieve lowest_taxon_id and assembly_id for {args.accession}")
     gca_chain = args.accession.split('.')[0]
     gca_version = args.accession.split('.')[1]
     query_taxon =f'SELECT assembly.assembly_id, species.species_taxon_id FROM assembly INNER JOIN species ON species.lowest_taxon_id = assembly.lowest_taxon_id WHERE gca_chain = "{gca_chain}" AND gca_version = "{gca_version}"'
-    assembly_id, taxon = connect_db(query_taxon)
+    assembly_id, taxon = connect_db(query_taxon, metadata_params)
     
     tolid = get_tolid(taxon)
     
     logging.info(f"Connecting to metadata database to retrieve organism_id for {args.accession}")
     query_organism = f'SELECT organism_id FROM organism WHERE assembly_id = "{assembly_id}"'
-    organism_id = connect_db(query_organism)
+    organism_id = connect_db(query_organism, metadata_params)
     
     dtol_json = {
         'organism' : {

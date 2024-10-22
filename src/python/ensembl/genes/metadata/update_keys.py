@@ -30,9 +30,8 @@ import os
 import logging
 import argparse
 from typing import Dict, Any
-from db_table_conf import TABLE_CONF
 
-def update_keys(data_db: Dict[str, Any], last_id_dict: Dict[str, Any]) -> Dict[str, Any]: 
+def update_keys(data_db: Dict[str, Any], last_id_dict: Dict[str, Any], table_conf) -> Dict[str, Any]: 
     """Insert the missing keys in the data_db dictionary using the last_id_dict dictionary.
 
     Args:
@@ -46,7 +45,7 @@ def update_keys(data_db: Dict[str, Any], last_id_dict: Dict[str, Any]) -> Dict[s
     for table_name in data_db:
         logging.info(f"Table found in JSON: {table_name}")
         
-        dkey = TABLE_CONF[table_name]['dkey']
+        dkey = table_conf[table_name]['dkey']
         logging.info(f"Dependant key required for this table: {dkey}")
         
         dkey_value = last_id_dict[dkey]
@@ -70,7 +69,10 @@ def main():
     
     parser.add_argument("--file-id-path", type=str,
                         help="Path to the JSON file containing the keys to be added. File is the output of write2db.py")
-        
+    
+    parser.add_argument('--config', type=str,
+                        help='Path to the DB table configuration file',)
+    
     # Parsing arguments 
     args = parser.parse_args()
     logging.info(args)
@@ -85,9 +87,13 @@ def main():
     with open(args.file_id_path, 'r') as file:
         last_id_dict = json.load(file)
         file.close()
+        
+    with open(args.config, 'r') as file:
+        table_conf = json.load(file)
+        file.close()
     
     logging.info("Updating keys")
-    data_db = update_keys(data_db, last_id_dict)
+    data_db = update_keys(data_db, last_id_dict, table_conf)
     
     output_file = os.path.basename(args.json_path).replace('.tmp', '.json')
     

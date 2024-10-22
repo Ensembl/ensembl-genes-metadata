@@ -37,12 +37,10 @@ import argparse
 import logging
 import pymysql
 import os
-from db_table_conf import TABLE_CONF
-from gb_db_params import METADATA_WPARAMS
 from typing import Dict
 
 def check_dict_structure(input_dict) -> bool:
-    """This functions checks the structure of the database, 
+    """This functions checks the structure of the dictionary to, 
     identify if the data is a dictionary or a list of dictionary
     
     Args:
@@ -69,7 +67,7 @@ def check_dict_structure(input_dict) -> bool:
             
     return dict_islist
 
-def check_key(data_dict, table_name, update) -> None:
+def check_key(data_dict, table_name, update, table_conf) -> None:
     """
     This function check if the data have all keys necessary for a successful execution.
     It is used for insert queries or update queries
@@ -89,19 +87,19 @@ def check_key(data_dict, table_name, update) -> None:
         key = 'dkey'
         
     # If insert query do not require dkey:
-    if TABLE_CONF[table_name][key] == 'None':
+    if table_conf[table_name][key] == 'None':
         logging.info(f"The {table_name} table does not require any dependent/update key. Update {update} ")
         
     # If insert query do require dkey:
-    elif TABLE_CONF[table_name][key] != 'None':
-        if TABLE_CONF[table_name][key] in data_dict.keys():
-            logging.info(f'Key {TABLE_CONF[table_name][key]} exist in {table_name}. Update {update}')
+    elif table_conf[table_name][key] != 'None':
+        if table_conf[table_name][key] in data_dict.keys():
+            logging.info(f'Key {table_conf[table_name][key]} exist in {table_name}. Update {update}')
         else:
-            raise ValueError(f"key {TABLE_CONF[table_name][key]} not found in {table_name} table. Update {update}")
+            raise ValueError(f"key {table_conf[table_name][key]} not found in {table_name} table. Update {update}")
     else:
-        raise ValueError(f"Unexpected value {TABLE_CONF[table_name][key]} for table {table_name} table. Update {update}")
+        raise ValueError(f"Unexpected value {table_conf[table_name][key]} for table {table_name} table. Update {update}")
 
-def insert_query(data_dict: Dict , table_name: str) -> str:
+def insert_query(data_dict: Dict , table_name: str, table_conf, metadata_params) -> str:
     """This functions create a mysql insert queries using the input data provided
 
     Args:
@@ -112,13 +110,13 @@ def insert_query(data_dict: Dict , table_name: str) -> str:
         str: returns mysql query
     """
     
-    if TABLE_CONF[table_name]['method'] in ['per_row', 'per_row_key']:
+    if table_conf[table_name]['method'] in ['per_row', 'per_row_key']:
         logging.info(f"{table_name} is an attribute table (key:value pairs) ")
         
-        dkey = TABLE_CONF[table_name]['dkey']
+        dkey = table_conf[table_name]['dkey']
         
         # Getting columns names
-        conn = pymysql.connect(**METADATA_WPARAMS)
+        conn = pymysql.connect(**metadata_params)
         cur  = conn.cursor()
         cur.execute(f"SHOW COLUMNS FROM {table_name}")
         table_columns = cur.fetchall()
@@ -130,13 +128,13 @@ def insert_query(data_dict: Dict , table_name: str) -> str:
         
         for key,value in data_dict.items():
             if key !=  dkey: 
-                if TABLE_CONF[table_name]['method'] in ['per_row']:
+                if table_conf[table_name]['method'] in ['per_row']:
                     value_item = f"('{dkey_value}', '{key}', '{value}')"
-                elif TABLE_CONF[table_name]['method'] in ['per_row_key']:
+                elif table_conf[table_name]['method'] in ['per_row_key']:
                     logging.info(f"{table_name} is an attribute table (key only) ")
                     value_item = f"('{dkey_value}', '{key}')"
                 else:
-                    raise ValueError(f"Invalid value in table config - method: {TABLE_CONF[table_name]['method'] } ")   
+                    raise ValueError(f"Invalid value in table config - method: {table_conf[table_name]['method'] } ")   
                 
                 value_list.append(value_item)
                 values_string =  ', '.join(value_list)
@@ -148,7 +146,7 @@ def insert_query(data_dict: Dict , table_name: str) -> str:
         values_strings = ','.join([f"'{value}'" for value in list(data_dict.values())]).replace("''" , "NULL" )
         return f"""INSERT INTO {table_name} ({table_var_string}) VALUES ({values_strings}) ;"""
 
-def update_query(data_dict: Dict, table_name: str) -> str:
+def update_query(data_dict: Dict, table_name: str, table_conf) -> str:
     """
     This functions create a mysql update query using the input data provided
 
@@ -161,7 +159,7 @@ def update_query(data_dict: Dict, table_name: str) -> str:
     """
     update_list = []
     for key, value in data_dict.items():
-        if TABLE_CONF[table_name]['ukey'] == key:
+        if table_conf[table_name]['ukey'] == key:
             condition = f"{key} = {value}"
         else:
             update_list.append(f"{key} = '{value}'")
@@ -170,7 +168,7 @@ def update_query(data_dict: Dict, table_name: str) -> str:
     
     return f"UPDATE {table_name} SET {update_values} WHERE {condition} ;"
 
-def create_query(data_dict: Dict, table_name: str, update: bool) -> str:
+def create_query(data_dict: Dict, table_name: str, update: bool, table_conf, metadata_params) -> str:
     """
     This function create an insert or update MySQL query depending if update argument was provided (True).
     It use the check_key function to determinate of the data provided has the enough keys to create the query.
@@ -184,17 +182,17 @@ def create_query(data_dict: Dict, table_name: str, update: bool) -> str:
         str: mysql query 
     """
     # checking if relevant keys are missing
-    check_key(data_dict, table_name, update)
+    check_key(data_dict, table_name, update, table_conf)
     
     if update: #input data will be used to update a row
-        query = update_query(data_dict, table_name)
+        query = update_query(data_dict, table_name, table_conf)
     else: # input data will be used to insert a new row
-        query = insert_query(data_dict, table_name)
+        query = insert_query(data_dict, table_name, table_conf, metadata_params)
     
     logging.info(f"Query created: {query}")
     return query
 
-def retrieve_row_id(data_dict: Dict, table_name: str) -> int:
+def retrieve_row_id(data_dict: Dict, table_name: str, table_conf, metadata_params) -> int:
     """
     If data is already inserted in the db, this function retrieves the id of the row using the data provided and the table name, 
     it will retrieve the uniqueness constrain of the table and use it to retrieve the id of the row.
@@ -208,7 +206,7 @@ def retrieve_row_id(data_dict: Dict, table_name: str) -> int:
     """
     
     # Establishing connection to DB
-    conn = pymysql.connect(**METADATA_WPARAMS)
+    conn = pymysql.connect(**metadata_params)
     cur  = conn.cursor()
 
     # Getting id key name
@@ -229,12 +227,12 @@ def retrieve_row_id(data_dict: Dict, table_name: str) -> int:
     logging.info(f" Detected uniqueness constrains: {constraint}")
     
     # Per row method
-    if TABLE_CONF[table_name]['method'] in ['per_row', 'per_row_key']:
+    if table_conf[table_name]['method'] in ['per_row', 'per_row_key']:
         print(f"{table_name} is an attribute table (key:value paris) ")
-        dkey = TABLE_CONF[table_name]['dkey']
+        dkey = table_conf[table_name]['dkey']
         
         # Getting columns names
-        conn = pymysql.connect(**METADATA_WPARAMS)
+        conn = pymysql.connect(**metadata_params)
         cur  = conn.cursor()
         cur.execute(f"SHOW COLUMNS FROM {table_name}")
         table_columns = cur.fetchall()
@@ -245,14 +243,14 @@ def retrieve_row_id(data_dict: Dict, table_name: str) -> int:
         for key,value in data_dict.items():
             if key !=  dkey: 
                 
-                if TABLE_CONF[table_name]['method'] in ['per_row']:
+                if table_conf[table_name]['method'] in ['per_row']:
                     condition_string = f"{columns[0]} = '{dkey_value}' AND {columns[1]} =  '{key}' AND {columns[2]} = '{value}'"
-                elif TABLE_CONF[table_name]['method'] in ['per_row_key']:
+                elif table_conf[table_name]['method'] in ['per_row_key']:
                     condition_string = f"{columns[0]} = '{dkey_value}' AND {columns[1]} =  '{key}'"
                 else:
-                    raise ValueError(f"Invalid value in table config - method: {TABLE_CONF[table_name]['method'] } ")
+                    raise ValueError(f"Invalid value in table config - method: {table_conf[table_name]['method'] } ")
                 
-                conn = pymysql.connect(**METADATA_WPARAMS)
+                conn = pymysql.connect(**metadata_params)
                 cur  = conn.cursor()
                 retrieving_query = f"SELECT {id_name} FROM {table_name} WHERE {condition_string} ;" 
                 cur.execute(retrieving_query)
@@ -264,7 +262,7 @@ def retrieve_row_id(data_dict: Dict, table_name: str) -> int:
                 else:
                     last_id = last_id_tmp[0][0]
     
-    elif TABLE_CONF[table_name]['method'] == 'per_col':
+    elif table_conf[table_name]['method'] == 'per_col':
         # Building conditionals based on uniqueness constrain 
         condition_list = []
         for key in constraint:
@@ -287,7 +285,7 @@ def retrieve_row_id(data_dict: Dict, table_name: str) -> int:
         
     return last_id
 
-def execute_query(query: str, table_name: str, data_dict: Dict) -> int:
+def execute_query(query: str, table_name: str, data_dict: Dict, table_conf, metadata_params) -> int:
     """
     This function execute the query in the target database, if the query is an insert query it will return the id of the row inserted.
     If the query is an update query it will return the id of the row updated. If the query is duplicated it will retrieve the id of the row.
@@ -305,7 +303,7 @@ def execute_query(query: str, table_name: str, data_dict: Dict) -> int:
     """
     
     # Connecting to db 
-    conn = pymysql.connect(**METADATA_WPARAMS)
+    conn = pymysql.connect(**metadata_params)
     cur  = conn.cursor()
     # Getting id name
     cur.execute(f"SHOW KEYS FROM {table_name} WHERE Key_name = 'PRIMARY'")
@@ -320,7 +318,7 @@ def execute_query(query: str, table_name: str, data_dict: Dict) -> int:
     except pymysql.IntegrityError as e:
         if e.args[0] == 1062:
             # Retrieve value of a already exiting row
-            id_value = retrieve_row_id(data_dict, table_name)
+            id_value = retrieve_row_id(data_dict, table_name, table_conf, metadata_params)
         
     except Exception as ee:
         print(f'Error: {ee}')
@@ -337,7 +335,7 @@ def main():
     logging.basicConfig(filename="write2db.log", level=logging.DEBUG, filemode='w',
                     format="%(asctime)s:%(levelname)s:%(message)s")
     
-    parser = argparse.ArgumentParser(prog="create_query.py", 
+    parser = argparse.ArgumentParser(prog="write2db.py", 
                                     description="Create an insert or update queries and execute them in the target DB")
     
     parser.add_argument("--file-path", type=str,
@@ -348,6 +346,12 @@ def main():
     
     parser.add_argument('--empty', action='store_true',
                         help="If this option is added it indicates empty input data is allowed")
+    
+    parser.add_argument('--config', type=str,
+                        help="Path to the JSON file containing the configuration of the tables")
+    
+    parser.add_argument('--metadata', type=str,
+                        help="Path to the JSON file containing the metadata parameters")
     
     # Parsing arguments 
     args = parser.parse_args()
@@ -364,6 +368,23 @@ def main():
     elif not input_data and not args.empty:
         logging.info("Input data is empty. Data was expected in the file")
         raise ValueError("Input file is empty. Data expected or empty option was not provided")
+    
+    if args.config:
+        if not os.path.exists(args.config):
+            logging.info(f"File {args.config} does not exist")
+            raise ValueError(f"File {args.config} does not exist")
+        else:
+            with open(args.config) as file:
+                table_conf = json.load(file)
+    
+    if args.metadata:
+        if not os.path.exists(args.metadata):
+            logging.info(f"File {args.metadata} does not exist")
+            raise ValueError(f"File {args.metadata} does not exist")
+        else:
+            with open(args.metadata) as file:
+                metadata_params = json.load(file)
+
         
     # Update optional command 
     update = args.update
@@ -384,8 +405,8 @@ def main():
         if check:
             logging.info("Lists of dictionaries detected, processing each dictionary")
             for row in input_data[table_name]:
-                query = create_query(row, table_name, update)
-                id_value, id_name= execute_query(query, table_name, input_data[table_name])
+                query = create_query(row, table_name, update, table_conf, metadata_params)
+                id_value, id_name= execute_query(query, table_name, input_data[table_name], table_conf, metadata_params)
                 logging.info(f"Data was inserted in {table_name}. Last value of {id_name} is {id_value}")
                 # saving last id in dict
                 last_id_dict.update({id_name:id_value})
@@ -393,8 +414,8 @@ def main():
         else:
             logging.info("Regular dictionary detected, processing key:value pair values")
             # Data is a dictionary (This part is not tested yet)
-            query = create_query(input_data[table_name], table_name, update)
-            id_value, id_name= execute_query(query,table_name, input_data[table_name])
+            query = create_query(input_data[table_name], table_name, update, table_conf, metadata_params)
+            id_value, id_name= execute_query(query,table_name, input_data[table_name], table_conf, metadata_params)
             logging.info(f"Data was inserted in {table_name}. Last value of {id_name} is {id_value}")
             # saving last id in dict
             last_id_dict.update({id_name:id_value})
