@@ -1,26 +1,24 @@
 # Genebuild assembly metadata pipeline
 
-The pipelines connects to NCBI API to retrieve the latest Eucaryotic assemblies and helps to manage the correspoding metadata.
-The data is stored in a MySQL assembly metadata database located in GB1 server. The pipeline use as main source the datasets NCBI API, download the information, collect and process the relevant information using multiple python scripts. 
+The pipeline connects to the NCBI API to retrieve the latest eukaryotic genome assemblies and efficiently manages the associated metadata. The data is stored in a MySQL database on the GB1 server, specifically for assembly metadata. The pipeline primarily sources data from the NCBI API, downloading and processing relevant information through a series of Python scripts. Additional data is gathered from both the NCBI Taxonomy API and the [DTOL API](https://id.tol.sanger.ac.uk) to complement the assembly metadata.
 
-Extra information is obtained from the taxonomy NCBI API and dtol API.  
+![plot](./diagram.png)
 
-The repository provides the configuration profile, which specify the input variables (mandatory and default) and two execution profiles: slurm and lsf
+The repository provides a NextFlow configuration file, which specify the input variables (mandatory and default) and two execution profiles: slurm and lsf
 
 This pipeline has been tested in the new modular environment and with the latest Nextflow version (version 24.04.3) available in Codon 
 
+For more information about the mysql DB check out this [documentation](https://www.ebi.ac.uk/seqdb/confluence/pages/resumedraft.action?draftId=217010361&draftShareId=89535c0f-563f-4bf4-bf85-f047557aed6f&)
 
 # Requirements 
 
 ## Ensembl dependencies 
-
 
 It is recommended that all the repositories are cloned into the same folder. 
 
 | Repository name | branch | url |
 |-------------------|-------|----|
 | ensembl-genes | main | https://github.com/Ensembl/ensembl-genes.git |
-|-------------------|-------|----|
 
 # Running options
 
