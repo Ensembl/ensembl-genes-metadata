@@ -8,7 +8,7 @@ The repository provides a NextFlow configuration file, which specify the input v
 
 This pipeline has been tested in the new modular environment and with the latest Nextflow version (version 24.04.3) available in Codon 
 
-For more information about the mysql DB check out this [documentation](https://www.ebi.ac.uk/seqdb/confluence/pages/resumedraft.action?draftId=217010361&draftShareId=89535c0f-563f-4bf4-bf85-f047557aed6f&)
+For more information about the mysql DB check out this [documentation](https://www.ebi.ac.uk/seqdb/confluence/display/ENSGBD/The+Genebuild+Assembly+Metadata+Database)
 
 # Requirements 
 
