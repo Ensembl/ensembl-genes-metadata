@@ -34,6 +34,11 @@ import json
 import requests
 from tenacity import retry, stop_after_attempt, wait_fixed,wait_exponential_jitter,wait_exponential,wait_random
 
+def clean_text(text):
+    # Define the regex pattern for unwanted characters
+    pattern = r"[!\"#$%&()*+,\-./:;<=>?@[\]^`{|}~_\\']"
+    # Substitute unwanted characters with an empty string
+    return re.sub(pattern, "", text)
 
 def request_data(run_accession: str, fields: list) -> str:
     """Make an HTTP request for the metadata of the given run_accession.
@@ -100,51 +105,53 @@ def json_parse(response: str, fields: list):
             "read_type": output_data["library_strategy"],
             "platform": output_data["instrument_platform"],
             "paired": output_data["library_layout"] == "PAIRED",
-            "experiment": "; ".join(
+            "experiment": " ".join(
                 value
                 for value in [
-                    re.sub(r"[!\"#$%&()*\+,\-\'.\/:;<=>?@\[\]^`{|}~]", "", output_data["experiment_alias"]),
-                    re.sub(r"[!\"#$%&()*\+,\-\'.\/:;<=>?@\[\]^`{|}~]", "", output_data["experiment_title"]),
+                    clean_text(output_data["experiment_alias"]),
+                    clean_text(output_data["experiment_title"]),
                 ]
                 if value is not None
-            ).rstrip("; "),
+            ).rstrip(";"),
             "run_description": re.sub(
-                r"[!\"#$%&()*\+,\-\'.\/:;<=>?@\[\]^`{|}~]", "", output_data["description"]
+                clean_text(output_data["description"]),
             )[:250],
-            "library_name": "; ".join(
+            "library_name": " ".join(
                 value
-                for value in [re.sub(r"[!\"#$%&()*\+,\-\'.\/:;<=>?@\[\]^`{|}~]", "",output_data["library_source"]),
-                            re.sub(r"[!\"#$%&()*\+,\-\'.\/:;<=>?@\[\]^`{|}~]", "",output_data["library_name"])]
+                for value in [
+                    clean_text(output_data["library_source"]),
+                    clean_text(output_data["library_name"]),
+                            ]
                 if value is not None
-            ).rstrip("; "),
+            ).rstrip(";"),
             "library_selection": output_data["library_selection"],
-            "tissue": "; ".join(
+            "tissue": " ".join(
                 value
                 for value in [
-                    re.sub(r"[!\"#$%&()*\+,\-\'.\/:;<=>?@\[\]^`{|}~]", "", output_data["tissue_type"]).lower(),
-                    re.sub(r"[!\"#$%&()*\+,\-\'.\/:;<=>?@\[\]^`{|}~]", "", output_data["tissue_lib"]).lower(),
+                    clean_text(output_data["tissue_type"]).lower(),
+                    clean_text(output_data["tissue_lib"]).lower(),
                 ]
                 if value != ""
-            ).rstrip("; "),
-            "cell_line": re.sub(r"[!\"#$%&()*\+,\-\'.\/:;<=>?@\[\]^`{|}~]", "", output_data["cell_line"]),
-            "cell_type": re.sub(r"[!\"#$%&()*\+,\-\'.\/:;<=>?@\[\]^`{|}~]", "", output_data["cell_type"]),
-            "strain": "; ".join(
+            ).rstrip(";"),
+            "cell_line": clean_text(output_data["cell_line"]),
+            "cell_type": clean_text(output_data["cell_type"]),
+            "strain": " ".join(
                 value
                 for value in [
-                    re.sub(r"[!\"#$%&()*\+,\-\'.\/:;<=>?@\[\]^`{|}~]", "",output_data["strain"]),
-                    re.sub(r"[!\"#$%&()*\+,\-\'.\/:;<=>?@\[\]^`{|}~]", "",output_data["cultivar"]),
-                    re.sub(r"[!\"#$%&()*\+,\-\'.\/:;<=>?@\[\]^`{|}~]", "",output_data["ecotype"]),
-                    re.sub(r"[!\"#$%&()*\+,\-\'.\/:;<=>?@\[\]^`{|}~]", "",output_data["isolate"]),
+                    clean_text(output_data["strain"]),
+                    clean_text(output_data["cultivar"]),
+                    clean_text(output_data["ecotype"]),
+                    clean_text(output_data["isolate"]),
                 ]
                 if value != ""
-            ).rstrip("; "),
+            ).rstrip(";"),
         }
     }
 
     table_study = {
         "study": {
-            "study_accession": re.sub(r"[!\"#$%&()*\+,\-\'.\/:;<=>?@\[\]^`{|}~]", "",output_data["study_accession"])  if output_data["study_accession"] else None,
-            "center_name": re.sub(r"[!\"#$%&()*\+,\-\'.\/:;<=>?@\[\]^`{|}~]", "",output_data["center_name"]) if output_data["center_name"] else None,
+            "study_accession": clean_text(output_data["study_accession"])  if output_data["study_accession"] else None,
+            "center_name": clean_text(output_data["center_name"]) if output_data["center_name"] else None,
         }
     }
 
