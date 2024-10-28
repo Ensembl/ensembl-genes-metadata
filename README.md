@@ -14,7 +14,10 @@ This pipeline processes transcriptomic data for various taxon IDs, performing a 
 
 4. **Run STAR Alignment**: Align the subsampled FASTQ files to the provided genome assembly using the STAR aligner, then store the results into the database.
 
+## Batching
 
+The batching option is available to process species with a huge amount of rnaseq data. The batches can be created via src/python/ensembl/genes/metadata/transcriptomic/check_for_transcriptomic_batch.py : give a taxon id and the batch size the script retrieves the list of run accession and split them in multiple txt files according to the batch size. 
+The pipeline considers the date of the last processed date as last cheked date for future updates.
 
 ### Mandatory arguments
 
@@ -24,6 +27,12 @@ The structure of the file can cahnge according to the running options
 |-----------------|
 | taxon_id,gca (header)   | 
 | <taxon_id>,<gca>        |
+
+In case of batching
+| csv file format |
+|-----------------|
+| taxon_id,gca,runs_file (header)           | 
+| <taxon_id>,<gca>,<path to the batch file> |
 
 
 #### `--outDir`

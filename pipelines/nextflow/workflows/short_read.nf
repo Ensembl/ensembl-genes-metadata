@@ -73,11 +73,14 @@ if (params.help) {
     log.info '  --transcriptomic_dbhost STR                   Db host server '
     log.info '  --transcriptomic_dbport INT                   Db port  '
     log.info '  --transcriptomic_dbuser STR                   Db user  '
-    log.info '  --transcriptomic_dbpassword STR                   Db password  '
-    log.info '  --user_r STR                 Db user read_only'
-    log.info '  --enscode STR                Enscode path '
-    log.info '  --outDir STR                 Output directory. Default is workDir'
-    log.info '  --csvFile STR                Path for the csv containing the db name' 
+    log.info '  --transcriptomic_dbpassword STR               Db password  '
+    log.info '  --enscode STR                                 Enscode path '
+    log.info '  --outDir STR                                  Output directory. Default is workDir'
+    log.info '  --csvFile STR                                 Path for the csv containing the db name' 
+    log.info '  --cacheDir                                    Path to the directory to use as cache for the intermediate files'
+    log.info '  --files_latency                               Sleep time (in seconds) after the genome and proteins have been fetched (default, 60 seconds)'
+    log.info '  --backupDB  bool                              Dump the db and save it in a zipped file '
+    log.info '  --cleanOutputDir  bool                        Remove all files present in theoutput directory except the db dump file'
     exit 1
 }
 
