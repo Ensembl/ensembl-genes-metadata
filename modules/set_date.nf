@@ -5,7 +5,7 @@ process SET_DATE {
     script:
     if(params.date && !params.full_screen)
         """
-            ${params.metadata_db.host} ${params.metadata_db.database} -NB -e "SELECT DATE_FORMAT(date_value, '%m/%d/%Y') from update_date WHERE update_type = 'custom_date'; "
+            echo ${params.date}
         """
     else if(params.full_screen && !params.date)
         """
