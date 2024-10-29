@@ -2,7 +2,7 @@
 
 This pipeline processes transcriptomic data for various taxon IDs, performing a series of steps to fetch genome file, run alignments, and convert the BAM into CRAM format. The pipeline is designed for scalability and reproducibility using Nextflow.
 
-![plot](./plot.jpeg)
+![plot](./plot.png)
 
 ## Steps in the Pipeline:
 
@@ -20,7 +20,7 @@ The structure of the file can cahnge according to the running options
 | csv file format |
 |-----------------|
 | taxon_id,gca,run_accession,pair1,pair2,md5_1,md5_2 (header)   | 
-| <taxon_id>,<gca>,<run_accession>,<pair1>,<pair2>,<md5_1>,<md5_2>        |
+| <taxon_id> , <gca> , <run_accession> , <pair1> , <pair2> , <md5_1> , <md5_2>        |
 
 
 #### `--outDir`
