@@ -1,19 +1,16 @@
 # Genebuild Transcriptomic pipeline
 
-This pipeline processes transcriptomic data for various taxon IDs, performing a series of steps to fetch data, perform quality checks, subsample files, run alignments, and store the results of each step in a database. The pipeline is designed for scalability and reproducibility using Nextflow.
+This pipeline processes transcriptomic data for various taxon IDs, performing a series of steps to fetch genome file, run alignments, and convert the BAM into CRAM format. The pipeline is designed for scalability and reproducibility using Nextflow.
 
 ![plot](./plot.jpeg)
 
 ## Steps in the Pipeline:
 
-1. **Fetch Run Accessions from ENA**: For each taxon ID, retrieve the list of run accessions from the ENA archive since January 1, 2019, or from the last check.
+1. **Fetch and index genome file**: For each taxon ID, download and index the genome file from NCBI dataset.
 
-2. **Fetch Metadata and Perform Quality Checks**: For each run accession, get metadata from ENA and conduct quality checks using FASTQC, then store the results into the database.
+2. **Run STAR Alignment**: Align  FASTQ files to the provided genome assembly using the STAR aligner.
 
-3. **Subsample FASTQ Files**: Subsample the paired FASTQ files to reduce their size.
-
-4. **Run STAR Alignment**: Align the subsampled FASTQ files to the provided genome assembly using the STAR aligner, then store the results into the database.
-
+3. **Convert BAM file to CRAM**: Convert BAm file to CRAM format when bam2cram is true.
 
 
 ### Mandatory arguments
@@ -22,39 +19,23 @@ This pipeline processes transcriptomic data for various taxon IDs, performing a 
 The structure of the file can cahnge according to the running options
 | csv file format |
 |-----------------|
-| taxon_id,gca (header)   | 
-| <taxon_id>,<gca>        |
+| taxon_id,gca,run_accession,pair1,pair2,md5_1,md5_2 (header)   | 
+| <taxon_id>,<gca>,<run_accession>,<pair1>,<pair2>,<md5_1>,<md5_2>        |
 
 
 #### `--outDir`
 Path to the directory where to store the results of the pipeline
 
-#### `transcriptomic_dbname`
-The name of the transcriptomic db.
-
-#### `--transcriptomic_dbhost`
-The host name for the database 
-
-#### `--transcriptomic_dbport`
-The port number of the host 
-
-#### `--transcriptomic_dbuser`
-The read/wrote username for the host (admin user). 
-
-#### `--transcriptomic_dbpassword`
-The database password. 
-
-#### `--user_r`
-The read only username for the host. 
 
 
 ```bash
-nextflow -C $ENSCODE/ensembl-genes-metadata/nextflow.config run $ENSCODE/ensembl-genes-metadata/pipelines/nextflow/workflows/short_read.nf -entry SHORT_READ  --csvFile <csv_file_path> --outDir <output_dir_path> --transcriptomic_dbname <db name> --transcriptomic_dbhost <mysql_host> --transcriptomic_dbport <mysql_port> --transcriptomic_dbuser <user> --user_r <read_user>  --transcriptomic_dbpassword <mysql_password> -profile slurm
+nextflow -C $ENSCODE/ensembl-genes-metadata/nextflow_star.config run $ENSCODE/ensembl-genes-metadata/pipelines/nextflow/workflows/star_alignment.nf -entry STAR_ALIGNMENT  --csvFile <csv_file_path> --outDir <output_dir_path>  -profile slurm
 ```
-
 
 ### Optional arguments
 
+####  `--bam2cram`  
+Option to convert BAM file to CRAM format, default true.
 
 #### `--cacheDir`
 Path to the directory to use as cache for the intermediate files. If not provided, the value passed to `--outDir` will be used as root, i.e. `<outDir>/cache`.
@@ -65,12 +46,10 @@ Sleep time (in seconds) after the genome and proteins have been fetched. Needed 
 #### `--cleanOutputDir`
 Clean outDir, default False.
 
-#### `--backupDB`
-Backup database using day and time id, default True.
 
 ### Pipeline configuration
 
-#### Using the provided nextflow.config
+#### Using the provided nextflow_star.config
 We are using profiles to be able to run the pipeline on different HPC clusters. The default is `standard`.
 
 * `standard`: uses LSF to run the compute heavy jobs. It expects the usage of `scratch` to use a low latency filesystem.
@@ -86,7 +65,7 @@ You can use a local config with `-c` to finely configure your pipeline. All para
 ### Information about all the parameters
 
 ```bash
-nextflow run ./ensembl-genes-metadata/pipelines/nextflow/workflows/short_read.nf --help
+nextflow run ./ensembl-genes-metadata/pipelines/nextflow/workflows/star_alignment.nf --help
 ```
 
 

@@ -30,14 +30,6 @@ if (params.help){
     exit 0
 }
 
-if (!params.bam2cram) {
-    exit 1, "Undefined --params.transcriptomic_dbname parameter. Please provide the server host for the db connection"
-}
-
-if (!params.cacheDir) {
-    exit 1, "Undefined --cacheDir parameter. Please provide the cache dir directory's path"
-}
-
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     HELP
@@ -51,10 +43,10 @@ if (params.help) {
     log.info '-------------------------------------------------------'
     log.info ''
     log.info 'Usage: '
-    log.info ' nextflow -C ensembl-genes-metadata/nextflow_star.config run nextflow/workflows/star_alignment.nf -entry STAR_ALIGNMENT  '
+    log.info 'nextflow -C ensembl-genes-metadata/nextflow_star.config run nextflow/workflows/star_alignment.nf -entry STAR_ALIGNMENT  '
     log.info ''
     log.info 'Options:'
-    log.info '  --bam2cram STR                   Oprion to convert BAM file to CRAM format  '
+    log.info '  --bam2cram STR               Option to convert BAM file to CRAM format  '
     log.info '  --outDir STR                 Output directory. Default is workDir'
     log.info '  --csvFile STR                Path for the csv containing the db name' 
     exit 1
