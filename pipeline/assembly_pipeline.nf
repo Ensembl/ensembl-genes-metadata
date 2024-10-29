@@ -52,7 +52,10 @@ if (params.help) {
     log.info 'Options:'
     log.info '  --enscode STR               ENSCODE directory path'    
     log.info '  --output_dir STR            Output directory path'
+    log.info '  --date STR                  Custom date to retrieve assemblies (optional)'
+    log.info '  --full_screen BOOLEAN       Run full screen mode, it will retrieve assemblies since 2019'
     log.info '  --taxon INT                 NCBI taxon id. Default is 2759'
+    log.info '  --help BOOLEAN              Help option'
 }
 
 /*
@@ -61,6 +64,7 @@ if (params.help) {
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
+include { SET_DATE } from '../modules/set_date.nf'
 include { FETCH_GCA } from '../modules/fetch_gca.nf' 
 include { PARSE_METADATA } from '../modules/parse_metadata.nf' 
 include { WRITE2DB_ASSEMBLY } from '../modules/write2db_assembly.nf' 
@@ -79,12 +83,17 @@ WORKFLOW: REGISTER NEW ASSEMBLIES IN DB
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
+// print params
+params.each{ k, v -> println "params.${k.padRight(25)} = ${v}" }
+
 workflow {
 
-    FETCH_GCA(params.taxon, params.last_update)
+    def last_update = SET_DATE()
+    
+    FETCH_GCA(params.taxon, last_update)
 
     gca = FETCH_GCA.out.splitText().map{it -> it.trim()}
-
+    
     PARSE_METADATA(gca)
     
     WRITE2DB_ASSEMBLY(PARSE_METADATA.out.gca, PARSE_METADATA.out.assembly, PARSE_METADATA.out.metadata_tmp, PARSE_METADATA.out.species_tmp)
