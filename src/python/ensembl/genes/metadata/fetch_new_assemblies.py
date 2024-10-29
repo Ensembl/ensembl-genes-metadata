@@ -64,7 +64,7 @@ def set_date(taxon:int, ncbi_params: Dict[str, Any], date_update:str) -> Tuple[D
 
     return ncbi_params, release_date
 
-@retry(stop=stop_after_attempt(5), wait=wait_random(min=1, max=10))
+@retry(stop=stop_after_attempt(3), wait=wait_random(min=1, max=3))
 def connection_ncbi(uri: str, params: Dict[str, str]) -> requests.Response:
     response = requests.get(uri, params=params)
     response.raise_for_status()
@@ -92,17 +92,23 @@ def fetch_gca_list(taxon: int, ncbi_params: Dict[str, str], ncbi_url ) -> List[s
         logging.info(f"URL: {response.url}")
         data = response.json()
         
-        # Extracting GCA accessions
-        gca_list.extend(report['accession'] for report in data['reports'])
+        # Extracting GCA accessions if available
+        if 'reports' in data:        
+            gca_list.extend(report['accession'] for report in data['reports'])
 
-        # Setting up the next page
-        page_token = data.get('next_page_token')
-        if page_token:
-            ncbi_params['page_token'] = page_token
-        elif page_token is None: # No more pages, break loop
-            next_page = False
+            # Setting up the next page
+            page_token = data.get('next_page_token')
+            if page_token:
+                ncbi_params['page_token'] = page_token
+            elif page_token is None: # No more pages, break loop
+                next_page = False
+            else:
+                raise ValueError("Page token is not being set correctly")  
+        
         else:
-            raise ValueError("Page token is not being set correctly")  
+            logging.info("No assemblies found. Setting next_page as false")
+            next_page = False
+        
 
     return set(gca_list)       
 
@@ -266,16 +272,22 @@ def main():
     
     ncbi_params, release_date = set_date(taxon, ncbi_params, args.date_update)
     gca_list = fetch_gca_list(taxon, ncbi_params, ncbi_url)
-    db_query = build_db_query(release_date)
-    accessions_to_register = get_gca_register(args.db, db_query, gca_list, metadata_params, registy_params)
     
-    with open("assemblies_to_register.txt", 'w') as file:
-        for accession in accessions_to_register:
-            print(accession)
-            file.write(accession + '\n')
-    file.close()
+    if len(gca_list) > 0:
+    
+        db_query = build_db_query(release_date)
+        accessions_to_register = get_gca_register(args.db, db_query, gca_list, metadata_params, registy_params)
         
-    logging.info(f'Accessions to register: {len(accessions_to_register)}. Please note that some assemblies might belong to unspecified species')
+        with open("assemblies_to_register.txt", 'w') as file:
+            for accession in accessions_to_register:
+                print(accession)
+                file.write(accession + '\n')
+        file.close()
+            
+        logging.info(f'Accessions to register: {len(accessions_to_register)}. Please note that some assemblies might belong to unspecified species')
+    
+    else:
+        logging.info(f'No assemblies found since {release_date}')
 
 if __name__ == '__main__':
     main()
