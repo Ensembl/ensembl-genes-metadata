@@ -76,6 +76,7 @@ include { GET_TOLID } from '../modules/get_tolid.nf'
 include { WRITE2DB_TOLID } from '../modules/write2db_tolid.nf'
 include { CUSTOM_GROUP } from '../modules/custom_groups.nf'
 include { WRITE2DB_GROUP } from '../modules/write2db_group.nf'
+include { REPORT } from '../modules/report.nf'
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -88,12 +89,13 @@ params.each{ k, v -> println "params.${k.padRight(25)} = ${v}" }
 
 workflow {
 
-    def last_update = SET_DATE()
+    SET_DATE()
+    def last_update = SET_DATE.out.splitText() {it -> it.trim()}
     
     FETCH_GCA(params.taxon, last_update)
 
     gca = FETCH_GCA.out.splitText().map{it -> it.trim()}
-    
+
     PARSE_METADATA(gca)
     
     WRITE2DB_ASSEMBLY(PARSE_METADATA.out.gca, PARSE_METADATA.out.assembly, PARSE_METADATA.out.metadata_tmp, PARSE_METADATA.out.species_tmp)
@@ -113,5 +115,9 @@ workflow {
     CUSTOM_GROUP(WRITE2DB_TOLID.out.gca)
     
     WRITE2DB_GROUP(CUSTOM_GROUP.out.gca, CUSTOM_GROUP.out.group)
+
+    gca_list = WRITE2DB_GROUP.out.gca.map { it -> it.trim() }.collectFile(name: 'gca_list_to_report.txt', newLine: true)
+
+    REPORT(gca_list, last_update)
 
 }
