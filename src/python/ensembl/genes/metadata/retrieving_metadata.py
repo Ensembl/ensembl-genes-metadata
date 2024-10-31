@@ -47,7 +47,7 @@ def parse_data(data: Dict) -> List[Dict]:
     Returns:
         list[dict]: a list of three dictionaries with relevant metadata to store in db
     """
-    
+    # Stablish dictionary structure
     data_dict = {'assembly': {}}
     
     data_dict_2 = {
@@ -62,16 +62,6 @@ def parse_data(data: Dict) -> List[Dict]:
     
     # Setting Optional keys first
     try:
-        common_name = data['reports'][0]['organism']['common_name'].replace("'", "''")
-    except:
-        common_name = ""
-    
-    try:
-        refseq_accession = data['reports'][0]['paired_accession']
-    except:
-        refseq_accession = ""
-        
-    try:
         infra_type = list(data['reports'][0]['organism']['infraspecific_names'].keys())[0]
         infra_name = list(data['reports'][0]['organism']['infraspecific_names'].values())[0].replace("'", "''")  
         if infra_type == 'sex':
@@ -82,11 +72,7 @@ def parse_data(data: Dict) -> List[Dict]:
         infra_name = ""
         infra_type = ""
         
-    try:
-        biosample_id = data['reports'][0]['assembly_info']['biosample']['accession']
-    except:
-        biosample_id = ""
-    
+        
     # Building dictionaries for assembly metadata tables
     data_dict['assembly'].update({
         'lowest_taxon_id' : data['reports'][0]['organism']['tax_id'],
@@ -96,19 +82,19 @@ def parse_data(data: Dict) -> List[Dict]:
         'asm_type' : data['reports'][0]['assembly_info']['assembly_type'],
         'asm_level' : data['reports'][0]['assembly_info']['assembly_level'],
         'asm_name' : data['reports'][0]['assembly_info']['assembly_name'],
-        'refseq_accession': refseq_accession,
+        'refseq_accession': data.get('reports')[0].get('paired_accession',""),
         'release_date' : data['reports'][0]['assembly_info']['release_date'],
-        'submitter' : data['reports'][0]['assembly_info']['submitter'].replace("'", "''").lstrip('\ufeff')
+        'submitter' : data.get('reports')[0].get('assembly_info').get('submitter', "").replace("'", "''").lstrip('\ufeff')
     })
     
     data_dict_3['species'].update({
         'lowest_taxon_id' : data['reports'][0]['organism']['tax_id'],
         'scientific_name' : data['reports'][0]['organism']['organism_name'].replace("'", "''") ,
-        'common_name' : common_name
+        'common_name' : data.get('reports')[0].get('organism').get('common_name', "").replace("'", "''")
     })
     
     data_dict_2['organism'].update({
-        'biosample_id' : biosample_id,
+        'biosample_id' : data.get('reports')[0].get('assembly_info').get('biosample', "").get('accession', ""),
         'bioproject_id' : data['reports'][0]['assembly_info']['bioproject_accession'],
         'infra_type':infra_type,
         'infra_name':infra_name
