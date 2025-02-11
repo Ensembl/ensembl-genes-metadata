@@ -20,7 +20,7 @@ This Python module allows users to query a MySQL database to retrieve genome ass
 1. Clone this repository:
    ```sh
    git clone https://github.com/Ensembl/ensembl-genes-metadata/tree/dev/gb_metadata_handling
-   cd filtered-assemblies-query-tool
+   cd ensembl-genes-metadata
    ```
 2. Install required Python dependencies:
    ```sh
