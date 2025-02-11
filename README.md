@@ -61,6 +61,9 @@ Start the GUI from the command-line:
 streamlit run app.py
 ```
 
+![image](https://github.com/user-attachments/assets/c3aa162d-a616-432a-a0ed-7236ef072c8c)
+
+
 
 
 
