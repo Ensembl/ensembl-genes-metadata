@@ -19,12 +19,13 @@ This Python module allows users to query a MySQL database to retrieve genome ass
 ## Installation
 1. Clone this repository:
    ```sh
-   git clone https://github.com/Ensembl/ensembl-genes-metadata/tree/dev/gb_metadata_handling
+   git clone https://github.com/Ensembl/ensembl-genes-metadata.git
+   git checkout dev/gb_metadata_handling
    cd ensembl-genes-metadata
    ```
 2. Install required Python dependencies:
    ```sh
-   pip install pandas pymysql requests argparse streamlit
+   pip install requirements.txt
    ```
 
 ## Usage
@@ -32,7 +33,7 @@ This Python module allows users to query a MySQL database to retrieve genome ass
 ### Command line
 Run the script with command-line arguments specifying BioProject IDs and optional filters:
 ```sh
-python script.py --bioproject_id PRJEB40665 PRJEB61747 --gc_percent 40.0 --total_sequence_length 1000000 --asm_level Scaffold --output_dir ./results
+python src/python/ensembl/genes/metadata/GB_metadata_handling.py --bioproject_id PRJEB40665 PRJEB61747 --asm_level "Complete genome" --output_dir ./results
 ```
 
 #### Command-Line Arguments
@@ -58,7 +59,7 @@ Upon execution, the script generates the following CSV files in the specified ou
 ### GUI in the browser
 Start the GUI from the command-line:
 ```sh
-streamlit run app.py
+streamlit run src/python/ensembl/genes/metadata/app.py
 ```
 
 ![image](https://github.com/user-attachments/assets/c3aa162d-a616-432a-a0ed-7236ef072c8c)
