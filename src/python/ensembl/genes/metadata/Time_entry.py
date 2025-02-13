@@ -113,25 +113,13 @@ def assign_clade(lowest_taxon_id, clade_data):
                 return clade_name
     return "Unassigned"
 
-def get_filtered_assemblies(bioproject_id, metric_thresholds, all_metrics, asm_level, asm_type, release_date):
+def get_filtered_assemblies(release_date, metric_thresholds, all_metrics, asm_level, asm_type):
     """Fetch all assemblies and their metrics for a given BioProject ID, filter results based on given thresholds,
     and format the results with metrics as separate columns."""
 
     conn = connect_db()
     cursor = conn.cursor()
 
-    # Step 1: Retrieve valid BioProject IDs from the database
-    cursor.execute("SELECT DISTINCT bioproject_id FROM bioproject;")
-    valid_bioprojects = {row['bioproject_id'] for row in cursor.fetchall()}
-
-    # Step 2: Check if all user-provided BioProject IDs exist
-    invalid_bioprojects = set(bioproject_id) - valid_bioprojects
-    if invalid_bioprojects:
-        print(f"The following BioProject IDs were not found in the database: {', '.join(invalid_bioprojects)}")
-        conn.close()
-        exit()
-
-    # Step 3: Combine all SQL queries
     query = f"""
                 SELECT b.bioproject_id, a.asm_level, a.gca_chain, a.gca_version, a.asm_type, a.release_date, m.metrics_name, m.metrics_value, 
                        s.scientific_name, s.common_name, s.lowest_taxon_id, g.group_name
@@ -140,21 +128,20 @@ def get_filtered_assemblies(bioproject_id, metric_thresholds, all_metrics, asm_l
                 JOIN assembly a ON m.assembly_id = a.assembly_id
                 LEFT JOIN species s ON a.lowest_taxon_id = s.lowest_taxon_id
                 LEFT JOIN group_assembly g ON a.assembly_id = g.assembly_id
-                WHERE b.bioproject_id IN ({",".join(["%s"] * len(bioproject_id))})
+                WHERE a.release_date >= %s
                 ORDER BY m.metrics_name;
             """
-    cursor.execute(query, tuple(bioproject_id))
+    cursor.execute(query, (release_date,))
     results = cursor.fetchall()
 
-    # Step 4: Process refseq count and additional info using the same query
     refseq_count_query = """
             SELECT COUNT(*) AS refseq_count
             FROM assembly a
             JOIN bioproject b ON a.assembly_id = b.assembly_id
-            WHERE b.bioproject_id IN ({}) AND a.refseq_accession IS NOT NULL AND a.refseq_accession != '';
+            WHERE a.release_date >= %s AND a.refseq_accession IS NOT NULL AND a.refseq_accession != '';
         """
-    refseq_count_query = refseq_count_query.format(",".join(["%s"] * len(bioproject_id)))
-    cursor.execute(refseq_count_query, tuple(bioproject_id))
+
+    cursor.execute(refseq_count_query, (release_date,))
     refseq_count_result = cursor.fetchone()
     refseq_count = refseq_count_result['refseq_count']
 
@@ -168,13 +155,13 @@ def get_filtered_assemblies(bioproject_id, metric_thresholds, all_metrics, asm_l
     # Add project column and GCA
     df["Project"] = df["bioproject_id"].map(bioproject_mapping)
     df["GCA"] = df["gca_chain"].astype(str) + "." + df["gca_version"].astype(str)
-    df["Reference genome"] = df["GCA"].apply(is_reference_genome)
+    #df["Reference genome"] = df["GCA"].apply(is_reference_genome)
 
     # Load clade data
-    clade_data = load_clade_data()
+    #clade_data = load_clade_data()
 
     # Assign internal clade
-    df["Internal clade"] = df["lowest_taxon_id"].apply(lambda x: assign_clade(x, clade_data))
+    #df["Internal clade"] = df["lowest_taxon_id"].apply(lambda x: assign_clade(x, clade_data))
 
     # Clean genome_coverage by removing 'x' and converting to float
     df['metrics_value'] = df.apply(
@@ -210,17 +197,12 @@ def get_filtered_assemblies(bioproject_id, metric_thresholds, all_metrics, asm_l
     if asm_type:
         df_wide = df_wide[df_wide['asm_type'].isin(asm_type)]
 
-    # Apply `release_date` filter
-    if release_date:
-        release_date = pd.to_datetime(release_date)
-        df_wide = df_wide[df_wide['release_date'] >= release_date]
-
     # Check if any assemblies meet the given thresholds
     if df_wide.empty:
         return "No assemblies meet the given thresholds.", refseq_count, None, None, None
 
     # Clean info results table
-    df_info_result = df[['bioproject_id', 'release_date', 'scientific_name', 'common_name', 'group_name', 'Project', 'GCA', 'Reference genome', 'Internal clade']]
+    df_info_result = df[['bioproject_id', 'release_date', 'scientific_name', 'common_name', 'group_name', 'Project', 'GCA']]
     df_info_result = df_info_result.drop_duplicates(subset=['GCA'], keep='first')
 
     # Drop specific columns
@@ -244,8 +226,8 @@ def get_filtered_assemblies(bioproject_id, metric_thresholds, all_metrics, asm_l
     return df_wide, refseq_count, summary_df, df_info_result, df_gca_list
 
 def main():
-    parser = argparse.ArgumentParser(description="Fetch filtered assemblies for a given BioProject.")
-    parser.add_argument('--bioproject_id', type=str, nargs='+', required=True, help="One or more BioProject IDs")
+    parser = argparse.ArgumentParser(description="Fetch filtered assemblies for a given Release date.")
+    parser.add_argument('--release_date', type=str, required=True, help="Filter assemblies released after this date (format: YYYY-MM-DD).")
     parser.add_argument('--gc_percent', type=float, help="GC percent threshold")
     parser.add_argument('--total_sequence_length', type=float, help="Total sequence length in bp")
     parser.add_argument('--contig_n50', type=float, help="Contig N50")
@@ -253,7 +235,6 @@ def main():
     parser.add_argument('--number_of_scaffolds', type=float, help="Number of scaffolds")
     parser.add_argument('--scaffold_n50', type=float, help="Scaffold N50")
     parser.add_argument('--genome_coverage', type=float, help="Genome coverage in bp")
-    parser.add_argument('--release_date', type=str, help="Filter assemblies released after this date (format: YYYY-MM-DD)")
     parser.add_argument('--asm_level', type=str, nargs='+', help="Assembly level options: 'Contig', 'Scaffold', 'Chromosome', 'Complete genome'.")
     parser.add_argument('--asm_type', type=str, nargs='+', help="Assembly type: 'haploid', 'alternate-pseudohaplotype', 'unresolved-diploid', 'haploid-with-alt-loci', 'diploid'.")
     parser.add_argument('--output_dir', type=str, default='./', help="Directory to save the CSV file. Files will only be saved if assemblies meet the given thresholds.")
@@ -264,7 +245,7 @@ def main():
 
     all_metrics = ["gc_percent", "total_sequence_length", "contig_n50", "number_of_contigs", "number_of_scaffolds", "scaffold_n50", "genome_coverage"]
 
-    df, refseq_count, summary_df, info_result, df_gca_list = get_filtered_assemblies(args.bioproject_id, metric_thresholds, all_metrics, args.asm_level, args.asm_type, args.release_date)
+    df, refseq_count, summary_df, info_result, df_gca_list = get_filtered_assemblies(args.release_date, metric_thresholds, all_metrics, args.asm_level, args.asm_type)
 
 
     # Check if 'df' is a string (error message)
@@ -291,19 +272,20 @@ def main():
         os.makedirs(args.output_dir)
 
     # Save the result as a CSV file
-    output_filename = os.path.join(args.output_dir, f"{'_'.join(args.bioproject_id)}_filtered_assemblies.csv")
+    output_filename = os.path.join(args.output_dir, f"filtered_assemblies_after_{args.release_date}.csv")
     df.to_csv(output_filename, index=False)
 
     # Save the summary statistics as a CSV file
-    summary_filename = os.path.join(args.output_dir, f"{'_'.join(args.bioproject_id)}_filtered_assemblies_summary_statistics.csv")
+    summary_filename = os.path.join(args.output_dir,
+                                    f"filtered_assemblies_summary_statistics_after_{args.release_date}.csv")
     summary_df.to_csv(summary_filename, index=False)
 
     # Save the assembly info as a CSV file
-    info_result_filename = os.path.join(args.output_dir, f"{'_'.join(args.bioproject_id)}_filtered_assemblies_info_result.csv")
+    info_result_filename = os.path.join(args.output_dir, f"filtered_assemblies_info_result_after_{args.release_date}.csv")
     info_result.to_csv(info_result_filename, index=False)
 
     # Save the GCA list in a file
-    gca_list_filename = os.path.join(args.output_dir, f"{'_'.join(args.bioproject_id)}_filtered_assemblies_gca_list.csv")
+    gca_list_filename = os.path.join(args.output_dir, f"filtered_assemblies_gca_list_after_{args.release_date}.csv")
     df_gca_list.to_csv(gca_list_filename, index=False, header=False)
 
     print(f"\nThe results have been saved to {output_filename}")
