@@ -1,3 +1,7 @@
-request
-pymysql
-tenacity
+requests
+pandas
+PyMySQL
+argparse
+
+# To run GUI
+streamlit

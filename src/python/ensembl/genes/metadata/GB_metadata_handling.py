@@ -4,6 +4,7 @@ import pymysql
 import argparse
 import os
 import requests
+from datetime import datetime
 
 
 # Load database credentials from external JSON file
@@ -113,7 +114,7 @@ def assign_clade(lowest_taxon_id, clade_data):
                 return clade_name
     return "Unassigned"
 
-def get_filtered_assemblies(bioproject_id, metric_thresholds, all_metrics, asm_level, asm_type):
+def get_filtered_assemblies(bioproject_id, metric_thresholds, all_metrics, asm_level, asm_type, release_date):
     """Fetch all assemblies and their metrics for a given BioProject ID, filter results based on given thresholds,
     and format the results with metrics as separate columns."""
 
@@ -133,14 +134,15 @@ def get_filtered_assemblies(bioproject_id, metric_thresholds, all_metrics, asm_l
 
     # Step 3: Proceed with fetching and filtering the data
     # Query to fetch all metrics for the given BioProject ID
-    query = """
-        SELECT b.bioproject_id, a.asm_level, a.gca_chain, a.gca_version, a.asm_type, m.metrics_name, m.metrics_value
-        FROM bioproject b
-        JOIN assembly_metrics m ON b.assembly_id = m.assembly_id
-        JOIN assembly a ON m.assembly_id = a.assembly_id
-        WHERE b.bioproject_id IN ({})
-        ORDER BY m.metrics_name;
-    """
+    query = f"""
+            SELECT b.bioproject_id, a.asm_level, a.gca_chain, a.gca_version, a.asm_type, a.release_date, m.metrics_name, m.metrics_value
+            FROM bioproject b
+            JOIN assembly_metrics m ON b.assembly_id = m.assembly_id
+            JOIN assembly a ON m.assembly_id = a.assembly_id
+            WHERE b.bioproject_id IN ({",".join(["%s"] * len(bioproject_id))})
+            ORDER BY m.metrics_name;
+        """
+
     # Query to fetch refseq for the given BioProject ID
     refseq_count_query = """
         SELECT COUNT(*) AS refseq_count
@@ -176,12 +178,14 @@ def get_filtered_assemblies(bioproject_id, metric_thresholds, all_metrics, asm_l
 
     # Convert results to a Pandas DataFrame
     df = pd.DataFrame(results)
+    df["release_date"] = pd.to_datetime(df["release_date"], errors="coerce")
     df_info_result = pd.DataFrame(info_result)
 
     # Add project column and GCA ID to info table based on BioProject_ID
     df_info_result["Project"] = df_info_result["bioproject_id"].map(bioproject_mapping)
     df_info_result["GCA"] = df["gca_chain"].astype(str) + "." + df["gca_version"].astype(str)
     df_info_result["Reference genome"] = df_info_result["GCA"].apply(is_reference_genome)
+    df_info_result["Release date"] = df["release_date"]
 
     # Load clade data
     clade_data = load_clade_data()
@@ -196,9 +200,10 @@ def get_filtered_assemblies(bioproject_id, metric_thresholds, all_metrics, asm_l
     df['metrics_value'] = df.apply(
         lambda row: float(row['metrics_value'].rstrip('x')) if row['metrics_name'] == 'genome_coverage' else row['metrics_value'], axis=1)
 
-    # Pivot the data so each metric_name becomes a separate column and combine gca_chain and gca_version
+    # Pivot the data so each metric_name becomes a separate column and combine gca_chain and gca_version, correct date format
     df["GCA ID"] = df["gca_chain"].astype(str) + "." + df["gca_version"].astype(str)
-    df_wide = df.pivot_table(index=["bioproject_id", "asm_level", "asm_type", "GCA ID"], columns="metrics_name", values="metrics_value", aggfunc='first')
+
+    df_wide = df.pivot_table(index=["bioproject_id", "asm_level", "asm_type", "GCA ID", "release_date"], columns="metrics_name", values="metrics_value", aggfunc='first')
 
     # Ensure all requested metrics are present as columns
     for metric in all_metrics:
@@ -218,12 +223,18 @@ def get_filtered_assemblies(bioproject_id, metric_thresholds, all_metrics, asm_l
             if metric in df_wide.columns:
                 df_wide = df_wide.query(f"{metric} >= {threshold}")
 
+
     # Apply assembly level an assembly type filtering (supporting multiple values)
     if asm_level:
         df_wide = df_wide[df_wide['asm_level'].isin(asm_level)]
 
     if asm_type:
         df_wide = df_wide[df_wide['asm_type'].isin(asm_type)]
+
+    # Apply `release_date` filter
+    if release_date:
+        release_date = pd.to_datetime(release_date)
+        df_wide = df_wide[df_wide['release_date'] >= release_date]
 
     # Check if any assemblies meet the given thresholds
     if df_wide.empty:
@@ -247,9 +258,9 @@ def get_filtered_assemblies(bioproject_id, metric_thresholds, all_metrics, asm_l
     # Rename columns
     df_wide.rename(
         columns={'bioproject_id': 'BioProject ID', 'asm_level': 'Assembly level', 'number_of_contigs': 'Number of contigs', 'number_of_scaffolds': 'Number of scaffolds', 'scaffold_n50': 'Scaffold N50', 'total_sequence_length':'Sequence length', 'GCA ID': "GCA", 'contig_n50': 'Contig N50', 'gc_percent': 'GC%', 'genome_coverage': 'Genome coverage X', 'asm_type': "Assembly type"}, inplace=True)
-    summary_df.rename(columns={'genome_coverage': 'Genome coverage X', 'contig_n50': 'Conting N50', 'scaffold_n50': 'Scaffold N50',  'total_sequence_length': "Sequence length", 'gc_percent': 'GC%' }, inplace=True)
+    summary_df.rename(columns={'genome_coverage': 'Genome coverage X', 'contig_n50': 'Conting N50', 'scaffold_n50': 'Scaffold N50',  'total_sequence_length': "Sequence length", 'gc_percent': 'GC%'}, inplace=True)
     df_info_result.rename(
-        columns={'bioproject_id': 'BioProject ID', 'scientific_name': 'Scientific name', 'common_name': "Common name", 'Reference genome': "Reference genome", 'group_name': "Custom group"}, inplace=True)
+        columns={'bioproject_id': 'BioProject ID', 'scientific_name': 'Scientific name', 'common_name': "Common name", 'Reference genome': "Reference genome", 'group_name': "Custom group", 'release_date': "Release date"}, inplace=True)
 
 
     return df_wide, refseq_count, summary_df, df_info_result, df_gca_list
@@ -264,17 +275,18 @@ def main():
     parser.add_argument('--number_of_scaffolds', type=float, help="Number of scaffolds")
     parser.add_argument('--scaffold_n50', type=float, help="Scaffold N50")
     parser.add_argument('--genome_coverage', type=float, help="Genome coverage in bp")
+    parser.add_argument('--release_date', type=str, help="Filter assemblies released after this date (format: YYYY-MM-DD)")
     parser.add_argument('--asm_level', type=str, nargs='+', help="Assembly level options: 'Contig', 'Scaffold', 'Chromosome', 'Complete genome'.")
     parser.add_argument('--asm_type', type=str, nargs='+', help="Assembly type: 'haploid', 'alternate-pseudohaplotype', 'unresolved-diploid', 'haploid-with-alt-loci', 'diploid'.")
     parser.add_argument('--output_dir', type=str, default='./', help="Directory to save the CSV file. Files will only be saved if assemblies meet the given thresholds.")
 
     args = parser.parse_args()
 
-    metric_thresholds = {k: v[0] if isinstance(v, list) else v for k, v in vars(args).items() if v is not None and k not in ["bioproject_id", "output_dir", "asm_level", "asm_type"]}
+    metric_thresholds = {k: v[0] if isinstance(v, list) else v for k, v in vars(args).items() if v is not None and k not in ["bioproject_id", "output_dir", "asm_level", "asm_type", "release_date"]}
 
     all_metrics = ["gc_percent", "total_sequence_length", "contig_n50", "number_of_contigs", "number_of_scaffolds", "scaffold_n50", "genome_coverage"]
 
-    df, refseq_count, summary_df, info_result, df_gca_list = get_filtered_assemblies(args.bioproject_id, metric_thresholds, all_metrics, args.asm_level, args.asm_type)
+    df, refseq_count, summary_df, info_result, df_gca_list = get_filtered_assemblies(args.bioproject_id, metric_thresholds, all_metrics, args.asm_level, args.asm_type, args.release_date)
 
 
     # Check if 'df' is a string (error message)
