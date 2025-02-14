@@ -33,7 +33,7 @@ This Python module allows users to query a MySQL database to retrieve genome ass
 ### Command line
 Run the script with command-line arguments specifying BioProject IDs and optional filters:
 ```sh
-python src/python/ensembl/genes/metadata/GB_metadata_handling.py --bioproject_id PRJEB40665 PRJEB61747 --asm_level "Complete genome" --output_dir ./results
+python src/python/ensembl/genes/metadata/GB_metadata_bioproject_id.py --bioproject_id PRJEB40665 PRJEB61747 --asm_level "Complete genome" --output_dir ./results
 ```
 
 #### Command-Line Arguments

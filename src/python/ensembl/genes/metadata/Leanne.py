@@ -2,7 +2,7 @@ import pandas as pd
 import json
 import pymysql
 import os
-from Time_entry import get_filtered_assemblies
+from GB_metadata_time import get_filtered_assemblies
 
 
 def load_db_config():

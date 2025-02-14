@@ -1,5 +1,5 @@
 import streamlit as st
-from   GB_metadata_handling import get_filtered_assemblies  # Import the relevant functions from the module
+from   GB_metadata_bioproject_id import get_filtered_assemblies  # Import the relevant functions from the module
 
 # Function to validate BioProject ID
 def is_valid_bioproject_id(bioproject_id):
