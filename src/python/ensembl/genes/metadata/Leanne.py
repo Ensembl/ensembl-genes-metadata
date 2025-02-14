@@ -57,7 +57,7 @@ def get_core_db_info(release_date):
         query_st = f"""
                     SELECT meta_key, meta_value
                     FROM meta
-                    WHERE meta_key IN ('genebuild.last_geneset_update', 'assembly.accession')
+                    WHERE meta_key IN ('genebuild.last_geneset_update', 'assembly.accession', 'genebuild.method')
                     """
 
         db_configs = ["st5", "st6"]  # Check both st5 and st6 configurations
@@ -72,7 +72,6 @@ def get_core_db_info(release_date):
                     result = cur.fetchone()
 
                     if result:
-                        print(f"Using database: {db_name} in {config}")
                         cur.execute(f"USE {db_name}")  # Switch to the relevant database
                         cur.execute(query_st)
                         output = cur.fetchall()
@@ -82,10 +81,10 @@ def get_core_db_info(release_date):
                             df_output = pd.DataFrame(output, columns=['meta_key', 'meta_value'])
 
                             # Pivot the DataFrame to have meta_keys as columns
-                            df_pivoted = df_output.pivot(columns='meta_key', values='meta_value')
-
+                            df_pivoted = df_output.pivot_table(columns='meta_key', values='meta_value', aggfunc='last').reset_index()
                             # Reset index for cleaner output
                             df_pivoted.reset_index(drop=True, inplace=True)
+                            print(df_pivoted.head())
 
                             # Check if 'genebuild.last_geneset_update' exists before attempting operations on it
                             if 'genebuild.last_geneset_update' in df_pivoted.columns:
@@ -97,7 +96,7 @@ def get_core_db_info(release_date):
                                 release_date = pd.to_datetime(release_date)
 
                                 # Apply the release_date filter to 'genebuild.last_geneset_update'
-                                df_filtered = df_pivoted[df_pivoted['genebuild.last_geneset_update'] <= release_date]
+                                df_filtered = df_pivoted[df_pivoted['genebuild.last_geneset_update'] >= release_date]
 
                                 # Append this database's filtered data to all_results
                                 all_results.append(df_filtered)
@@ -148,8 +147,20 @@ def summarize_assemblies(df):
     return level_summary, contig_n50_summary, avg_contig_n50
 
 
+def bin_by_genebuild_method(df):
+    """Bins assemblies based on genebuild.method."""
+    if 'genebuild.method' not in df.columns:
+        print("Column 'genebuild.method' not found in dataset.")
+        return pd.DataFrame()  # Return empty DataFrame if column is missing
+
+    # Group by genebuild.method and count occurrences
+    method_summary = df.groupby('genebuild.method', observed=False).size().reset_index(name='Number of Assemblies')
+
+    return method_summary
+
+
 def main():
-    release_date = 2024-12-12
+    release_date = "2019-01-01"
 
     # Define metrics to consider
     metric_thresholds = {}  # Empty, so no thresholds are applied
@@ -175,6 +186,9 @@ def main():
 
     filtered_df=get_core_db_info(release_date)
 
+    # Bin the filtered results by genebuild.method
+    method_summary = bin_by_genebuild_method(filtered_df)
+
     # Print the results
     print("Summary by Assembly Level:")
     print(level_summary)
@@ -186,12 +200,13 @@ def main():
     print(avg_contig_n50)
 
     print("\nDataset filtered:")
-    print(filtered_df)
+    print(method_summary)
 
 # Optionally, save results to CSV files
-    #level_summary.to_csv('assembly_level_summary.csv', index=False)
-    #contig_n50_summary.to_csv('contig_n50_summary.csv', index=False)
-    #avg_contig_n50.to_csv('avg_contig_n50_by_level.csv', index=False)
+    level_summary.to_csv('/Users/lazar/Documents/Requests/Leanne/Assemblies_last_5_years/assembly_level_summary.csv', index=False)
+    contig_n50_summary.to_csv('/Users/lazar/Documents/Requests/Leanne/Assemblies_last_5_years/contig_n50_summary.csv', index=False)
+    avg_contig_n50.to_csv("/Users/lazar/Documents/Requests/Leanne/Assemblies_last_5_years/avg_contig_n50_by_level.csv", index=False)
+    method_summary.to_csv("/Users/lazar/Documents/Requests/Leanne/Assemblies_last_5_years/annotation.csv", index=False)
 
 
 if __name__ == "__main__":
