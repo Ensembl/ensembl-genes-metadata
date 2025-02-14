@@ -25,7 +25,7 @@ This Python module allows users to query a MySQL database to retrieve genome ass
    ```
 2. Install required Python dependencies:
    ```sh
-   pip install requirements.txt
+   pip install -r requirements.txt
    ```
 
 ## Usage
