@@ -40,7 +40,8 @@ metric_mapping = {
     "asm_level": "Assembly Level",
     "gca_chain": "GCA Chain",
     "gca_version": "GCA Version",
-    "asm_type": "Assembly Type"
+    "asm_type": "Assembly Type",
+    "release_date": "Release Date"
 }
 
 def rename_metrics(df):
@@ -90,18 +91,21 @@ def app():
     metric_thresholds = {}
     asm_level = None
     asm_type = None
+    release_date = None
 
     if selected_metrics:
         st.sidebar.header("Set Threshold for Selected Metrics")
         metric_thresholds = {
             metric: st.sidebar.number_input(f"Threshold for {metric_mapping[metric]}", min_value=0, value=50, step=10)
-            for metric in selected_metrics if metric not in ["asm_level", "asm_type"]
+            for metric in selected_metrics if metric not in ["asm_level", "asm_type", "release_date"]
         }
 
         asm_level = st.sidebar.pills("Select Assembly Level", ["Contig", "Scaffold", "Chromosome", "Complete genome"], selection_mode="multi") if "asm_level" in selected_metrics else None
 
         asm_type = st.sidebar.pills("Select Assembly Type",
                                     ["haploid", "alternate-pseudohaplotype", "unresolved-diploid", "haploid-with-alt-loci", "diploid"], selection_mode="multi") if "asm_type" in selected_metrics else None
+
+        release_date = st.sidebar.date_input("Release Date", value="today", max_value="today", format="YYYY-MM-DD")
 
     all_metrics = ["gc_percent", "total_sequence_length", "contig_n50", "number_of_contigs", "number_of_scaffolds", "scaffold_n50", "genome_coverage"]
 
@@ -115,7 +119,7 @@ def app():
 
         with status_placeholder.status("Fetching assemblies... Please wait."):
             df, refseq_count, summary_df, info_result, gca_list = get_filtered_assemblies(
-                bioproject_id_list, metric_thresholds, all_metrics, asm_level, asm_type
+                bioproject_id_list, metric_thresholds, all_metrics, asm_level, asm_type, release_date
             )
 
         status_placeholder.empty()
