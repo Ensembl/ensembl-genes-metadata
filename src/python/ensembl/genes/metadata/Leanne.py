@@ -91,12 +91,22 @@ def get_core_db_info(release_date):
                                 # Ensure genebuild.last_geneset_update has the correct format by adding '-01' for day precision
                                 df_pivoted['genebuild.last_geneset_update'] = pd.to_datetime(
                                     df_pivoted['genebuild.last_geneset_update'] + '-01', errors='coerce')
+                                # Debug: Print before filtering
+                                print("\nBefore filtering:")
+                                print(df_pivoted[['genebuild.last_geneset_update']].dropna().head())
 
                                 # Convert the release_date to a datetime object
                                 release_date = pd.to_datetime(release_date)
 
                                 # Apply the release_date filter to 'genebuild.last_geneset_update'
                                 df_filtered = df_pivoted[df_pivoted['genebuild.last_geneset_update'] >= release_date]
+
+                                # Debug: Print after filtering
+                                print("\nAfter filtering:")
+                                print(df_filtered[['genebuild.last_geneset_update']].head())
+
+                                # Log the number of retained rows
+                                print(f"\nNumber of assemblies after filtering: {df_filtered.shape[0]}")
 
                                 # Append this database's filtered data to all_results
                                 all_results.append(df_filtered)
