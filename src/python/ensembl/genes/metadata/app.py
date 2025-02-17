@@ -1,5 +1,7 @@
 import streamlit as st
-from   GB_metadata_bioproject_id import get_filtered_assemblies  # Import the relevant functions from the module
+from GB_metadata_bioproject_id import get_filtered_assemblies as get_by_bioproject
+from GB_metadata_time import get_filtered_assemblies as get_by_time
+from Fetch_annotations import get_core_db_info
 
 # Function to validate BioProject ID
 def is_valid_bioproject_id(bioproject_id):
@@ -14,7 +16,7 @@ st.set_page_config(
     menu_items={
         'Get Help': 'https://www.extremelycoolapp.com/help',
         'Report a bug': "https://www.extremelycoolapp.com/bug",
-        'About': "# This is the Genebuild metadata tracking system. This is an *extremely* cool app!"}
+        'About': "# This is the Genebuild metadata reporting system. This is an *extremely* cool app!"}
 )
 
 st.logo("app_utils/embl_ebi_logo.svg", size="large")
@@ -26,6 +28,10 @@ with open('app_utils/styles.css') as f:
 # Inject the CSS into the Streamlit app
 st.markdown(f'<style>{css}</style>', unsafe_allow_html=True)
 ########
+
+# Sidebar tabs selection
+tabs = st.sidebar.tabs(["BioProject ID", "Time-based Filter", "Fetch Annotations"])
+
 
 # Mapping for more readable metrics
 metric_mapping = {
@@ -49,7 +55,7 @@ def rename_metrics(df):
     return df.rename(columns=metric_mapping)
 
 def app():
-    st.sidebar.title("BioProject Assembly Metrics Filter")
+    st.sidebar.title("Genebuild Metadata Reporting")
     st.sidebar.header("BioProject IDs")
 
     # Multiple BioProject IDs input

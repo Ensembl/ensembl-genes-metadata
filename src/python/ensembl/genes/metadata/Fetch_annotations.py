@@ -2,8 +2,8 @@ import pandas as pd
 import json
 import pymysql
 import os
+import argparse
 from GB_metadata_time import get_filtered_assemblies
-
 
 def load_db_config():
     """Load database credentials from external JSON file."""
@@ -169,8 +169,43 @@ def bin_by_genebuild_method(df):
     return method_summary
 
 
+def generate_yearly_summary(df_wide, df_info_result, filtered_df):
+    """Generate a table summarizing assemblies above contig level and annotated genomes per year."""
+    # Convert release_date to datetime and extract year in df_info_result
+    df_info_result['Year'] = pd.to_datetime(df_info_result['Release date']).dt.year
+
+    # Merge Year information into df_wide based on assembly_id
+    df_wide = df_wide.merge(df_info_result[['GCA', 'Year']], on='GCA', how='left')
+
+    # Count assemblies above contig level (scaffold, chromosome, complete genome)
+    valid_levels = ["Scaffold", "Chromosome", "Complete genome"]
+    assemblies_per_year = df_wide[df_wide['Assembly level'].isin(valid_levels)].groupby('Year').size().reset_index(
+        name='Number of Assemblies')
+
+    # Convert annotation release_date to datetime and extract year if column exists
+    if 'genebuild.last_geneset_update' in filtered_df.columns:
+        filtered_df['Year'] = pd.to_datetime(filtered_df['genebuild.last_geneset_update']).dt.year
+        annotated_per_year = filtered_df.groupby('Year').size().reset_index(name='Number of Annotated Genomes')
+    else:
+        print("No 'genebuild.last_geneset_update' column found in annotations.")
+        return pd.DataFrame()
+
+    # Merge both summaries
+    yearly_summary = pd.merge(assemblies_per_year, annotated_per_year, on='Year', how='outer').fillna(0)
+
+    return yearly_summary
+
+
 def main():
-    release_date = "2019-01-01"
+    parser = argparse.ArgumentParser(description='Fetches annotations and assemblies')
+    parser.add_argument("--release_date", type=str, required=True, help="Release date in YYYY-MM-DD format.")
+    parser.add_argument("--output_dir", type=str, required=True, help="Directory to save output files.")
+
+    args = parser.parse_args()
+
+    release_date = args.release_date
+    output_dir = args.output_dir
+    os.makedirs(output_dir, exist_ok=True)
 
     # Define metrics to consider
     metric_thresholds = {}  # Empty, so no thresholds are applied
@@ -199,6 +234,8 @@ def main():
     # Bin the filtered results by genebuild.method
     method_summary = bin_by_genebuild_method(filtered_df)
 
+    yearly_summary = generate_yearly_summary(df, info_result, filtered_df)
+
     # Print the results
     print("Summary by Assembly Level:")
     print(level_summary)
@@ -212,11 +249,16 @@ def main():
     print("\nDataset filtered:")
     print(method_summary)
 
-# Optionally, save results to CSV files
-    level_summary.to_csv('/Users/lazar/Documents/Requests/Leanne/Assemblies_last_5_years/assembly_level_summary.csv', index=False)
-    contig_n50_summary.to_csv('/Users/lazar/Documents/Requests/Leanne/Assemblies_last_5_years/contig_n50_summary.csv', index=False)
-    avg_contig_n50.to_csv("/Users/lazar/Documents/Requests/Leanne/Assemblies_last_5_years/avg_contig_n50_by_level.csv", index=False)
-    method_summary.to_csv("/Users/lazar/Documents/Requests/Leanne/Assemblies_last_5_years/annotation.csv", index=False)
+    print("\nDataset yearly summary:")
+    print(yearly_summary)
+
+# Save results to CSV files
+    level_summary.to_csv(os.path.join(output_dir, "assembly_level_summary.csv"), index=False)
+    contig_n50_summary.to_csv(os.path.join(output_dir, "contig_n50_summary.csv"), index=False)
+    avg_contig_n50.to_csv(os.path.join(output_dir, "avg_contig_n50_by_level.csv"), index=False)
+    method_summary.to_csv(os.path.join(output_dir, "annotation.csv"), index=False)
+    yearly_summary.to_csv(os.path.join(output_dir, "yearly_summary.csv"), index=False)
+
 
 
 if __name__ == "__main__":

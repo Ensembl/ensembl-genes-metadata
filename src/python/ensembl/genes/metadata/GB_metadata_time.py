@@ -221,7 +221,7 @@ def get_filtered_assemblies(release_date, metric_thresholds, all_metrics, asm_le
     df_wide.rename(
         columns={'bioproject_id': 'BioProject ID', 'asm_level': 'Assembly level', 'number_of_contigs': 'Number of contigs', 'number_of_scaffolds': 'Number of scaffolds', 'scaffold_n50': 'Scaffold N50', 'total_sequence_length':'Sequence length', 'GCA': "GCA", 'contig_n50': 'Contig N50', 'gc_percent': 'GC%', 'genome_coverage': 'Genome coverage X', 'asm_type': "Assembly type"}, inplace=True)
     summary_df.rename(columns={'genome_coverage': 'Genome coverage X', 'contig_n50': 'Conting N50', 'scaffold_n50': 'Scaffold N50',  'total_sequence_length': "Sequence length", 'gc_percent': 'GC%'}, inplace=True)
-    df_info_result.rename(columns={'bioproject_id': 'BioProject ID', 'release_date': 'Release_date', 'scientific_name': 'Scientific name',  'common_name': "Common name", 'group_name': 'Group name'}, inplace=True)
+    df_info_result.rename(columns={'bioproject_id': 'BioProject ID', 'release_date': 'Release date', 'scientific_name': 'Scientific name',  'common_name': "Common name", 'group_name': 'Group name'}, inplace=True)
 
     return df_wide, refseq_count, summary_df, df_info_result, df_gca_list
 
