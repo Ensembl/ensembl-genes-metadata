@@ -29,9 +29,6 @@ with open('app_utils/styles.css') as f:
 st.markdown(f'<style>{css}</style>', unsafe_allow_html=True)
 ########
 
-# Sidebar tabs selection
-tabs = st.sidebar.tabs(["BioProject ID", "Time-based Filter", "Fetch Annotations"])
-
 
 # Mapping for more readable metrics
 metric_mapping = {
@@ -56,8 +53,10 @@ def rename_metrics(df):
 
 def app():
     st.sidebar.title("Genebuild Metadata Reporting")
-    st.sidebar.header("BioProject IDs")
+    # Sidebar tabs selection
+    tab1, tab2, tab3 = st.sidebar.tabs(["BioProject ID", "Time-based Filter", "Fetch Annotations"])
 
+    st.sidebar.header("BioProject IDs")
     # Multiple BioProject IDs input
     bioproject_ids = st.sidebar.text_area("Enter BioProject ID", height = 68, placeholder="e.g., PRJNA391427, PRJNA607328")
 
@@ -124,7 +123,7 @@ def app():
         status_placeholder = st.sidebar.empty()
 
         with status_placeholder.status("Fetching assemblies... Please wait."):
-            df, refseq_count, summary_df, info_result, gca_list = get_filtered_assemblies(
+            df, refseq_count, summary_df, info_result, gca_list = get_by_bioproject(
                 bioproject_id_list, metric_thresholds, all_metrics, asm_level, asm_type, release_date
             )
 
