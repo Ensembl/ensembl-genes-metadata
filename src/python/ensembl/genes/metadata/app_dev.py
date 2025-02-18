@@ -57,10 +57,10 @@ def app():
     # Sidebar tabs selection
     tab1, tab2, tab3 = st.sidebar.tabs(["BioProject ID", "Time-based Filter", "Fetch Annotations"])
 
-    st.sidebar.header("BioProject IDs")
+    tab1.header("BioProject IDs")
 
     # Multiple BioProject IDs input
-    bioproject_ids = st.sidebar.text_area("Enter BioProject ID", height = 68, placeholder="e.g., PRJNA391427, PRJNA607328")
+    bioproject_ids = tab1.text_area("Enter BioProject ID", height = 68, placeholder="e.g., PRJNA391427, PRJNA607328")
 
     if "assemblies_data" not in st.session_state:
         st.session_state.assemblies_data = None
@@ -83,10 +83,10 @@ def app():
         return  # Stop further processing
 
     excluded_metrics = ["bioproject_id", "gca_chain", "gca_version"]
-    st.sidebar.header("Filters")
-    st.sidebar.text("If no metrics are selected, all corresponding records will be shown without filtering.")
+    tab1.header("Filters")
+    tab1.text("If no metrics are selected, all corresponding records will be shown without filtering.")
 
-    selected_friendly_metrics = st.sidebar.pills(
+    selected_friendly_metrics = tab1.pills(
         "Select metrics to use as filters.",
         [value for key, value in metric_mapping.items() if key not in excluded_metrics],
         selection_mode="multi"
@@ -100,22 +100,22 @@ def app():
     release_date = None
 
     if selected_metrics:
-        st.sidebar.header("Set Threshold for Selected Metrics")
+        tab1.header("Set Threshold for Selected Metrics")
         metric_thresholds = {
-            metric: st.sidebar.number_input(f"Threshold for {metric_mapping[metric]}", min_value=0, value=50, step=10)
+            metric: tab1.number_input(f"Threshold for {metric_mapping[metric]}", min_value=0, value=50, step=10)
             for metric in selected_metrics if metric not in ["asm_level", "asm_type", "release_date"]
         }
 
-        asm_level = st.sidebar.pills("Select Assembly Level", ["Contig", "Scaffold", "Chromosome", "Complete genome"], selection_mode="multi") if "asm_level" in selected_metrics else None
+        asm_level = tab1.pills("Select Assembly Level", ["Contig", "Scaffold", "Chromosome", "Complete genome"], selection_mode="multi") if "asm_level" in selected_metrics else None
 
-        asm_type = st.sidebar.pills("Select Assembly Type",
+        asm_type = tab1.pills("Select Assembly Type",
                                     ["haploid", "alternate-pseudohaplotype", "unresolved-diploid", "haploid-with-alt-loci", "diploid"], selection_mode="multi") if "asm_type" in selected_metrics else None
 
-        release_date = st.sidebar.date_input("Release Date", value="today", max_value="today", format="YYYY-MM-DD")
+        release_date = tab1.date_input("Select Release Date", value="today", max_value="today", format="YYYY-MM-DD") if "release_date" in selected_metrics else None
 
     all_metrics = ["gc_percent", "total_sequence_length", "contig_n50", "number_of_contigs", "number_of_scaffolds", "scaffold_n50", "genome_coverage"]
 
-    if st.sidebar.button("Get Assemblies", use_container_width=True, type="primary"):
+    if tab1.button("Get Assemblies", use_container_width=True, type="primary"):
         st.session_state.assemblies_data = None
         st.session_state.summary_data = None
         st.session_state.info_data = None
@@ -128,6 +128,10 @@ def app():
             )
 
         status_placeholder.empty()
+
+        if isinstance(df, str):
+            st.error(df)  # Print the error message returned from the module
+            return  # Stop further processing if error is present
 
         if not isinstance(df, str):
             st.session_state.assemblies_data = rename_metrics(df)

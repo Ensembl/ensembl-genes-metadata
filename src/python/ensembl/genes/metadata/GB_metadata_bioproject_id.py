@@ -127,7 +127,8 @@ def get_filtered_assemblies(bioproject_id, metric_thresholds, all_metrics, asm_l
     # Step 2: Check if all user-provided BioProject IDs exist
     invalid_bioprojects = set(bioproject_id) - valid_bioprojects
     if invalid_bioprojects:
-        print(f"The following BioProject IDs were not found in the database: {', '.join(invalid_bioprojects)}")
+        error_message = f"The following BioProject IDs were not found in the database: {', '.join(invalid_bioprojects)}"
+        return error_message, None, None, None  # Return error message directly
         conn.close()
         exit()
 
