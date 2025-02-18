@@ -52,17 +52,18 @@ def rename_metrics(df):
     return df.rename(columns=metric_mapping)
 
 def app():
+    """"Main function."""
     st.sidebar.title("Genebuild Metadata Reporting")
     # Sidebar tabs selection
     tab1, tab2, tab3 = st.sidebar.tabs(["BioProject ID", "Time-based Filter", "Fetch Annotations"])
 
     st.sidebar.header("BioProject IDs")
+
     # Multiple BioProject IDs input
     bioproject_ids = st.sidebar.text_area("Enter BioProject ID", height = 68, placeholder="e.g., PRJNA391427, PRJNA607328")
 
     if "assemblies_data" not in st.session_state:
         st.session_state.assemblies_data = None
-        st.session_state.refseq_count = None
         st.session_state.summary_data = None
         st.session_state.info_data = None
         st.session_state.gca_list = None
@@ -116,14 +117,13 @@ def app():
 
     if st.sidebar.button("Get Assemblies", use_container_width=True, type="primary"):
         st.session_state.assemblies_data = None
-        st.session_state.refseq_count = None
         st.session_state.summary_data = None
         st.session_state.info_data = None
         st.session_state.gca_list = None
         status_placeholder = st.sidebar.empty()
 
         with status_placeholder.status("Fetching assemblies... Please wait."):
-            df, refseq_count, summary_df, info_result, gca_list = get_by_bioproject(
+            df, summary_df, info_result, gca_list = get_by_bioproject(
                 bioproject_id_list, metric_thresholds, all_metrics, asm_level, asm_type, release_date
             )
 
@@ -131,7 +131,6 @@ def app():
 
         if not isinstance(df, str):
             st.session_state.assemblies_data = rename_metrics(df)
-            st.session_state.refseq_count = refseq_count
             st.session_state.summary_data = rename_metrics(summary_df)
             st.session_state.info_data = info_result
             st.session_state.gca_list = gca_list
@@ -153,11 +152,6 @@ def app():
             st.header("Summary Statistics")
             st.dataframe(st.session_state.summary_data)
             st.download_button("Download Summary Statistics", data=st.session_state.summary_data.to_csv(index=False), file_name="summary_statistics.csv", mime="text/csv")
-
-            st.divider()
-
-            st.header("Number of Assemblies with RefSeq Accession")
-            st.write(f"Number of assemblies with a RefSeq accession: {st.session_state.refseq_count}")
 
             st.divider()
 
