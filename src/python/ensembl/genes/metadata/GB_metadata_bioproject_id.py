@@ -26,10 +26,12 @@ def connect_db():
 
 # BioProject mapping
 bioproject_mapping = {
-    "PRJEB40665": "dtol",
+    "PRJEB40665": "DToL",
     "PRJEB61747": "ERGA/BGE",
     "PRJEB43510": "ERGA",
-    "PRJNA533106": "EBP",}
+    "PRJNA533106": "EBP",
+    "PRJEB47820": "ERGA_pilot",
+    "PRJEB43743": "ASG"}
 
 def is_reference_genome(accession):
     """
