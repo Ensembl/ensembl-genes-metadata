@@ -1,21 +1,21 @@
 {
   "st5": {
     "host": "mysql-ens-sta-5",
-    "user": "ensro",
+    "user": "",
     "password": "",
-    "port": 4684
+    "port":
   },
   "st6": {
     "host": "mysql-ens-sta-6",
-    "user": "ensro",
+    "user": "",
     "password": "",
-    "port": 4695
+    "port":
   },
   "prod": {
     "host": "mysql-ens-production-1",
-    "user": "ensro",
+    "user": "",
     "password": "",
     "database": "ensembl_genome_metadata",
-    "port": 4721
+    "port":
   }
 }
