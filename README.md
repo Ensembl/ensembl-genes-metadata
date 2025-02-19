@@ -39,11 +39,16 @@ This Python module allows users to query the MySQL databases to retrieve genome 
    git checkout dev/gb_metadata_handling
    cd ensembl-genes-metadata
    ```
+Optional step: create a virtual environment 
+
 2. Install required Python dependencies:
    ```sh
    pip install -r requirements.txt
    ```
-3. Optional step: create a virtual environment 
+
+3. Fill out database login credentials in conf/db_config.json and confs/prod_dbs_conf.json
+
+
 
 ## Usage
 
