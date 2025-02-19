@@ -222,10 +222,10 @@ def main():
         return
 
     # Bin assemblies by Contig N50
-    df = bin_by_contig_n50(df)
+    df_n50 = bin_by_contig_n50(df)
 
     # Summarize the data
-    level_summary, contig_n50_summary, avg_contig_n50 = summarize_assemblies(df)
+    level_summary, contig_n50_summary, avg_contig_n50 = summarize_assemblies(df_n50)
 
     # Fetch dataset annotations using the same release date
 
@@ -252,13 +252,16 @@ def main():
     print("\nDataset yearly summary:")
     print(yearly_summary)
 
+    print("\nAnnotated:")
+    print(filtered_df)
+
 # Save results to CSV files
     level_summary.to_csv(os.path.join(output_dir, "assembly_level_summary.csv"), index=False)
     contig_n50_summary.to_csv(os.path.join(output_dir, "contig_n50_summary.csv"), index=False)
     avg_contig_n50.to_csv(os.path.join(output_dir, "avg_contig_n50_by_level.csv"), index=False)
     method_summary.to_csv(os.path.join(output_dir, "annotation.csv"), index=False)
     yearly_summary.to_csv(os.path.join(output_dir, "yearly_summary.csv"), index=False)
-
+    filtered_df.to_csv(os.path.join(output_dir, "filtered_df.csv"), index=False)
 
 
 if __name__ == "__main__":
