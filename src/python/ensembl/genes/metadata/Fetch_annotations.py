@@ -21,16 +21,19 @@ def connect_db(config_key):
     return pymysql.connect(**db_config[config_key], cursorclass=pymysql.cursors.DictCursor)
 
 
-def get_annotation():
+def get_annotation(release_date):
     db_config_key = "prod"
     conn = connect_db(db_config_key)
     cursor = conn.cursor()
 
     query = f"""
-                SELECT d.name, dss.name AS db_name
-                FROM dataset d
-                JOIN dataset_source dss ON dss.dataset_source_id = d.dataset_source_id
-                WHERE d.name = 'genebuild'
+                SELECT da.value, da.attribute_id, d.label, r.release_date AS ensembl_release_date
+                FROM dataset_attribute da
+                JOIN dataset d ON da.dataset_id = d.dataset_id
+                JOIN genome_dataset g ON d.dataset_id = g.dataset_id
+                LEFT JOIN ensembl_release r ON r.release_id = g.release_id
+                WHERE da.attribute_id IN (34, 37, 25, 183, 31, 40, 42, 48, 170, 56, 212)
+                AND d.name = 'genebuild'
             """
 
     cursor.execute(query)
@@ -38,133 +41,59 @@ def get_annotation():
     conn.close()
 
     df_prod = pd.DataFrame(results)
-    return df_prod
+
+    # Directly rename attribute_id column values
+    df_prod['attribute_id'] = df_prod['attribute_id'].replace({
+        34: "last_geneset_update",
+        37: "genebuild_method",
+        212: "busco_protein",
+        25: "average_exon_length",
+        183: "average_sequence_length",
+        31: "coding_transcripts_per_gene",
+        40: "nc_average_exon_length",
+        42: "nc_average_sequence_length",
+        48: "nc_small_non_coding_genes",
+        170: "nc_total_exons",
+        56: "ps_average_sequence_length",
+    })
 
 
-def get_core_db_info(release_date):
-    """Retrieve information from metadata table in different databases."""
-    # Get the db_name from get_annotation
-    annotation_data = get_annotation()
+    # Pivot to wide format without losing records
+    df_pivoted = df_prod.pivot(index=["label", "ensembl_release_date"], columns="attribute_id", values="value").reset_index()
+    # Extract only the GCA accession
+    df_pivoted["GCA"] = df_pivoted["label"].str.extract(r"(GCA_\d+\.\d+)")
+    df_pivoted = df_pivoted[df_pivoted['GCA'].notna() & (df_pivoted['GCA'] != '')]
+    df_pivoted = df_pivoted.drop(columns=['label'])
 
-    all_results = []  # List to store results from all databases
+    # Ensure genebuild.last_geneset_update has the correct format by adding '-01' for day precision
+    df_pivoted['last_geneset_update'] = pd.to_datetime(
+        df_pivoted['last_geneset_update'] + '-01', errors='coerce')
 
-    # Loop through all rows in annotation_data (which contains different db_names)
-    for index, row in annotation_data.iterrows():
-        db_name = row['db_name']  # Get db_name from the DataFrame
-        print(f"Checking database: {db_name}")
+    # Convert the release_date to a datetime object
+    release_date = pd.to_datetime(release_date)
 
-        # Only query for specific meta_keys: 'genebuild.last_geneset_update' and 'assembly.accession'
-        query_st = f"""
-                    SELECT meta_key, meta_value
-                    FROM meta
-                    WHERE meta_key IN ('genebuild.last_geneset_update', 'assembly.accession', 'genebuild.method')
-                    """
+    # Apply the release_date filter to 'genebuild.last_geneset_update'
+    df_filtered = df_pivoted[df_pivoted['last_geneset_update'] >= release_date]
 
-        db_configs = ["st5", "st6"]  # Check both st5 and st6 configurations
+    return df_filtered
 
-        for config in db_configs:
-            try:
-                # Attempt to connect to the database
-                conn = connect_db(config)
-                with conn.cursor() as cur:
-                    # Check if the database exists before switching to it
-                    cur.execute(f"SHOW DATABASES LIKE '{db_name}'")
-                    result = cur.fetchone()
-
-                    if result:
-                        cur.execute(f"USE {db_name}")  # Switch to the relevant database
-                        cur.execute(query_st)
-                        output = cur.fetchall()
-
-                        if output:
-                            # Convert the results into a pandas DataFrame
-                            df_output = pd.DataFrame(output, columns=['meta_key', 'meta_value'])
-
-                            # Pivot the DataFrame to have meta_keys as columns
-                            df_pivoted = df_output.pivot_table(columns='meta_key', values='meta_value', aggfunc='last').reset_index()
-                            # Reset index for cleaner output
-                            df_pivoted.reset_index(drop=True, inplace=True)
-                            print(df_pivoted.head())
-
-                            # Check if 'genebuild.last_geneset_update' exists before attempting operations on it
-                            if 'genebuild.last_geneset_update' in df_pivoted.columns:
-                                # Ensure genebuild.last_geneset_update has the correct format by adding '-01' for day precision
-                                df_pivoted['genebuild.last_geneset_update'] = pd.to_datetime(
-                                    df_pivoted['genebuild.last_geneset_update'] + '-01', errors='coerce')
-                                # Debug: Print before filtering
-                                print("\nBefore filtering:")
-                                print(df_pivoted[['genebuild.last_geneset_update']].dropna().head())
-
-                                # Convert the release_date to a datetime object
-                                release_date = pd.to_datetime(release_date)
-
-                                # Apply the release_date filter to 'genebuild.last_geneset_update'
-                                df_filtered = df_pivoted[df_pivoted['genebuild.last_geneset_update'] >= release_date]
-
-                                # Debug: Print after filtering
-                                print("\nAfter filtering:")
-                                print(df_filtered[['genebuild.last_geneset_update']].head())
-
-                                # Log the number of retained rows
-                                print(f"\nNumber of assemblies after filtering: {df_filtered.shape[0]}")
-
-                                # Append this database's filtered data to all_results
-                                all_results.append(df_filtered)
-                                print(f"Data fetched for database: {db_name}")
-                            else:
-                                print(f"Column 'genebuild.last_geneset_update' not found in database: {db_name}")
-
-                        else:
-                            print(f"No data found in database: {db_name}")
-                    else:
-                        print(f"Database {db_name} does not exist in {config} configuration.")
-            except pymysql.MySQLError as e:
-                print(f"Database connection failed for config {config}: {e}")
-            finally:
-                if 'conn' in locals() and conn.open:
-                    conn.close()
-
-    # Check if we found any results for all databases
-    if all_results:
-        # Concatenate all the individual results into one DataFrame
-        df_all_filtered = pd.concat(all_results, ignore_index=True)
-        return df_all_filtered
-    else:
-        print("No data found in any of the databases.")
-        return pd.DataFrame()  # Return an empty DataFrame if no results were found
-
-
-
-def bin_by_contig_n50(df, bin_size=5000):
-    """Bins assemblies based on contig N50 value."""
-    bins = [0] + list(range(bin_size, df['Contig N50'].max() + bin_size, bin_size))
-    labels = [f"{bins[i]}-{bins[i + 1] - 1}" for i in range(len(bins) - 1)]
-    df['Contig N50 Bin'] = pd.cut(df['Contig N50'], bins=bins, labels=labels, right=False)
-    return df
 
 
 def summarize_assemblies(df):
-    """Summarize the data by assembly level and contig N50 bins."""
+    """Summarize the data by assembly level"""
     # Bin by assembly level
     level_summary = df.groupby('Assembly level',observed=False).size().reset_index(name='Number of Assemblies')
 
-    # Bin by Contig N50
-    contig_n50_summary = df.groupby('Contig N50 Bin',observed=False).size().reset_index(name='Number of Assemblies')
-
-    # Other useful statistics (e.g., avg contig N50)
-    avg_contig_n50 = df.groupby('Assembly level',observed=False)['Contig N50'].mean().reset_index(name='Avg Contig N50')
-
-    return level_summary, contig_n50_summary, avg_contig_n50
-
+    return level_summary
 
 def bin_by_genebuild_method(df):
     """Bins assemblies based on genebuild.method."""
-    if 'genebuild.method' not in df.columns:
+    if 'genebuild_method' not in df.columns:
         print("Column 'genebuild.method' not found in dataset.")
         return pd.DataFrame()  # Return empty DataFrame if column is missing
 
     # Group by genebuild.method and count occurrences
-    method_summary = df.groupby('genebuild.method', observed=False).size().reset_index(name='Number of Assemblies')
+    method_summary = df.groupby('genebuild_method', observed=False).size().reset_index(name='Number of Assemblies')
 
     return method_summary
 
@@ -183,11 +112,11 @@ def generate_yearly_summary(df_wide, df_info_result, filtered_df):
         name='Number of Assemblies')
 
     # Convert annotation release_date to datetime and extract year if column exists
-    if 'genebuild.last_geneset_update' in filtered_df.columns:
-        filtered_df['Year'] = pd.to_datetime(filtered_df['genebuild.last_geneset_update']).dt.year
+    if 'last_geneset_update' in filtered_df.columns:
+        filtered_df['Year'] = pd.to_datetime(filtered_df['last_geneset_update']).dt.year
         annotated_per_year = filtered_df.groupby('Year').size().reset_index(name='Number of Annotated Genomes')
     else:
-        print("No 'genebuild.last_geneset_update' column found in annotations.")
+        print("No 'last_geneset_update' column found in annotations.")
         return pd.DataFrame()
 
     # Merge both summaries
@@ -221,30 +150,20 @@ def main():
         print(df)
         return
 
-    # Bin assemblies by Contig N50
-    df_n50 = bin_by_contig_n50(df)
+
 
     # Summarize the data
-    level_summary, contig_n50_summary, avg_contig_n50 = summarize_assemblies(df_n50)
+    #level_summary, contig_n50_summary, avg_contig_n50 = summarize_assemblies(df_n50)
 
     # Fetch dataset annotations using the same release date
 
-    filtered_df=get_core_db_info(release_date)
+    filtered_df=get_annotation(release_date)
 
     # Bin the filtered results by genebuild.method
     method_summary = bin_by_genebuild_method(filtered_df)
 
     yearly_summary = generate_yearly_summary(df, info_result, filtered_df)
 
-    # Print the results
-    print("Summary by Assembly Level:")
-    print(level_summary)
-
-    print("\nSummary by Contig N50 Bin:")
-    print(contig_n50_summary)
-
-    print("\nAverage Contig N50 by Assembly Level:")
-    print(avg_contig_n50)
 
     print("\nDataset filtered:")
     print(method_summary)
@@ -256,9 +175,6 @@ def main():
     print(filtered_df)
 
 # Save results to CSV files
-    level_summary.to_csv(os.path.join(output_dir, "assembly_level_summary.csv"), index=False)
-    contig_n50_summary.to_csv(os.path.join(output_dir, "contig_n50_summary.csv"), index=False)
-    avg_contig_n50.to_csv(os.path.join(output_dir, "avg_contig_n50_by_level.csv"), index=False)
     method_summary.to_csv(os.path.join(output_dir, "annotation.csv"), index=False)
     yearly_summary.to_csv(os.path.join(output_dir, "yearly_summary.csv"), index=False)
     filtered_df.to_csv(os.path.join(output_dir, "filtered_df.csv"), index=False)
