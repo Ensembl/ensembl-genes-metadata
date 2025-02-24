@@ -5,6 +5,27 @@ import argparse
 import os
 import requests
 
+# Cache dictionary to store retrieved parent taxa
+taxonomy_cache_file = "data/taxonomy_cache.json"
+parent_cache = {}
+
+def load_taxonomy_cache():
+    """Load cached taxonomy data from a JSON file."""
+    global parent_cache
+    if os.path.exists(taxonomy_cache_file):
+        with open(taxonomy_cache_file, "r") as f:
+            try:
+                parent_cache = json.load(f)
+            except json.JSONDecodeError:
+                parent_cache = {}
+
+def save_taxonomy_cache():
+    """Save taxonomy cache to a JSON file for reuse."""
+    with open(taxonomy_cache_file, "w") as f:
+        json.dump(parent_cache, f, indent=4)
+
+# Load cache at script startup
+load_taxonomy_cache()
 
 # Load database credentials from external JSON file
 def load_db_config():
@@ -90,82 +111,116 @@ def load_clade_data():
 
 
 def taxonomy_api(taxon):
+    """Retrieve taxonomy information from cache or NCBI API."""
+    if str(taxon) in parent_cache:
+        return parent_cache[str(taxon)]  # Return cached data
+
+    # If not cached, fetch data from the API
     uri = f"https://api.ncbi.nlm.nih.gov/datasets/v2alpha/taxonomy/taxon/{taxon}/dataset_report"
-    response = requests.get(uri)
-    response.raise_for_status()
-    return response.json()
 
-# Assign internal clade to GCA
+    try:
+        response = requests.get(uri)
+        response.raise_for_status()
+        taxon_data = response.json()
+
+        # Cache the result
+        parent_cache[str(taxon)] = taxon_data
+        save_taxonomy_cache()  # Save cache to file
+
+        return taxon_data
+    except requests.exceptions.RequestException as e:
+        print(f"Error retrieving taxonomy data for {taxon}: {e}")
+        return None
+
+
 def assign_clade(lowest_taxon_id, clade_data):
-    """Assign internal clade to GCAs based on JSON file. Function looks for the taxonomy id associated to the GCAs
-    then loops though parents until it finds a match in the JSON file."""
-
+    """Assign internal clade based on taxonomy. Uses cache for efficiency."""
     taxon_data = taxonomy_api(lowest_taxon_id)
-    parents = taxon_data['reports'][0]['taxonomy']['parents']
 
-    # Check lowest taxon ID in the JSON data
+    if not taxon_data:
+        return "Unassigned"
+
+    parents = taxon_data.get('reports', [{}])[0].get('taxonomy', {}).get('parents', [])
+
+    # Check if the lowest taxon ID itself is in the clade data
     for clade_name, details in clade_data.items():
         if details.get("taxon_id") == lowest_taxon_id:
             return clade_name
 
     # Loop through parent taxon IDs to find a match
     for parent_taxon in parents:
-        for clade_name, details in clade_data.items():
-            if details.get("taxon_id") == parent_taxon:
-                return clade_name
+        if str(parent_taxon) in parent_cache:
+            # If parent is already cached, avoid extra API calls
+            for clade_name, details in clade_data.items():
+                if details.get("taxon_id") == parent_taxon:
+                    return clade_name
+        else:
+            # Fetch taxonomy for parent (if not cached)
+            taxonomy_api(parent_taxon)
+
     return "Unassigned"
 
+
 def get_filtered_assemblies(bioproject_id, metric_thresholds, all_metrics, asm_level, asm_type, release_date):
-    """Fetch all assemblies and their metrics for a given BioProject ID, filter results based on given thresholds,
+    """Fetch all assemblies and their metrics filter results based on given thresholds,
     and format the results with metrics as separate columns."""
 
     conn = connect_db()
     cursor = conn.cursor()
 
-    # Step 1: Retrieve valid BioProject IDs from the database
-    cursor.execute("SELECT DISTINCT bioproject_id FROM bioproject;")
-    valid_bioprojects = {row['bioproject_id'] for row in cursor.fetchall()}
+    # Check if bioproject_id is provided before validating
+    if bioproject_id:
+        cursor.execute("SELECT DISTINCT bioproject_id FROM bioproject;")
+        valid_bioprojects = {row['bioproject_id'] for row in cursor.fetchall()}
 
-    # Step 2: Check if all user-provided BioProject IDs exist
-    invalid_bioprojects = set(bioproject_id) - valid_bioprojects
-    if invalid_bioprojects:
-        error_message = f"The following BioProject IDs were not found in the database: {', '.join(invalid_bioprojects)}"
-        return error_message, None, None, None  # Return error message directly
-        conn.close()
-        exit()
+        # Find invalid BioProject IDs
+        invalid_bioprojects = set(bioproject_id) - valid_bioprojects
+        if invalid_bioprojects:
+            conn.close()
+            error_message = f"The following BioProject IDs were not found in the database: {', '.join(invalid_bioprojects)}"
+            return error_message, None, None, None  # Return error message directly
 
-    # Step 3: Combine all SQL queries
+    # Build dynamic SQL filtering
+    conditions = []
+    params = []
+
+    if bioproject_id:
+        conditions.append(f"b.bioproject_id IN ({','.join(['%s'] * len(bioproject_id))})")
+        params.extend(bioproject_id)
+
+    if release_date:
+        conditions.append("a.release_date >= %s")
+        params.append(release_date)
+
+    # If there are conditions, join them with AND; otherwise, select all
+    where_clause = " WHERE " + " AND ".join(conditions) if conditions else ""
+
     query = f"""
-                SELECT b.bioproject_id, a.asm_level, a.gca_chain, a.gca_version, a.asm_type, a.release_date, m.metrics_name, m.metrics_value, 
-                       s.scientific_name, s.common_name, s.lowest_taxon_id, g.group_name, a.refseq_accession
-                FROM bioproject b
-                JOIN assembly_metrics m ON b.assembly_id = m.assembly_id
-                JOIN assembly a ON m.assembly_id = a.assembly_id
-                LEFT JOIN species s ON a.lowest_taxon_id = s.lowest_taxon_id
-                LEFT JOIN group_assembly g ON a.assembly_id = g.assembly_id
-                WHERE b.bioproject_id IN ({",".join(["%s"] * len(bioproject_id))})
-                ORDER BY m.metrics_name;
-            """
-    cursor.execute(query, tuple(bioproject_id))
+        SELECT b.bioproject_id, a.asm_level, a.gca_chain, a.gca_version, a.asm_type, a.release_date, 
+               m.metrics_name, m.metrics_value, s.scientific_name, s.common_name, 
+               s.lowest_taxon_id, g.group_name, a.refseq_accession
+        FROM bioproject b
+        JOIN assembly_metrics m ON b.assembly_id = m.assembly_id
+        JOIN assembly a ON m.assembly_id = a.assembly_id
+        LEFT JOIN species s ON a.lowest_taxon_id = s.lowest_taxon_id
+        LEFT JOIN group_assembly g ON a.assembly_id = g.assembly_id
+        {where_clause}
+        ORDER BY m.metrics_name;
+    """
+    cursor.execute(query, tuple(params))
     results = cursor.fetchall()
 
-    # Step 4: Closing connection after fetching data
+    # Closing connection after fetching data
     conn.close()
 
     # Convert results to a Pandas DataFrame
     df = pd.DataFrame(results)
     df["release_date"] = pd.to_datetime(df["release_date"], errors="coerce")
 
+
     # Add project column and GCA
-    df["Project"] = df["bioproject_id"].map(bioproject_mapping)
+    df["Associated project"] = df["bioproject_id"].map(bioproject_mapping)
     df["GCA"] = df["gca_chain"].astype(str) + "." + df["gca_version"].astype(str)
-    df["Reference genome"] = df["GCA"].apply(is_reference_genome)
-
-    # Load clade data
-    clade_data = load_clade_data()
-
-    # Assign internal clade
-    df["Internal clade"] = df["lowest_taxon_id"].apply(lambda x: assign_clade(x, clade_data))
 
     # Clean genome_coverage by removing 'x' and converting to float
     df['metrics_value'] = df.apply(
@@ -173,8 +228,8 @@ def get_filtered_assemblies(bioproject_id, metric_thresholds, all_metrics, asm_l
 
     # Pivot the data so each metric_name becomes a separate column and combine gca_chain and gca_version, correct date format
     df["GCA"] = df["gca_chain"].astype(str) + "." + df["gca_version"].astype(str)
-    df_wide = df.pivot_table(index=["bioproject_id", "asm_level", "asm_type", "GCA", "release_date", "refseq_accession"], columns="metrics_name", values="metrics_value", aggfunc='first')
 
+    df_wide = df.pivot(index=["bioproject_id", "asm_level", "asm_type", "GCA", "release_date", "refseq_accession"], columns="metrics_name", values="metrics_value")
     # Ensure all requested metrics are present as columns
     for metric in all_metrics:
         if metric not in df_wide.columns:
@@ -201,22 +256,18 @@ def get_filtered_assemblies(bioproject_id, metric_thresholds, all_metrics, asm_l
     if asm_type:
         df_wide = df_wide[df_wide['asm_type'].isin(asm_type)]
 
-    # Apply `release_date` filter
-    if release_date:
-        release_date = pd.to_datetime(release_date)
-        df_wide = df_wide[df_wide['release_date'] >= release_date]
-
     # Check if any assemblies meet the given thresholds
     if df_wide.empty:
         return "No assemblies meet the given thresholds.", None, None, None
 
     # Clean info results table
-    df_info_result = df[['bioproject_id', 'release_date', 'scientific_name', 'common_name', 'group_name', 'Project', 'GCA', 'Reference genome', 'Internal clade']]
+    df_info_result = df[['bioproject_id', 'release_date', 'scientific_name', 'common_name', 'group_name', 'Associated project', 'GCA', 'lowest_taxon_id']]
     df_info_result = df_info_result.drop_duplicates(subset=['GCA'], keep='first')
 
-    # Drop specific columns
+    # Drop specific columns and clean multiple GCA's
     columns_to_drop = ['contig_l50', 'release_date', 'gc_count', 'number_of_component_sequences', 'scaffold_l50', 'total_ungapped_length', 'number_of_organelles','total_number_of_chromosomes']  # Adjust this list as needed
     df_wide.drop(columns=columns_to_drop, inplace=True, errors='ignore')
+    df_wide = df_wide.drop_duplicates(subset=['GCA'], keep='first')
 
 
     # Calculate summary statistics (Avg, Min, Max) for selected metrics
@@ -230,13 +281,14 @@ def get_filtered_assemblies(bioproject_id, metric_thresholds, all_metrics, asm_l
     df_wide.rename(
         columns={'bioproject_id': 'BioProject ID', 'asm_level': 'Assembly level', 'number_of_contigs': 'Number of contigs', 'number_of_scaffolds': 'Number of scaffolds', 'scaffold_n50': 'Scaffold N50', 'total_sequence_length':'Sequence length', 'GCA': "GCA", 'contig_n50': 'Contig N50', 'gc_percent': 'GC%', 'genome_coverage': 'Genome coverage X', 'asm_type': "Assembly type", 'refseq_accession': "RefSeq Accession"}, inplace=True)
     summary_df.rename(columns={'genome_coverage': 'Genome coverage X', 'contig_n50': 'Conting N50', 'scaffold_n50': 'Scaffold N50',  'total_sequence_length': "Sequence length", 'gc_percent': 'GC%'}, inplace=True)
-    df_info_result.rename(columns={'bioproject_id': 'BioProject ID', 'release_date': 'Release date', 'scientific_name': 'Scientific name',  'common_name': "Common name", 'group_name': 'Group name'}, inplace=True)
+    df_info_result.rename(columns={'bioproject_id': 'BioProject ID', 'release_date': 'Release date', 'scientific_name': 'Scientific name',  'common_name': "Common name", 'group_name': 'Group name', 'lowest_taxon_id': "Lowest taxon ID"}, inplace=True)
 
     return df_wide, summary_df, df_info_result, df_gca_list
 
+
 def main():
     parser = argparse.ArgumentParser(description="Fetch filtered assemblies for a given BioProject.")
-    parser.add_argument('--bioproject_id', type=str, nargs='+', required=True, help="One or more BioProject IDs")
+    parser.add_argument('--bioproject_id', type=str, nargs='+', help="One or more BioProject IDs")
     parser.add_argument('--gc_percent', type=float, help="GC percent threshold")
     parser.add_argument('--total_sequence_length', type=float, help="Total sequence length in bp")
     parser.add_argument('--contig_n50', type=float, help="Contig N50")
@@ -267,6 +319,13 @@ def main():
         print("No assemblies meet the given thresholds.")
         return
 
+    # Load clade data
+    clade_data = load_clade_data()
+
+    # Add internal clade and reference genome columns to the info_result DataFrame
+    info_result["Internal clade"] = info_result["Lowest taxon ID"].apply(lambda x: assign_clade(x, clade_data))
+    info_result["Reference genome"] = info_result["GCA"].apply(is_reference_genome)
+
     print("Assemblies that meet the given thresholds:")
     print(df)
     print("\nSummary statistics (Avg/Min/Max) for selected metrics:")
@@ -280,20 +339,24 @@ def main():
     if not os.path.exists(args.output_dir):
         os.makedirs(args.output_dir)
 
+    # Create a base name for the files based on BioProject ID and release date
+    bioproject_name = '_'.join(args.bioproject_id) if args.bioproject_id else 'all_projects'
+    release_date_name = args.release_date.replace('-', '') if args.release_date else 'no_release_date'
+
     # Save the result as a CSV file
-    output_filename = os.path.join(args.output_dir, f"{'_'.join(args.bioproject_id)}_filtered_assemblies.csv")
+    output_filename = os.path.join(args.output_dir, f"{bioproject_name}_{release_date_name}_filtered_assemblies.csv")
     df.to_csv(output_filename, index=False)
 
     # Save the summary statistics as a CSV file
-    summary_filename = os.path.join(args.output_dir, f"{'_'.join(args.bioproject_id)}_filtered_assemblies_summary_statistics.csv")
+    summary_filename = os.path.join(args.output_dir, f"{bioproject_name}_{release_date_name}_filtered_assemblies_summary_statistics.csv")
     summary_df.to_csv(summary_filename, index=False)
 
     # Save the assembly info as a CSV file
-    info_result_filename = os.path.join(args.output_dir, f"{'_'.join(args.bioproject_id)}_filtered_assemblies_info_result.csv")
+    info_result_filename = os.path.join(args.output_dir, f"{bioproject_name}_{release_date_name}_filtered_assemblies_info_result.csv")
     info_result.to_csv(info_result_filename, index=False)
 
     # Save the GCA list in a file
-    gca_list_filename = os.path.join(args.output_dir, f"{'_'.join(args.bioproject_id)}_filtered_assemblies_gca_list.csv")
+    gca_list_filename = os.path.join(args.output_dir, f"{bioproject_name}_{release_date_name}_filtered_assemblies_gca_list.csv")
     df_gca_list.to_csv(gca_list_filename, index=False, header=False)
 
     print(f"\nThe results have been saved to {output_filename}")
