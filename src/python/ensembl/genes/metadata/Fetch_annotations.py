@@ -100,18 +100,27 @@ def bin_by_genebuild_method(df):
 
 def generate_yearly_summary(df, df_info_result, filtered_df):
     """Generate a table summarizing assemblies above contig level and annotated genomes per year."""
-    # Convert release_date to datetime and extract year in df_info_result
     df_info_result['Year'] = pd.to_datetime(df_info_result['Release date']).dt.year
-
-    # Merge Year information into df_wide based on assembly_id
     df = df.merge(df_info_result[['GCA', 'Year']], on='GCA', how='left')
 
-    # Count assemblies above contig level (scaffold, chromosome, complete genome)
     valid_levels = ["Scaffold", "Chromosome", "Complete genome"]
-    assemblies_per_year = df[df['Assembly level'].isin(valid_levels)].groupby('Year').size().reset_index(
+
+    # Filter only the valid assembly levels
+    df_filtered_levels = df[df['Assembly level'].isin(valid_levels)]
+
+    # Count assemblies per year
+    assemblies_per_year = df_filtered_levels.groupby('Year').size().reset_index(
         name='Number of Assemblies')
 
-    # Convert annotation release_date to datetime and extract year if column exists
+    # Ensure 'Contig N50' is numeric
+    df_filtered_levels['Contig N50'] = pd.to_numeric(df_filtered_levels['Contig N50'], errors='coerce')
+
+    # Filter for assemblies with contigN50 >= 100000 (Annotation Candidates)
+    annotation_candidates = df_filtered_levels[df_filtered_levels['Contig N50'] >= 100000].groupby(
+        'Year').size().reset_index(
+        name='Annotation Candidates')
+
+    # Extract annotation year from 'last_geneset_update'
     if 'last_geneset_update' in filtered_df.columns:
         filtered_df['Year'] = pd.to_datetime(filtered_df['last_geneset_update']).dt.year
         annotated_per_year = filtered_df.groupby('Year').size().reset_index(name='Number of Annotated Genomes')
@@ -119,10 +128,22 @@ def generate_yearly_summary(df, df_info_result, filtered_df):
         print("No 'last_geneset_update' column found in annotations.")
         return pd.DataFrame()
 
-    # Merge both summaries
+    # Extract Ensembl release year
+    if 'ensembl_release_date' in filtered_df.columns:
+        filtered_df['Ensembl Release Year'] = pd.to_datetime(filtered_df['ensembl_release_date']).dt.year
+        ensembl_release_summary = filtered_df.groupby('Ensembl Release Year').size().reset_index(
+            name='Number of Ensembl Releases')
+    else:
+        ensembl_release_summary = pd.DataFrame()
+
+    # Merge all summaries
     yearly_summary = pd.merge(assemblies_per_year, annotated_per_year, on='Year', how='outer').fillna(0)
+    yearly_summary = pd.merge(yearly_summary, annotation_candidates, on='Year', how='outer').fillna(0)
+    yearly_summary = pd.merge(yearly_summary, ensembl_release_summary, left_on='Year', right_on='Ensembl Release Year', how='outer').fillna(0).drop(
+        columns=['Ensembl Release Year'])
 
     return yearly_summary
+
 
 def bin_by_assembly_level(df):
     """Bins assemblies based on their assembly level."""
@@ -150,8 +171,7 @@ def main():
 
     # Define metrics to consider
     metric_thresholds = {}  # Empty, so no thresholds are applied
-    all_metrics = ["gc_percent", "total_sequence_length", "contig_n50", "number_of_contigs", "number_of_scaffolds",
-                   "scaffold_n50", "genome_coverage"]
+    all_metrics = ["gc_percent", "total_sequence_length", "contig_n50", "number_of_contigs", "number_of_scaffolds", "scaffold_n50", "genome_coverage"]
 
     # Fetch assemblies released in the past 5 years
     df_wide, summary_df, df_info_result, df_gca_list = get_filtered_assemblies(None, metric_thresholds, all_metrics, None, None, release_date)
