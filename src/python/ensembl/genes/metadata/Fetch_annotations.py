@@ -3,7 +3,7 @@ import json
 import pymysql
 import os
 import argparse
-from GB_metadata_time import get_filtered_assemblies
+from GB_metadata_reporting import get_filtered_assemblies
 
 def load_db_config():
     """Load database credentials from external JSON file."""
@@ -98,17 +98,17 @@ def bin_by_genebuild_method(df):
     return method_summary
 
 
-def generate_yearly_summary(df_wide, df_info_result, filtered_df):
+def generate_yearly_summary(df, df_info_result, filtered_df):
     """Generate a table summarizing assemblies above contig level and annotated genomes per year."""
     # Convert release_date to datetime and extract year in df_info_result
     df_info_result['Year'] = pd.to_datetime(df_info_result['Release date']).dt.year
 
     # Merge Year information into df_wide based on assembly_id
-    df_wide = df_wide.merge(df_info_result[['GCA', 'Year']], on='GCA', how='left')
+    df = df.merge(df_info_result[['GCA', 'Year']], on='GCA', how='left')
 
     # Count assemblies above contig level (scaffold, chromosome, complete genome)
     valid_levels = ["Scaffold", "Chromosome", "Complete genome"]
-    assemblies_per_year = df_wide[df_wide['Assembly level'].isin(valid_levels)].groupby('Year').size().reset_index(
+    assemblies_per_year = df[df['Assembly level'].isin(valid_levels)].groupby('Year').size().reset_index(
         name='Number of Assemblies')
 
     # Convert annotation release_date to datetime and extract year if column exists
@@ -123,6 +123,18 @@ def generate_yearly_summary(df_wide, df_info_result, filtered_df):
     yearly_summary = pd.merge(assemblies_per_year, annotated_per_year, on='Year', how='outer').fillna(0)
 
     return yearly_summary
+
+def bin_by_assembly_level(df):
+    """Bins assemblies based on their assembly level."""
+    if 'Assembly level' not in df.columns:
+        print("Column 'Assembly level' not found in dataset.")
+        return pd.DataFrame()  # Return empty DataFrame if column is missing
+
+    # Group by Assembly level and count occurrences
+    level_summary = df.groupby('Assembly level', observed=False).size().reset_index(name='Number of Assemblies')
+
+    return level_summary
+
 
 
 def main():
@@ -142,18 +154,23 @@ def main():
                    "scaffold_n50", "genome_coverage"]
 
     # Fetch assemblies released in the past 5 years
-    df, refseq_count, summary_df, info_result, df_gca_list = get_filtered_assemblies(release_date, metric_thresholds,
-                                                                                     all_metrics, None, None)
+    df, summary_df, df_info_result, df_gca_list = get_filtered_assemblies(None, metric_thresholds, all_metrics, None, None, release_date)
 
 
     if isinstance(df, str):  # Check if there's an error message
         print(df)
         return
 
+    # Bin assemblies by Assembly level
+    level_summary = bin_by_assembly_level(df)
 
 
-    # Summarize the data
-    #level_summary, contig_n50_summary, avg_contig_n50 = summarize_assemblies(df_n50)
+    print("\nAssembly Level Summary:")
+    print(level_summary)
+
+    # Save to CSV
+    level_summary.to_csv(os.path.join(output_dir, "assembly_level_summary.csv"), index=False)
+
 
     # Fetch dataset annotations using the same release date
 
@@ -162,7 +179,7 @@ def main():
     # Bin the filtered results by genebuild.method
     method_summary = bin_by_genebuild_method(filtered_df)
 
-    yearly_summary = generate_yearly_summary(df, info_result, filtered_df)
+    yearly_summary = generate_yearly_summary(df, df_info_result, filtered_df)
 
 
     print("\nDataset filtered:")
@@ -178,6 +195,8 @@ def main():
     method_summary.to_csv(os.path.join(output_dir, "annotation.csv"), index=False)
     yearly_summary.to_csv(os.path.join(output_dir, "yearly_summary.csv"), index=False)
     filtered_df.to_csv(os.path.join(output_dir, "filtered_df.csv"), index=False)
+    df.to_csv(os.path.join(output_dir, "df.csv"))
+    df_info_result.to_csv(os.path.join(output_dir, "df_info_result.csv"))
 
 
 if __name__ == "__main__":
