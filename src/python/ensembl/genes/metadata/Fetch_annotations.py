@@ -154,23 +154,15 @@ def main():
                    "scaffold_n50", "genome_coverage"]
 
     # Fetch assemblies released in the past 5 years
-    df, summary_df, df_info_result, df_gca_list = get_filtered_assemblies(None, metric_thresholds, all_metrics, None, None, release_date)
+    df_wide, summary_df, df_info_result, df_gca_list = get_filtered_assemblies(None, metric_thresholds, all_metrics, None, None, release_date)
 
 
-    if isinstance(df, str):  # Check if there's an error message
-        print(df)
+    if isinstance(df_wide, str):  # Check if there's an error message
+        print(df_wide)
         return
 
     # Bin assemblies by Assembly level
-    level_summary = bin_by_assembly_level(df)
-
-
-    print("\nAssembly Level Summary:")
-    print(level_summary)
-
-    # Save to CSV
-    level_summary.to_csv(os.path.join(output_dir, "assembly_level_summary.csv"), index=False)
-
+    level_summary = bin_by_assembly_level(df_wide)
 
     # Fetch dataset annotations using the same release date
 
@@ -179,7 +171,7 @@ def main():
     # Bin the filtered results by genebuild.method
     method_summary = bin_by_genebuild_method(filtered_df)
 
-    yearly_summary = generate_yearly_summary(df, df_info_result, filtered_df)
+    yearly_summary = generate_yearly_summary(df_wide, df_info_result, filtered_df)
 
 
     print("\nDataset filtered:")
@@ -191,13 +183,17 @@ def main():
     print("\nAnnotated:")
     print(filtered_df)
 
+    print("\nAssembly Level Summary:")
+    print(level_summary)
+
+
 # Save results to CSV files
     method_summary.to_csv(os.path.join(output_dir, "annotation.csv"), index=False)
     yearly_summary.to_csv(os.path.join(output_dir, "yearly_summary.csv"), index=False)
     filtered_df.to_csv(os.path.join(output_dir, "filtered_df.csv"), index=False)
-    df.to_csv(os.path.join(output_dir, "df.csv"))
+    df_wide.to_csv(os.path.join(output_dir, "df_wide.csv"))
     df_info_result.to_csv(os.path.join(output_dir, "df_info_result.csv"))
-
+    level_summary.to_csv(os.path.join(output_dir, "assembly_level_summary.csv"), index=False)
 
 if __name__ == "__main__":
     main()
