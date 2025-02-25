@@ -5,6 +5,35 @@ import argparse
 import os
 import requests
 
+def get_descendant_taxa(taxon_id):
+    """
+    Retrieves all descendant taxon IDs under the given taxon ID using NCBI E-utilities.
+
+    :param taxon_id: The parent taxon ID (e.g., 40674 for Mammalia)
+    :return: A set of descendant taxon IDs
+    """
+    base_url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi"
+    params = {
+        "db": "taxonomy",
+        "term": f"txid{taxon_id}[Subtree]",
+        "retmode": "json",
+        "retmax": 100000  # Retrieve all possible results
+    }
+
+    response = requests.get(base_url, params=params)
+    if response.status_code != 200:
+        print("Error retrieving taxonomic data from NCBI.")
+        return set()
+
+    try:
+        result = response.json()
+        taxon_ids = set(result["esearchresult"]["idlist"])
+        return taxon_ids
+    except KeyError:
+        print("Unexpected response format from NCBI.")
+        return set()
+
+
 # Cache dictionary to store retrieved parent taxa
 taxonomy_cache_file = "data/taxonomy_cache.json"
 parent_cache = {}
@@ -161,7 +190,7 @@ def assign_clade(lowest_taxon_id, clade_data):
     return "Unassigned"
 
 
-def get_filtered_assemblies(bioproject_id, metric_thresholds, all_metrics, asm_level, asm_type, release_date):
+def get_filtered_assemblies(bioproject_id, metric_thresholds, all_metrics, asm_level, asm_type, release_date,taxon_id):
     """Fetch all assemblies and their metrics filter results based on given thresholds,
     and format the results with metrics as separate columns."""
 
@@ -191,6 +220,14 @@ def get_filtered_assemblies(bioproject_id, metric_thresholds, all_metrics, asm_l
     if release_date:
         conditions.append("a.release_date >= %s")
         params.append(release_date)
+
+    if taxon_id:
+        descendant_taxa = get_descendant_taxa(taxon_id)
+        if not descendant_taxa:
+            return f"No descendant taxa found for Taxon ID {taxon_id}.", None, None, None
+
+        conditions.append(f"s.lowest_taxon_id IN ({','.join(['%s'] * len(descendant_taxa))})")
+        params.extend(descendant_taxa)
 
     # If there are conditions, join them with AND; otherwise, select all
     where_clause = " WHERE " + " AND ".join(conditions) if conditions else ""
@@ -300,6 +337,7 @@ def main():
     parser.add_argument('--asm_level', type=str, nargs='+', help="Assembly level options: 'Contig', 'Scaffold', 'Chromosome', 'Complete genome'.")
     parser.add_argument('--asm_type', type=str, nargs='+', help="Assembly type: 'haploid', 'alternate-pseudohaplotype', 'unresolved-diploid', 'haploid-with-alt-loci', 'diploid'.")
     parser.add_argument('--output_dir', type=str, default='./', help="Directory to save the CSV file. Files will only be saved if assemblies meet the given thresholds.")
+    parser.add_argument('--taxon_id', type=int, help="NCBI Taxon ID to filter by (e.g., 40674 for Mammalia)")
 
     args = parser.parse_args()
 
@@ -307,7 +345,7 @@ def main():
 
     all_metrics = ["gc_percent", "total_sequence_length", "contig_n50", "number_of_contigs", "number_of_scaffolds", "scaffold_n50", "genome_coverage"]
 
-    df, summary_df, info_result, df_gca_list = get_filtered_assemblies(args.bioproject_id, metric_thresholds, all_metrics, args.asm_level, args.asm_type, args.release_date)
+    df, summary_df, info_result, df_gca_list = get_filtered_assemblies(args.bioproject_id, metric_thresholds, all_metrics, args.asm_level, args.asm_type, args.release_date, args.taxon_id)
 
 
     # Check if 'df' is a string (error message)
@@ -323,8 +361,8 @@ def main():
     clade_data = load_clade_data()
 
     # Add internal clade and reference genome columns to the info_result DataFrame
-    info_result["Internal clade"] = info_result["Lowest taxon ID"].apply(lambda x: assign_clade(x, clade_data))
-    info_result["Reference genome"] = info_result["GCA"].apply(is_reference_genome)
+    #info_result["Internal clade"] = info_result["Lowest taxon ID"].apply(lambda x: assign_clade(x, clade_data))
+    #info_result["Reference genome"] = info_result["GCA"].apply(is_reference_genome)
 
     print("Assemblies that meet the given thresholds:")
     print(df)
