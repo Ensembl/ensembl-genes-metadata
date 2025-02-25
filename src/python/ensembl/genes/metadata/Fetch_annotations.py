@@ -229,8 +229,8 @@ def main():
     method_summary.to_csv(os.path.join(output_dir, "annotation.csv"), index=False)
     yearly_summary.to_csv(os.path.join(output_dir, "yearly_summary.csv"), index=False)
     filtered_df.to_csv(os.path.join(output_dir, "filtered_df.csv"), index=False)
-    df_wide.to_csv(os.path.join(output_dir, "df_wide.csv"))
-    df_info_result.to_csv(os.path.join(output_dir, "df_info_result.csv"))
+    df_wide.to_csv(os.path.join(output_dir, "assemblies.csv"))
+    df_info_result.to_csv(os.path.join(output_dir, "assembly_annotation_status.csv"))
     level_summary.to_csv(os.path.join(output_dir, "assembly_level_summary.csv"), index=False)
 
 if __name__ == "__main__":
