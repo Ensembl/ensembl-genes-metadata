@@ -362,7 +362,7 @@ def main():
 
     # Add internal clade and reference genome columns to the info_result DataFrame
     #info_result["Internal clade"] = info_result["Lowest taxon ID"].apply(lambda x: assign_clade(x, clade_data))
-    #info_result["Reference genome"] = info_result["GCA"].apply(is_reference_genome)
+    info_result["Reference genome"] = info_result["GCA"].apply(is_reference_genome)
 
     print("Assemblies that meet the given thresholds:")
     print(df)
