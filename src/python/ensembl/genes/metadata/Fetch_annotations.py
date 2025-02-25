@@ -160,21 +160,33 @@ def bin_by_assembly_level(df):
 
 def main():
     parser = argparse.ArgumentParser(description='Fetches annotations and assemblies')
-    parser.add_argument("--release_date", type=str, required=True, help="Release date in YYYY-MM-DD format.")
+    parser.add_argument("--release_date", type=str, default="2019-01-01", help="Release date in YYYY-MM-DD format (default: 2019-01-01).")
     parser.add_argument("--output_dir", type=str, required=True, help="Directory to save output files.")
+    parser.add_argument("--taxon_id", type=str, required=False, help="Taxon ID for filtering (e.g., 40674 for Mammalia).")
+    parser.add_argument('--asm_level', type=str, nargs='+', help="Assembly level options: 'Contig', 'Scaffold', 'Chromosome', 'Complete genome'.")
+    parser.add_argument('--asm_type', type=str, nargs='+', help="Assembly type: 'haploid', 'alternate-pseudohaplotype', 'unresolved-diploid', 'haploid-with-alt-loci', 'diploid'.")
+    parser.add_argument('--contig_n50', type=float, help="Contig N50")
 
     args = parser.parse_args()
 
     release_date = args.release_date
     output_dir = args.output_dir
+    taxon_id = args.taxon_id
+    asm_level = args.asm_level
+    asm_type = args.asm_type
+
     os.makedirs(output_dir, exist_ok=True)
 
     # Define metrics to consider
-    metric_thresholds = {}  # Empty, so no thresholds are applied
-    all_metrics = ["gc_percent", "total_sequence_length", "contig_n50", "number_of_contigs", "number_of_scaffolds", "scaffold_n50", "genome_coverage"]
+    metric_thresholds = {k: v[0] if isinstance(v, list) else v for k, v in vars(args).items() if
+                         v is not None and k not in ["bioproject_id", "output_dir", "asm_level", "asm_type",
+                                                     "release_date"]}
+
+    all_metrics = ["gc_percent", "total_sequence_length", "contig_n50", "number_of_contigs", "number_of_scaffolds",
+                   "scaffold_n50", "genome_coverage"]
 
     # Fetch assemblies released in the past 5 years
-    df_wide, summary_df, df_info_result, df_gca_list = get_filtered_assemblies(None, metric_thresholds, all_metrics, None, None, release_date)
+    df_wide, summary_df, df_info_result, df_gca_list = get_filtered_assemblies(None, metric_thresholds, all_metrics,asm_level, asm_type, release_date, taxon_id)
 
 
     if isinstance(df_wide, str):  # Check if there's an error message
@@ -185,14 +197,20 @@ def main():
     level_summary = bin_by_assembly_level(df_wide)
 
     # Fetch dataset annotations using the same release date
-
     filtered_df=get_annotation(release_date)
+
+    #Add FTP links to dataframe
+    #filtered_df['FTP'] = filtered_df['GCA'].apply(
+        #lambda gca: f"https://ftp.ebi.ac.uk/pub/ensemblorganisms/{filtered_df.loc[filtered_df['GCA'] == gca, 'scientific_name'].values[0]}/{gca}/")
 
     # Bin the filtered results by genebuild.method
     method_summary = bin_by_genebuild_method(filtered_df)
 
     yearly_summary = generate_yearly_summary(df_wide, df_info_result, filtered_df)
 
+    #Check annotation status
+    # Add an 'Annotated' column to df_info_result
+    df_info_result['Annotated'] = df_info_result['GCA'].isin(filtered_df['GCA']).map({True: 'Yes', False: 'No'})
 
     print("\nDataset filtered:")
     print(method_summary)
