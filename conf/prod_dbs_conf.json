@@ -1,16 +1,4 @@
 {
-  "st5": {
-    "host": "mysql-ens-sta-5",
-    "user": "",
-    "password": "",
-    "port":
-  },
-  "st6": {
-    "host": "mysql-ens-sta-6",
-    "user": "",
-    "password": "",
-    "port":
-  },
   "prod": {
     "host": "mysql-ens-production-1",
     "user": "",
