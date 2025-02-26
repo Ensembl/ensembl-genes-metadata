@@ -4,12 +4,14 @@ process SPECIES_CHECKER {
     maxForks 1
 
     input:
-    val gca
-    path species_tmp
+    tuple val(gca), path(species_tmp), path(last_id)
+    //val gca
+    //path species_tmp
 
     output:
-    val gca, emit: gca
-    path "${species_tmp.baseName}.json", emit: species
+    tuple val(gca), path("${species_tmp.baseName}.json")
+    //val gca, emit: gca
+    //path "${species_tmp.baseName}.json", emit: species
 
     script:
     """

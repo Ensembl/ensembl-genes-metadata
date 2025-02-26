@@ -3,16 +3,18 @@ process WRITE2DB_ASSEMBLY {
     publishDir "${params.output_dir}/nextflow_output/$gca", mode: 'copy'
 
     input:
-    val gca
-    path assembly
-    path metadata_tmp
-    path species_tmp
+    tuple val(gca), path(assembly), path(metadata_tmp), path(species_tmp)
+    //val gca
+    //path assembly
+    //path metadata_tmp
+    //path species_tmp
 
     output:
-    val gca, emit: gca
-    path "${assembly.baseName}.last_id", emit: last_id
-    path metadata_tmp, emit: metadata_tmp
-    path species_tmp, emit: species_tmp 
+    tuple val(gca), path(metadata_tmp), path("${assembly.baseName}.last_id"), path(species_tmp)
+    //val gca, emit: gca
+    //path "${assembly.baseName}.last_id", emit: last_id
+    //path metadata_tmp, emit: metadata_tmp
+    //path species_tmp, emit: species_tmp 
 
     script:
     """

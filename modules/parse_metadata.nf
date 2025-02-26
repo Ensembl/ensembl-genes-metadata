@@ -6,10 +6,11 @@ process PARSE_METADATA {
     val gca
 
     output:
-    val gca, emit: gca
-    path("${gca}_assembly.json"), emit: assembly
-    path("${gca}_metadata.tmp"), emit: metadata_tmp
-    path("${gca}_species.tmp"), emit: species_tmp
+    tuple val(gca), path("${gca}_assembly.json"), path("${gca}_metadata.tmp"), path("${gca}_species.tmp")
+    //val gca, emit: gca
+    //path("${gca}_assembly.json"), emit: assembly
+    //path("${gca}_metadata.tmp"), emit: metadata_tmp
+    //path("${gca}_species.tmp"), emit: species_tmp
 
     script:
     """

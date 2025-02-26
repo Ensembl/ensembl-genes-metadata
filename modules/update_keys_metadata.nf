@@ -3,15 +3,17 @@ process UPDATE_KEYS_METADATA {
     publishDir "${params.output_dir}/nextflow_output/$gca", mode: 'copy'
     
     input:
-    val gca
-    path metadata_tmp
-    path last_id
-    path species_tmp
+    tuple val(gca), path(metadata_tmp), path(last_id), path(species_tmp)
+    //val gca
+    //path metadata_tmp
+    //path last_id
+    //path species_tmp
     
     output:
-    val gca, emit: gca
-    path "${metadata_tmp.baseName}.json", emit: metadata
-    path species_tmp, emit: species_tmp 
+    tuple val(gca), path("${metadata_tmp.baseName}.json"), path(species_tmp)
+    //val gca, emit: gca
+    //path "${metadata_tmp.baseName}.json", emit: metadata
+    //path species_tmp, emit: species_tmp 
 
     script:
     """

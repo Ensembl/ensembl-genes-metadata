@@ -3,12 +3,14 @@ process WRITE2DB_TOLID {
     publishDir "${params.output_dir}/nextflow_output/$gca", mode: 'copy'
 
     input:
-    val gca
-    path tolid
+    tuple val(gca), path(tolid)
+    //val gca
+    //path tolid
 
     output:
-    val gca, emit: gca
-    path "${tolid.baseName}.last_id", emit: last_id
+    tuple val(gca), path("${tolid.baseName}.last_id")
+    //val gca, emit: gca
+    //path "${tolid.baseName}.last_id", emit: last_id
 
     script:
     """

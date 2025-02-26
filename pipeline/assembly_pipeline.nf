@@ -93,31 +93,33 @@ workflow {
     def last_update = SET_DATE.out.splitText() {it -> it.trim()}
     
     FETCH_GCA(params.taxon, last_update)
+    def gca = FETCH_GCA.out.splitText().map{it -> it.trim()}
 
-    gca = FETCH_GCA.out.splitText().map{it -> it.trim()}
+    def parse_metadata_out = PARSE_METADATA(gca)
+    
+    //data= parse_metadata_out
+    //data.each{ d-> d.view()}
+    
+    def write2db_assembly_out = WRITE2DB_ASSEMBLY(parse_metadata_out)
 
-    PARSE_METADATA(gca)
+    def update_keys_out = UPDATE_KEYS_METADATA(write2db_assembly_out)
     
-    WRITE2DB_ASSEMBLY(PARSE_METADATA.out.gca, PARSE_METADATA.out.assembly, PARSE_METADATA.out.metadata_tmp, PARSE_METADATA.out.species_tmp)
+    def write2db_metadata_out = WRITE2DB_METADATA(update_keys_out)
     
-    UPDATE_KEYS_METADATA(WRITE2DB_ASSEMBLY.out.gca, WRITE2DB_ASSEMBLY.out.metadata_tmp, WRITE2DB_ASSEMBLY.out.last_id, WRITE2DB_ASSEMBLY.out.species_tmp)
+    def species_checker_out = SPECIES_CHECKER(write2db_metadata_out)
     
-    WRITE2DB_METADATA(UPDATE_KEYS_METADATA.out.gca, UPDATE_KEYS_METADATA.out.metadata, UPDATE_KEYS_METADATA.out.species_tmp)
+    def write2db_species_out = WRITE2DB_SPECIES(species_checker_out)
     
-    SPECIES_CHECKER(WRITE2DB_METADATA.out.gca, WRITE2DB_METADATA.out.species_tmp)
+    def get_tolid_out = GET_TOLID(write2db_species_out) // Here is now taking two elements. Original: GET_TOLID(WRITE2DB_SPECIES.out.gca)
     
-    WRITE2DB_SPECIES(SPECIES_CHECKER.out.gca, SPECIES_CHECKER.out.species)
+    def write2db_tolid_out = WRITE2DB_TOLID(get_tolid_out)
     
-    GET_TOLID(WRITE2DB_SPECIES.out.gca)
+    def custom_group_out = CUSTOM_GROUP(write2db_tolid_out)// Here is now taking two elements. Original: CUSTOM_GROUP(WRITE2DB_TOLID.out.gca)
     
-    WRITE2DB_TOLID(GET_TOLID.out.gca, GET_TOLID.out.tolid)
+    WRITE2DB_GROUP(custom_group_out)
     
-    CUSTOM_GROUP(WRITE2DB_TOLID.out.gca)
+    gca_list = WRITE2DB_GROUP.out.gca.map { it -> it.trim() }.collectFile(name: 'gca_list_to_report.txt', newLine: true).view()
     
-    WRITE2DB_GROUP(CUSTOM_GROUP.out.gca, CUSTOM_GROUP.out.group)
-
-    gca_list = WRITE2DB_GROUP.out.gca.map { it -> it.trim() }.collectFile(name: 'gca_list_to_report.txt', newLine: true)
-
     REPORT(gca_list, last_update)
 
 }

@@ -3,11 +3,11 @@ process GET_TOLID {
     publishDir "${params.output_dir}/nextflow_output/$gca", mode: 'copy'
 
     input:
-    val gca
+    tuple val(gca), path(last_id)
 
     output:
-    val gca, emit: gca
-    path "${gca}_tolid.json", emit: tolid
+    tuple val(gca), path("${gca}_tolid.json")
+    //path "${gca}_tolid.json", emit: tolid
 
     script:
     """

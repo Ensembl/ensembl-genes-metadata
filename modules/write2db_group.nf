@@ -3,10 +3,12 @@ process WRITE2DB_GROUP {
     publishDir "${params.output_dir}/nextflow_output/$gca", mode: 'copy'
 
     input:
-    val gca
-    path group
+    tuple val(gca), path(group)
+    //val gca
+    //path group
 
     output:
+    //tuple val(gca), path("${group.baseName}.last_id")
     val gca, emit: gca
     path "${group.baseName}.last_id", emit: last_id
 

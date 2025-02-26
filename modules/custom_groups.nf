@@ -1,15 +1,15 @@
 process CUSTOM_GROUP {
-
-    label 'python'
     tag "$gca"
     publishDir "${params.output_dir}/nextflow_output/$gca", mode: 'copy'
 
     input:
-    val gca
+    tuple val(gca), path(last_id)
+    //val gca
 
     output:
-    val gca, emit: gca
-    path "${gca}_group.json", emit: group
+    tuple val(gca), path("${gca}_group.json")
+    //val gca, emit: gca
+    //path "${gca}_group.json", emit: group
 
     script:
     """

@@ -4,12 +4,14 @@ process WRITE2DB_SPECIES {
     maxForks 1
 
     input:
-    val gca
-    path species
+    tuple val(gca), path(species)
+    //val gca
+    //path species
 
     output:
-    val gca, emit: gca
-    path "${species.baseName}.last_id", emit: last_id
+    tuple val(gca), path("${species.baseName}.last_id")
+    //val gca, emit: gca
+    //path "${species.baseName}.last_id", emit: last_id
 
     script:
     """
