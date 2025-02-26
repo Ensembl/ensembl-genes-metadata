@@ -30,40 +30,46 @@ import argparse
 import json
 import logging
 from tenacity import retry, stop_after_attempt, wait_random
-from typing import Dict, List
+from typing import Dict, Any, Tuple
 
 @retry(stop=stop_after_attempt(5), wait=wait_random(min=1, max=10))
 def connection_ncbi(uri: str) -> requests.Response:
+    """Connects to NCBI API and retrieves data for a given URI
+    Args:
+        uri (str): URI to request data from NCBI API
+    Returns:
+        requests.Response: response object from NCBI API
+    """
     response = requests.get(uri)
     response.raise_for_status()
     return response
 
-def parse_data(data: Dict) -> List[Dict]:
-    """Parse NCBI results and provides a useful dictionary containing all relevant information 
-    
+def parse_data(data: Dict) -> Tuple[Dict[str, Dict[Any, Any]], Dict[str, Dict[Any, Any]], Dict[str, Dict[Any, Any]]]:
+    """Parse NCBI results and provides a useful dictionary containing all relevant information
+
     Args:
         data (dict): original report obtained from NCBI API
-    
+
     Returns:
         list[dict]: a list of three dictionaries with relevant metadata to store in db
     """
     # Stablish dictionary structure
     data_dict = {'assembly': {}}
-    
+
     data_dict_2 = {
         'organism': {},
         'assembly_metrics': {},
         'bioproject': {}
     }
-    
+
     data_dict_3 = {
         'species': {}
     }
-    
+
     # Setting Optional keys first
     try:
         infra_type = list(data['reports'][0]['organism']['infraspecific_names'].keys())[0]
-        infra_name = list(data['reports'][0]['organism']['infraspecific_names'].values())[0].replace("'", "''")  
+        infra_name = list(data['reports'][0]['organism']['infraspecific_names'].values())[0].replace("'", "''")
         if infra_type == 'sex':
             logging.info("Assembly have incorrect infraspecific type: sex. Setting to empty")
             infra_type = ""
@@ -71,8 +77,7 @@ def parse_data(data: Dict) -> List[Dict]:
     except:
         infra_name = ""
         infra_type = ""
-        
-        
+
     # Building dictionaries for assembly metadata tables
     data_dict['assembly'].update({
         'lowest_taxon_id' : data['reports'][0]['organism']['tax_id'],
@@ -86,26 +91,26 @@ def parse_data(data: Dict) -> List[Dict]:
         'release_date' : data['reports'][0]['assembly_info']['release_date'],
         'submitter' : data.get('reports')[0].get('assembly_info').get('submitter', "").replace("'", "''").lstrip('\ufeff')
     })
-    
+
     data_dict_3['species'].update({
         'lowest_taxon_id' : data['reports'][0]['organism']['tax_id'],
         'scientific_name' : data['reports'][0]['organism']['organism_name'].replace("'", "''") ,
         'common_name' : data.get('reports')[0].get('organism').get('common_name', "").replace("'", "''")
     })
-    
+
     data_dict_2['organism'].update({
-        'biosample_id' : data.get('reports')[0].get('assembly_info').get('biosample', "").get('accession', ""),
+        'biosample_id' : data.get('reports', [{}])[0].get('assembly_info', {}).get('biosample', {}).get('accession', ""),
         'bioproject_id' : data['reports'][0]['assembly_info']['bioproject_accession'],
         'infra_type':infra_type,
         'infra_name':infra_name
     })
-    
+
     data_dict_2.update({'assembly_metrics':data['reports'][0]['assembly_stats']})
-    
-    # Parsing bioproject metadata 
-    bioproject_lineage = {} 
+
+    # Parsing bioproject metadata
+    bioproject_lineage = {}
     seen_accessions = set()
-    
+
     bioproject_dict = data['reports'][0]['assembly_info']['bioproject_lineage'][0]['bioprojects']
     for item in bioproject_dict:
         accession = item['accession']
@@ -114,9 +119,9 @@ def parse_data(data: Dict) -> List[Dict]:
         if accession not in seen_accessions:
             seen_accessions.add(accession)
             bioproject_lineage[accession] = title
-    
+
     data_dict_2.update({'bioproject':bioproject_lineage})
-    
+
     return data_dict, data_dict_2, data_dict_3
 
 def main():
@@ -124,46 +129,48 @@ def main():
     """
     logging.basicConfig(filename="retrieving_metadata.log", level=logging.DEBUG, filemode='w',
                     format="%(asctime)s:%(levelname)s:%(message)s")
-    
-    parser = argparse.ArgumentParser(prog='retrieving_metadata.py', 
+
+    parser = argparse.ArgumentParser(prog='retrieving_metadata.py',
                                     description="Retrieve metadata from NCBI API for a given GCA accession and store it in JSON files to be inserted in the database.")
-    
-    parser.add_argument('--accession', 
+
+    parser.add_argument('--accession',
                         type=str,
                         help='GCA accession to retrieve metadata')
-    parser.add_argument('--ncbi_url', 
+    parser.add_argument('--ncbi_url',
                         type=str,
                         help='NCBI API URL')
-    
+
     args = parser.parse_args()
     logging.info(args)
     accession = args.accession.strip()
-    
+
     if args.ncbi_url:
         ncbi_url = args.ncbi_url
     else:
         raise ValueError("NCBI API URL is required")
-    
+
     uri = f"{ncbi_url}/genome/accession/{accession}/dataset_report"
+    logging.info("URI: %s",uri)
     response = connection_ncbi(uri)
     data = response.json()
-    
-    logging.info(f"Retrieved data for {accession}")
+    #logging.info(f"DATA: {data}")
+
+    logging.info("Retrieved data for %s",accession)
     dict1, dict2, dict3 = parse_data(data)
-    
+
     logging.info("Saving data in JSON files")
     file1 = f"{accession}_assembly.json"
-    with open(file1, 'w') as file:
+    with open(file1, 'w', encoding='utf-8') as file:
         json.dump(dict1, file)
     file.close()
-    
+
     file2 = f"{accession}_metadata.tmp"
-    with open(file2, 'w') as file:
+    with open(file2, 'w', encoding='utf-8') as file:
         json.dump(dict2, file)
     file.close()
-    
+
     file3 = f"{accession}_species.tmp"
-    with open(file3, 'w') as file:
+    with open(file3, 'w', encoding='utf-8') as file:
         json.dump(dict3, file)
     file.close()
 
