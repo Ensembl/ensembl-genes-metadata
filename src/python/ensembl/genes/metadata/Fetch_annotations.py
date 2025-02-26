@@ -27,13 +27,15 @@ def get_annotation(release_date):
     cursor = conn.cursor()
 
     query = f"""
-                SELECT da.value, da.attribute_id, d.label, r.release_date AS ensembl_release_date
+                SELECT da.value, da.attribute_id, a.accession AS GCA, r.release_date AS ensembl_release_date
                 FROM dataset_attribute da
                 JOIN dataset d ON da.dataset_id = d.dataset_id
-                JOIN genome_dataset g ON d.dataset_id = g.dataset_id
-                LEFT JOIN ensembl_release r ON r.release_id = g.release_id
+                JOIN genome_dataset gd ON d.dataset_id = gd.dataset_id
+                JOIN genome g ON gd.genome_id = g.genome_id
+                JOIN assembly a ON g.assembly_id = a.assembly_id
+                LEFT JOIN ensembl_release r ON r.release_id = gd.release_id
                 WHERE da.attribute_id IN (34, 37, 25, 183, 31, 40, 42, 48, 170, 56, 212)
-                AND d.name = 'genebuild'
+                AND d.name = 'genebuild';
             """
 
     cursor.execute(query)
@@ -59,11 +61,7 @@ def get_annotation(release_date):
 
 
     # Pivot to wide format without losing records
-    df_pivoted = df_prod.pivot(index=["label", "ensembl_release_date"], columns="attribute_id", values="value").reset_index()
-    # Extract only the GCA accession
-    df_pivoted["GCA"] = df_pivoted["label"].str.extract(r"(GCA_\d+\.\d+)")
-    df_pivoted = df_pivoted[df_pivoted['GCA'].notna() & (df_pivoted['GCA'] != '')]
-    df_pivoted = df_pivoted.drop(columns=['label'])
+    df_pivoted = df_prod.pivot(index=["ensembl_release_date", "GCA"], columns="attribute_id", values="value").reset_index()
 
     # Ensure genebuild.last_geneset_update has the correct format by adding '-01' for day precision
     df_pivoted['last_geneset_update'] = pd.to_datetime(
@@ -74,6 +72,7 @@ def get_annotation(release_date):
 
     # Apply the release_date filter to 'genebuild.last_geneset_update'
     df_filtered = df_pivoted[df_pivoted['last_geneset_update'] >= release_date]
+    df_filtered = df_filtered[df_filtered['GCA'].str.startswith('GCA')]
 
     return df_filtered
 
@@ -156,6 +155,13 @@ def bin_by_assembly_level(df):
 
     return level_summary
 
+def check_most_updated_annotation(df_info_result, filtered_df):
+    """Checks if the most updated assembly version is annotated."""
+    df_info_result['Version'] = df_info_result['GCA'].str.extract(r'GCA_\d+\.(\d+)').astype(float)
+    latest_versions = df_info_result.loc[df_info_result.groupby('Scientific name')['Version'].idxmax()]
+    latest_versions['Most_Updated_Annotated'] = latest_versions['GCA'].isin(filtered_df['GCA']).map({True: 'Yes', False: 'No'})
+    return latest_versions[['Scientific name', 'GCA', 'Most_Updated_Annotated']]
+
 
 
 def main():
@@ -166,6 +172,13 @@ def main():
     parser.add_argument('--asm_level', type=str, nargs='+', help="Assembly level options: 'Contig', 'Scaffold', 'Chromosome', 'Complete genome'.")
     parser.add_argument('--asm_type', type=str, nargs='+', help="Assembly type: 'haploid', 'alternate-pseudohaplotype', 'unresolved-diploid', 'haploid-with-alt-loci', 'diploid'.")
     parser.add_argument('--contig_n50', type=float, help="Contig N50")
+    parser.add_argument('--gc_percent', type=float, help="GC percent threshold")
+    parser.add_argument('--total_sequence_length', type=float, help="Total sequence length in bp")
+    parser.add_argument('--number_of_contigs', type=float, help="Number of contigs")
+    parser.add_argument('--number_of_scaffolds', type=float, help="Number of scaffolds")
+    parser.add_argument('--scaffold_n50', type=float, help="Scaffold N50")
+    parser.add_argument('--genome_coverage', type=float, help="Genome coverage in bp")
+    parser.add_argument('--bioproject_id', type=str, nargs='+', help="One or more BioProject IDs")
 
     args = parser.parse_args()
 
@@ -174,6 +187,7 @@ def main():
     taxon_id = args.taxon_id
     asm_level = args.asm_level
     asm_type = args.asm_type
+    bioproject_id = args.bioproject_id
 
     os.makedirs(output_dir, exist_ok=True)
 
@@ -186,7 +200,7 @@ def main():
                    "scaffold_n50", "genome_coverage"]
 
     # Fetch assemblies released in the past 5 years
-    df_wide, summary_df, df_info_result, df_gca_list = get_filtered_assemblies(None, metric_thresholds, all_metrics,asm_level, asm_type, release_date, taxon_id)
+    df_wide, summary_df, df_info_result, df_gca_list = get_filtered_assemblies(bioproject_id, metric_thresholds, all_metrics, asm_level, asm_type, release_date, taxon_id)
 
 
     if isinstance(df_wide, str):  # Check if there's an error message
@@ -197,11 +211,24 @@ def main():
     level_summary = bin_by_assembly_level(df_wide)
 
     # Fetch dataset annotations using the same release date
-    filtered_df=get_annotation(release_date)
+    filtered_df = get_annotation(release_date)
 
-    #Add FTP links to dataframe
-    #filtered_df['FTP'] = filtered_df['GCA'].apply(
-        #lambda gca: f"https://ftp.ebi.ac.uk/pub/ensemblorganisms/{filtered_df.loc[filtered_df['GCA'] == gca, 'scientific_name'].values[0]}/{gca}/")
+    # Merge filtered_df with df_info to get Scientific name and create merged_df
+    merged_df = filtered_df.merge(df_info_result[['GCA', 'Scientific name']], on='GCA', how='right')
+
+    # Create the FTP URL using the scientific_name, replacing spaces with underscores
+    merged_df['FTP'] = merged_df.apply(
+        lambda
+            row: f"https://ftp.ebi.ac.uk/pub/ensemblorganisms/{row['Scientific name'].replace(' ', '_')}/{row['GCA']}/"
+        if pd.notnull(row['Scientific name']) and pd.notnull(row['GCA']) else None, axis=1
+    )
+
+
+    # Add the FTP column back to filtered_df
+    filtered_df = filtered_df.merge(merged_df[['GCA', 'FTP']], on='GCA', how='left')
+
+    latest_annotated_df = check_most_updated_annotation(df_info_result, filtered_df)
+
 
     # Bin the filtered results by genebuild.method
     method_summary = bin_by_genebuild_method(filtered_df)
@@ -224,14 +251,18 @@ def main():
     print("\nAssembly Level Summary:")
     print(level_summary)
 
+    print("\nMost Updated Assemblies Annotated:")
+    print(latest_annotated_df)
+
 
 # Save results to CSV files
     method_summary.to_csv(os.path.join(output_dir, "annotation.csv"), index=False)
     yearly_summary.to_csv(os.path.join(output_dir, "yearly_summary.csv"), index=False)
-    filtered_df.to_csv(os.path.join(output_dir, "filtered_df.csv"), index=False)
+    merged_df.to_csv(os.path.join(output_dir, "merged_df.csv"), index=False)
     df_wide.to_csv(os.path.join(output_dir, "assemblies.csv"), index=False)
     df_info_result.to_csv(os.path.join(output_dir, "assembly_annotation_status.csv"), index=False)
     level_summary.to_csv(os.path.join(output_dir, "assembly_level_summary.csv"), index=False)
+    latest_annotated_df.to_csv(os.path.join(output_dir, "most_updated_annotation_status.csv"), index=False)
 
 if __name__ == "__main__":
     main()
