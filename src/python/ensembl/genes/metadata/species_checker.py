@@ -41,9 +41,42 @@ def connection_ncbi(uri: str) -> requests.Response:
     response.raise_for_status()
     return response
 
-def species_taxon(lowest_taxon_id:str, ncbi_url) -> str:
+def get_taxon_data(taxon_id:str, ncbi_url) -> dict:
+    """It connects to the NCBI API to retrieve the taxonomy data of the lowest taxon id.
+
+    Args:
+        taxon_id (int): lowest taxon id of the assembly
+        ncbi_url (str): valid url to connect to NCBI API, taxonomy endpoint
+
+    Returns:
+        dict: response from NCBI API
     """
-    This functions checks if the lowest taxon id is a species or a infraspecific taxon rank. 
+    uri = f"{ncbi_url}/taxonomy/taxon/{taxon_id}/dataset_report"
+    response = connection_ncbi(uri)
+    taxon_data = response.json()
+
+    return taxon_data
+
+def get_taxon_classification(taxon_data) -> dict:
+    """
+    This function retrieves the taxonomy classification of the lowest taxon id.
+    It returns the classification dictionary that will be user to update the taxonomy table.
+
+    Args:
+        lowest_taxon_id (str): the taxonomy id of the assembly, it is obtained from the assembly NCBI report
+
+    """
+    classification = taxon_data['reports'][0]['taxonomy']['classification']
+
+    classification_dic = {}
+    for rank in classification:
+            classification_dic.update({classification[rank]['id']: rank})
+
+    return classification_dic
+
+def species_taxon(taxon_data, taxon_id) -> tuple[int, bool]:
+    """
+    This functions checks if the lowest taxon id is a species or a infraspecific taxon rank.
     It returns the species taxon id to be used in the species table.
 
     Args:
@@ -55,33 +88,29 @@ def species_taxon(lowest_taxon_id:str, ncbi_url) -> str:
     Returns:
         str: species taxon id, it could be the same lowest taxon id value
     """
-    
-    uri = f"{ncbi_url}/taxonomy/taxon/{lowest_taxon_id}/dataset_report"
-    response = connection_ncbi(uri)
-    taxon_data = response.json()
-    
+
     taxon_exists = True
     try:
         taxonomy = taxon_data['reports'][0]['taxonomy']['rank']
         if taxonomy in ['SUBSPECIES', 'STRAIN', 'VARIETAS', 'GENOTYPE', 'ISOLATE', 'FORMA', 'FORMA_SPECIALIS']:
             species_taxon_id = taxon_data['reports'][0]['taxonomy']['classification']['species']['id']
-            logging.info(f"The assembly is a infraspecific taxon {taxonomy}")
+            logging.info("The assembly is a infraspecific taxon %s", taxonomy)
         elif taxonomy == 'SPECIES':
-            species_taxon_id = lowest_taxon_id
-            logging.info(f"The assembly is a species taxon rank ")
+            species_taxon_id = taxon_id
+            logging.info("The assembly is a species taxon rank ")
         else:
             raise ValueError(f"Incorrect taxonomy ({taxonomy})")
     except KeyError:
         if 'errors' in taxon_data['reports'][0]:
             species_taxon_id = 0
             taxon_exists = False
-            logging.info(f"Taxon {lowest_taxon_id} is not a recognized NCBI Taxonomy name")
+            logging.info("Taxon %s is not a recognized NCBI Taxonomy name", taxon_id)
         elif 'taxonomy' in taxon_data['reports'][0]:
-            logging.info(f'Taxon do not have Rank available, retrieving information from another section of the report')
+            logging.info('Taxon do not have Rank available, retrieving information from another section of the report')
             species_taxon_id = taxon_data['reports'][0]['taxonomy']['classification']['species']['id']
         else:
-            raise KeyError(f"Taxon {taxonomy} retrieves an unexpected report")
-            
+            raise KeyError("Taxon %s retrieves an unexpected report", taxonomy)
+
     return species_taxon_id, taxon_exists
 
 def get_parlance_name(sci_name: str, enscode) -> str:
@@ -90,23 +119,24 @@ def get_parlance_name(sci_name: str, enscode) -> str:
     for the scientific name provided
 
     Args:
-        sci_name (str): _description_
+        sci_name (str): scientific name of the species
+        enscode (str): ENSCODE variable path
 
     Returns:
-        str: _description_
+        str: parlance name when available
     """
-    
+
     parlance_file = f"{enscode}/ensembl-genes/src/python/ensembl/genes/metadata/snp_static.txt"
     data_dict = {}
-    
+
     logging.info("Reading parlance name file (snp_static.txt) to look for a match")
     with open(parlance_file, 'r') as file:
         for line in file:
             key, value = line.rsplit("\t", 1)
             data_dict[key.strip()] = value.strip()
-    
+
     parlance_name = data_dict.get(sci_name, "")
-            
+
     return parlance_name
 
 def create_prefix(registy_params, metadata_params) -> str:
@@ -215,83 +245,83 @@ def get_species_prefix(taxon_id:str, registy_params, metadata_params) -> str:
 def main():
     """Module's entry point.
     """
-    
-    logging.basicConfig(filename="species_checker.log", level=logging.DEBUG, 
+    logging.basicConfig(filename="species_checker.log", level=logging.DEBUG,
                         filemode='w', format="%(asctime)s:%(levelname)s:%(message)s")
-    
-    parser = argparse.ArgumentParser(prog="species_checker.py", 
+    parser = argparse.ArgumentParser(prog="species_checker.py",
                                     description="Add species_taxon_id, parlance_name and species_prefix keys to the json-like (.tmp) species file")
-    
-    parser.add_argument("--json-path", type=str,
+    parser.add_argument("--json-path",
+                        type=str,
                         help="Path to the JSON-like (.tmp) species file")
-    
     parser.add_argument('--registry',
                         type=str,
                         help="Path to the registry database params in json format")
-    
     parser.add_argument('--metadata',
                         type=str,
                         help="Path to the metadata database params in json format")
-    
-    parser.add_argument('--ncbi_url', type=str,
+    parser.add_argument('--ncbi_url',
+                        type=str,
                         help='NCBI API URL')
-    
-    parser.add_argument('--enscode', type=str,
+    parser.add_argument('--enscode',
+                        type=str,
                         help='ENSCODE path' )
-    
+
     args = parser.parse_args()
-    
-    logging.info(f"Loading file: {args.json_path}")
-    
-    # Loading Species dictionary
-    with open(args.json_path, 'r') as file:
-        species_dict = json.load(file)
-    file.close()
-    
-    # Loading database parameters 
-    if args.registry:
-        if not os.path.exists(args.registry):
-            raise ValueError("Please enter a valid file path for registry database parameters")
-        else :
-            with open(args.registry, 'r') as file:
-                registy_params = json.load(file)
-    
+
+    # Loading database parameters
     if args.metadata:
         if not os.path.exists(args.metadata):
             raise ValueError("Please enter a valid file path for metadata database parameters")
         else:
             with open(args.metadata, 'r') as file:
                 metadata_params = json.load(file)
-    
-    if args.enscode:
-        enscode = args.enscode
-    else:
-        raise ValueError("Please enter a valid path for ENSCODE")                
-    
+
     # Loading NCBI API URL
-    if args.ncbi_url:
-        ncbi_url = args.ncbi_url
-    
+    if not args.ncbi_url:
+        raise ValueError("Please enter a valid URL for NCBI API")
+
+    if args.registry:
+        if not os.path.exists(args.registry):
+            raise ValueError("Please enter a valid file path for registry database parameters")
+        else :
+            with open(args.registry, 'r') as file:
+                registy_params = json.load(file)
+
+    logging.info(f"Loading file: {args.json_path}")
+
+    # Loading Species dictionary
+    with open(args.json_path, 'r') as file:
+        species_dict = json.load(file)
+    file.close()
+
+    if not args.enscode:
+        raise ValueError("Please enter a valid path for ENSCODE")
+
     # Retrieve missing information to add keys to species json
     logging.info(f"Getting key values for the species: {species_dict['species']['scientific_name']}")
-    species_taxon_id, taxon_exists  = species_taxon(species_dict['species']['lowest_taxon_id'], ncbi_url)
+    # Get taxon data from NCBI API
+    taxon_data = get_taxon_data(species_dict['species']['lowest_taxon_id'], args.ncbi_url)
+    species_taxon_id, taxon_exists = species_taxon(taxon_data, species_dict['species']['lowest_taxon_id'])
     if taxon_exists:
-        parlance_name = get_parlance_name(species_dict['species']['scientific_name'], enscode)
-        species_prefix = get_species_prefix(species_dict['species']['lowest_taxon_id'], registy_params, metadata_params)
+        parlance_name = get_parlance_name(species_dict['species']['scientific_name'], args.enscode)
+        species_prefix = ""
+        taxon_classification = get_taxon_classification(taxon_data)
+        #species_prefix = get_species_prefix(species_dict['species']['lowest_taxon_id'], registy_params, metadata_params)
     else:
         logging.info("Taxon do not exist in taxonomy: invalid lowest taxon id or assembly should be suppressed")
         logging.info("Setting values to NA/NULL to later be detected by the integrity check")
         parlance_name = ""
         species_prefix = ""
-    
+
     # Update species dictionary with new values
     logging.info("Updating keys for species table")
     species_dict['species'].update({
         'species_taxon_id': species_taxon_id,
-        'parlance_name': parlance_name, 
-        'species_prefix': species_prefix
-        })
-    
+        'parlance_name': parlance_name,
+        'species_prefix': species_prefix})
+    if taxon_classification:
+        species_dict['taxonomy']= taxon_classification
+        species_dict['taxonomy'].update({'lowest_taxon_id': species_dict['species']['lowest_taxon_id']})
+
     # Saving results
     output_file = os.path.basename(args.json_path).replace('.tmp', '.json')
     logging.info(f"Saving output: {output_file}")
