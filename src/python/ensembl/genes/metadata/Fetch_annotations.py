@@ -27,12 +27,13 @@ def get_annotation(release_date):
     cursor = conn.cursor()
 
     query = f"""
-                SELECT da.value, da.attribute_id, a.accession AS GCA, r.release_date AS ensembl_release_date
+                SELECT da.value, da.attribute_id, a.accession AS GCA, r.release_date AS ensembl_release_date, o.scientific_name
                 FROM dataset_attribute da
                 JOIN dataset d ON da.dataset_id = d.dataset_id
                 JOIN genome_dataset gd ON d.dataset_id = gd.dataset_id
                 JOIN genome g ON gd.genome_id = g.genome_id
                 JOIN assembly a ON g.assembly_id = a.assembly_id
+                JOIN organism o ON g.organism_id = o.organism_id
                 LEFT JOIN ensembl_release r ON r.release_id = gd.release_id
                 WHERE da.attribute_id IN (34, 37, 25, 183, 31, 40, 42, 48, 170, 56, 212)
                 AND d.name = 'genebuild';
@@ -61,7 +62,7 @@ def get_annotation(release_date):
 
 
     # Pivot to wide format without losing records
-    df_pivoted = df_prod.pivot(index=["ensembl_release_date", "GCA"], columns="attribute_id", values="value").reset_index()
+    df_pivoted = df_prod.pivot(index=["ensembl_release_date", "GCA", "scientific_name"], columns="attribute_id", values="value").reset_index()
 
     # Ensure genebuild.last_geneset_update has the correct format by adding '-01' for day precision
     df_pivoted['last_geneset_update'] = pd.to_datetime(
@@ -73,6 +74,7 @@ def get_annotation(release_date):
     # Apply the release_date filter to 'genebuild.last_geneset_update'
     df_filtered = df_pivoted[df_pivoted['last_geneset_update'] >= release_date]
     df_filtered = df_filtered[df_filtered['GCA'].str.startswith('GCA')]
+    df_filtered.rename(columns={'scientific_name': 'Scientific name'}, inplace=True)
 
     return df_filtered
 
@@ -155,12 +157,43 @@ def bin_by_assembly_level(df):
 
     return level_summary
 
+
 def check_most_updated_annotation(df_info_result, filtered_df):
-    """Checks if the most updated assembly version is annotated."""
+    """Checks if each annotated assembly is the latest available version and includes species name and latest GCA."""
+
+    # Extract version number from GCA identifier
     df_info_result['Version'] = df_info_result['GCA'].str.extract(r'GCA_\d+\.(\d+)').astype(float)
-    latest_versions = df_info_result.loc[df_info_result.groupby('Scientific name')['Version'].idxmax()]
-    latest_versions['Most_Updated_Annotated'] = latest_versions['GCA'].isin(filtered_df['GCA']).map({True: 'Yes', False: 'No'})
-    return latest_versions[['Scientific name', 'GCA', 'Most_Updated_Annotated']]
+    filtered_df['Version'] = filtered_df['GCA'].str.extract(r'GCA_\d+\.(\d+)').astype(float)
+
+    # Create a DataFrame with all GCA and Version pairs
+    latest_versions = df_info_result[['GCA', 'Version']].rename(
+        columns={'Version': 'Latest Version'}
+    )
+    latest_versions['GCA'] = latest_versions['GCA'].str.replace(r'\.\d+$', '', regex=True)
+    # Rename GCA column in filtered_df for clarity
+    filtered_df['GCA'] = filtered_df['GCA'].str.replace(r'\.\d+$', '', regex=True)
+
+
+    # Merge latest versions with filtered_df based on GCA
+    merged_df = filtered_df.merge(latest_versions, on = "GCA", how='left')
+
+
+    # Create new columns for annotated and assembly versions
+    merged_df['Annotated Version'] = merged_df['Version']
+    merged_df['Assembly Version'] = merged_df['Latest Version']
+
+    # Check if the annotated GCA is the same as the latest assembly GCA
+    merged_df['Latest Annotated'] = merged_df.apply(
+        lambda row: 'Yes' if row['Annotated Version'] == row['Assembly Version'] else 'No',
+        axis=1
+    )
+
+    # Order the DataFrame by Scientific name
+    merged_df.sort_values(by='Scientific name', inplace=True)
+
+    return merged_df[['Scientific name', 'GCA', 'Annotated Version',
+                      'Assembly Version', 'Latest Annotated']]
+
 
 
 
@@ -213,22 +246,17 @@ def main():
     # Fetch dataset annotations using the same release date
     filtered_df = get_annotation(release_date)
 
-    # Merge filtered_df with df_info to get Scientific name and create merged_df
-    merged_df = filtered_df.merge(df_info_result[['GCA', 'Scientific name']], on='GCA', how='right')
+    #Get annotations with tax_id filter
+    filtered_df = filtered_df[filtered_df['Scientific name'].isin(df_info_result['Scientific name'])]
+
 
     # Create the FTP URL using the scientific_name, replacing spaces with underscores
-    merged_df['FTP'] = merged_df.apply(
+    filtered_df['FTP'] = filtered_df.apply(
         lambda
             row: f"https://ftp.ebi.ac.uk/pub/ensemblorganisms/{row['Scientific name'].replace(' ', '_')}/{row['GCA']}/"
-        if pd.notnull(row['Scientific name']) and pd.notnull(row['GCA']) else None, axis=1
-    )
-
-
-    # Add the FTP column back to filtered_df
-    filtered_df = filtered_df.merge(merged_df[['GCA', 'FTP']], on='GCA', how='left')
-
-    latest_annotated_df = check_most_updated_annotation(df_info_result, filtered_df)
-
+        if pd.notnull(row['Scientific name']) and pd.notnull(row['GCA']) and pd.notnull(
+            row.get('ensembl_release_date')) else None,
+        axis=1)
 
     # Bin the filtered results by genebuild.method
     method_summary = bin_by_genebuild_method(filtered_df)
@@ -238,6 +266,9 @@ def main():
     #Check annotation status
     # Add an 'Annotated' column to df_info_result
     df_info_result['Annotated'] = df_info_result['GCA'].isin(filtered_df['GCA']).map({True: 'Yes', False: 'No'})
+
+    #Check if annotated is the latest GCA version in the registry
+    latest_annotated_df = check_most_updated_annotation(df_info_result, filtered_df)
 
     print("\nDataset filtered:")
     print(method_summary)
@@ -258,7 +289,7 @@ def main():
 # Save results to CSV files
     method_summary.to_csv(os.path.join(output_dir, "annotation.csv"), index=False)
     yearly_summary.to_csv(os.path.join(output_dir, "yearly_summary.csv"), index=False)
-    merged_df.to_csv(os.path.join(output_dir, "merged_df.csv"), index=False)
+    filtered_df.to_csv(os.path.join(output_dir, "filtered_df.csv"), index=False)
     df_wide.to_csv(os.path.join(output_dir, "assemblies.csv"), index=False)
     df_info_result.to_csv(os.path.join(output_dir, "assembly_annotation_status.csv"), index=False)
     level_summary.to_csv(os.path.join(output_dir, "assembly_level_summary.csv"), index=False)
