@@ -170,31 +170,30 @@ def check_most_updated_annotation(df_info_result, filtered_df):
         columns={'Version': 'Latest Version'}
     )
     latest_versions['GCA'] = latest_versions['GCA'].str.replace(r'\.\d+$', '', regex=True)
+
     # Rename GCA column in filtered_df for clarity
     filtered_df['GCA'] = filtered_df['GCA'].str.replace(r'\.\d+$', '', regex=True)
 
-
     # Merge latest versions with filtered_df based on GCA
-    merged_df = filtered_df.merge(latest_versions, on = "GCA", how='left')
-
+    merged_df = filtered_df.merge(latest_versions, on="GCA", how='left')
 
     # Create new columns for annotated and assembly versions
     merged_df['Annotated Version'] = merged_df['Version']
     merged_df['Assembly Version'] = merged_df['Latest Version']
 
     # Check if the annotated GCA is the same as the latest assembly GCA
-    merged_df['Latest Annotated'] = merged_df.apply(
-        lambda row: 'Yes' if row['Annotated Version'] == row['Assembly Version'] else 'No',
-        axis=1
-    )
+    def check_latest_annotated(row):
+        if pd.isna(row['Assembly Version']):
+            return 'Warning: possibly suppressed GCA or GCA released before 2019'
+        return 'Yes' if row['Annotated Version'] == row['Assembly Version'] else 'No'
+
+    merged_df['Latest Annotated'] = merged_df.apply(check_latest_annotated, axis=1)
 
     # Order the DataFrame by Scientific name
     merged_df.sort_values(by='Scientific name', inplace=True)
 
     return merged_df[['Scientific name', 'GCA', 'Annotated Version',
                       'Assembly Version', 'Latest Annotated']]
-
-
 
 
 def main():
