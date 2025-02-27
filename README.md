@@ -10,22 +10,24 @@ This Python module allows users to query the MySQL databases to retrieve genome 
 ### GB_metadata_reporting
 - Fetches genome assembly data linked to specified BioProject IDs.
 - Supports filtering based on metrics such as GC content, sequence length, Contig N50, and others.
+- Supports filtering based on taxon ID.
 - Retrieves taxonomic information and assigns internal clades based on predefined settings.
 - Determines whether an assembly is a reference genome using NCBI's Assembly database.
-- Generates summary statistics (mean, min, max) for selected metrics.
-- Outputs results in a structured table and saves them as CSV files.
+- Generates summary statistics for selected metrics.
+- Outputs results in structured tables and saves them as CSV files.
 
 ### Fetch_annotations
-- Module based on GB_metadata_time.
+- Module based on GB_metadata_reporting.
 - Retrieves information on assemblies as well as annotations by genebuild.
-- Generates a summary by date.
-- Outputs results in a structured table and saves them as CSV files.
+- Supports filtering based on taxon ID.
+- Generates a summaries and check for GCA updates.
+- Outputs results in structured tables and saves them as CSV files.
 
 
 ## Prerequisites
 - Python 3.x
 - MySQL database with the necessary tables and data.
-- An external JSON file (`db_config.json`) containing MySQL database credentials.
+- An external JSON files (`conf/db_config.json` and `conf/prod_dbs_conf.json`) containing MySQL database credentials.
 - `clade_settings.json` file for internal clade assignments.
 
 ## Installation
@@ -70,8 +72,25 @@ python src/python/ensembl/genes/metadata/GB_metadata_reporting.py --bioproject_i
 
 
 ##### Fetch_annotations
-- `--release_date`(required): Assembly release date to filter by (e.g., 2019-01-01).
-- `--output_dir`: Directory to save the CSV output files.
+## Parameters
+
+The following parameters can be specified when running the script:
+
+- `--release_date`: Release date in YYYY-MM-DD format (default: `2019-01-01`). Will be applied to both assemblies and annotations.
+- `--output_dir`:Directory to save output files.
+- `--taxon_id`:  Taxon ID for filtering (e.g., `40674` for Mammalia). Will be applied to both assemblies and annotations.
+- `--asm_level`: Assembly level options. Acceptable values include: `Contig`, `Scaffold`, `Chromosome`,`Complete genome`
+- `--asm_type`: Assembly type options. Acceptable values include: `haploid`, `alternate-pseudohaplotype`, `unresolved-diploid`, `haploid-with-alt-loci`, `diploid`
+- `--contig_n50`:Assembly contig N50 threshold.
+- `--gc_percent`: Assembly GC percent threshold.
+- `--total_sequence_length`: Assembly sequence length threshold in base pairs (bp).
+- `--number_of_contigs`: Assembly contig threshold.
+- `--number_of_scaffolds`: Assembly scaffolds threshold.
+- `--scaffold_n50`: 
+  Scaffold N50 value.
+- `--genome_coverage`: 
+  Assembly genome coverage threshold .
+- `--bioproject_id`: One or more BioProject IDs.
 
 #### Output
 
@@ -85,9 +104,12 @@ Upon execution, the script generates the following CSV files in the specified ou
 
 ##### Fetch_annotations
 - `assembly_level_summary.csv` - Filtered assembly data binned by assembly level.
-- `annotation.csv` - Filtered annotation data binned by annotation method.
+- `assemblies.csv` - Filtered assembly data.
+- `assembly_annotation_status.csv` -Contains the status of assembly annotations, detailing the current state of each assembly.
+- `annotation_method_summary.csv` - Contains a summary of annotation methods used in the analysis.
+- `annotations.csv` - Contains filtered annotation data based on the specified criteria.
 - `yearly_summary.csv` - Number of assemblies and annotations by year.
-- - `filtered_df.csv` - Annotation dataframe.
+- `annotation_GCA_update_status.csv` - Contains the latest update status for GCAs associated with annotations, indicating if the latest version of a GCA is annotated.
 
 
 ### GUI in the browser
