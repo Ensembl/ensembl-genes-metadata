@@ -269,6 +269,9 @@ def main():
     #Check if annotated is the latest GCA version in the registry
     latest_annotated_df = check_most_updated_annotation(df_info_result, filtered_df)
 
+    filtered_df = filtered_df.drop(columns=['Year', 'Ensembl Release Year', 'Version'])
+    df_info_result = df_info_result.drop(columns=['Year', 'Version'])
+
     print("\nDataset filtered:")
     print(method_summary)
 
@@ -286,13 +289,13 @@ def main():
 
 
 # Save results to CSV files
-    method_summary.to_csv(os.path.join(output_dir, "annotation.csv"), index=False)
+    method_summary.to_csv(os.path.join(output_dir, "annotation_method_summary.csv"), index=False)
     yearly_summary.to_csv(os.path.join(output_dir, "yearly_summary.csv"), index=False)
-    filtered_df.to_csv(os.path.join(output_dir, "filtered_df.csv"), index=False)
+    filtered_df.to_csv(os.path.join(output_dir, "annotations.csv"), index=False)
     df_wide.to_csv(os.path.join(output_dir, "assemblies.csv"), index=False)
     df_info_result.to_csv(os.path.join(output_dir, "assembly_annotation_status.csv"), index=False)
     level_summary.to_csv(os.path.join(output_dir, "assembly_level_summary.csv"), index=False)
-    latest_annotated_df.to_csv(os.path.join(output_dir, "most_updated_annotation_status.csv"), index=False)
+    latest_annotated_df.to_csv(os.path.join(output_dir, "annotation_GCA_update_status.csv"), index=False)
 
 if __name__ == "__main__":
     main()
