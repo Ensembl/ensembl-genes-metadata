@@ -1,7 +1,6 @@
 process SPECIES_CHECKER {
     tag "$gca"
     publishDir "${params.output_dir}/nextflow_output/$gca", mode: 'copy'
-    maxForks 1
 
     input:
     tuple val(gca), path(species_tmp), path(last_id)
@@ -17,7 +16,6 @@ process SPECIES_CHECKER {
     """
     chmod +x $projectDir/../src/python/ensembl/genes/metadata/species_checker.py
     python $projectDir/../src/python/ensembl/genes/metadata/species_checker.py \
-    --json-path $species_tmp --ncbi_url ${params.ncbi_url} --enscode ${params.enscode} \
-    --registry ${params.registry_params} --metadata ${params.metadata_params}
+    --json-path $species_tmp --ncbi_url ${params.ncbi_url} --enscode ${params.enscode}
     """
 }
