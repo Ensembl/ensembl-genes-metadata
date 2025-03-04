@@ -70,6 +70,7 @@ def get_taxon_classification(taxon_data) -> dict:
 
     classification_dic = {}
     for rank in classification:
+        if rank not in ['domain', 'superkingdom']:
             classification_dic.update({classification[rank]['id']: rank})
 
     return classification_dic
