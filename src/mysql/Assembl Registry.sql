@@ -66,7 +66,8 @@ CREATE TABLE taxonomy (
   taxon_class varchar(50) NOT NULL,
   PRIMARY KEY (`taxon_clsf_id`),
   FOREIGN KEY (`lowest_taxon_id`) REFERENCES assembly(`lowest_taxon_id`),
-  CONSTRAINT taxon_classification UNIQUE (lowest_taxon_id, taxon_class_id)
+  CONSTRAINT taxon_classification UNIQUE (lowest_taxon_id, taxon_class_id, taxon_class ),
+  CONSTRAINT unique_rank_per_taxon UNIQUE (lowest_taxon_id, taxon_class)
 ) ENGINE=MyISAM AUTO_INCREMENT=1 DEFAULT CHARSET=latin1;
 
 
