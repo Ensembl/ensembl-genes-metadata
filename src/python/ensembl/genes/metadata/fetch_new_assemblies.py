@@ -104,13 +104,12 @@ def fetch_gca_list(taxon: int, ncbi_params: Dict[str, str], ncbi_url ) -> List[s
                 next_page = False
             else:
                 raise ValueError("Page token is not being set correctly")  
-        
+
         else:
             logging.info("No assemblies found. Setting next_page as false")
             next_page = False
-        
 
-    return set(gca_list)       
+    return set(gca_list)
 
 def build_db_query(release_date: str) -> Dict[str, str]:
     """ Build mysql the query to retrieve data from the db
@@ -151,20 +150,21 @@ def fetch_records_db(db_params: Dict[str, Any], query: str) -> List[str]:
 
     Args:
         db_params (dict): database connection parameters
-        query (str): mysql query to retrieve data 
+        query (str): mysql query to retrieve data
 
     Returns:
         list: list of GCA recorded after the last update date
     """
+    conn = pymysql.connect(**db_params)
     ## Connection to the DB
-    with pymysql.connect(**db_params) as conn:
-        with conn.cursor() as cur:
-            # Querying database
-            cur.execute(query)
-            output= cur.fetchall() 
-            # Processing results
-            reg_gca = [row[0] for row in output]
-            
+    #with pymysql.connect(**db_params) as conn:
+    with conn.cursor() as cur:
+        # Querying database
+        cur.execute(query)
+        output= cur.fetchall()
+        # Processing results
+        reg_gca = [row[0] for row in output]
+
     return reg_gca
 
 def get_gca_register(db: str, db_query: Dict[str, Any], gca_list: List[str], metadata_params, registry_params) -> List[str]:
