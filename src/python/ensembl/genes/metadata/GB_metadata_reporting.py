@@ -152,13 +152,10 @@ def get_filtered_assemblies(bioproject_id, metric_thresholds, all_metrics, asm_l
     if bioproject_id:
         cursor.execute("SELECT DISTINCT bioproject_id FROM bioproject;")
         valid_bioprojects = {row['bioproject_id'] for row in cursor.fetchall()}
-
-        # Find invalid BioProject IDs
         invalid_bioprojects = set(bioproject_id) - valid_bioprojects
         if invalid_bioprojects:
             conn.close()
-            error_message = f"The following BioProject IDs were not found in the database: {', '.join(invalid_bioprojects)}"
-            return error_message, None, None, None  # Return error message directly
+            return f"The following BioProject IDs were not found: {', '.join(invalid_bioprojects)}", None, None, None
 
     # Build dynamic SQL filtering
     conditions = []
@@ -173,19 +170,13 @@ def get_filtered_assemblies(bioproject_id, metric_thresholds, all_metrics, asm_l
         params.append(release_date)
 
     if taxon_id:
-        # Retrieve descendant taxa from the taxonomy database using the new function
-        descendant_taxa = get_taxonomy_from_db(taxon_id)
+        conditions.append("""
+                s.lowest_taxon_id IN (
+                    SELECT DISTINCT lowest_taxon_id FROM taxonomy WHERE taxon_class_id = %s
+                )
+            """)
+        params.append(taxon_id)
 
-        # Debug: Print descendant taxa to check if it is fetched correctly
-        print(f"Descendant taxa for Taxon ID {taxon_id}: {descendant_taxa}")
-
-        if not descendant_taxa:
-            conn.close()
-            return f"No descendant taxa found for Taxon ID {taxon_id}.", None, None, None
-
-        # Update the taxon filtering condition based on descendant taxa
-        conditions.append(f"s.lowest_taxon_id IN ({','.join(['%s'] * len(descendant_taxa))})")
-        params.extend(descendant_taxa)
 
     # If there are conditions, join them with AND; otherwise, select all
     where_clause = " WHERE " + " AND ".join(conditions) if conditions else ""
@@ -204,14 +195,15 @@ def get_filtered_assemblies(bioproject_id, metric_thresholds, all_metrics, asm_l
     """
     cursor.execute(query, tuple(params))
     results = cursor.fetchall()
-
-    # Closing connection after fetching data
     conn.close()
 
     # Convert results to a Pandas DataFrame
     df = pd.DataFrame(results)
-    df["release_date"] = pd.to_datetime(df["release_date"], errors="coerce")
+    if df.empty:
+        return "No assemblies meet the given thresholds.", None, None, None
 
+    # Make sure release date is in the right format
+    df["release_date"] = pd.to_datetime(df["release_date"], errors="coerce")
 
     # Add project column and GCA
     df["Associated project"] = df["bioproject_id"].map(bioproject_mapping)
@@ -277,6 +269,7 @@ def get_filtered_assemblies(bioproject_id, metric_thresholds, all_metrics, asm_l
         columns={'bioproject_id': 'BioProject ID', 'asm_level': 'Assembly level', 'number_of_contigs': 'Number of contigs', 'number_of_scaffolds': 'Number of scaffolds', 'scaffold_n50': 'Scaffold N50', 'total_sequence_length':'Sequence length', 'GCA': "GCA", 'contig_n50': 'Contig N50', 'gc_percent': 'GC%', 'genome_coverage': 'Genome coverage X', 'asm_type': "Assembly type", 'refseq_accession': "RefSeq Accession"}, inplace=True)
     summary_df.rename(columns={'genome_coverage': 'Genome coverage X', 'contig_n50': 'Conting N50', 'scaffold_n50': 'Scaffold N50',  'total_sequence_length': "Sequence length", 'gc_percent': 'GC%'}, inplace=True)
     df_info_result.rename(columns={'bioproject_id': 'BioProject ID', 'release_date': 'Release date', 'scientific_name': 'Scientific name',  'common_name': "Common name", 'group_name': 'Group name', 'lowest_taxon_id': "Lowest taxon ID"}, inplace=True)
+    df_info_result = df_info_result[df_info_result['GCA'].isin(df_wide['GCA'])]
 
     return df_wide, summary_df, df_info_result, df_gca_list
 
@@ -292,14 +285,15 @@ def main():
     parser.add_argument('--scaffold_n50', type=float, help="Scaffold N50")
     parser.add_argument('--genome_coverage', type=float, help="Genome coverage in bp")
     parser.add_argument('--release_date', type=str, help="Filter assemblies released after this date (format: YYYY-MM-DD)")
-    parser.add_argument('--asm_level', type=str, nargs='+', help="Assembly level options: 'Contig', 'Scaffold', 'Chromosome', 'Complete genome'.")
-    parser.add_argument('--asm_type', type=str, nargs='+', help="Assembly type: 'haploid', 'alternate-pseudohaplotype', 'unresolved-diploid', 'haploid-with-alt-loci', 'diploid'.")
+    parser.add_argument('--asm_level', type=str, nargs='+', help="Assembly level options: 'Contig' 'Scaffold' 'Chromosome' 'Complete genome'.")
+    parser.add_argument('--asm_type', type=str, nargs='+', help="Assembly type: 'haploid' 'alternate-pseudohaplotype' 'unresolved-diploid' 'haploid-with-alt-loci' 'diploid'.")
     parser.add_argument('--output_dir', type=str, default='./', help="Directory to save the CSV file. Files will only be saved if assemblies meet the given thresholds.")
     parser.add_argument('--taxon_id', type=int, help="NCBI Taxon ID to filter by (e.g., 40674 for Mammalia)")
+    parser.add_argument('--reference', type=int, choices=[0, 1], default=0, help="Check if GCA is a reference genome (1 for yes, 0 for no)")
 
     args = parser.parse_args()
 
-    metric_thresholds = {k: v[0] if isinstance(v, list) else v for k, v in vars(args).items() if v is not None and k not in ["bioproject_id", "output_dir", "asm_level", "asm_type", "release_date"]}
+    metric_thresholds = {k: v[0] if isinstance(v, list) else v for k, v in vars(args).items() if v is not None and k not in ["bioproject_id", "output_dir", "asm_level", "asm_type", "release_date", "reference", "taxon_id"]}
 
     all_metrics = ["gc_percent", "total_sequence_length", "contig_n50", "number_of_contigs", "number_of_scaffolds", "scaffold_n50", "genome_coverage"]
 
@@ -320,7 +314,9 @@ def main():
 
     # Add internal clade and reference genome columns to the info_result DataFrame
     info_result["Internal clade"] = info_result["Lowest taxon ID"].apply(lambda x: assign_clade(x, clade_data))
-    info_result["Reference genome"] = info_result["GCA"].apply(is_reference_genome)
+    # Check for reference genome only if the user requested it
+    if args.reference:
+        info_result["Reference genome"] = info_result["GCA"].apply(is_reference_genome)
 
     print("Assemblies that meet the given thresholds:")
     print(df)
