@@ -5,56 +5,15 @@ import argparse
 import os
 import requests
 
-def get_descendant_taxa(taxon_id):
-    """
-    Retrieves all descendant taxon IDs under the given taxon ID using NCBI E-utilities.
-
-    :param taxon_id: The parent taxon ID (e.g., 40674 for Mammalia)
-    :return: A set of descendant taxon IDs
-    """
-    base_url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi"
-    params = {
-        "db": "taxonomy",
-        "term": f"txid{taxon_id}[Subtree]",
-        "retmode": "json",
-        "retmax": 100000  # Retrieve all possible results
-    }
-
-    response = requests.get(base_url, params=params)
-    if response.status_code != 200:
-        print("Error retrieving taxonomic data from NCBI.")
-        return set()
-
-    try:
-        result = response.json()
-        taxon_ids = set(result["esearchresult"]["idlist"])
-        return taxon_ids
-    except KeyError:
-        print("Unexpected response format from NCBI.")
-        return set()
-
-
-# Cache dictionary to store retrieved parent taxa
-taxonomy_cache_file = "data/taxonomy_cache.json"
-parent_cache = {}
-
-def load_taxonomy_cache():
-    """Load cached taxonomy data from a JSON file."""
-    global parent_cache
-    if os.path.exists(taxonomy_cache_file):
-        with open(taxonomy_cache_file, "r") as f:
-            try:
-                parent_cache = json.load(f)
-            except json.JSONDecodeError:
-                parent_cache = {}
-
-def save_taxonomy_cache():
-    """Save taxonomy cache to a JSON file for reuse."""
-    with open(taxonomy_cache_file, "w") as f:
-        json.dump(parent_cache, f, indent=4)
-
-# Load cache at script startup
-load_taxonomy_cache()
+TAXONOMIC_HIERARCHY = {
+    'kingdom': 1,
+    'phylum': 2,
+    'class': 3,
+    'order': 4,
+    'family': 5,
+    'genus': 6,
+    'species': 7
+}
 
 # Load database credentials from external JSON file
 def load_db_config():
@@ -139,54 +98,46 @@ def load_clade_data():
         return json.load(f)
 
 
-def taxonomy_api(taxon):
-    """Retrieve taxonomy information from cache or NCBI API."""
-    if str(taxon) in parent_cache:
-        return parent_cache[str(taxon)]  # Return cached data
+def get_taxonomy_from_db(taxon_id):
+    """Retrieve taxonomy hierarchy from the MySQL database."""
+    conn = connect_db()
+    cursor = conn.cursor()
 
-    # If not cached, fetch data from the API
-    uri = f"https://api.ncbi.nlm.nih.gov/datasets/v2alpha/taxonomy/taxon/{taxon}/dataset_report"
+    query = """
+    SELECT taxon_class_id, taxon_class 
+    FROM taxonomy
+    WHERE lowest_taxon_id = %s
+    ORDER BY FIELD(taxon_class, 'species', 'genus', 'family', 'order', 'class', 'phylum', 'kingdom');
+    """
 
-    try:
-        response = requests.get(uri)
-        response.raise_for_status()
-        taxon_data = response.json()
+    cursor.execute(query, (taxon_id,))
+    taxonomy_hierarchy = cursor.fetchall()
 
-        # Cache the result
-        parent_cache[str(taxon)] = taxon_data
-        save_taxonomy_cache()  # Save cache to file
-
-        return taxon_data
-    except requests.exceptions.RequestException as e:
-        print(f"Error retrieving taxonomy data for {taxon}: {e}")
+    if not taxonomy_hierarchy:
         return None
+
+    return taxonomy_hierarchy
 
 
 def assign_clade(lowest_taxon_id, clade_data):
-    """Assign internal clade based on taxonomy. Uses cache for efficiency."""
-    taxon_data = taxonomy_api(lowest_taxon_id)
+    """Assign internal clade based on taxonomy using the provided clade data."""
+    # Retrieve the taxonomy hierarchy for the given lowest_taxon_id
+    taxonomy_hierarchy = get_taxonomy_from_db(lowest_taxon_id)
 
-    if not taxon_data:
-        return "Unassigned"
+    if not taxonomy_hierarchy:
+        return "Taxon hierarchy not found."
 
-    parents = taxon_data.get('reports', [{}])[0].get('taxonomy', {}).get('parents', [])
+    # Loop through the taxonomy hierarchy and match with clade data
+    for taxon in taxonomy_hierarchy:
+        taxon_class_id = taxon['taxon_class_id']  # Extract taxon_class_id
+        taxon_class = taxon['taxon_class']  # Extract taxon_class
 
-    # Check if the lowest taxon ID itself is in the clade data
-    for clade_name, details in clade_data.items():
-        if details.get("taxon_id") == lowest_taxon_id:
-            return clade_name
+        # Check for matching taxon_id in clade settings
+        for clade_name, details in clade_data.items():
+            if details.get("taxon_id") == taxon_class_id:
+                return clade_name
 
-    # Loop through parent taxon IDs to find a match
-    for parent_taxon in parents:
-        if str(parent_taxon) in parent_cache:
-            # If parent is already cached, avoid extra API calls
-            for clade_name, details in clade_data.items():
-                if details.get("taxon_id") == parent_taxon:
-                    return clade_name
-        else:
-            # Fetch taxonomy for parent (if not cached)
-            taxonomy_api(parent_taxon)
-
+    # If no match is found, return "Unassigned"
     return "Unassigned"
 
 
@@ -222,10 +173,17 @@ def get_filtered_assemblies(bioproject_id, metric_thresholds, all_metrics, asm_l
         params.append(release_date)
 
     if taxon_id:
-        descendant_taxa = get_descendant_taxa(taxon_id)
+        # Retrieve descendant taxa from the taxonomy database using the new function
+        descendant_taxa = get_taxonomy_from_db(taxon_id)
+
+        # Debug: Print descendant taxa to check if it is fetched correctly
+        print(f"Descendant taxa for Taxon ID {taxon_id}: {descendant_taxa}")
+
         if not descendant_taxa:
+            conn.close()
             return f"No descendant taxa found for Taxon ID {taxon_id}.", None, None, None
 
+        # Update the taxon filtering condition based on descendant taxa
         conditions.append(f"s.lowest_taxon_id IN ({','.join(['%s'] * len(descendant_taxa))})")
         params.extend(descendant_taxa)
 
@@ -361,7 +319,7 @@ def main():
     clade_data = load_clade_data()
 
     # Add internal clade and reference genome columns to the info_result DataFrame
-    #info_result["Internal clade"] = info_result["Lowest taxon ID"].apply(lambda x: assign_clade(x, clade_data))
+    info_result["Internal clade"] = info_result["Lowest taxon ID"].apply(lambda x: assign_clade(x, clade_data))
     info_result["Reference genome"] = info_result["GCA"].apply(is_reference_genome)
 
     print("Assemblies that meet the given thresholds:")
