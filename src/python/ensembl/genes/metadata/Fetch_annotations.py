@@ -62,7 +62,12 @@ def get_annotation(release_date):
 
 
     # Pivot to wide format without losing records
-    df_pivoted = df_prod.pivot(index=["ensembl_release_date", "GCA", "scientific_name"], columns="attribute_id", values="value").reset_index()
+    df_pivoted = df_prod.pivot_table(
+        index=["ensembl_release_date", "GCA", "scientific_name"],
+        columns="attribute_id",
+        values="value",
+        aggfunc="first"  # You can change this to "mean", "max", etc.
+    ).reset_index()
 
     # Ensure genebuild.last_geneset_update has the correct format by adding '-01' for day precision
     df_pivoted['last_geneset_update'] = pd.to_datetime(
@@ -269,7 +274,8 @@ def main():
     #Check if annotated is the latest GCA version in the registry
     latest_annotated_df = check_most_updated_annotation(df_info_result, filtered_df)
 
-    filtered_df = filtered_df.drop(columns=['Year', 'Ensembl Release Year', 'Version'])
+    filtered_df['GCA_full'] = filtered_df['GCA'].astype(str) + '.' + filtered_df['Version'].astype(int).astype(str)
+    filtered_df = filtered_df.drop(columns=['Year', 'Ensembl Release Year', 'GCA', 'Version'])
     df_info_result = df_info_result.drop(columns=['Year', 'Version'])
 
     print("\nDataset filtered:")
