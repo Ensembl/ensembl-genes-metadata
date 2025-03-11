@@ -20,7 +20,8 @@ This Python module allows users to query the MySQL databases to retrieve genome 
 - Module based on GB_metadata_reporting.
 - Retrieves information on assemblies as well as annotations by genebuild.
 - Supports filtering based on taxon ID.
-- Generates a summaries and check for GCA updates.
+- Generates summaries and check for GCA updates.
+- Looks for assemblies that are not annotated.
 - Outputs results in structured tables and saves them as CSV files.
 
 
@@ -37,12 +38,13 @@ This Python module allows users to query the MySQL databases to retrieve genome 
    git checkout dev/gb_metadata_handling
    cd ensembl-genes-metadata
    ```
-Optional step: create a virtual environment 
+    Optional step: create a virtual environment 
 
 2. Install required Python dependencies:
    ```sh
    pip install -r requirements.txt
    ```
+   Note: list includes GUI app requirements as well. No need to install them id you are only using the command line options.
 
 3. Fill out database login credentials in conf/db_config.json and confs/prod_dbs_conf.json
 
@@ -67,8 +69,10 @@ python src/python/ensembl/genes/metadata/GB_metadata_reporting.py --bioproject_i
 - `--genome_coverage`: Minimum genome coverage.
 - `--asm_level`: Assembly level(s) to filter by (e.g., Contig, Scaffold, Chromosome, Complete genome).
 - `--asm_type`: Assembly type(s) to filter by (e.g., haploid, diploid, etc.).
+- `--taxon_id`: NCBI Taxon ID to filter by (e.g., 40674 for Mammalia)
 - `--release_date`: Assembly release date to filter by (e.g., 2019-01-01).
 - `--output_dir`: Directory to save the CSV output files.
+- `--reference`: Check if GCA is a reference genome (1 for yes, 0 for no). Default 0. Note: NCBI API times out if checking a large number of assemblies.
 
 
 ##### Fetch_annotations
@@ -94,22 +98,24 @@ The following parameters can be specified when running the script:
 
 #### Output
 
-Upon execution, the script generates the following CSV files in the specified output directory (if no directory is specified it saves the to the working directory):
-##### GB_metadata_bioproject_id
-- `{BioProject}_filtered_assemblies.csv` - Filtered assembly data.
-- `{BioProject}_filtered_assemblies_summary_statistics.csv` - Summary statistics of selected metrics.
-- `{BioProject}_filtered_assemblies_info_result.csv` - Additional assembly information.
-- `{BioProject}_filtered_assemblies_gca_list.csv` - List of GCA IDs.
+Upon execution, the script generates the following CSV files in the specified output directory (or the working directory if none is provided)::
+##### GB_metadata_reporting
+Each output file follows a structured naming convention based on the BioProject ID and release date provided by the user.
 
+- `{BioProject}_{release_date}_filtered_assemblies.csv` – Contains the filtered assembly data based on the applied metrics and thresholds.
+- `{BioProject}_{release_date}_filtered_assemblies_summary_statistics.csv` – Summary statistics for the selected metrics.
+- `{BioProject}_{release_date}_filtered_assemblies_info_result.csv` – Additional assembly metadata.
+- `{BioProject}_{release_date}_filtered_assemblies_gca_list.csv` – A list of GCAs extracted from the filtered results.
 
 ##### Fetch_annotations
-- `assembly_level_summary.csv` - Filtered assembly data binned by assembly level.
-- `assemblies.csv` - Filtered assembly data.
-- `assembly_annotation_status.csv` -Contains the status of assembly annotations, detailing the current state of each assembly.
-- `annotation_method_summary.csv` - Contains a summary of annotation methods used in the analysis.
-- `annotations.csv` - Contains filtered annotation data based on the specified criteria.
-- `yearly_summary.csv` - Number of assemblies and annotations by year.
-- `annotation_GCA_update_status.csv` - Contains the latest update status for GCAs associated with annotations, indicating if the latest version of a GCA is annotated.
+Each output file is named using a structured format, where {date_str} corresponds to the execution date, ensuring version control and easy tracking of results over time.
+- `annotation_method_summary_{date_str}.csv` – Summary of annotation methods used.
+- `yearly_summary_{date_str}.csv` – Yearly summary of annotations, assemblies and Ensembl releases.
+- `annotations_{date_str}.csv` – Filtered annotation dataset based on specified criteria.
+- `assemblies_{date_str}.csv` – Filtered assembly dataset based on specified criteria.
+- `assembly_annotation_status_{date_str}.csv` – Status of assembly annotations, including metadata.
+- `assembly_level_summary_{date_str}.csv` – Summary of assembly levels across the dataset.
+- `annotation_GCA_update_status_{date_str}.csv` – Status of GCAs of already released annotations.
 
 
 ### GUI in the browser
