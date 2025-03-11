@@ -2,6 +2,7 @@ import pandas as pd
 import json
 import pymysql
 import os
+from datetime import datetime
 import argparse
 from GB_metadata_reporting import get_filtered_assemblies
 
@@ -293,15 +294,17 @@ def main():
     print("\nMost Updated Assemblies Annotated:")
     print(latest_annotated_df)
 
+# Get current date in YYYYMMDD format
+    date_str = datetime.now().strftime("%Y%m%d")
 
 # Save results to CSV files
-    method_summary.to_csv(os.path.join(output_dir, "annotation_method_summary.csv"), index=False)
-    yearly_summary.to_csv(os.path.join(output_dir, "yearly_summary.csv"), index=False)
-    filtered_df.to_csv(os.path.join(output_dir, "annotations.csv"), index=False)
-    df_wide.to_csv(os.path.join(output_dir, "assemblies.csv"), index=False)
-    df_info_result.to_csv(os.path.join(output_dir, "assembly_annotation_status.csv"), index=False)
-    level_summary.to_csv(os.path.join(output_dir, "assembly_level_summary.csv"), index=False)
-    latest_annotated_df.to_csv(os.path.join(output_dir, "annotation_GCA_update_status.csv"), index=False)
+    method_summary.to_csv(os.path.join(output_dir, f"annotation_method_summary_{date_str}.csv"), index=False)
+    yearly_summary.to_csv(os.path.join(output_dir, f"yearly_summary_{date_str}.csv"), index=False)
+    filtered_df.to_csv(os.path.join(output_dir, f"annotations_{date_str}.csv"), index=False)
+    df_wide.to_csv(os.path.join(output_dir, f"assemblies_{date_str}.csv"), index=False)
+    df_info_result.to_csv(os.path.join(output_dir, f"assembly_annotation_status_{date_str}.csv"), index=False)
+    level_summary.to_csv(os.path.join(output_dir, f"assembly_level_summary_{date_str}.csv"), index=False)
+    latest_annotated_df.to_csv(os.path.join(output_dir, f"annotation_GCA_update_status_{date_str}.csv"), index=False)
 
 if __name__ == "__main__":
     main()
