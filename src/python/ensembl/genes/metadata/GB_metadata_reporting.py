@@ -342,23 +342,27 @@ def main():
         os.makedirs(args.output_dir)
 
     # Create a base name for the files based on BioProject ID and release date
-    bioproject_name = '_'.join(args.bioproject_id) if args.bioproject_id else None
-    release_date_name = args.release_date.replace('-', '') if args.release_date else None
+    bioproject_name = '_'.join(args.bioproject_id) if args.bioproject_id else ''
+    release_date_name = args.release_date.replace('-', '') if args.release_date else ''
 
-    # Save the result as a CSV file
-    output_filename = os.path.join(args.output_dir, f"{bioproject_name}_{release_date_name}_filtered_assemblies.csv")
+    # Create the output filename based on the provided values
+    output_filename = os.path.join(args.output_dir,
+                                   f"{bioproject_name}{'_' if bioproject_name and release_date_name else ''}{release_date_name}_filtered_assemblies.csv")
     df.to_csv(output_filename, index=False)
 
     # Save the summary statistics as a CSV file
-    summary_filename = os.path.join(args.output_dir, f"{bioproject_name}_{release_date_name}_filtered_assemblies_summary_statistics.csv")
+    summary_filename = os.path.join(args.output_dir,
+                                   f"{bioproject_name}{'_' if bioproject_name and release_date_name else ''}{release_date_name}_filtered_assemblies_summary_statistics.csv")
     summary_df.to_csv(summary_filename, index=False)
 
     # Save the assembly info as a CSV file
-    info_result_filename = os.path.join(args.output_dir, f"{bioproject_name}_{release_date_name}_filtered_assemblies_info_result.csv")
+    info_result_filename = os.path.join(args.output_dir,
+                                   f"{bioproject_name}{'_' if bioproject_name and release_date_name else ''}{release_date_name}_filtered_assemblies_info_result.csv")
     info_result.to_csv(info_result_filename, index=False)
 
     # Save the GCA list in a file
-    gca_list_filename = os.path.join(args.output_dir, f"{bioproject_name}_{release_date_name}_filtered_assemblies_gca_list.csv")
+    gca_list_filename = os.path.join(args.output_dir,
+                                        f"{bioproject_name}{'_' if bioproject_name and release_date_name else ''}{release_date_name}_filtered_assemblies_gca_list.csv")
     df_gca_list.to_csv(gca_list_filename, index=False, header=False)
 
     print(f"\nThe results have been saved to {output_filename}")
