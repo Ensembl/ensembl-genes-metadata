@@ -174,7 +174,7 @@ def check_most_updated_annotation(df_info_result, filtered_df):
     filtered_df['GCA Annotated'] = filtered_df['GCA']
 
     # Create a DataFrame with all GCA and Version pairs
-    latest_versions = df_info_result[['GCA', 'Version', 'GCA Latest']].rename(
+    latest_versions = df_info_result[['GCA', 'Version', 'GCA Latest', 'Lowest taxon ID']].rename(
         columns={'Version': 'Latest Version'}
     )
     latest_versions['GCA'] = latest_versions['GCA'].str.replace(r'\.\d+$', '', regex=True)
@@ -201,7 +201,7 @@ def check_most_updated_annotation(df_info_result, filtered_df):
     # Order the DataFrame by Scientific name
     merged_df.sort_values(by='Scientific name', inplace=True)
 
-    return merged_df[['Scientific name', 'GCA Annotated', 'GCA Latest', 'GCA', 'Annotated Version',
+    return merged_df[['Scientific name', 'Lowest taxon ID', 'GCA Annotated', 'GCA Latest', 'GCA', 'Annotated Version',
                       'Assembly Version', 'Latest Annotated']]
 
 
