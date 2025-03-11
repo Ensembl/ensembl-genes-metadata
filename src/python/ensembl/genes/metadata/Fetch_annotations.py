@@ -169,10 +169,12 @@ def check_most_updated_annotation(df_info_result, filtered_df):
 
     # Extract version number from GCA identifier
     df_info_result['Version'] = df_info_result['GCA'].str.extract(r'GCA_\d+\.(\d+)').astype(float)
+    df_info_result['GCA Latest'] = df_info_result['GCA']
     filtered_df['Version'] = filtered_df['GCA'].str.extract(r'GCA_\d+\.(\d+)').astype(float)
+    filtered_df['GCA Annotated'] = filtered_df['GCA']
 
     # Create a DataFrame with all GCA and Version pairs
-    latest_versions = df_info_result[['GCA', 'Version']].rename(
+    latest_versions = df_info_result[['GCA', 'Version', 'GCA Latest']].rename(
         columns={'Version': 'Latest Version'}
     )
     latest_versions['GCA'] = latest_versions['GCA'].str.replace(r'\.\d+$', '', regex=True)
@@ -187,6 +189,7 @@ def check_most_updated_annotation(df_info_result, filtered_df):
     merged_df['Annotated Version'] = merged_df['Version']
     merged_df['Assembly Version'] = merged_df['Latest Version']
 
+
     # Check if the annotated GCA is the same as the latest assembly GCA
     def check_latest_annotated(row):
         if pd.isna(row['Assembly Version']):
@@ -198,7 +201,7 @@ def check_most_updated_annotation(df_info_result, filtered_df):
     # Order the DataFrame by Scientific name
     merged_df.sort_values(by='Scientific name', inplace=True)
 
-    return merged_df[['Scientific name', 'GCA', 'Annotated Version',
+    return merged_df[['Scientific name', 'GCA Annotated', 'GCA Latest', 'GCA', 'Annotated Version',
                       'Assembly Version', 'Latest Annotated']]
 
 
@@ -275,9 +278,8 @@ def main():
     #Check if annotated is the latest GCA version in the registry
     latest_annotated_df = check_most_updated_annotation(df_info_result, filtered_df)
 
-    filtered_df['GCA_full'] = filtered_df['GCA'].astype(str) + '.' + filtered_df['Version'].astype(int).astype(str)
     filtered_df = filtered_df.drop(columns=['Year', 'Ensembl Release Year', 'GCA', 'Version'])
-    df_info_result = df_info_result.drop(columns=['Year', 'Version'])
+    df_info_result = df_info_result.drop(columns=['Year', 'Version', 'GCA Latest'])
 
     print("\nDataset filtered:")
     print(method_summary)
