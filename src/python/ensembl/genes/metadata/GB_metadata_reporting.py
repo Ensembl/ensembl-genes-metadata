@@ -131,20 +131,22 @@ def assign_clade_and_species(lowest_taxon_id, clade_data):
         if matching_taxon:
             taxon_class_id = matching_taxon['taxon_class_id']  # Extract taxon_class_id
 
+            # If it's the species level, always assign species_taxon_id
+            if taxon_class == 'species' and species_taxon_id is None:
+                species_taxon_id = taxon_class_id
+
             # Check for matching taxon_id in clade settings
             for clade_name, details in clade_data.items():
                 if details.get("taxon_id") == taxon_class_id:
                     internal_clade = clade_name
-                    # If it's a species, we assign species_taxon_id
-                    if taxon_class == 'species' and species_taxon_id is None:
-                        species_taxon_id = taxon_class_id
-                    break
+                    break  # If a clade is found, we stop looking
 
             # If a clade is found, we stop looking
             if internal_clade != "Unassigned":
                 break
 
     return internal_clade, species_taxon_id
+
 
 
 def get_filtered_assemblies(bioproject_id, metric_thresholds, all_metrics, asm_level, asm_type, release_date,taxon_id):
