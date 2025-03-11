@@ -109,26 +109,42 @@ def get_taxonomy_from_db(taxon_id):
     return taxonomy_hierarchy
 
 
-def assign_clade(lowest_taxon_id, clade_data):
-    """Assign internal clade based on taxonomy using the provided clade data."""
+def assign_clade_and_species(lowest_taxon_id, clade_data):
+    """Assign internal clade and species taxon ID based on taxonomy using the provided clade data."""
     # Retrieve the taxonomy hierarchy for the given lowest_taxon_id
     taxonomy_hierarchy = get_taxonomy_from_db(lowest_taxon_id)
 
     if not taxonomy_hierarchy:
-        return "Taxon hierarchy not found."
+        return "Taxon hierarchy not found.", None
 
-    # Loop through the taxonomy hierarchy and match with clade data
-    for taxon in taxonomy_hierarchy:
-        taxon_class_id = taxon['taxon_class_id']  # Extract taxon_class_id
-        taxon_class = taxon['taxon_class']  # Extract taxon_class
+    species_taxon_id = None
+    internal_clade = "Unassigned"  # Default value if no clade is found
 
-        # Check for matching taxon_id in clade settings
-        for clade_name, details in clade_data.items():
-            if details.get("taxon_id") == taxon_class_id:
-                return clade_name
+    # Define the taxon classes in hierarchical order
+    taxon_classes_order = ['species', 'genus', 'family', 'order', 'class', 'phylum', 'kingdom']
 
-    # If no match is found, return "Unassigned"
-    return "Unassigned"
+    # Loop through the taxonomy hierarchy in the order from species to kingdom
+    for taxon_class in taxon_classes_order:
+        # Find the taxon of the current class in the hierarchy
+        matching_taxon = next((t for t in taxonomy_hierarchy if t['taxon_class'] == taxon_class), None)
+
+        if matching_taxon:
+            taxon_class_id = matching_taxon['taxon_class_id']  # Extract taxon_class_id
+
+            # Check for matching taxon_id in clade settings
+            for clade_name, details in clade_data.items():
+                if details.get("taxon_id") == taxon_class_id:
+                    internal_clade = clade_name
+                    # If it's a species, we assign species_taxon_id
+                    if taxon_class == 'species' and species_taxon_id is None:
+                        species_taxon_id = taxon_class_id
+                    break
+
+            # If a clade is found, we stop looking
+            if internal_clade != "Unassigned":
+                break
+
+    return internal_clade, species_taxon_id
 
 
 def get_filtered_assemblies(bioproject_id, metric_thresholds, all_metrics, asm_level, asm_type, release_date,taxon_id):
@@ -261,6 +277,14 @@ def get_filtered_assemblies(bioproject_id, metric_thresholds, all_metrics, asm_l
     df_info_result.rename(columns={'bioproject_id': 'BioProject ID', 'release_date': 'Release date', 'scientific_name': 'Scientific name',  'common_name': "Common name", 'group_name': 'Group name', 'lowest_taxon_id': "Lowest taxon ID"}, inplace=True)
     df_info_result = df_info_result[df_info_result['GCA'].isin(df_wide['GCA'])]
 
+    # Load clade data
+    clade_data = load_clade_data()
+
+    # Add internal clade and species taxon ID columns to the info_result DataFrame
+    df_info_result[['Internal clade', 'Species taxon ID']] = df_info_result['Lowest taxon ID'].apply(
+        lambda x: pd.Series(assign_clade_and_species(x, clade_data))
+    )
+
     return df_wide, summary_df, df_info_result, df_gca_list
 
 
@@ -289,6 +313,9 @@ def main():
 
     df, summary_df, info_result, df_gca_list = get_filtered_assemblies(args.bioproject_id, metric_thresholds, all_metrics, args.asm_level, args.asm_type, args.release_date, args.taxon_id)
 
+    # Check for reference genome only if the user requested it
+    if args.reference:
+        info_result["Reference genome"] = info_result["GCA"].apply(is_reference_genome)
 
     # Check if 'df' is a string (error message)
     if isinstance(df, str):
@@ -298,15 +325,6 @@ def main():
     if df.empty:
         print("No assemblies meet the given thresholds.")
         return
-
-    # Load clade data
-    clade_data = load_clade_data()
-
-    # Add internal clade and reference genome columns to the info_result DataFrame
-    info_result["Internal clade"] = info_result["Lowest taxon ID"].apply(lambda x: assign_clade(x, clade_data))
-    # Check for reference genome only if the user requested it
-    if args.reference:
-        info_result["Reference genome"] = info_result["GCA"].apply(is_reference_genome)
 
     print("Assemblies that meet the given thresholds:")
     print(df)
