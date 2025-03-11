@@ -5,16 +5,6 @@ import argparse
 import os
 import requests
 
-TAXONOMIC_HIERARCHY = {
-    'kingdom': 1,
-    'phylum': 2,
-    'class': 3,
-    'order': 4,
-    'family': 5,
-    'genus': 6,
-    'species': 7
-}
-
 # Load database credentials from external JSON file
 def load_db_config():
     config_path = "conf/db_config.json"
@@ -332,8 +322,8 @@ def main():
         os.makedirs(args.output_dir)
 
     # Create a base name for the files based on BioProject ID and release date
-    bioproject_name = '_'.join(args.bioproject_id) if args.bioproject_id else 'all_projects'
-    release_date_name = args.release_date.replace('-', '') if args.release_date else 'no_release_date'
+    bioproject_name = '_'.join(args.bioproject_id) if args.bioproject_id else None
+    release_date_name = args.release_date.replace('-', '') if args.release_date else None
 
     # Save the result as a CSV file
     output_filename = os.path.join(args.output_dir, f"{bioproject_name}_{release_date_name}_filtered_assemblies.csv")
