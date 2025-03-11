@@ -201,8 +201,7 @@ def check_most_updated_annotation(df_info_result, filtered_df):
     # Order the DataFrame by Scientific name
     merged_df.sort_values(by='Scientific name', inplace=True)
 
-    return merged_df[['Scientific name', 'Lowest taxon ID', 'GCA Annotated', 'GCA Latest', 'GCA', 'Annotated Version',
-                      'Assembly Version', 'Latest Annotated']]
+    return merged_df[['Scientific name', 'Lowest taxon ID', 'GCA Annotated', 'GCA Latest', 'Latest Annotated']]
 
 
 def main():
