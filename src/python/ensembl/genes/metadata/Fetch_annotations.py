@@ -4,7 +4,12 @@ import pymysql
 import os
 from datetime import datetime
 import argparse
+import requests
+import logging
 from GB_metadata_reporting import get_filtered_assemblies
+
+# Configure logging
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
 def load_db_config():
     """Load database credentials from external JSON file."""
@@ -22,13 +27,58 @@ def connect_db(config_key):
     return pymysql.connect(**db_config[config_key], cursorclass=pymysql.cursors.DictCursor)
 
 
-def get_annotation(release_date):
+def get_descendant_taxa(taxon_id):
+    """
+	Retrieves all descendant taxon IDs under the given taxon ID using NCBI E-utilities.
+
+	:param taxon_id: The parent taxon ID (e.g., 40674 for Mammalia)
+	:return: A set of descendant taxon IDs
+	"""
+    base_url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi"
+    params = {
+        "db": "taxonomy",
+        "term": f"txid{taxon_id}[Subtree]",
+        "retmode": "json",
+        "retmax": 100000  # Retrieve all possible results
+    }
+
+    response = requests.get(base_url, params=params)
+    if response.status_code != 200:
+        print("Error retrieving taxonomic data from NCBI.")
+        return set()
+
+    try:
+        result = response.json()
+        taxon_ids = set(result["esearchresult"]["idlist"])
+        return taxon_ids
+    except KeyError:
+        print("Unexpected response format from NCBI.")
+        return set()
+
+
+def get_annotation(release_date, taxon_id):
     db_config_key = "prod"
     conn = connect_db(db_config_key)
     cursor = conn.cursor()
 
+    # Build dynamic SQL filtering
+    conditions = ["d.name = 'genebuild'"]  # Always required
+    params = []
+
+
+    if taxon_id:
+        descendant_taxa = get_descendant_taxa(taxon_id)
+        if not descendant_taxa:
+            return f"No descendant taxa found for Taxon ID {taxon_id}.", None
+
+        conditions.append(f"o.species_taxonomy_id IN ({','.join(['%s'] * len(descendant_taxa))})")
+        params.extend(descendant_taxa)
+
+    # If there are conditions, join them with AND; otherwise, select all
+    where_clause = " WHERE " + " AND ".join(conditions) if conditions else ""
+
     query = f"""
-                SELECT da.value, da.attribute_id, a.accession AS GCA, r.release_date AS ensembl_release_date, o.scientific_name
+                SELECT da.value, da.attribute_id, a.accession AS GCA, r.release_date AS ensembl_release_date, o.scientific_name, o.species_taxonomy_id
                 FROM dataset_attribute da
                 JOIN dataset d ON da.dataset_id = d.dataset_id
                 JOIN genome_dataset gd ON d.dataset_id = gd.dataset_id
@@ -36,15 +86,17 @@ def get_annotation(release_date):
                 JOIN assembly a ON g.assembly_id = a.assembly_id
                 JOIN organism o ON g.organism_id = o.organism_id
                 LEFT JOIN ensembl_release r ON r.release_id = gd.release_id
-                WHERE da.attribute_id IN (34, 37, 25, 183, 31, 40, 42, 48, 170, 56, 212)
-                AND d.name = 'genebuild';
+                {where_clause}
+                AND da.attribute_id IN (34, 37, 25, 183, 31, 40, 42, 48, 170, 56, 212);
             """
 
-    cursor.execute(query)
+    cursor.execute(query, params)
     results = cursor.fetchall()
     conn.close()
 
     df_prod = pd.DataFrame(results)
+
+    logging.debug(f"Total records fetched from production db: {len(df_prod)}")
 
     # Directly rename attribute_id column values
     df_prod['attribute_id'] = df_prod['attribute_id'].replace({
@@ -61,14 +113,19 @@ def get_annotation(release_date):
         56: "ps_average_sequence_length",
     })
 
+    # Fill missing 'ensembl_release_date' with a placeholder value
+    df_prod['ensembl_release_date'] = df_prod['ensembl_release_date'].fillna('Not yet released')
 
     # Pivot to wide format without losing records
     df_pivoted = df_prod.pivot_table(
-        index=["ensembl_release_date", "GCA", "scientific_name"],
+        index=["ensembl_release_date", "GCA", "scientific_name", "species_taxonomy_id"],
         columns="attribute_id",
         values="value",
-        aggfunc="first"  # You can change this to "mean", "max", etc.
+        aggfunc="first"  # or use 'list' if you want to capture multiple values for the same attribute_id
     ).reset_index()
+
+    logging.debug(f"Pivoted DataFrame shape before filtering: {df_pivoted.shape}")
+
 
     # Ensure genebuild.last_geneset_update has the correct format by adding '-01' for day precision
     df_pivoted['last_geneset_update'] = pd.to_datetime(
@@ -79,11 +136,16 @@ def get_annotation(release_date):
 
     # Apply the release_date filter to 'genebuild.last_geneset_update'
     df_filtered = df_pivoted[df_pivoted['last_geneset_update'] >= release_date]
+    logging.debug(f"Records after release date filtering: {len(df_filtered)}")
+
     df_filtered = df_filtered[df_filtered['GCA'].str.startswith('GCA')]
+    logging.debug(f"Records after GCA filtering: {len(df_filtered)}")
+
     df_filtered.rename(columns={'scientific_name': 'Scientific name'}, inplace=True)
 
-    return df_filtered
+    logging.info(f"Filtered {len(df_filtered)} records based on the release date.")
 
+    return df_filtered
 
 
 def summarize_assemblies(df):
@@ -113,7 +175,7 @@ def generate_yearly_summary(df, df_info_result, filtered_df):
     valid_levels = ["Scaffold", "Chromosome", "Complete genome"]
 
     # Filter only the valid assembly levels
-    df_filtered_levels = df[df['Assembly level'].isin(valid_levels)]
+    df_filtered_levels = df[df['Assembly level'].isin(valid_levels)].copy()
 
     # Count assemblies per year
     assemblies_per_year = df_filtered_levels.groupby('Year').size().reset_index(
@@ -137,7 +199,9 @@ def generate_yearly_summary(df, df_info_result, filtered_df):
 
     # Extract Ensembl release year
     if 'ensembl_release_date' in filtered_df.columns:
-        filtered_df['Ensembl Release Year'] = pd.to_datetime(filtered_df['ensembl_release_date']).dt.year
+        filtered_df = filtered_df[filtered_df['ensembl_release_date'] != 'Not yet released']
+        filtered_df = filtered_df.copy()  # Ensures we're working on a new copy
+        filtered_df['Ensembl Release Year'] = pd.to_datetime(filtered_df['ensembl_release_date'], errors='coerce').dt.year
         ensembl_release_summary = filtered_df.groupby('Ensembl Release Year').size().reset_index(
             name='Number of Ensembl Releases')
     else:
@@ -174,7 +238,7 @@ def check_most_updated_annotation(df_info_result, filtered_df):
     filtered_df['GCA Annotated'] = filtered_df['GCA']
 
     # Create a DataFrame with all GCA and Version pairs
-    latest_versions = df_info_result[['GCA', 'Version', 'GCA Latest', 'Lowest taxon ID']].rename(
+    latest_versions = df_info_result[['GCA', 'Version', 'GCA Latest', 'Lowest taxon ID', 'Species taxon ID']].rename(
         columns={'Version': 'Latest Version'}
     )
     latest_versions['GCA'] = latest_versions['GCA'].str.replace(r'\.\d+$', '', regex=True)
@@ -201,7 +265,8 @@ def check_most_updated_annotation(df_info_result, filtered_df):
     # Order the DataFrame by Scientific name
     merged_df.sort_values(by='Scientific name', inplace=True)
 
-    return merged_df[['Scientific name', 'Lowest taxon ID', 'GCA Annotated', 'GCA Latest', 'Latest Annotated']]
+    return merged_df[['Scientific name', 'Lowest taxon ID', 'Species taxon ID', 'GCA Annotated', 'GCA Latest', 'Latest Annotated']]
+
 
 
 def main():
@@ -251,11 +316,7 @@ def main():
     level_summary = bin_by_assembly_level(df_wide)
 
     # Fetch dataset annotations using the same release date
-    filtered_df = get_annotation(release_date)
-
-    #Get annotations with tax_id filter
-    filtered_df = filtered_df[filtered_df['Scientific name'].isin(df_info_result['Scientific name'])]
-
+    filtered_df = get_annotation(release_date, taxon_id)
 
     # Create the FTP URL using the scientific_name, replacing spaces with underscores
     filtered_df['FTP'] = filtered_df.apply(
@@ -277,7 +338,7 @@ def main():
     #Check if annotated is the latest GCA version in the registry
     latest_annotated_df = check_most_updated_annotation(df_info_result, filtered_df)
 
-    filtered_df = filtered_df.drop(columns=['Year', 'Ensembl Release Year', 'GCA', 'Version'])
+    filtered_df = filtered_df.drop(columns=['Year', 'GCA', 'Version'])
     df_info_result = df_info_result.drop(columns=['Year', 'Version', 'GCA Latest'])
 
     print("\nDataset filtered:")
