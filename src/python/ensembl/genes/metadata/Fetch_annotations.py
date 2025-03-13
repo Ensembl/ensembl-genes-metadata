@@ -333,7 +333,8 @@ def main():
 
     #Check annotation status
     # Add an 'Annotated' column to df_info_result
-    df_info_result['Annotated'] = df_info_result['GCA'].isin(filtered_df['GCA']).map({True: 'Yes', False: 'No'})
+    df_info_result['Annotated'] = df_info_result['GCA'].str.extract(r'(GCA_\d+)', expand=False).isin(
+        filtered_df['GCA'].str.extract(r'(GCA_\d+)', expand=False)).map({True: 'Yes', False: 'No'})
 
     #Check if annotated is the latest GCA version in the registry
     latest_annotated_df = check_most_updated_annotation(df_info_result, filtered_df)
