@@ -192,12 +192,13 @@ def get_filtered_assemblies(bioproject_id, metric_thresholds, all_metrics, asm_l
     query = f"""
         SELECT b.bioproject_id, a.asm_level, a.gca_chain, a.gca_version, a.asm_type, a.release_date, 
                m.metrics_name, m.metrics_value, s.scientific_name, s.common_name, 
-               s.lowest_taxon_id, g.group_name, a.refseq_accession
+               s.lowest_taxon_id, g.group_name, a.refseq_accession, o.infra_type, o.infra_name
         FROM bioproject b
         JOIN assembly_metrics m ON b.assembly_id = m.assembly_id
         JOIN assembly a ON m.assembly_id = a.assembly_id
         LEFT JOIN species s ON a.lowest_taxon_id = s.lowest_taxon_id
         LEFT JOIN group_assembly g ON a.assembly_id = g.assembly_id
+        LEFT JOIN organism o ON a.assembly_id = o.assembly_id
         {where_clause}
         ORDER BY m.metrics_name;
     """
@@ -224,7 +225,7 @@ def get_filtered_assemblies(bioproject_id, metric_thresholds, all_metrics, asm_l
     # Pivot the data so each metric_name becomes a separate column and combine gca_chain and gca_version, correct date format
     df["GCA"] = df["gca_chain"].astype(str) + "." + df["gca_version"].astype(str)
 
-    df_wide = df.pivot(index=["bioproject_id", "asm_level", "asm_type", "GCA", "release_date", "refseq_accession"], columns="metrics_name", values="metrics_value")
+    df_wide = df.pivot(index=["bioproject_id", "asm_level", "asm_type", "GCA", "release_date", "refseq_accession", "infra_type", "infra_name"], columns="metrics_name", values="metrics_value")
     # Ensure all requested metrics are present as columns
     for metric in all_metrics:
         if metric not in df_wide.columns:
@@ -260,7 +261,7 @@ def get_filtered_assemblies(bioproject_id, metric_thresholds, all_metrics, asm_l
     df_info_result = df_info_result.drop_duplicates(subset=['GCA'], keep='first')
 
     # Drop specific columns and clean multiple GCA's
-    columns_to_drop = ['contig_l50', 'release_date', 'gc_count', 'number_of_component_sequences', 'scaffold_l50', 'total_ungapped_length', 'number_of_organelles','total_number_of_chromosomes']  # Adjust this list as needed
+    columns_to_drop = ['contig_l50', 'release_date', 'gc_count', 'number_of_component_sequences', 'scaffold_l50', 'total_ungapped_length', 'number_of_organelles','total_number_of_chromosomes', 'gaps_between_scaffolds_count']  # Adjust this list as needed
     df_wide.drop(columns=columns_to_drop, inplace=True, errors='ignore')
     df_wide = df_wide.drop_duplicates(subset=['GCA'], keep='first')
 
