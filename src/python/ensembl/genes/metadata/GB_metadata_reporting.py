@@ -261,7 +261,7 @@ def get_filtered_assemblies(bioproject_id, metric_thresholds, all_metrics, asm_l
     df_info_result = df_info_result.drop_duplicates(subset=['GCA'], keep='first')
 
     # Drop specific columns and clean multiple GCA's
-    columns_to_drop = ['contig_l50', 'release_date', 'gc_count', 'number_of_component_sequences', 'scaffold_l50', 'total_ungapped_length', 'number_of_organelles','total_number_of_chromosomes', 'gaps_between_scaffolds_count']  # Adjust this list as needed
+    columns_to_drop = ['contig_l50', 'release_date', 'gc_count', 'number_of_component_sequences', 'scaffold_l50', 'total_ungapped_length', 'number_of_organelles','total_number_of_chromosomes', 'gaps_between_scaffolds_count', 'infra_type', 'infra_name']  # Adjust this list as needed
     df_wide.drop(columns=columns_to_drop, inplace=True, errors='ignore')
     df_wide = df_wide.drop_duplicates(subset=['GCA'], keep='first')
 
