@@ -171,7 +171,9 @@ def app():
             st.divider()
 
             st.header("Assembly Info")
-            st.dataframe(st.session_state.info_data, hide_index=True)
+            st.dataframe(st.session_state.info_data, hide_index=True, column_config={
+                "Release date": st.column_config.DateColumn(), "Lowest taxon ID": st.column_config.NumberColumn(format="%d"),
+                "Species taxon ID":st.column_config.NumberColumn(format="%d"),})
             st.download_button("Download Assembly Info", data=st.session_state.info_data.to_csv(index=False),
                                file_name="assembly_info.csv", mime="text/csv")
 
