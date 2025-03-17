@@ -18,10 +18,10 @@ def load_file_lines(filepath):
 
 def execute_query(metadata_params, query):
     logging.info(f"QUERY: {query}")
-    with pymysql.connect(**metadata_params) as con:
-        with con.cursor() as cur:
-            cur.execute(query)
-            return cur.fetchall()
+    conn = pymysql.connect(**metadata_params)
+    with conn.cursor() as cur:
+        cur.execute(query)
+        return cur.fetchall()
 
 def fetch_report_data(metadata_params, gca_list, bioprojects):
     gca_string = ','.join([f"'{gca}'" for gca in gca_list])

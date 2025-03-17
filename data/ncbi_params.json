@@ -10,7 +10,7 @@
     "filters.is_metagenome_derived": "metagenome_derived_exclude",
     "table_fields": ["assminfo-accession","assminfo-name"],
     "returned_content": "ASSM_ACC",
-    "page_size": "100", 
-    "page_token": "", 
-    "include_tabular_header": "INCLUDE_TABULAR_HEADER_ALWAYS"    
+    "page_size": "100",
+    "page_token": "",
+    "include_tabular_header": "INCLUDE_TABULAR_HEADER_ALWAYS"
 }
