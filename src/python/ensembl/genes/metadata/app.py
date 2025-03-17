@@ -1,5 +1,6 @@
 import streamlit as st
-from GB_metadata_reporting import get_filtered_assemblies
+import GB_metadata_reporting
+import Fetch_annotations
 
 # Function to validate BioProject ID
 def is_valid_bioproject_id(bioproject_id):
@@ -12,8 +13,8 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded",
     menu_items={
-        'Get Help': 'https://www.extremelycoolapp.com/help',
-        'Report a bug': "https://www.extremelycoolapp.com/bug",
+        'Get Help': 'https://github.com/Ensembl/ensembl-genes-metadata/tree/dev/gb_metadata_handling',
+        'Report a bug': "mailto:lazar@ebi.ac.uk",
         'About': "# This is the Genebuild metadata reporting system. This is an *extremely* cool app!"
     }
 )
@@ -59,14 +60,31 @@ def app():
     bioproject_ids = st.sidebar.text_area("Enter BioProject ID", height=68,
                                           placeholder="e.g., PRJNA391427, PRJNA607328")
 
+    release_date = st.sidebar.date_input("Release Date", value="today", max_value="today",
+                                         format="YYYY-MM-DD")
+
+    taxon_id = st.sidebar.text_input("Taxon ID", placeholder="Enter Taxon ID",
+                                     value="")
+
+    # If taxon_id is provided, try to convert it to a number
+    if taxon_id:
+        try:
+            taxon_id = float(taxon_id)
+        except ValueError:
+            st.error("Please enter a valid number for Taxon ID.")
+
+    # Add a checkbox for 'Reference genome'
+    add_reference_genome = st.sidebar.toggle(
+        "Check if GCA is reference genome. This function uses the NCBI API and will break if used for large queries.",
+        value=False)
+
     # Display filter options immediately
-    excluded_metrics = ["bioproject_id", "gca_chain", "gca_version"]
+    excluded_metrics = ["bioproject_id", "gca_chain", "gca_version", "release_date", "taxon_id"]
 
     st.sidebar.header("Filters")
-    st.sidebar.text("If no metrics are selected, all records will be shown without filtering.")
 
     selected_friendly_metrics = st.sidebar.pills(
-        "Select metrics to use as filters.",
+        "Select metrics to use as filters. If no metrics are selected, all records will be shown without filtering.",
         [value for key, value in metric_mapping.items() if key not in excluded_metrics],
         selection_mode="multi"
     )
@@ -76,14 +94,12 @@ def app():
     metric_thresholds = {}
     asm_level = None
     asm_type = None
-    release_date = None
-    taxon_id = None
 
     if selected_metrics:
         st.sidebar.header("Set Threshold for Selected Metrics")
         metric_thresholds = {
             metric: st.sidebar.number_input(f"Threshold for {metric_mapping[metric]}", min_value=0, value=50, step=10)
-            for metric in selected_metrics if metric not in ["asm_level", "asm_type", "release_date", "taxon_id"]
+            for metric in selected_metrics if metric not in ["asm_level", "asm_type"]
         }
 
         asm_level = st.sidebar.pills("Select Assembly Level", ["Contig", "Scaffold", "Chromosome", "Complete genome"],
@@ -93,17 +109,6 @@ def app():
                                     ["haploid", "alternate-pseudohaplotype", "unresolved-diploid",
                                      "haploid-with-alt-loci", "diploid"],
                                     selection_mode="multi") if "asm_type" in selected_metrics else None
-
-        release_date = st.sidebar.date_input("Release Date", value="today", max_value="today", format="YYYY-MM-DD") if "release_date" in selected_metrics else None
-
-        taxon_id = st.sidebar.text_input("Taxon ID", placeholder="Enter Taxon ID", value="") if "taxon_id" in selected_metrics else None
-
-        # If taxon_id is provided, try to convert it to a number
-        if taxon_id:
-            try:
-                taxon_id = float(taxon_id)
-            except ValueError:
-                st.error("Please enter a valid number for Taxon ID.")
 
 
     if "assemblies_data" not in st.session_state:
@@ -133,7 +138,7 @@ def app():
         status_placeholder = st.sidebar.empty()
 
         with status_placeholder.status("Fetching assemblies... Please wait."):
-            df, summary_df, info_result, gca_list = get_filtered_assemblies(
+            df, summary_df, info_result, gca_list = GB_metadata_reporting.get_filtered_assemblies(
                 bioproject_id_list, metric_thresholds, all_metrics, asm_level, asm_type, release_date, taxon_id
             )
 
@@ -144,13 +149,18 @@ def app():
             st.session_state.summary_data = rename_metrics(summary_df)
             st.session_state.info_data = info_result
             st.session_state.gca_list = gca_list
+
+            # Apply the 'is_reference_genome' function if checkbox is checked
+            if add_reference_genome:
+                st.session_state.info_data["Reference genome"] = st.session_state.info_data["GCA"].apply(
+                    GB_metadata_reporting.is_reference_genome)
         else:
             st.session_state.assemblies_data = df
 
     if st.session_state.assemblies_data is None:
         st.image("app_utils/background.svg", use_container_width=True)
     else:
-        st.title(f"Assembly Metrics for BioProject ID(s): {', '.join(bioproject_id_list)}")
+        st.title(f"Filtered Assembly Metrics")
 
         if isinstance(st.session_state.assemblies_data, str):
             st.error(st.session_state.assemblies_data, icon=":material/error:")
