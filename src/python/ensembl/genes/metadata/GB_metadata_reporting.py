@@ -257,7 +257,7 @@ def get_filtered_assemblies(bioproject_id, metric_thresholds, all_metrics, asm_l
         return "No assemblies meet the given thresholds.", None, None, None
 
     # Clean info results table
-    df_info_result = df[['bioproject_id', 'release_date', 'scientific_name', 'common_name', 'group_name', 'Associated project', 'GCA', 'lowest_taxon_id']]
+    df_info_result = df[['bioproject_id', 'release_date', 'scientific_name', 'common_name', 'group_name', 'Associated project', 'GCA', 'lowest_taxon_id', 'infra_type', 'infra_name']]
     df_info_result = df_info_result.drop_duplicates(subset=['GCA'], keep='first')
 
     # Drop specific columns and clean multiple GCA's
