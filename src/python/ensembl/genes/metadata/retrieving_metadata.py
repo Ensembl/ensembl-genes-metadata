@@ -15,7 +15,7 @@
 
 """This module retrieves metadata from the NCBI API for a given GCA accession 
         and stores it in JSON files to be inserted in the database.
-        
+
     Args:
         accession (str): GCA accession to retrieve metadata
 
@@ -54,17 +54,14 @@ def parse_data(data: Dict) -> Tuple[Dict[str, Dict[Any, Any]], Dict[str, Dict[An
         list[dict]: a list of three dictionaries with relevant metadata to store in db
     """
     # Stablish dictionary structure
-    data_dict = {'assembly': {}}
+    data_dict: Dict[str, Dict[Any, Any]] = {'assembly': {}}
 
-    data_dict_2 = {
+    data_dict_2: Dict[str, Dict[Any, Any]]  = {
         'organism': {},
         'assembly_metrics': {},
-        'bioproject': {}
-    }
+        'bioproject': {}}
 
-    data_dict_3 = {
-        'species': {}
-    }
+    data_dict_3: Dict[str, Dict[Any, Any]] = {'species': {}}
 
     # Setting Optional keys first
     try:
@@ -74,7 +71,7 @@ def parse_data(data: Dict) -> Tuple[Dict[str, Dict[Any, Any]], Dict[str, Dict[An
             logging.info("Assembly have incorrect infraspecific type: sex. Setting to empty")
             infra_type = ""
             infra_name = ""
-    except:
+    except KeyError:
         infra_name = ""
         infra_type = ""
 
@@ -87,15 +84,24 @@ def parse_data(data: Dict) -> Tuple[Dict[str, Dict[Any, Any]], Dict[str, Dict[An
         'asm_type' : data['reports'][0]['assembly_info']['assembly_type'],
         'asm_level' : data['reports'][0]['assembly_info']['assembly_level'],
         'asm_name' : data['reports'][0]['assembly_info']['assembly_name'],
-        'refseq_accession': data.get('reports')[0].get('paired_accession',""),
+        'refseq_accession': data['reports'][0].get('paired_accession',""),
         'release_date' : data['reports'][0]['assembly_info']['release_date'],
-        'submitter' : data.get('reports')[0].get('assembly_info').get('submitter', "").replace("'", "''").lstrip('\ufeff')
+        'submitter' : data['reports'][0].get('assembly_info').get('submitter', "").replace("'", "''").lstrip('\ufeff')
     })
+
+    logging.info("current column: %s", data['reports'][0]['assembly_info']['assembly_status'])
+    logging.info("Get warning information if available")
+    warning = data['reports'][0].get('assembly_info').get('atypical', {}).get('warnings', "NA")
+    logging.info(warning)
+    if warning != "NA":
+        logging.info("Updating assembly JSON with warning data")
+        data_dict['assembly'].update({'is_current':warning[0]})
+
 
     data_dict_3['species'].update({
         'lowest_taxon_id' : data['reports'][0]['organism']['tax_id'],
         'scientific_name' : data['reports'][0]['organism']['organism_name'].replace("'", "''") ,
-        'common_name' : data.get('reports')[0].get('organism').get('common_name', "").replace("'", "''")
+        'common_name' : data['reports'][0].get('organism').get('common_name', "").replace("'", "''")
     })
 
     data_dict_2['organism'].update({
@@ -149,7 +155,7 @@ def main():
     else:
         raise ValueError("NCBI API URL is required")
 
-    uri = f"{ncbi_url}/genome/accession/{accession}/dataset_report"
+    uri = f"{ncbi_url}/genome/accession/{accession}/dataset_report?filters.exclude_atypical=false&filters.assembly_version=all_assemblies"
     logging.info("URI: %s",uri)
     response = connection_ncbi(uri)
     data = response.json()
