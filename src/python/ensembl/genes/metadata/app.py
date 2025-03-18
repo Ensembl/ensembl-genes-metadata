@@ -2,16 +2,18 @@ import streamlit as st
 import GB_metadata_reporting
 import Fetch_annotations
 
-# Function to validate BioProject ID
-def is_valid_bioproject_id(bioproject_id):
-    return True if bioproject_id.startswith("PRJNA") else False
+
+assemblies = st.Page("GB_metadata_reporting.py", title="Assembly registry", icon=":material/genetics:")
+annotations = st.Page("Fetch_annotations.py", title="Annotations", icon=":material/search_check_2:")
+
+pg = st.navigation([assemblies,annotations])
+
 
 # Local page config
 st.set_page_config(
     page_title="Genebuild Metadata",
     page_icon=":material/genetics:",
     layout="wide",
-    initial_sidebar_state="expanded",
     menu_items={
         'Get Help': 'https://github.com/Ensembl/ensembl-genes-metadata/tree/dev/gb_metadata_handling',
         'Report a bug': "mailto:lazar@ebi.ac.uk",
@@ -21,10 +23,18 @@ st.set_page_config(
 
 st.logo("app_utils/embl_ebi_logo.svg", size="large")
 
+
 # Read the CSS file
 with open('app_utils/styles.css') as f:
     css = f.read()
 st.markdown(f'<style>{css}</style>', unsafe_allow_html=True)
+
+pg.run()
+
+# Function to validate BioProject ID
+def is_valid_bioproject_id(bioproject_id):
+    return True if bioproject_id.startswith("PRJNA") else False
+
 
 # Mapping for more readable metrics
 metric_mapping = {
@@ -51,43 +61,42 @@ def rename_metrics(df):
 
 def app():
     """Main function."""
-    st.sidebar.title("Genebuild Metadata Reporting")
 
-    # Sidebar tabs selection
-    tab1, tab2 = st.sidebar.tabs(["Assemblies", "Annotations"])
+    st.title("Genebuild Metadata Reporting")
 
-    st.sidebar.header("BioProject IDs")
-    bioproject_ids = st.sidebar.text_area("Enter BioProject ID", height=68,
+    st.caption("The assembly registry starts at _2019-01-01_. Apply filters below to query registry.")
+
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+        bioproject_ids = st.text_area("BioProject ID", height=68,
                                           placeholder="e.g., PRJNA391427, PRJNA607328")
-
-    release_date = st.sidebar.date_input("Release Date", value="today", max_value="today",
+    with col2:
+        release_date = st.date_input("Release Date", value="2019-01-01", max_value="today",
                                          format="YYYY-MM-DD")
-
-    taxon_id = st.sidebar.text_input("Taxon ID", placeholder="Enter Taxon ID",
+    with col3:
+        taxon_id = st.text_input("Taxon ID", placeholder="Enter Taxon ID",
                                      value="")
 
-    # If taxon_id is provided, try to convert it to a number
-    if taxon_id:
-        try:
-            taxon_id = float(taxon_id)
-        except ValueError:
-            st.error("Please enter a valid number for Taxon ID.")
+        # If taxon_id is provided, try to convert it to a number
+        if taxon_id:
+            try:
+                taxon_id = float(taxon_id)
+            except ValueError:
+                st.error("Please enter a valid number for Taxon ID.")
 
     # Add a checkbox for 'Reference genome'
-    add_reference_genome = st.sidebar.toggle(
+    add_reference_genome = st.toggle(
         "Check if GCA is reference genome. This function uses the NCBI API and will break if used for large queries.",
         value=False)
 
     # Display filter options immediately
     excluded_metrics = ["bioproject_id", "gca_chain", "gca_version", "release_date", "taxon_id"]
 
-    st.sidebar.header("Filters")
-
-    selected_friendly_metrics = st.sidebar.pills(
-        "Select metrics to use as filters. If no metrics are selected, all records will be shown without filtering.",
+    selected_friendly_metrics = st.pills(
+        "Select metrics to use as filters.",
         [value for key, value in metric_mapping.items() if key not in excluded_metrics],
-        selection_mode="multi"
-    )
+        selection_mode="multi", label_visibility= "collapsed")
 
     selected_metrics = [key for key, value in metric_mapping.items() if value in selected_friendly_metrics]
 
@@ -96,16 +105,15 @@ def app():
     asm_type = None
 
     if selected_metrics:
-        st.sidebar.header("Set Threshold for Selected Metrics")
         metric_thresholds = {
-            metric: st.sidebar.number_input(f"Threshold for {metric_mapping[metric]}", min_value=0, value=50, step=10)
+            metric: st.number_input(f"Threshold for {metric_mapping[metric]}", min_value=0, value=50, step=10)
             for metric in selected_metrics if metric not in ["asm_level", "asm_type"]
         }
 
-        asm_level = st.sidebar.pills("Select Assembly Level", ["Contig", "Scaffold", "Chromosome", "Complete genome"],
+        asm_level = st.pills("Select Assembly Level", ["Contig", "Scaffold", "Chromosome", "Complete genome"],
                                      selection_mode="multi") if "asm_level" in selected_metrics else None
 
-        asm_type = st.sidebar.pills("Select Assembly Type",
+        asm_type = st.pills("Select Assembly Type",
                                     ["haploid", "alternate-pseudohaplotype", "unresolved-diploid",
                                      "haploid-with-alt-loci", "diploid"],
                                     selection_mode="multi") if "asm_type" in selected_metrics else None
@@ -130,12 +138,12 @@ def app():
                    "scaffold_n50", "genome_coverage"]
 
     # Keep the button enabled but prevent execution if no BioProject ID is provided
-    if st.sidebar.button("Get Assemblies", use_container_width=True, type="primary"):
+    if st.button("Get Assemblies", use_container_width=True, type="primary"):
         st.session_state.assemblies_data = None
         st.session_state.summary_data = None
         st.session_state.info_data = None
         st.session_state.gca_list = None
-        status_placeholder = st.sidebar.empty()
+        status_placeholder = st.empty()
 
         with status_placeholder.status("Fetching assemblies... Please wait."):
             df, summary_df, info_result, gca_list = GB_metadata_reporting.get_filtered_assemblies(
@@ -160,11 +168,10 @@ def app():
     if st.session_state.assemblies_data is None:
         st.image("app_utils/background.svg", use_container_width=True)
     else:
-        st.title(f"Filtered Assembly Metrics")
-
         if isinstance(st.session_state.assemblies_data, str):
             st.error(st.session_state.assemblies_data, icon=":material/error:")
         else:
+            st.divider()
             st.header("Filtered Assemblies")
             st.dataframe(st.session_state.assemblies_data, hide_index=True)
             st.download_button("Download Filtered Assemblies",

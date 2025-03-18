@@ -1,9 +1,9 @@
 {
   "prod": {
     "host": "mysql-ens-production-1",
-    "user": "",
+    "user": "ensro",
     "password": "",
     "database": "ensembl_genome_metadata",
-    "port":
+    "port": 4721
   }
 }
