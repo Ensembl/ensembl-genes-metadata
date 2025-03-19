@@ -63,61 +63,66 @@ def app():
     """Main function."""
 
     st.title("Genebuild Metadata Reporting")
+    with st.container():
+        st.caption("The assembly registry starts at _2019-01-01_. Apply filters below to query registry.")
 
-    st.caption("The assembly registry starts at _2019-01-01_. Apply filters below to query registry.")
+        col1, col2, col3, col4, col5 = st.columns(5)
 
-    col1, col2, col3 = st.columns(3)
+        with col1:
+            with st.popover("Bioproject ID", use_container_width=True, icon=":material/tactic:"):
+                bioproject_ids = st.text_area(" Enter BioProject ID", height=68,
+                                              placeholder="e.g., PRJNA391427, PRJNA607328")
+        with col2:
+            with st.popover("Release Date", use_container_width=True, icon=":material/calendar_month:"):
+                release_date = st.text_input("Enter Release Date. Format: YYYY-MM-DD", placeholder="2019-01-01", max_chars=10)
+        with col3:
+            with st.popover("Taxon ID", use_container_width=True, icon=":material/badge:"):
+                taxon_id = st.text_input("Enter Taxon ID", placeholder="40674",
+                                         value="")
 
-    with col1:
-        bioproject_ids = st.text_area("BioProject ID", height=68,
-                                          placeholder="e.g., PRJNA391427, PRJNA607328")
-    with col2:
-        release_date = st.date_input("Release Date", value="2019-01-01", max_value="today",
-                                         format="YYYY-MM-DD")
-    with col3:
-        taxon_id = st.text_input("Taxon ID", placeholder="Enter Taxon ID",
-                                     value="")
+            # If taxon_id is provided, try to convert it to a number
+            if taxon_id:
+                try:
+                    taxon_id = float(taxon_id)
+                except ValueError:
+                    st.error("Please enter a valid number for Taxon ID.")
 
-        # If taxon_id is provided, try to convert it to a number
-        if taxon_id:
-            try:
-                taxon_id = float(taxon_id)
-            except ValueError:
-                st.error("Please enter a valid number for Taxon ID.")
+        with col4:
+            with st.popover("Assembly Metrics", use_container_width=True, icon=":material/query_stats:"):
+                # Display filter options immediately
+                excluded_metrics = ["bioproject_id", "gca_chain", "gca_version", "release_date", "taxon_id"]
 
-    # Add a checkbox for 'Reference genome'
-    add_reference_genome = st.toggle(
-        "Check if GCA is reference genome. This function uses the NCBI API and will break if used for large queries.",
-        value=False)
+                selected_friendly_metrics = st.pills(
+                    "Select metrics to use as filters.",
+                    [value for key, value in metric_mapping.items() if key not in excluded_metrics],
+                    selection_mode="multi", label_visibility= "collapsed")
 
-    # Display filter options immediately
-    excluded_metrics = ["bioproject_id", "gca_chain", "gca_version", "release_date", "taxon_id"]
+                selected_metrics = [key for key, value in metric_mapping.items() if value in selected_friendly_metrics]
 
-    selected_friendly_metrics = st.pills(
-        "Select metrics to use as filters.",
-        [value for key, value in metric_mapping.items() if key not in excluded_metrics],
-        selection_mode="multi", label_visibility= "collapsed")
+                metric_thresholds = {}
+                asm_level = None
+                asm_type = None
 
-    selected_metrics = [key for key, value in metric_mapping.items() if value in selected_friendly_metrics]
+                if selected_metrics:
+                    metric_thresholds = {
+                        metric: st.number_input(f"Set threshold for {metric_mapping[metric]}", min_value=0, value=None, step=10)
+                        for metric in selected_metrics if metric not in ["asm_level", "asm_type"]
+                    }
 
-    metric_thresholds = {}
-    asm_level = None
-    asm_type = None
+                    asm_level = st.pills("Select Assembly Level", ["Contig", "Scaffold", "Chromosome", "Complete genome"],
+                                                 selection_mode="multi") if "asm_level" in selected_metrics else None
 
-    if selected_metrics:
-        metric_thresholds = {
-            metric: st.number_input(f"Threshold for {metric_mapping[metric]}", min_value=0, value=50, step=10)
-            for metric in selected_metrics if metric not in ["asm_level", "asm_type"]
-        }
+                    asm_type = st.pills("Select Assembly Type",
+                                                ["haploid", "alternate-pseudohaplotype", "unresolved-diploid",
+                                                 "haploid-with-alt-loci", "diploid"],
+                                                selection_mode="multi") if "asm_type" in selected_metrics else None
 
-        asm_level = st.pills("Select Assembly Level", ["Contig", "Scaffold", "Chromosome", "Complete genome"],
-                                     selection_mode="multi") if "asm_level" in selected_metrics else None
-
-        asm_type = st.pills("Select Assembly Type",
-                                    ["haploid", "alternate-pseudohaplotype", "unresolved-diploid",
-                                     "haploid-with-alt-loci", "diploid"],
-                                    selection_mode="multi") if "asm_type" in selected_metrics else None
-
+        # Add a checkbox for 'Reference genome'
+        with col5:
+            with st.popover("Reference", use_container_width=True, icon=":material/check_circle:" ):
+                add_reference_genome = st.toggle(
+                        "Check if GCA is reference genome. This function uses the NCBI API and will break if used for large queries.",
+                        value=False)
 
     if "assemblies_data" not in st.session_state:
         st.session_state.assemblies_data = None
