@@ -238,7 +238,7 @@ def check_most_updated_annotation(df_info_result, filtered_df):
     filtered_df['GCA Annotated'] = filtered_df['GCA']
 
     # Create a DataFrame with all GCA and Version pairs
-    latest_versions = df_info_result[['GCA', 'Version', 'GCA Latest', 'Lowest taxon ID', 'Species taxon ID']].rename(
+    latest_versions = df_info_result[['GCA', 'Version', 'GCA Latest', 'Lowest taxon ID', 'Species taxon ID', 'Assembly status']].rename(
         columns={'Version': 'Latest Version'}
     )
     latest_versions['GCA'] = latest_versions['GCA'].str.replace(r'\.\d+$', '', regex=True)
@@ -257,7 +257,7 @@ def check_most_updated_annotation(df_info_result, filtered_df):
     # Check if the annotated GCA is the same as the latest assembly GCA
     def check_latest_annotated(row):
         if pd.isna(row['Assembly Version']):
-            return 'Warning: possibly suppressed GCA or GCA released before 2019'
+            return 'Warning: GCA is not in registry'
         return 'Yes' if row['Annotated Version'] == row['Assembly Version'] else 'No'
 
     merged_df['Latest Annotated'] = merged_df.apply(check_latest_annotated, axis=1)
@@ -265,7 +265,7 @@ def check_most_updated_annotation(df_info_result, filtered_df):
     # Order the DataFrame by Scientific name
     merged_df.sort_values(by='Scientific name', inplace=True)
 
-    return merged_df[['Scientific name', 'Lowest taxon ID', 'Species taxon ID', 'GCA Annotated', 'GCA Latest', 'Latest Annotated']]
+    return merged_df[['Scientific name', 'Lowest taxon ID', 'Species taxon ID', 'GCA Annotated', 'GCA Latest', 'Assembly status', 'Latest Annotated']]
 
 
 

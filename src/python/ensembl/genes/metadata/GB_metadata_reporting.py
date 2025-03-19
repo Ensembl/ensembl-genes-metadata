@@ -88,7 +88,7 @@ def load_clade_data():
         return json.load(f)
 
 
-def get_taxonomy_from_db(taxon_id):
+def get_taxonomy_from_db(lowest_taxon_id):
     """Retrieve taxonomy hierarchy from the MySQL database."""
     conn = connect_db()
     cursor = conn.cursor()
@@ -100,7 +100,7 @@ def get_taxonomy_from_db(taxon_id):
     ORDER BY FIELD(taxon_class, 'species', 'genus', 'family', 'order', 'class', 'phylum', 'kingdom');
     """
 
-    cursor.execute(query, (taxon_id,))
+    cursor.execute(query, (lowest_taxon_id,))
     taxonomy_hierarchy = cursor.fetchall()
 
     if not taxonomy_hierarchy:
@@ -190,7 +190,7 @@ def get_filtered_assemblies(bioproject_id, metric_thresholds, all_metrics, asm_l
     where_clause = " WHERE " + " AND ".join(conditions) if conditions else ""
 
     query = f"""
-        SELECT b.bioproject_id, a.asm_level, a.gca_chain, a.gca_version, a.asm_type, a.release_date, 
+        SELECT b.bioproject_id, a.asm_level, a.gca_chain, a.gca_version, a.asm_type, a.release_date, a.is_current,
                m.metrics_name, m.metrics_value, s.scientific_name, s.common_name, 
                s.lowest_taxon_id, g.group_name, a.refseq_accession, o.infra_type, o.infra_name
         FROM bioproject b
@@ -225,7 +225,7 @@ def get_filtered_assemblies(bioproject_id, metric_thresholds, all_metrics, asm_l
     # Pivot the data so each metric_name becomes a separate column and combine gca_chain and gca_version, correct date format
     df["GCA"] = df["gca_chain"].astype(str) + "." + df["gca_version"].astype(str)
 
-    df_wide = df.pivot(index=["bioproject_id", "asm_level", "asm_type", "GCA", "release_date", "refseq_accession", "infra_type", "infra_name"], columns="metrics_name", values="metrics_value")
+    df_wide = df.pivot(index=["bioproject_id", "asm_level", "asm_type", "GCA", "release_date", "refseq_accession", "infra_type", "infra_name", "is_current"], columns="metrics_name", values="metrics_value")
     # Ensure all requested metrics are present as columns
     for metric in all_metrics:
         if metric not in df_wide.columns:
@@ -257,7 +257,7 @@ def get_filtered_assemblies(bioproject_id, metric_thresholds, all_metrics, asm_l
         return "No assemblies meet the given thresholds.", None, None, None
 
     # Clean info results table
-    df_info_result = df[['bioproject_id', 'release_date', 'scientific_name', 'common_name', 'group_name', 'Associated project', 'GCA', 'lowest_taxon_id', 'infra_type', 'infra_name']]
+    df_info_result = df[['bioproject_id', 'release_date', 'scientific_name', 'common_name', 'group_name', 'Associated project', 'GCA', 'lowest_taxon_id', 'infra_type', 'infra_name', 'is_current']]
     df_info_result = df_info_result.drop_duplicates(subset=['GCA'], keep='first')
 
     # Drop specific columns and clean multiple GCA's
@@ -277,16 +277,14 @@ def get_filtered_assemblies(bioproject_id, metric_thresholds, all_metrics, asm_l
     df_wide.rename(
         columns={'bioproject_id': 'BioProject ID', 'asm_level': 'Assembly level', 'number_of_contigs': 'Number of contigs', 'number_of_scaffolds': 'Number of scaffolds', 'scaffold_n50': 'Scaffold N50', 'total_sequence_length':'Sequence length', 'GCA': "GCA", 'contig_n50': 'Contig N50', 'gc_percent': 'GC%', 'genome_coverage': 'Genome coverage X', 'asm_type': "Assembly type", 'refseq_accession': "RefSeq Accession"}, inplace=True)
     summary_df.rename(columns={'genome_coverage': 'Genome coverage X', 'contig_n50': 'Conting N50', 'scaffold_n50': 'Scaffold N50',  'total_sequence_length': "Sequence length", 'gc_percent': 'GC%'}, inplace=True)
-    df_info_result.rename(columns={'bioproject_id': 'BioProject ID', 'release_date': 'Release date', 'scientific_name': 'Scientific name',  'common_name': "Common name", 'group_name': 'Group name', 'lowest_taxon_id': "Lowest taxon ID", "infra_type": "Infra type", "infra_name": "Infra name"}, inplace=True)
+    df_info_result.rename(columns={'bioproject_id': 'BioProject ID', 'release_date': 'Release date', 'scientific_name': 'Scientific name',  'common_name': "Common name", 'group_name': 'Group name', 'lowest_taxon_id': "Lowest taxon ID", "infra_type": "Infra type", "infra_name": "Infra name", "is_current": "Assembly status"}, inplace=True)
     df_info_result = df_info_result[df_info_result['GCA'].isin(df_wide['GCA'])]
 
     # Load clade data
     clade_data = load_clade_data()
 
     # Add internal clade and species taxon ID columns to the info_result DataFrame
-    df_info_result[['Internal clade', 'Species taxon ID']] = df_info_result['Lowest taxon ID'].apply(
-        lambda x: pd.Series(assign_clade_and_species(x, clade_data))
-    )
+    df_info_result[['Internal clade', 'Species taxon ID']] = df_info_result['Lowest taxon ID'].apply(lambda x: pd.Series(assign_clade_and_species(x, clade_data)))
 
     return df_wide, summary_df, df_info_result, df_gca_list
 
