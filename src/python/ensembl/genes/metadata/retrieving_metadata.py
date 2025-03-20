@@ -13,7 +13,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-"""This module retrieves metadata from the NCBI API for a given GCA accession 
+"""This module retrieves metadata from the NCBI API for a given GCA accession
         and stores it in JSON files to be inserted in the database.
 
     Args:
@@ -25,14 +25,15 @@
         str: json-like file with species data with .tmp extension
 """
 
-import requests
 import argparse
 import json
 import logging
-from tenacity import retry, stop_after_attempt, wait_random
-from typing import Dict, Any, Tuple
+from typing import Any, Dict, Tuple
 
-@retry(stop=stop_after_attempt(5), wait=wait_random(min=1, max=10))
+import requests # type: ignore
+from tenacity import retry, stop_after_attempt, wait_random # type: ignore
+
+@retry(stop=stop_after_attempt(10), wait=wait_random(min=1, max=20))
 def connection_ncbi(uri: str) -> requests.Response:
     """Connects to NCBI API and retrieves data for a given URI
     Args:
@@ -40,7 +41,7 @@ def connection_ncbi(uri: str) -> requests.Response:
     Returns:
         requests.Response: response object from NCBI API
     """
-    response = requests.get(uri)
+    response = requests.get(uri, timeout=60)
     response.raise_for_status()
     return response
 

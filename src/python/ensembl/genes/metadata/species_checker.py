@@ -35,7 +35,7 @@ import random
 import os
 from tenacity import retry, stop_after_attempt, wait_random
 
-@retry(stop=stop_after_attempt(5), wait=wait_random(min=1, max=10))
+@retry(stop=stop_after_attempt(10), wait=wait_random(min=1, max=20))
 def connection_ncbi(uri: str) -> requests.Response:
     response = requests.get(uri)
     response.raise_for_status()
@@ -52,6 +52,7 @@ def get_taxon_data(taxon_id:str, ncbi_url) -> dict:
         dict: response from NCBI API
     """
     uri = f"{ncbi_url}/taxonomy/taxon/{taxon_id}/dataset_report"
+    logging.info(f"URI: {uri}")
     response = connection_ncbi(uri)
     taxon_data = response.json()
 
