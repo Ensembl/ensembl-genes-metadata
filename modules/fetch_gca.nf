@@ -11,7 +11,7 @@ process FETCH_GCA {
     script:
     if (params.add_gca) {
     """
-        cat ${params.gca_list}
+        grep '^GCA_' ${params.gca_list}
     """
     }
     else {

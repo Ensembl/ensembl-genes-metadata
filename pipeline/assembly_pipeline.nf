@@ -76,9 +76,6 @@ workflow {
 
     def parse_metadata_out = PARSE_METADATA(gca)
 
-    //data= parse_metadata_out
-    //data.each{ d-> d.view()}
-
     def write2db_assembly_out = WRITE2DB_ASSEMBLY(parse_metadata_out)
 
     def update_keys_out = UPDATE_KEYS_METADATA(write2db_assembly_out)
