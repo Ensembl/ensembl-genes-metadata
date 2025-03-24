@@ -32,7 +32,9 @@ bioproject_mapping = {
     "PRJEB43510": "ERGA",
     "PRJNA533106": "EBP",
     "PRJEB47820": "ERGA_pilot",
-    "PRJEB43743": "ASG"}
+    "PRJEB43743": "ASG",
+    "PRJNA489243": "VGP",
+    "PRJNA813333": "CBP"}
 
 def is_reference_genome(accession):
     """
