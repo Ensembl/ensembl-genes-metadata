@@ -2,6 +2,8 @@ requests
 pandas
 PyMySQL
 argparse
+asyncio
+aiohttp
 
 # To run GUI
 streamlit
