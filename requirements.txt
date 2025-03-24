@@ -6,5 +6,5 @@ asyncio
 aiohttp
 
 # To run GUI
-streamlit
-watchdog
+#streamlit
+#watchdog
