@@ -193,7 +193,7 @@ def get_filtered_assemblies(bioproject_id, metric_thresholds, all_metrics, asm_l
 
     query = f"""
         SELECT b.bioproject_id, a.asm_level, a.gca_chain, a.gca_version, a.asm_type, a.release_date, a.is_current,
-               m.metrics_name, m.metrics_value, s.scientific_name, s.common_name, 
+               m.metrics_name, m.metrics_value, s.scientific_name, s.common_name, a.asm_name,
                s.lowest_taxon_id, g.group_name, a.refseq_accession, o.infra_type, o.infra_name
         FROM bioproject b
         JOIN assembly_metrics m ON b.assembly_id = m.assembly_id
@@ -227,7 +227,7 @@ def get_filtered_assemblies(bioproject_id, metric_thresholds, all_metrics, asm_l
     # Pivot the data so each metric_name becomes a separate column and combine gca_chain and gca_version, correct date format
     df["GCA"] = df["gca_chain"].astype(str) + "." + df["gca_version"].astype(str)
 
-    df_wide = df.pivot(index=["bioproject_id", "asm_level", "asm_type", "gca", "release_date", "refseq_accession", "infra_type", "infra_name", "is_current"], columns="metrics_name", values="metrics_value")
+    df_wide = df.pivot(index=["bioproject_id", "asm_level", "asm_type", "asm_name", "gca", "release_date", "refseq_accession", "infra_type", "infra_name", "is_current"], columns="metrics_name", values="metrics_value")
     # Ensure all requested metrics are present as columns
     for metric in all_metrics:
         if metric not in df_wide.columns:
