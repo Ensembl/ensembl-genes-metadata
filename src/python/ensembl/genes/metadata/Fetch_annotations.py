@@ -126,13 +126,6 @@ def get_annotation(release_date, taxon_id, bioproject_id):
     gca_accessions = get_gca_accessions(bioproject_id) if bioproject_id else None
     logging.debug(f"GCA Accessions: {gca_accessions}")
 
-    # Debugging step to check if specific GCA is in the DataFrame
-    example_gca = "GCA_022829085.1"
-
-    if example_gca in gca_accessions:
-        print(f"Example GCA {example_gca} found in the gca_accessions.")
-    else:
-        print(f"Example GCA {example_gca} not found in the gca_accessions.")
 
     # Build dynamic SQL filtering
     conditions = []
@@ -176,12 +169,6 @@ def get_annotation(release_date, taxon_id, bioproject_id):
     conn.close()
 
     df_prod = pd.DataFrame(results)
-
-    # Debugging step to check if specific GCA is in the DataFrame
-    if example_gca in df_prod['gca'].values:
-        print(f"Example GCA {example_gca} found in the DataFrame.")
-    else:
-        print(f"Example GCA {example_gca} not found in the DataFrame.")
 
     logging.debug(f"Total records fetched from production db: {len(df_prod)}")
 
@@ -252,15 +239,18 @@ def bin_by_genebuild_method(df):
     return method_summary
 
 
-def generate_yearly_summary(df, df_info_result, filtered_df):
+def generate_yearly_summary(df_wide, df_info_result, filtered_df):
     """Generate a table summarizing assemblies above contig level and annotated genomes per year."""
-    df_info_result['year'] = pd.to_datetime(df_info_result['release_date']).dt.year
-    df = df.merge(df_info_result[['gca', 'year']], on='gca', how='left')
+
+    assembly_info = df_info_result
+    assemblies = df_wide
+    assembly_info['year'] = pd.to_datetime(assembly_info['release_date']).dt.year
+    assembly_info = assemblies.merge(assembly_info[['gca', 'year']], on='gca', how='left')
 
     valid_levels = ["Scaffold", "Chromosome", "Complete genome"]
 
     # Filter only the valid assembly levels
-    df_filtered_levels = df[df['asm_level'].isin(valid_levels)].copy()
+    df_filtered_levels = assembly_info[assembly_info['asm_level'].isin(valid_levels)].copy()
 
     # Count assemblies per year
     assemblies_per_year = df_filtered_levels.groupby('year').size().reset_index(
@@ -318,22 +308,24 @@ def check_most_updated_annotation(df_info_result, filtered_df):
     """Checks if each annotated assembly is the latest available version and includes species name and latest GCA."""
 
     # Extract version number from GCA identifier
-    df_info_result['version'] = df_info_result['gca'].str.extract(r'GCA_\d+\.(\d+)').astype(float)
-    df_info_result['gca_latest'] = df_info_result['gca']
-    filtered_df['version'] = filtered_df['gca'].str.extract(r'GCA_\d+\.(\d+)').astype(float)
-    filtered_df['gca_annotated'] = filtered_df['gca']
+    asm_info = df_info_result
+    asm_info['version'] = asm_info['gca'].str.extract(r'GCA_\d+\.(\d+)').astype(float)
+    asm_info['gca_latest'] = asm_info['gca']
+    ann_filtered = filtered_df
+    ann_filtered['version'] = ann_filtered['gca'].str.extract(r'GCA_\d+\.(\d+)').astype(float)
+    ann_filtered['gca_annotated'] = ann_filtered['gca']
 
     # Create a DataFrame with all GCA and Version pairs
-    latest_versions = df_info_result[['gca', 'version', 'gca_latest', 'lowest_taxon_id', 'species_taxon_id']].rename(
+    latest_versions = asm_info[['gca', 'version', 'gca_latest', 'lowest_taxon_id', 'species_taxon_id']].rename(
         columns={'version': 'latest_version'}
     )
     latest_versions['gca'] = latest_versions['gca'].str.replace(r'\.\d+$', '', regex=True)
 
     # Rename GCA column in filtered_df for clarity
-    filtered_df['gca'] = filtered_df['gca'].str.replace(r'\.\d+$', '', regex=True)
+    ann_filtered['gca'] = ann_filtered['gca'].str.replace(r'\.\d+$', '', regex=True)
 
     # Merge latest versions with filtered_df based on GCA
-    merged_df = filtered_df.merge(latest_versions, on="gca", how='left')
+    merged_df = ann_filtered.merge(latest_versions, on="gca", how='left')
 
     # Create new columns for annotated and assembly versions
     merged_df['annotated_version'] = merged_df['version']
@@ -343,7 +335,7 @@ def check_most_updated_annotation(df_info_result, filtered_df):
     # Check if the annotated GCA is the same as the latest assembly GCA
     def check_latest_annotated(row):
         if pd.isna(row['assembly_version']):
-            return 'Warning: GCA is not in registry'
+            return 'Yes, low quality assembly version'
         return 'Yes' if row['annotated_version'] == row['assembly_version'] else 'No'
 
     merged_df['latest_annotated'] = merged_df.apply(check_latest_annotated, axis=1)
@@ -359,7 +351,7 @@ def check_most_updated_annotation(df_info_result, filtered_df):
 
 def main():
     parser = argparse.ArgumentParser(description='Fetches annotations and assemblies')
-    parser.add_argument("--release_date", type=str, default="2019-01-01", help="Release date in YYYY-MM-DD format (default: 2019-01-01).")
+    parser.add_argument("--release_date", type=str, default="2000-01-01", help="Release date in YYYY-MM-DD format (default: 2019-01-01).")
     parser.add_argument("--output_dir", type=str, required=True, help="Directory to save output files.")
     parser.add_argument("--taxon_id", type=str, required=False, help="Taxon ID for filtering (e.g., 40674 for Mammalia).")
     parser.add_argument('--asm_level', type=str, nargs='+', help="Assembly level options: 'Contig', 'Scaffold', 'Chromosome', 'Complete genome'.")
