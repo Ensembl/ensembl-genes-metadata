@@ -73,6 +73,7 @@ python src/python/ensembl/genes/metadata/GB_metadata_reporting.py --bioproject_i
 - `--release_date`: Assembly release date to filter by (e.g., 2019-01-01).
 - `--output_dir`: Directory to save the CSV output files.
 - `--reference`: Check if GCA is a reference genome (1 for yes, 0 for no). Default 0. Note: NCBI API times out if checking a large number of assemblies.
+- `--trans`: Check if taxon ID has transcriptomic data in ENA. This uses the check_transcriptomic_data.py (1 for yes, 0 for no). Default 0.
 
 
 ##### Fetch_annotations
@@ -80,7 +81,7 @@ python src/python/ensembl/genes/metadata/GB_metadata_reporting.py --bioproject_i
 
 The following parameters can be specified when running the script:
 
-- `--release_date`: Release date in YYYY-MM-DD format (default: `2019-01-01`). Will be applied to both assemblies and annotations.
+- `--release_date`: Release date in YYYY-MM-DD format (default: `2000-01-01`). Will be applied to both assemblies and annotations.
 - `--output_dir`:Directory to save output files.
 - `--taxon_id`:  Taxon ID for filtering (e.g., `40674` for Mammalia). Will be applied to both assemblies and annotations.
 - `--asm_level`: Assembly level options. Acceptable values include: `Contig`, `Scaffold`, `Chromosome`,`Complete genome`
