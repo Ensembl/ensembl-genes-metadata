@@ -1,14 +1,16 @@
-import pandas as pd
-import json
-import pymysql
 import os
-from datetime import datetime
+import json
+import time
+import pymysql
+import logging
+import asyncio
 import argparse
 import requests
-import logging
+import pandas as pd
 from typing import List
-import time
+from datetime import datetime
 from GB_metadata_reporting import get_filtered_assemblies
+from check_transcriptomic_data import check_data_from_ena
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -364,6 +366,7 @@ def main():
     parser.add_argument('--scaffold_n50', type=float, help="Scaffold N50")
     parser.add_argument('--genome_coverage', type=float, help="Genome coverage in bp")
     parser.add_argument('--bioproject_id', type=str, nargs='+', help="One or more BioProject IDs")
+    parser.add_argument('--trans', type=int, choices=[0, 1], default=0, help="Check if a taxon ID has transcriptomic data from ENA (1 for yes, 0 for no)")
 
     args = parser.parse_args()
 
@@ -387,6 +390,26 @@ def main():
     # Fetch assemblies released in the past 5 years
     df_wide, summary_df, df_info_result, df_gca_list = get_filtered_assemblies(bioproject_id, metric_thresholds, all_metrics, asm_level, asm_type, release_date, taxon_id)
 
+
+    # Check for transcriptomic data only if the user requested it
+    if args.trans:
+        # Check transcriptomic data for each taxon_id in the dataset
+        taxon_ids = df_info_result["lowest_taxon_id"].unique()
+
+        # Run transcriptomic data retrieval asynchronously
+        async def fetch_transcriptomic_data():
+            return await asyncio.gather(*[check_data_from_ena(taxon_id, tree=True) for taxon_id in taxon_ids])
+
+        transcriptomic_results = asyncio.run(fetch_transcriptomic_data())
+
+        # Convert results into a DataFrame
+        transcriptomic_df = pd.DataFrame(transcriptomic_results)
+
+        # Merge the transcriptomic data into info_result using 'Taxon ID' as the key
+        df_info_result = df_info_result.merge(transcriptomic_df, left_on="lowest_taxon_id", right_on="Taxon ID", how="left")
+
+        # Drop redundant 'Taxon ID' column
+        df_info_result.drop(columns=["Taxon ID"], inplace=True)
 
     if isinstance(df_wide, str):  # Check if there's an error message
         print(df_wide)
