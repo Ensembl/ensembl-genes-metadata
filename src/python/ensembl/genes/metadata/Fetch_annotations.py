@@ -6,6 +6,8 @@ from datetime import datetime
 import argparse
 import requests
 import logging
+from typing import List
+import time
 from GB_metadata_reporting import get_filtered_assemblies
 
 # Configure logging
@@ -55,16 +57,86 @@ def get_descendant_taxa(taxon_id):
         print("Unexpected response format from NCBI.")
         return set()
 
+def get_gca_accessions(bioproject_id) -> List[str]:
+    """
+    Fetches GCA assembly accessions from a given NCBI BioProject ID using the NCBI Datasets API.
 
-def get_annotation(release_date, taxon_id):
+    Args:
+        bioproject_id (str): The NCBI BioProject ID (e.g., "PRJEB40665")
+
+    Returns:
+        list: A list of GCA accession numbers associated with the BioProject
+    """
+    base_url = "https://api.ncbi.nlm.nih.gov/datasets/v2alpha/genome/bioproject"
+    next_page_token = None
+    gca_accessions = []
+
+    while True:
+        url = f"{base_url}/{bioproject_id}/dataset_report"
+        params = {}
+        if next_page_token:
+            params['page_token'] = next_page_token
+
+        try:
+            response = requests.get(url, params=params)
+            response.raise_for_status()  # This will raise an exception for 4XX and 5XX errors
+            data = response.json()
+
+            assemblies = data.get('reports', [])
+            for assembly in assemblies:
+                assembly_accession = assembly.get('accession')
+
+                # Only include GCA accessions (GenBank)
+                if assembly_accession and assembly_accession.startswith('GCA_'):
+                    gca_accessions.append(assembly_accession)
+
+            # Check for the next page token
+            next_page_token = data.get('next_page_token')
+            if not next_page_token:
+                break
+
+            # Inside the loop where you make requests
+            if response.status_code == 429:
+                print("Rate limit exceeded, sleeping for 10 seconds...")
+                time.sleep(10)
+                continue  # retry the request after delay
+
+        except requests.HTTPError as http_err:
+            print(f"HTTP error occurred: {http_err}")
+            break
+        except Exception as err:
+            print(f"An error occurred: {err}")
+            break
+
+    logging.debug(f"Final GCA accessions: {gca_accessions}")
+    return gca_accessions
+
+
+def get_annotation(release_date, taxon_id, bioproject_id):
     db_config_key = "prod"
     conn = connect_db(db_config_key)
     cursor = conn.cursor()
 
-    # Build dynamic SQL filtering
-    conditions = ["d.name = 'genebuild'"]  # Always required
-    params = []
+    if isinstance(bioproject_id, list) and len(bioproject_id) > 0:
+        bioproject_id = bioproject_id[0]  # Take the first Bioproject ID
 
+    print(f"Bioproject ID: {bioproject_id}")
+
+    # Fetch GCA list from NCBI if BioProject ID is provided
+    gca_accessions = get_gca_accessions(bioproject_id) if bioproject_id else None
+    logging.debug(f"GCA Accessions: {gca_accessions}")
+
+    # Debugging step to check if specific GCA is in the DataFrame
+    example_gca = "GCA_022829085.1"
+
+    if example_gca in gca_accessions:
+        print(f"Example GCA {example_gca} found in the gca_accessions.")
+    else:
+        print(f"Example GCA {example_gca} not found in the gca_accessions.")
+
+    # Build dynamic SQL filtering
+    conditions = []
+    parameters = []
 
     if taxon_id:
         descendant_taxa = get_descendant_taxa(taxon_id)
@@ -72,13 +144,18 @@ def get_annotation(release_date, taxon_id):
             return f"No descendant taxa found for Taxon ID {taxon_id}.", None
 
         conditions.append(f"o.species_taxonomy_id IN ({','.join(['%s'] * len(descendant_taxa))})")
-        params.extend(descendant_taxa)
+        parameters.extend(descendant_taxa)
+
+    if gca_accessions:  # If filtering by BioProject ID, add GCA condition
+        conditions.append(f"a.accession IN ({','.join(['%s'] * len(gca_accessions))})")
+        parameters.extend(gca_accessions)
 
     # If there are conditions, join them with AND; otherwise, select all
     where_clause = " WHERE " + " AND ".join(conditions) if conditions else ""
+    logging.debug(f"Params passed to the query: {parameters}")
 
     query = f"""
-                SELECT da.value, da.attribute_id, a.accession AS GCA, r.release_date AS ensembl_release_date, o.scientific_name, o.species_taxonomy_id
+                SELECT da.value, da.attribute_id, a.accession AS gca, r.release_date AS ensembl_release_date, o.scientific_name, o.species_taxonomy_id
                 FROM dataset_attribute da
                 JOIN dataset d ON da.dataset_id = d.dataset_id
                 JOIN genome_dataset gd ON d.dataset_id = gd.dataset_id
@@ -87,14 +164,24 @@ def get_annotation(release_date, taxon_id):
                 JOIN organism o ON g.organism_id = o.organism_id
                 LEFT JOIN ensembl_release r ON r.release_id = gd.release_id
                 {where_clause}
+                AND d.name = 'genebuild'
                 AND da.attribute_id IN (34, 37, 25, 183, 31, 40, 42, 48, 170, 56, 212);
             """
 
-    cursor.execute(query, params)
+    cursor.execute(query, parameters)
+    print(f"Params passed to the query: {parameters}")
+    print(f"Final WHERE clause: {where_clause}")
+    print(f"Executing query: {query}")
     results = cursor.fetchall()
     conn.close()
 
     df_prod = pd.DataFrame(results)
+
+    # Debugging step to check if specific GCA is in the DataFrame
+    if example_gca in df_prod['gca'].values:
+        print(f"Example GCA {example_gca} found in the DataFrame.")
+    else:
+        print(f"Example GCA {example_gca} not found in the DataFrame.")
 
     logging.debug(f"Total records fetched from production db: {len(df_prod)}")
 
@@ -118,7 +205,7 @@ def get_annotation(release_date, taxon_id):
 
     # Pivot to wide format without losing records
     df_pivoted = df_prod.pivot_table(
-        index=["ensembl_release_date", "GCA", "scientific_name", "species_taxonomy_id"],
+        index=["ensembl_release_date", "gca", "scientific_name", "species_taxonomy_id"],
         columns="attribute_id",
         values="value",
         aggfunc="first"  # or use 'list' if you want to capture multiple values for the same attribute_id
@@ -138,10 +225,8 @@ def get_annotation(release_date, taxon_id):
     df_filtered = df_pivoted[df_pivoted['last_geneset_update'] >= release_date]
     logging.debug(f"Records after release date filtering: {len(df_filtered)}")
 
-    df_filtered = df_filtered[df_filtered['GCA'].str.startswith('GCA')]
+    df_filtered = df_filtered[df_filtered['gca'].str.startswith('GCA')]
     logging.debug(f"Records after GCA filtering: {len(df_filtered)}")
-
-    df_filtered.rename(columns={'scientific_name': 'Scientific name'}, inplace=True)
 
     logging.info(f"Filtered {len(df_filtered)} records based on the release date.")
 
@@ -169,30 +254,31 @@ def bin_by_genebuild_method(df):
 
 def generate_yearly_summary(df, df_info_result, filtered_df):
     """Generate a table summarizing assemblies above contig level and annotated genomes per year."""
-    df_info_result['Year'] = pd.to_datetime(df_info_result['Release date']).dt.year
-    df = df.merge(df_info_result[['GCA', 'Year']], on='GCA', how='left')
+    df_info_result['year'] = pd.to_datetime(df_info_result['release_date']).dt.year
+    df = df.merge(df_info_result[['gca', 'year']], on='gca', how='left')
 
     valid_levels = ["Scaffold", "Chromosome", "Complete genome"]
 
     # Filter only the valid assembly levels
-    df_filtered_levels = df[df['Assembly level'].isin(valid_levels)].copy()
+    df_filtered_levels = df[df['asm_level'].isin(valid_levels)].copy()
 
     # Count assemblies per year
-    assemblies_per_year = df_filtered_levels.groupby('Year').size().reset_index(
+    assemblies_per_year = df_filtered_levels.groupby('year').size().reset_index(
         name='Number of Assemblies')
 
     # Ensure 'Contig N50' is numeric
-    df_filtered_levels['Contig N50'] = pd.to_numeric(df_filtered_levels['Contig N50'], errors='coerce')
+    df_filtered_levels['contig_n50'] = pd.to_numeric(df_filtered_levels['contig_n50'], errors='coerce')
+
 
     # Filter for assemblies with contigN50 >= 100000 (Annotation Candidates)
-    annotation_candidates = df_filtered_levels[df_filtered_levels['Contig N50'] >= 100000].groupby(
-        'Year').size().reset_index(
+    annotation_candidates = df_filtered_levels[df_filtered_levels['contig_n50'] >= 100000].groupby(
+        'year').size().reset_index(
         name='Annotation Candidates')
 
     # Extract annotation year from 'last_geneset_update'
     if 'last_geneset_update' in filtered_df.columns:
-        filtered_df['Year'] = pd.to_datetime(filtered_df['last_geneset_update']).dt.year
-        annotated_per_year = filtered_df.groupby('Year').size().reset_index(name='Number of Annotated Genomes')
+        filtered_df['year'] = pd.to_datetime(filtered_df['last_geneset_update']).dt.year
+        annotated_per_year = filtered_df.groupby('year').size().reset_index(name='Number of Annotated Genomes')
     else:
         print("No 'last_geneset_update' column found in annotations.")
         return pd.DataFrame()
@@ -201,29 +287,29 @@ def generate_yearly_summary(df, df_info_result, filtered_df):
     if 'ensembl_release_date' in filtered_df.columns:
         filtered_df = filtered_df[filtered_df['ensembl_release_date'] != 'Not yet released']
         filtered_df = filtered_df.copy()  # Ensures we're working on a new copy
-        filtered_df['Ensembl Release Year'] = pd.to_datetime(filtered_df['ensembl_release_date'], errors='coerce').dt.year
-        ensembl_release_summary = filtered_df.groupby('Ensembl Release Year').size().reset_index(
+        filtered_df['ensembl_release_year'] = pd.to_datetime(filtered_df['ensembl_release_date'], errors='coerce').dt.year
+        ensembl_release_summary = filtered_df.groupby('ensembl_release_year').size().reset_index(
             name='Number of Ensembl Releases')
     else:
         ensembl_release_summary = pd.DataFrame()
 
     # Merge all summaries
-    yearly_summary = pd.merge(assemblies_per_year, annotated_per_year, on='Year', how='outer').fillna(0)
-    yearly_summary = pd.merge(yearly_summary, annotation_candidates, on='Year', how='outer').fillna(0)
-    yearly_summary = pd.merge(yearly_summary, ensembl_release_summary, left_on='Year', right_on='Ensembl Release Year', how='outer').fillna(0).drop(
-        columns=['Ensembl Release Year'])
+    yearly_summary = pd.merge(assemblies_per_year, annotated_per_year, on='year', how='outer').fillna(0)
+    yearly_summary = pd.merge(yearly_summary, annotation_candidates, on='year', how='outer').fillna(0)
+    yearly_summary = pd.merge(yearly_summary, ensembl_release_summary, left_on='year', right_on='ensembl_release_year', how='outer').fillna(0).drop(
+        columns=['ensembl_release_year'])
 
     return yearly_summary
 
 
 def bin_by_assembly_level(df):
     """Bins assemblies based on their assembly level."""
-    if 'Assembly level' not in df.columns:
+    if 'asm_level' not in df.columns:
         print("Column 'Assembly level' not found in dataset.")
         return pd.DataFrame()  # Return empty DataFrame if column is missing
 
     # Group by Assembly level and count occurrences
-    level_summary = df.groupby('Assembly level', observed=False).size().reset_index(name='Number of Assemblies')
+    level_summary = df.groupby('asm_level', observed=False).size().reset_index(name='number_of_assemblies')
 
     return level_summary
 
@@ -232,40 +318,42 @@ def check_most_updated_annotation(df_info_result, filtered_df):
     """Checks if each annotated assembly is the latest available version and includes species name and latest GCA."""
 
     # Extract version number from GCA identifier
-    df_info_result['Version'] = df_info_result['GCA'].str.extract(r'GCA_\d+\.(\d+)').astype(float)
-    df_info_result['GCA Latest'] = df_info_result['GCA']
-    filtered_df['Version'] = filtered_df['GCA'].str.extract(r'GCA_\d+\.(\d+)').astype(float)
-    filtered_df['GCA Annotated'] = filtered_df['GCA']
+    df_info_result['version'] = df_info_result['gca'].str.extract(r'GCA_\d+\.(\d+)').astype(float)
+    df_info_result['gca_latest'] = df_info_result['gca']
+    filtered_df['version'] = filtered_df['gca'].str.extract(r'GCA_\d+\.(\d+)').astype(float)
+    filtered_df['gca_annotated'] = filtered_df['gca']
 
     # Create a DataFrame with all GCA and Version pairs
-    latest_versions = df_info_result[['GCA', 'Version', 'GCA Latest', 'Lowest taxon ID', 'Species taxon ID', 'Assembly status']].rename(
-        columns={'Version': 'Latest Version'}
+    latest_versions = df_info_result[['gca', 'version', 'gca_latest', 'lowest_taxon_id', 'species_taxon_id']].rename(
+        columns={'version': 'latest_version'}
     )
-    latest_versions['GCA'] = latest_versions['GCA'].str.replace(r'\.\d+$', '', regex=True)
+    latest_versions['gca'] = latest_versions['gca'].str.replace(r'\.\d+$', '', regex=True)
 
     # Rename GCA column in filtered_df for clarity
-    filtered_df['GCA'] = filtered_df['GCA'].str.replace(r'\.\d+$', '', regex=True)
+    filtered_df['gca'] = filtered_df['gca'].str.replace(r'\.\d+$', '', regex=True)
 
     # Merge latest versions with filtered_df based on GCA
-    merged_df = filtered_df.merge(latest_versions, on="GCA", how='left')
+    merged_df = filtered_df.merge(latest_versions, on="gca", how='left')
 
     # Create new columns for annotated and assembly versions
-    merged_df['Annotated Version'] = merged_df['Version']
-    merged_df['Assembly Version'] = merged_df['Latest Version']
+    merged_df['annotated_version'] = merged_df['version']
+    merged_df['assembly_version'] = merged_df['latest_version']
 
 
     # Check if the annotated GCA is the same as the latest assembly GCA
     def check_latest_annotated(row):
-        if pd.isna(row['Assembly Version']):
+        if pd.isna(row['assembly_version']):
             return 'Warning: GCA is not in registry'
-        return 'Yes' if row['Annotated Version'] == row['Assembly Version'] else 'No'
+        return 'Yes' if row['annotated_version'] == row['assembly_version'] else 'No'
 
-    merged_df['Latest Annotated'] = merged_df.apply(check_latest_annotated, axis=1)
+    merged_df['latest_annotated'] = merged_df.apply(check_latest_annotated, axis=1)
 
     # Order the DataFrame by Scientific name
-    merged_df.sort_values(by='Scientific name', inplace=True)
+    merged_df.sort_values(by='scientific_name', inplace=True)
+    print("merged df for debug:")
+    print(merged_df)
 
-    return merged_df[['Scientific name', 'Lowest taxon ID', 'Species taxon ID', 'GCA Annotated', 'GCA Latest', 'Assembly status', 'Latest Annotated']]
+    return merged_df[['scientific_name', 'lowest_taxon_id', 'species_taxon_id', 'gca_annotated', 'gca_latest', 'latest_annotated']]
 
 
 
@@ -316,13 +404,13 @@ def main():
     level_summary = bin_by_assembly_level(df_wide)
 
     # Fetch dataset annotations using the same release date
-    filtered_df = get_annotation(release_date, taxon_id)
+    filtered_df = get_annotation(release_date, taxon_id, bioproject_id)
 
     # Create the FTP URL using the scientific_name, replacing spaces with underscores
-    filtered_df['FTP'] = filtered_df.apply(
+    filtered_df['ftp'] = filtered_df.apply(
         lambda
-            row: f"https://ftp.ebi.ac.uk/pub/ensemblorganisms/{row['Scientific name'].replace(' ', '_')}/{row['GCA']}/"
-        if pd.notnull(row['Scientific name']) and pd.notnull(row['GCA']) and pd.notnull(
+            row: f"https://ftp.ebi.ac.uk/pub/ensemblorganisms/{row['scientific_name'].replace(' ', '_')}/{row['gca']}/"
+        if pd.notnull(row['scientific_name']) and pd.notnull(row['gca']) and pd.notnull(
             row.get('ensembl_release_date')) else None,
         axis=1)
 
@@ -333,14 +421,14 @@ def main():
 
     #Check annotation status
     # Add an 'Annotated' column to df_info_result
-    df_info_result['Annotated'] = df_info_result['GCA'].str.extract(r'(GCA_\d+)', expand=False).isin(
-        filtered_df['GCA'].str.extract(r'(GCA_\d+)', expand=False)).map({True: 'Yes', False: 'No'})
+    df_info_result['annotated'] = df_info_result['gca'].str.extract(r'(GCA_\d+)', expand=False).isin(
+        filtered_df['gca'].str.extract(r'(GCA_\d+)', expand=False)).map({True: 'Yes', False: 'No'})
 
     #Check if annotated is the latest GCA version in the registry
     latest_annotated_df = check_most_updated_annotation(df_info_result, filtered_df)
 
-    filtered_df = filtered_df.drop(columns=['Year', 'GCA', 'Version'])
-    df_info_result = df_info_result.drop(columns=['Year', 'Version', 'GCA Latest'])
+    filtered_df = filtered_df.drop(columns=['year', 'gca', 'version'])
+    df_info_result = df_info_result.drop(columns=['year', 'version', 'gca_latest'])
 
     print("\nDataset filtered:")
     print(method_summary)
