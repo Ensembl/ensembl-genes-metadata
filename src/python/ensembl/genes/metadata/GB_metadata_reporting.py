@@ -4,6 +4,8 @@ import pymysql
 import argparse
 import os
 import requests
+import asyncio
+from check_transcriptomic_data import check_data_from_ena
 
 # Load database credentials from external JSON file
 def load_db_config():
@@ -301,6 +303,7 @@ def main():
     parser.add_argument('--output_dir', type=str, default='./', help="Directory to save the CSV file. Files will only be saved if assemblies meet the given thresholds.")
     parser.add_argument('--taxon_id', type=int, help="NCBI Taxon ID to filter by (e.g., 40674 for Mammalia)")
     parser.add_argument('--reference', type=int, choices=[0, 1], default=0, help="Check if GCA is a reference genome (1 for yes, 0 for no)")
+    parser.add_argument('--trans', type=int, choices=[0, 1], default=0, help="Check if a taxon ID has transcriptomic data from ENA (1 for yes, 0 for no)")
 
     args = parser.parse_args()
 
@@ -313,6 +316,26 @@ def main():
     # Check for reference genome only if the user requested it
     if args.reference:
         info_result["reference_genome"] = info_result["gca"].apply(is_reference_genome)
+
+    # Check for transcriptomic data only if the user requested it
+    if args.trans:
+        # Check transcriptomic data for each taxon_id in the dataset
+        taxon_ids = info_result["lowest_taxon_id"].unique()
+
+        # Run transcriptomic data retrieval asynchronously
+        async def fetch_transcriptomic_data():
+            return await asyncio.gather(*[check_data_from_ena(taxon_id, tree=True) for taxon_id in taxon_ids])
+
+        transcriptomic_results = asyncio.run(fetch_transcriptomic_data())
+
+        # Convert results into a DataFrame
+        transcriptomic_df = pd.DataFrame(transcriptomic_results)
+
+        # Merge the transcriptomic data into info_result using 'Taxon ID' as the key
+        info_result = info_result.merge(transcriptomic_df, left_on="lowest_taxon_id", right_on="Taxon ID", how="left")
+
+        # Drop redundant 'Taxon ID' column
+        info_result.drop(columns=["Taxon ID"], inplace=True)
 
     # Check if 'df' is a string (error message)
     if isinstance(df, str):
