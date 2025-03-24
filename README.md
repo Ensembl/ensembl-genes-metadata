@@ -96,6 +96,7 @@ The following parameters can be specified when running the script:
 - `--genome_coverage`: 
   Assembly genome coverage threshold .
 - `--bioproject_id`: One or more BioProject IDs.
+- `--trans`: Check if taxon ID has transcriptomic data in ENA. This uses the check_transcriptomic_data.py (1 for yes, 0 for no). Default 0.
 
 #### Output
 
