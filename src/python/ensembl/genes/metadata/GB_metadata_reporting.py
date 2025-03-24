@@ -113,8 +113,9 @@ def get_taxonomy_from_db(lowest_taxon_id):
     return taxonomy_hierarchy
 
 
-def assign_clade_and_species(lowest_taxon_id, clade_data):
-    """Assign internal clade and species taxon ID based on taxonomy using the provided clade data."""
+def assign_clade_and_species(lowest_taxon_id, clade_data, chordata_taxon_id=7711):
+    """Assign internal clade and species taxon ID based on taxonomy using the provided clade data,
+       and check if the taxon ID is a descendant of the chordata taxon ID (7711)."""
     # Retrieve the taxonomy hierarchy for the given lowest_taxon_id
     taxonomy_hierarchy = get_taxonomy_from_db(lowest_taxon_id)
 
@@ -148,8 +149,14 @@ def assign_clade_and_species(lowest_taxon_id, clade_data):
             # If a clade is found, we stop looking
             if internal_clade != "Unassigned":
                 break
+    # Check if the taxon ID is 7742 or a descendant of it
+    # Loop through the hierarchy and check if chordata_taxon_id (7711) is part of it
+    if any(t['taxon_class_id'] == chordata_taxon_id for t in taxonomy_hierarchy):
+        pipeline = "main"  # Assign "main" if it is 7742 or a descendant
+    else:
+        pipeline = "anno"  # Otherwise, assign "anno"
 
-    return internal_clade, species_taxon_id
+    return internal_clade, species_taxon_id, pipeline
 
 
 
@@ -284,7 +291,7 @@ def get_filtered_assemblies(bioproject_id, metric_thresholds, all_metrics, asm_l
     clade_data = load_clade_data()
 
     # Add internal clade and species taxon ID columns to the info_result DataFrame
-    df_info_result[['internal_clade', 'species_taxon_id']] = df_info_result['lowest_taxon_id'].apply(lambda x: pd.Series(assign_clade_and_species(x, clade_data)))
+    df_info_result[['internal_clade', 'species_taxon_id','pipeline']] = df_info_result['lowest_taxon_id'].apply(lambda x: pd.Series(assign_clade_and_species(x, clade_data)))
 
     return df_wide, summary_df, df_info_result, df_gca_list
 
