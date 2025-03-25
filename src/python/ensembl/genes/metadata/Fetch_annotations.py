@@ -395,10 +395,13 @@ def main():
     if args.trans:
         # Check transcriptomic data for each taxon_id in the dataset
         taxon_ids = df_info_result["lowest_taxon_id"].unique()
+        semaphore = asyncio.Semaphore(5)
 
         # Run transcriptomic data retrieval asynchronously
         async def fetch_transcriptomic_data():
-            return await asyncio.gather(*[check_data_from_ena(taxon_id, tree=True) for taxon_id in taxon_ids])
+            return await asyncio.gather(
+                *[check_data_from_ena(taxon_id, tree=True, semaphore=semaphore) for taxon_id in taxon_ids]
+            )
 
         transcriptomic_results = asyncio.run(fetch_transcriptomic_data())
 
