@@ -382,7 +382,7 @@ def main():
     # Define metrics to consider
     metric_thresholds = {k: v[0] if isinstance(v, list) else v for k, v in vars(args).items() if
                          v is not None and k not in ["bioproject_id", "output_dir", "asm_level", "asm_type",
-                                                     "release_date"]}
+                                                     "release_date", "reference", "taxon_id"]}
 
     all_metrics = ["gc_percent", "total_sequence_length", "contig_n50", "number_of_contigs", "number_of_scaffolds",
                    "scaffold_n50", "genome_coverage"]
