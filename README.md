@@ -3,11 +3,11 @@
 This Python module allows users to query the MySQL databases to retrieve genome assembly and/or annotation information based on specified BioProject IDs/release date  and filter the results based on various metrics. The script fetches relevant genome assembly and annotation data, applies user-defined thresholds, and outputs the results in tabular format, both on-screen and as CSV files.
 
 ## Current modules
-- GB_metadata_reporting
-- Fetch_annotations
+- assemblies.py
+- annotations.py
 
 ## Features
-### GB_metadata_reporting
+### assemblies.py
 - Fetches genome assembly data linked to specified BioProject IDs.
 - Supports filtering based on metrics such as GC content, sequence length, Contig N50, and others.
 - Supports filtering based on taxon ID.
@@ -16,7 +16,7 @@ This Python module allows users to query the MySQL databases to retrieve genome 
 - Generates summary statistics for selected metrics.
 - Outputs results in structured tables and saves them as CSV files.
 
-### Fetch_annotations
+### annotations.py
 - Module based on GB_metadata_reporting.
 - Retrieves information on assemblies as well as annotations by genebuild.
 - Supports filtering based on taxon ID.
@@ -52,13 +52,13 @@ This Python module allows users to query the MySQL databases to retrieve genome 
 
 ## Usage
 
-### Command line
+## Command line
 Run the script with command-line arguments specifying BioProject IDs and optional filters:
 ```sh
-python src/python/ensembl/genes/metadata/GB_metadata_reporting.py --bioproject_id PRJEB40665 PRJEB61747 --asm_level "Complete genome" --output_dir ./results
+python src/python/ensembl/genes/metadata/assemblies.py --bioproject_id PRJEB40665 PRJEB61747 --asm_level "Complete genome" --output_dir ./results
 ```
 
-#### Command-Line Arguments
+### Command-Line Arguments
 - `--bioproject_id`: One or more BioProject IDs to query.
 - `--gc_percent`: Minimum GC content percentage.
 - `--total_sequence_length`: Minimum total sequence length (bp).
@@ -76,32 +76,10 @@ python src/python/ensembl/genes/metadata/GB_metadata_reporting.py --bioproject_i
 - `--trans`: Check if taxon ID has transcriptomic data in ENA. This uses the check_transcriptomic_data.py (1 for yes, 0 for no). Default 0.
 
 
-##### Fetch_annotations
-## Parameters
+### Output
 
-The following parameters can be specified when running the script:
-
-- `--release_date`: Release date in YYYY-MM-DD format (default: `2000-01-01`). Will be applied to both assemblies and annotations.
-- `--output_dir`:Directory to save output files.
-- `--taxon_id`:  Taxon ID for filtering (e.g., `40674` for Mammalia). Will be applied to both assemblies and annotations.
-- `--asm_level`: Assembly level options. Acceptable values include: `Contig`, `Scaffold`, `Chromosome`,`Complete genome`
-- `--asm_type`: Assembly type options. Acceptable values include: `haploid`, `alternate-pseudohaplotype`, `unresolved-diploid`, `haploid-with-alt-loci`, `diploid`
-- `--contig_n50`:Assembly contig N50 threshold.
-- `--gc_percent`: Assembly GC percent threshold.
-- `--total_sequence_length`: Assembly sequence length threshold in base pairs (bp).
-- `--number_of_contigs`: Assembly contig threshold.
-- `--number_of_scaffolds`: Assembly scaffolds threshold.
-- `--scaffold_n50`: 
-  Scaffold N50 value.
-- `--genome_coverage`: 
-  Assembly genome coverage threshold .
-- `--bioproject_id`: One or more BioProject IDs.
-- `--trans`: Check if taxon ID has transcriptomic data in ENA. This uses the check_transcriptomic_data.py (1 for yes, 0 for no). Default 0.
-
-#### Output
-
-Upon execution, the script generates the following CSV files in the specified output directory (or the working directory if none is provided)::
-##### GB_metadata_reporting
+Upon execution, the script generates the following CSV files in the specified output directory (or the working directory if none is provided):
+##### assemblies.py
 Each output file follows a structured naming convention based on the BioProject ID and release date provided by the user.
 
 - `{BioProject}_{release_date}_filtered_assemblies.csv` – Contains the filtered assembly data based on the applied metrics and thresholds.
@@ -109,7 +87,7 @@ Each output file follows a structured naming convention based on the BioProject 
 - `{BioProject}_{release_date}_filtered_assemblies_info_result.csv` – Additional assembly metadata.
 - `{BioProject}_{release_date}_filtered_assemblies_gca_list.csv` – A list of GCAs extracted from the filtered results.
 
-##### Fetch_annotations
+##### annotations.py
 Each output file is named using a structured format, where {date_str} corresponds to the execution date, ensuring version control and easy tracking of results over time.
 - `annotation_method_summary_{date_str}.csv` – Summary of annotation methods used.
 - `yearly_summary_{date_str}.csv` – Yearly summary of annotations, assemblies and Ensembl releases.
@@ -120,8 +98,8 @@ Each output file is named using a structured format, where {date_str} correspond
 - `annotation_GCA_update_status_{date_str}.csv` – Status of GCAs of already released annotations.
 
 
-### GUI in the browser
-This currently only works with the GB_metadata_reporting module.
+## GUI in the browser
+This currently only works with the assemblies module.
 Start the GUI from the command-line:
 ```sh
 streamlit run src/python/ensembl/genes/metadata/app.py

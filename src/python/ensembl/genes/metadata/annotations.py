@@ -9,7 +9,7 @@ import requests
 import pandas as pd
 from typing import List
 from datetime import datetime
-from GB_metadata_reporting import get_filtered_assemblies
+from assemblies import get_filtered_assemblies
 from check_transcriptomic_data import check_data_from_ena
 
 # Configure logging
