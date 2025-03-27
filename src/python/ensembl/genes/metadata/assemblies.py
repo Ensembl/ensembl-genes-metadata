@@ -5,6 +5,7 @@ import argparse
 import os
 import requests
 import asyncio
+import time
 from check_transcriptomic_data import check_data_from_ena
 
 # Load database credentials from external JSON file
@@ -163,7 +164,51 @@ def assign_clade_and_species(lowest_taxon_id, clade_data, chordata_taxon_id=7711
 
     return internal_clade, species_taxon_id, genus_taxon_id, pipeline
 
+def get_descendant_taxa(taxon_id):
+    """
+    Retrieves all descendant taxon IDs under the given taxon ID using NCBI E-utilities with pagination.
 
+    :param taxon_id: The parent taxon ID (e.g., 40674 for Mammalia)
+    :return: A set of descendant taxon IDs
+    """
+    base_url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi"
+    params = {
+        "db": "taxonomy",
+        "term": f"txid{taxon_id}[Subtree]",
+        "retmode": "json",
+        "retmax": 100000,  # Fetch in chunks
+        "retstart": 0,
+        "tool": "your_tool_name",
+        "email": "your_email@example.com"
+    }
+
+    taxon_ids = set()
+
+    while True:
+        response = requests.get(base_url, params=params)
+        if response.status_code != 200:
+            print(f"Error retrieving taxonomic data from NCBI. HTTP {response.status_code}")
+            break
+
+        try:
+            result = response.json()
+            batch_ids = result.get("esearchresult", {}).get("idlist", [])
+            if not batch_ids:
+                break  # No more results
+
+            taxon_ids.update(batch_ids)
+
+            # Update retstart to fetch the next batch
+            params["retstart"] += params["retmax"]
+
+            # Respect NCBI rate limits
+            time.sleep(0.5)  # Avoid overloading NCBI servers
+
+        except Exception as e:
+            print(f"Error processing response: {e}")
+            break
+
+    return taxon_ids
 
 def get_filtered_assemblies(bioproject_id, metric_thresholds, all_metrics, asm_level, asm_type, release_date,taxon_id):
     """Fetch all assemblies and their metrics filter results based on given thresholds,
@@ -191,15 +236,15 @@ def get_filtered_assemblies(bioproject_id, metric_thresholds, all_metrics, asm_l
 
     if release_date:
         conditions.append("a.release_date >= %s")
-        params.append(release_date)
+        params.extend(release_date)
 
     if taxon_id:
-        conditions.append("""
-                s.lowest_taxon_id IN (
-                    SELECT DISTINCT lowest_taxon_id FROM taxonomy WHERE taxon_class_id = %s
-                )
-            """)
-        params.append(taxon_id)
+        descendant_taxa = get_descendant_taxa(taxon_id)
+        if not descendant_taxa:
+            return f"No descendant taxa found for Taxon ID {taxon_id}.", None
+
+        conditions.append(f"s.lowest_taxon_id IN ({','.join(['%s'] * len(descendant_taxa))})")
+        params.extend(descendant_taxa)
 
 
     # If there are conditions, join them with AND; otherwise, select all
