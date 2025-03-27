@@ -395,12 +395,15 @@ def main():
     if args.trans:
         # Check transcriptomic data for each taxon_id in the dataset
         taxon_ids = df_info_result["lowest_taxon_id"].unique()
+        genus_taxon_ids = df_info_result["genus_taxon_id"].unique()
+        all_taxon_ids = set(taxon_ids).union(set(genus_taxon_ids))
+
         semaphore = asyncio.Semaphore(5)
 
         # Run transcriptomic data retrieval asynchronously
         async def fetch_transcriptomic_data():
             return await asyncio.gather(
-                *[check_data_from_ena(taxon_id, tree=True, semaphore=semaphore) for taxon_id in taxon_ids]
+                *[check_data_from_ena(taxon_id, tree=True, semaphore=semaphore) for taxon_id in all_taxon_ids]
             )
 
         transcriptomic_results = asyncio.run(fetch_transcriptomic_data())
@@ -408,11 +411,21 @@ def main():
         # Convert results into a DataFrame
         transcriptomic_df = pd.DataFrame(transcriptomic_results)
 
-        # Merge the transcriptomic data into info_result using 'Taxon ID' as the key
-        df_info_result = df_info_result.merge(transcriptomic_df, left_on="lowest_taxon_id", right_on="Taxon ID", how="left")
+        # Merge for the lowest taxon ID
+        df_info_result = df_info_result.merge(
+            transcriptomic_df, left_on="lowest_taxon_id", right_on="Taxon ID", how="left"
+        )
 
-        # Drop redundant 'Taxon ID' column
-        df_info_result.drop(columns=["Taxon ID"], inplace=True)
+        # Merge for the genus taxon ID (separate column)
+        df_info_result = df_info_result.merge(
+            transcriptomic_df, left_on="genus_taxon_id", right_on="Taxon ID", how="left", suffixes=('_lowest', '_genus')
+        )
+
+        # Drop redundant 'Taxon ID' columns (both for lowest and genus)
+        df_info_result.drop(columns=["Taxon ID_lowest", "Taxon ID_genus"], inplace=True)
+
+        # Rename or reorder columns if needed, to better organize your data
+        #df_info_result.rename(columns={"Taxon ID": "Transcriptional Data"}, inplace=True)
 
     if isinstance(df_wide, str):  # Check if there's an error message
         print(df_wide)

@@ -123,6 +123,7 @@ def assign_clade_and_species(lowest_taxon_id, clade_data, chordata_taxon_id=7711
         return "Taxon hierarchy not found.", None
 
     species_taxon_id = None
+    genus_taxon_id = None
     internal_clade = "Unassigned"  # Default value if no clade is found
 
     # Define the taxon classes in hierarchical order
