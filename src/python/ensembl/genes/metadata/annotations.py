@@ -33,31 +33,49 @@ def connect_db(config_key):
 
 def get_descendant_taxa(taxon_id):
     """
-	Retrieves all descendant taxon IDs under the given taxon ID using NCBI E-utilities.
+    Retrieves all descendant taxon IDs under the given taxon ID using NCBI E-utilities with pagination.
 
-	:param taxon_id: The parent taxon ID (e.g., 40674 for Mammalia)
-	:return: A set of descendant taxon IDs
-	"""
+    :param taxon_id: The parent taxon ID (e.g., 40674 for Mammalia)
+    :return: A set of descendant taxon IDs
+    """
     base_url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi"
     params = {
         "db": "taxonomy",
         "term": f"txid{taxon_id}[Subtree]",
         "retmode": "json",
-        "retmax": 100000  # Retrieve all possible results
+        "retmax": 100000,  # Fetch in chunks this is the max value
+        "retstart": 0,
+        "tool": "your_tool_name",
+        "email": "your_email@example.com"
     }
 
-    response = requests.get(base_url, params=params)
-    if response.status_code != 200:
-        print("Error retrieving taxonomic data from NCBI.")
-        return set()
+    taxon_ids = set()
 
-    try:
-        result = response.json()
-        taxon_ids = set(result["esearchresult"]["idlist"])
-        return taxon_ids
-    except KeyError:
-        print("Unexpected response format from NCBI.")
-        return set()
+    while True:
+        response = requests.get(base_url, params=params)
+        if response.status_code != 200:
+            print(f"Error retrieving taxonomic data from NCBI. HTTP {response.status_code}")
+            break
+
+        try:
+            result = response.json()
+            batch_ids = result.get("esearchresult", {}).get("idlist", [])
+            if not batch_ids:
+                break  # No more results
+
+            taxon_ids.update(batch_ids)
+
+            # Update retstart to fetch the next batch
+            params["retstart"] += params["retmax"]
+
+            # Respect NCBI rate limits
+            time.sleep(0.5)  # Avoid overloading NCBI servers
+
+        except Exception as e:
+            print(f"Error processing response: {e}")
+            break
+
+    return taxon_ids
 
 def get_gca_accessions(bioproject_id) -> List[str]:
     """
