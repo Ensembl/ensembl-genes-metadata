@@ -140,6 +140,10 @@ def assign_clade_and_species(lowest_taxon_id, clade_data, chordata_taxon_id=7711
             if taxon_class == 'species' and species_taxon_id is None:
                 species_taxon_id = taxon_class_id
 
+            # If it's the genus level, always assign genus_taxon_id
+            if taxon_class == 'genus' and genus_taxon_id is None:
+                genus_taxon_id = taxon_class_id
+
             # Check for matching taxon_id in clade settings
             for clade_name, details in clade_data.items():
                 if details.get("taxon_id") == taxon_class_id:
@@ -156,7 +160,7 @@ def assign_clade_and_species(lowest_taxon_id, clade_data, chordata_taxon_id=7711
     else:
         pipeline = "anno"  # Otherwise, assign "anno"
 
-    return internal_clade, species_taxon_id, pipeline
+    return internal_clade, species_taxon_id, genus_taxon_id, pipeline
 
 
 
@@ -291,7 +295,7 @@ def get_filtered_assemblies(bioproject_id, metric_thresholds, all_metrics, asm_l
     clade_data = load_clade_data()
 
     # Add internal clade and species taxon ID columns to the info_result DataFrame
-    df_info_result[['internal_clade', 'species_taxon_id','pipeline']] = df_info_result['lowest_taxon_id'].apply(lambda x: pd.Series(assign_clade_and_species(x, clade_data)))
+    df_info_result[['internal_clade', 'species_taxon_id', 'genus_taxon_id', 'pipeline']] = df_info_result['lowest_taxon_id'].apply(lambda x: pd.Series(assign_clade_and_species(x, clade_data)))
 
     return df_wide, summary_df, df_info_result, df_gca_list
 
