@@ -4,13 +4,9 @@ process WRITE2DB_SPECIES {
 
     input:
     tuple val(gca), path(species)
-    //val gca
-    //path species
 
     output:
     tuple val(gca), path("${species.baseName}.last_id")
-    //val gca, emit: gca
-    //path "${species.baseName}.last_id", emit: last_id
 
     script:
     """

@@ -4,11 +4,8 @@ process WRITE2DB_GROUP {
 
     input:
     tuple val(gca), path(group)
-    //val gca
-    //path group
 
     output:
-    //tuple val(gca), path("${group.baseName}.last_id")
     val gca, emit: gca
     path "${group.baseName}.last_id", emit: last_id
 

@@ -7,7 +7,6 @@ process GET_TOLID {
 
     output:
     tuple val(gca), path("${gca}_tolid.json")
-    //path "${gca}_tolid.json", emit: tolid
 
     script:
     """

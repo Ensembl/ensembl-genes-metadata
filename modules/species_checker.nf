@@ -4,13 +4,9 @@ process SPECIES_CHECKER {
 
     input:
     tuple val(gca), path(species_tmp), path(last_id)
-    //val gca
-    //path species_tmp
 
     output:
     tuple val(gca), path("${species_tmp.baseName}.json")
-    //val gca, emit: gca
-    //path "${species_tmp.baseName}.json", emit: species
 
     script:
     """

@@ -4,13 +4,9 @@ process WRITE2DB_TOLID {
 
     input:
     tuple val(gca), path(tolid)
-    //val gca
-    //path tolid
 
     output:
     tuple val(gca), path("${tolid.baseName}.last_id")
-    //val gca, emit: gca
-    //path "${tolid.baseName}.last_id", emit: last_id
 
     script:
     """

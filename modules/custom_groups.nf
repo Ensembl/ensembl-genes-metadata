@@ -4,12 +4,9 @@ process CUSTOM_GROUP {
 
     input:
     tuple val(gca), path(last_id)
-    //val gca
 
     output:
     tuple val(gca), path("${gca}_group.json")
-    //val gca, emit: gca
-    //path "${gca}_group.json", emit: group
 
     script:
     """
