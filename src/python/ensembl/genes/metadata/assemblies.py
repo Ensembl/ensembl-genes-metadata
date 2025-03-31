@@ -6,12 +6,29 @@ import os
 import requests
 import asyncio
 import time
+import logging
 from check_transcriptomic_data import check_data_from_ena
+
+# Setup logging configuration
+def setup_logging(output_dir):
+    log_filename = os.path.join(output_dir, "assemblies_log.txt")
+    logging.basicConfig(
+        level=logging.DEBUG,
+        format='%(asctime)s - %(levelname)s - %(message)s',
+        handlers=[
+            logging.FileHandler(log_filename),
+            logging.StreamHandler()
+        ],
+        force=True,
+    )
+    logging.info("Logging initialized")
+
 
 # Load database credentials from external JSON file
 def load_db_config():
     config_path = "conf/db_config.json"
     if not os.path.exists(config_path):
+        logging.error("Config file not found")
         raise FileNotFoundError(f"Database config file '{config_path}' not found.")
 
     with open(config_path, "r") as f:
@@ -50,15 +67,17 @@ def is_reference_genome(accession):
         "term": f"{accession}[Assembly Accession]",
         "retmode": "json"
     }
+    logging.info(f"Checking if {accession} is a reference genome.")
 
     response = requests.get(base_url, params=params)
     if response.status_code != 200:
         print("Error querying NCBI API.")
+        logging.error(f"Error querying NCBI API.")
         return False
 
     result = response.json()
     if not result["esearchresult"]["idlist"]:
-        print("Accession not found in NCBI Assembly database.")
+        logging.warning(f"Accession not found in NCBI Assembly database.")
         return False
 
     # Fetch detailed assembly information
@@ -72,7 +91,7 @@ def is_reference_genome(accession):
 
     summary_response = requests.get(summary_url, params=summary_params)
     if summary_response.status_code != 200:
-        print("Error retrieving assembly summary.")
+        logging.error(f"Error retrieving assembly summary.")
         return False
 
     summary_data = summary_response.json()
@@ -82,7 +101,8 @@ def is_reference_genome(accession):
         assembly_info = summary_data["result"][assembly_id]
         return assembly_info.get("refseq_category", "") == "reference genome"
     except KeyError:
-        print("Unexpected response format from NCBI.")
+        logging.warning(f"Unexpected response format from NCBI.")
+
         return False
 
 
@@ -90,6 +110,7 @@ def load_clade_data():
     """Hardcoded path for clade settings."""
     json_file = "data/clade_settings.json"
     with open(json_file, "r") as f:
+        logging.info("Loading clade settings json file.")
         return json.load(f)
 
 
@@ -109,6 +130,7 @@ def get_taxonomy_from_db(lowest_taxon_id):
     taxonomy_hierarchy = cursor.fetchall()
 
     if not taxonomy_hierarchy:
+        logging.warning(f"Taxonomy hierarchy not found in DB for {lowest_taxon_id}.")
         return None
 
     return taxonomy_hierarchy
@@ -155,6 +177,7 @@ def assign_clade_and_species(lowest_taxon_id, clade_data, chordata_taxon_id=7711
             # If a clade is found, we stop looking
             if internal_clade != "Unassigned":
                 break
+
     # Check if the taxon ID is 7742 or a descendant of it
     # Loop through the hierarchy and check if chordata_taxon_id (7711) is part of it
     if any(t['taxon_class_id'] == chordata_taxon_id for t in taxonomy_hierarchy):
@@ -187,12 +210,13 @@ def get_descendant_taxa(taxon_id):
     while True:
         response = requests.get(base_url, params=params)
         if response.status_code != 200:
-            print(f"Error retrieving taxonomic data from NCBI. HTTP {response.status_code}")
+            logging.error(f"Error retrieving taxonomic data from NCBI. HTTP {response.status_code}.")
             break
 
         try:
             result = response.json()
             batch_ids = result.get("esearchresult", {}).get("idlist", [])
+            logging.info(f"Descendant taxon ID lookup successful.")
             if not batch_ids:
                 break  # No more results
 
@@ -206,6 +230,7 @@ def get_descendant_taxa(taxon_id):
 
         except Exception as e:
             print(f"Error processing response: {e}")
+            logging.error(f"Error processing NCBI response: {e}")
             break
 
     return taxon_ids
@@ -224,6 +249,7 @@ def get_filtered_assemblies(bioproject_id, metric_thresholds, all_metrics, asm_l
         invalid_bioprojects = set(bioproject_id) - valid_bioprojects
         if invalid_bioprojects:
             conn.close()
+            logging.error(f"The following BioProject IDs were not found: {', '.join(invalid_bioprojects)}")
             return f"The following BioProject IDs were not found: {', '.join(invalid_bioprojects)}", None, None, None
 
     # Build dynamic SQL filtering
@@ -233,18 +259,22 @@ def get_filtered_assemblies(bioproject_id, metric_thresholds, all_metrics, asm_l
     if bioproject_id:
         conditions.append(f"b.bioproject_id IN ({','.join(['%s'] * len(bioproject_id))})")
         params.extend(bioproject_id)
+        logging.info(f"Filtering by BioProject IDs: {', '.join(bioproject_id)}")
 
     if release_date:
         conditions.append("a.release_date >= %s")
         params.extend(release_date)
+        logging.info(f"Filtering by release date: {', '.join(release_date)}")
 
     if taxon_id:
         descendant_taxa = get_descendant_taxa(taxon_id)
         if not descendant_taxa:
+            logging.error(f"No descendant taxon IDs found for {taxon_id}.")
             return f"No descendant taxa found for Taxon ID {taxon_id}.", None
 
         conditions.append(f"s.lowest_taxon_id IN ({','.join(['%s'] * len(descendant_taxa))})")
         params.extend(descendant_taxa)
+        logging.info(f"Filtering by lowest taxon ID: {', '.join(descendant_taxa)}")
 
 
     # If there are conditions, join them with AND; otherwise, select all
@@ -270,6 +300,7 @@ def get_filtered_assemblies(bioproject_id, metric_thresholds, all_metrics, asm_l
     # Convert results to a Pandas DataFrame
     df = pd.DataFrame(results)
     if df.empty:
+        logging.info(f"No assemblies meet the following conditions: {where_clause}.")
         return "No assemblies meet the given thresholds.", None, None, None
 
     # Make sure release date is in the right format
@@ -304,17 +335,21 @@ def get_filtered_assemblies(bioproject_id, metric_thresholds, all_metrics, asm_l
         for metric, threshold in metric_thresholds.items():
             if metric in df_wide.columns:
                 df_wide = df_wide.query(f"{metric} >= {threshold}")
+                logging.info(f"Filtered {metric} >= {threshold} ")
 
 
     # Apply assembly level an assembly type filtering (supporting multiple values)
     if asm_level:
         df_wide = df_wide[df_wide['asm_level'].isin(asm_level)]
+        logging.info(f"Filtered {asm_level} assemblies ")
 
     if asm_type:
         df_wide = df_wide[df_wide['asm_type'].isin(asm_type)]
+        logging.info(f"Filtered {asm_type} assemblies ")
 
     # Check if any assemblies meet the given thresholds
     if df_wide.empty:
+        logging.info(f"No assemblies meet given thresholds.")
         return "No assemblies meet the given thresholds.", None, None, None
 
     # Clean info results table
@@ -341,7 +376,9 @@ def get_filtered_assemblies(bioproject_id, metric_thresholds, all_metrics, asm_l
     clade_data = load_clade_data()
 
     # Add internal clade and species taxon ID columns to the info_result DataFrame
+    logging.info(f"Adding clade, pipeline, genus and species info")
     df_info_result[['internal_clade', 'species_taxon_id', 'genus_taxon_id', 'pipeline']] = df_info_result['lowest_taxon_id'].apply(lambda x: pd.Series(assign_clade_and_species(x, clade_data)))
+    logging.info(f"Added clade, pipeline, genus and species info")
 
     return df_wide, summary_df, df_info_result, df_gca_list
 
@@ -366,30 +403,45 @@ def main():
 
     args = parser.parse_args()
 
+    # Ensure the output directory exists
+    if not os.path.exists(args.output_dir):
+        logging.info(f"Creating output directory {args.output_dir}")
+        os.makedirs(args.output_dir)
+
+    # Set up logging with the user-specified output directory
+    setup_logging(args.output_dir)
+
     metric_thresholds = {k: v[0] if isinstance(v, list) else v for k, v in vars(args).items() if v is not None and k not in ["bioproject_id", "output_dir", "asm_level", "asm_type", "release_date", "reference", "taxon_id"]}
 
     all_metrics = ["gc_percent", "total_sequence_length", "contig_n50", "number_of_contigs", "number_of_scaffolds", "scaffold_n50", "genome_coverage"]
 
     df, summary_df, info_result, df_gca_list = get_filtered_assemblies(args.bioproject_id, metric_thresholds, all_metrics, args.asm_level, args.asm_type, args.release_date, args.taxon_id)
+    logging.info(f"Filtered assemblies: {len(df)}")
 
     # Check for reference genome only if the user requested it
     if args.reference:
+        logging.info(f"Reference genome requested")
         info_result["reference_genome"] = info_result["gca"].apply(is_reference_genome)
-
+        logging.info(f"Reference genome check done")
     # Check for transcriptomic data only if the user requested it
     if args.trans:
         # Check transcriptomic data for each taxon_id in the dataset
+        logging.info(f"Transcriptomic data check requested requested")
         taxon_ids = info_result["lowest_taxon_id"].unique()
         semaphore = asyncio.Semaphore(5)
 
         # Run transcriptomic data retrieval asynchronously
         async def fetch_transcriptomic_data():
+            logging.info(f"Fetching transcriptomic data")
             return await asyncio.gather(*[check_data_from_ena(taxon_id, tree=True, semaphore=semaphore) for taxon_id in taxon_ids])
 
         transcriptomic_results = asyncio.run(fetch_transcriptomic_data())
 
         # Convert results into a DataFrame
         transcriptomic_df = pd.DataFrame(transcriptomic_results)
+        logging.info(f"Transcriptomic data check done")
+        if transcriptomic_df.empty:
+            logging.warning("No transcriptomic data found")
 
         # Merge the transcriptomic data into info_result using 'Taxon ID' as the key
         info_result = info_result.merge(transcriptomic_df, left_on="lowest_taxon_id", right_on="Taxon ID", how="left")
@@ -399,11 +451,13 @@ def main():
 
     # Check if 'df' is a string (error message)
     if isinstance(df, str):
-        print(df)  # Print the error message
+        print(df)
+        logging.error(f"Error message: {df})") # Print the error message
         return
 
     if df.empty:
         print("No assemblies meet the given thresholds.")
+        logging.error("No assemblies met the given thresholds.")
         return
 
     print("Assemblies that meet the given thresholds:")
@@ -415,9 +469,6 @@ def main():
     print("GCA list:")
     print(df_gca_list)
 
-    # Ensure the output directory exists
-    if not os.path.exists(args.output_dir):
-        os.makedirs(args.output_dir)
 
     # Create a base name for the files based on BioProject ID and release date
     bioproject_name = '_'.join(args.bioproject_id) if args.bioproject_id else ''
@@ -427,21 +478,25 @@ def main():
     output_filename = os.path.join(args.output_dir,
                                    f"{bioproject_name}{'_' if bioproject_name and release_date_name else ''}{release_date_name}_filtered_assemblies.csv")
     df.to_csv(output_filename, index=False)
+    logging.info(f"Wrote {output_filename}")
 
     # Save the summary statistics as a CSV file
     summary_filename = os.path.join(args.output_dir,
                                    f"{bioproject_name}{'_' if bioproject_name and release_date_name else ''}{release_date_name}_filtered_assemblies_summary_statistics.csv")
     summary_df.to_csv(summary_filename, index=False)
+    logging.info(f"Wrote {summary_filename}")
 
     # Save the assembly info as a CSV file
     info_result_filename = os.path.join(args.output_dir,
                                    f"{bioproject_name}{'_' if bioproject_name and release_date_name else ''}{release_date_name}_filtered_assemblies_info_result.csv")
     info_result.to_csv(info_result_filename, index=False)
+    logging.info(f"Wrote {info_result_filename}")
 
     # Save the GCA list in a file
     gca_list_filename = os.path.join(args.output_dir,
                                         f"{bioproject_name}{'_' if bioproject_name and release_date_name else ''}{release_date_name}_filtered_assemblies_gca_list.csv")
     df_gca_list.to_csv(gca_list_filename, index=False, header=False)
+    logging.info(f"Wrote {gca_list_filename}")
 
     print(f"\nThe results have been saved to {output_filename}")
     print(f"\nSummary statistics have been saved to {summary_filename}")

@@ -1,10 +1,10 @@
 import streamlit as st
-import GB_metadata_reporting
-import Fetch_annotations
+import assemblies
+import annotations
 
 
-assemblies = st.Page("GB_metadata_reporting.py", title="Assembly registry", icon=":material/genetics:")
-annotations = st.Page("Fetch_annotations.py", title="Annotations", icon=":material/search_check_2:")
+assemblies = st.Page("assemblies.py", title="Assembly registry", icon=":material/genetics:")
+annotations = st.Page("annotations.py", title="Annotations", icon=":material/search_check_2:")
 
 pg = st.navigation([assemblies,annotations])
 
@@ -151,7 +151,7 @@ def app():
         status_placeholder = st.empty()
 
         with status_placeholder.status("Fetching assemblies... Please wait."):
-            df, summary_df, info_result, gca_list = GB_metadata_reporting.get_filtered_assemblies(
+            df, summary_df, info_result, gca_list = assemblies.get_filtered_assemblies(
                 bioproject_id_list, metric_thresholds, all_metrics, asm_level, asm_type, release_date, taxon_id
             )
 
@@ -166,7 +166,7 @@ def app():
             # Apply the 'is_reference_genome' function if checkbox is checked
             if add_reference_genome:
                 st.session_state.info_data["Reference genome"] = st.session_state.info_data["GCA"].apply(
-                    GB_metadata_reporting.is_reference_genome)
+                    assemblies.is_reference_genome)
         else:
             st.session_state.assemblies_data = df
 
