@@ -28,12 +28,13 @@ Returns:
 import json
 import argparse
 import logging
-import pymysql
-import requests
+import pymysql #type: ignore
+import requests #type: ignore
 import string
 import random
 import os
 from tenacity import retry, stop_after_attempt, wait_random
+from typing import Optional
 
 @retry(stop=stop_after_attempt(10), wait=wait_random(min=1, max=20))
 def connection_ncbi(uri: str) -> requests.Response:
@@ -178,7 +179,7 @@ def create_prefix(registy_params, metadata_params) -> str:
     
     return prefix
 
-def get_species_prefix(taxon_id:str, registy_params, metadata_params) -> str:
+def get_species_prefix(taxon_id:str, registy_params, metadata_params) -> Optional[str]:
     """
     This function retrieves the species prefix from the assembly registry and metadata databases.
     If the prefix is not found, it creates a new one. There are special cases where the prefix is predefined.
@@ -260,12 +261,6 @@ def main():
     parser.add_argument("--json-path",
                         type=str,
                         help="Path to the JSON-like (.tmp) species file")
-    # parser.add_argument('--registry',
-    #                     type=str,
-    #                     help="Path to the registry database params in json format")
-    # parser.add_argument('--metadata',
-    #                     type=str,
-    #                     help="Path to the metadata database params in json format")
     parser.add_argument('--ncbi_url',
                         type=str,
                         help='NCBI API URL')
@@ -281,24 +276,9 @@ def main():
 
     args = parser.parse_args()
 
-    # Loading database parameters
-    # if args.metadata and not args.taxonomy_update:
-    #     if not os.path.exists(args.metadata):
-    #         raise ValueError("Please enter a valid file path for metadata database parameters")
-    #     else:
-    #         with open(args.metadata, 'r') as file:
-    #             metadata_params = json.load(file)
-
     # Loading NCBI API URL
     if not args.ncbi_url:
         raise ValueError("Please enter a valid URL for NCBI API")
-
-    # if args.registry and not args.taxonomy_update:
-    #     if not os.path.exists(args.registry):
-    #         raise ValueError("Please enter a valid file path for registry database parameters")
-    #     else :
-    #         with open(args.registry, 'r') as file:
-    #             registy_params = json.load(file)
 
     logging.info(f"Loading file: {args.json_path}")
 
