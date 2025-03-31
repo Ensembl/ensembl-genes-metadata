@@ -35,7 +35,7 @@ Returns:
 import json
 import argparse
 import logging
-import pymysql
+import pymysql #type:ignore
 import os
 from typing import Dict, Tuple, Any
 
@@ -261,8 +261,11 @@ def retrieve_row_id(data_dict: Dict, table_name: str, table_conf, metadata_param
                     raise ValueError(f"The query retrieves more than more value, unique value expected {retrieving_query}")
                 elif last_id_tmp == () and table_conf[table_name]['method'] in ['per_row']:
                     logging.info("Failed to retrieve value for last id. Inserting missing data")
-                    query_missing_insert = f"INSERT INTO {table_name} ({columns[0]}, {columns[1]}, {columns[2]}) VALUES ('{dkey_value}', '{key}', '{value}') ;"
-                    logging.info("Insert query: %s", query_missing_insert)
+                    if table_name == "taxonomy":
+                        query_missing_insert = f"UPDATE {table_name} SET {columns[1]} = '{key}' WHERE {columns[0]} = '{dkey_value}' AND {columns[2]} = '{value}' ;"
+                    else:
+                        query_missing_insert = f"INSERT INTO {table_name} ({columns[0]}, {columns[1]}, {columns[2]}) VALUES ('{dkey_value}', '{key}', '{value}') ;"
+                    logging.info("Insert/update query: %s", query_missing_insert)
                     conn = pymysql.connect(**metadata_params)
                     cur  = conn.cursor()
                     cur.execute(query_missing_insert)
