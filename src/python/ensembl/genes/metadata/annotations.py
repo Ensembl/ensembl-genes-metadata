@@ -367,6 +367,26 @@ def check_most_updated_annotation(df_info_result, filtered_df):
 
     return merged_df[['scientific_name', 'lowest_taxon_id', 'species_taxon_id', 'gca_annotated', 'gca_latest', 'latest_annotated']]
 
+def check_annottations_in_main():
+    db_config_key_main = "main"
+    conn = connect_db(db_config_key_main)
+    cursor = conn.cursor()
+
+    query_main = f"""
+                SELECT a.assembly_accession AS gca, dr.release_date AS main_release_date
+                FROM assembly a
+                JOIN genome g ON a.assembly_id = g.assembly_id
+                JOIN data_release dr ON g.data_release_id = dr.data_release_id
+            """
+
+    cursor.execute(query_main)
+    results_main = cursor.fetchall()
+    conn.close()
+
+    main_gcas = pd.DataFrame(results_main)
+
+    logging.debug(f"Total records fetched from main db: {len(main_gcas)}")
+    return main_gcas
 
 
 def main():
@@ -468,9 +488,12 @@ def main():
 
     yearly_summary = generate_yearly_summary(df_wide, df_info_result, filtered_df)
 
-    #Check annotation status
-    # Add an 'Annotated' column to df_info_result
-    df_info_result['annotated'] = df_info_result['gca'].str.extract(r'(GCA_\d+)', expand=False).isin(
+    main_annotations = check_annottations_in_main()
+
+    #Check annotation statusin beta and main
+    df_info_result['annotated_main'] = df_info_result['gca'].str.extract(r'(GCA_\d+)', expand=False).isin(
+        main_annotations['gca'].str.extract(r'(GCA_\d+)', expand=False)).map({True: 'Yes', False: 'No'})    # Add an 'Annotated' column to df_info_result
+    df_info_result['annotated_beta'] = df_info_result['gca'].str.extract(r'(GCA_\d+)', expand=False).isin(
         filtered_df['gca'].str.extract(r'(GCA_\d+)', expand=False)).map({True: 'Yes', False: 'No'})
 
     #Check if annotated is the latest GCA version in the registry
