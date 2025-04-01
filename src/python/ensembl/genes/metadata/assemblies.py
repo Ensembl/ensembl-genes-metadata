@@ -263,7 +263,7 @@ def get_filtered_assemblies(bioproject_id, metric_thresholds, all_metrics, asm_l
 
     if release_date:
         conditions.append("a.release_date >= %s")
-        params.extend(release_date)
+        params.append(release_date)
         logging.info(f"Filtering by release date: {', '.join(release_date)}")
 
     if taxon_id:
