@@ -13,12 +13,26 @@ from assemblies import get_filtered_assemblies
 from check_transcriptomic_data import check_data_from_ena
 
 # Configure logging
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+# Setup logging configuration
+def setup_logging(output_dir):
+    log_filename = os.path.join(output_dir, "annotations_log.txt")
+    logging.basicConfig(
+        level=logging.DEBUG,
+        format='%(asctime)s - %(levelname)s - %(message)s',
+        handlers=[
+            logging.FileHandler(log_filename),
+            logging.StreamHandler()
+        ],
+        force=True,
+    )
+    logging.info("Logging initialized")
+
 
 def load_db_config():
     """Load database credentials from external JSON file."""
     config_path = "conf/prod_dbs_conf.json"
     if not os.path.exists(config_path):
+        logging.error("Config file not found")
         raise FileNotFoundError(f"Database config file '{config_path}' not found.")
 
     with open(config_path, "r") as f:
@@ -54,12 +68,13 @@ def get_descendant_taxa(taxon_id):
     while True:
         response = requests.get(base_url, params=params)
         if response.status_code != 200:
-            print(f"Error retrieving taxonomic data from NCBI. HTTP {response.status_code}")
+            logging.error(f"Error retrieving taxonomic data from NCBI. HTTP {response.status_code}.")
             break
 
         try:
             result = response.json()
             batch_ids = result.get("esearchresult", {}).get("idlist", [])
+            logging.info(f"Descendant taxon ID lookup successful.")
             if not batch_ids:
                 break  # No more results
 
@@ -73,6 +88,7 @@ def get_descendant_taxa(taxon_id):
 
         except Exception as e:
             print(f"Error processing response: {e}")
+            logging.error(f"Error processing NCBI response: {e}")
             break
 
     return taxon_ids
@@ -99,7 +115,8 @@ def get_gca_accessions(bioproject_id) -> List[str]:
 
         try:
             response = requests.get(url, params=params)
-            response.raise_for_status()  # This will raise an exception for 4XX and 5XX errors
+            logging.info(f"NCBI BioProject ID lookup started.")
+            response.raise_for_status() # This will raise an exception for 4XX and 5XX errors
             data = response.json()
 
             assemblies = data.get('reports', [])
@@ -117,18 +134,18 @@ def get_gca_accessions(bioproject_id) -> List[str]:
 
             # Inside the loop where you make requests
             if response.status_code == 429:
-                print("Rate limit exceeded, sleeping for 10 seconds...")
+                logging.info("Rate limit exceeded, sleeping for 10 seconds...")
                 time.sleep(10)
                 continue  # retry the request after delay
 
         except requests.HTTPError as http_err:
-            print(f"HTTP error occurred: {http_err}")
+            logging.error(f"HTTP error occurred: {http_err}")
             break
         except Exception as err:
-            print(f"An error occurred: {err}")
+            logging.error(f"An error occurred: {err}")
             break
 
-    logging.debug(f"Final GCA accessions: {gca_accessions}")
+    logging.info("NCBI BioProject ID lookup complete.")
     return gca_accessions
 
 
@@ -139,13 +156,10 @@ def get_annotation(release_date, taxon_id, bioproject_id):
 
     if isinstance(bioproject_id, list) and len(bioproject_id) > 0:
         bioproject_id = bioproject_id[0]  # Take the first Bioproject ID
-
-    print(f"Bioproject ID: {bioproject_id}")
+        logging.info(f"Retrieving annotation for BioProject ID {bioproject_id}.")
 
     # Fetch GCA list from NCBI if BioProject ID is provided
     gca_accessions = get_gca_accessions(bioproject_id) if bioproject_id else None
-    logging.debug(f"GCA Accessions: {gca_accessions}")
-
 
     # Build dynamic SQL filtering
     conditions = []
@@ -153,6 +167,7 @@ def get_annotation(release_date, taxon_id, bioproject_id):
 
     if taxon_id:
         descendant_taxa = get_descendant_taxa(taxon_id)
+        logging.info(f"Retrieving annotation for taxon ID {taxon_id}.")
         if not descendant_taxa:
             return f"No descendant taxa found for Taxon ID {taxon_id}.", None
 
@@ -165,7 +180,6 @@ def get_annotation(release_date, taxon_id, bioproject_id):
 
     # If there are conditions, join them with AND; otherwise, select all
     where_clause = " WHERE " + " AND ".join(conditions) if conditions else ""
-    logging.debug(f"Params passed to the query: {parameters}")
 
     query = f"""
                 SELECT da.value, da.attribute_id, a.accession AS gca, r.release_date AS ensembl_release_date, o.scientific_name, o.species_taxonomy_id
@@ -182,9 +196,6 @@ def get_annotation(release_date, taxon_id, bioproject_id):
             """
 
     cursor.execute(query, parameters)
-    print(f"Params passed to the query: {parameters}")
-    print(f"Final WHERE clause: {where_clause}")
-    print(f"Executing query: {query}")
     results = cursor.fetchall()
     conn.close()
 
@@ -230,12 +241,9 @@ def get_annotation(release_date, taxon_id, bioproject_id):
 
     # Apply the release_date filter to 'genebuild.last_geneset_update'
     df_filtered = df_pivoted[df_pivoted['last_geneset_update'] >= release_date]
-    logging.debug(f"Records after release date filtering: {len(df_filtered)}")
+    logging.info(f"Showing records after {release_date}.")
 
     df_filtered = df_filtered[df_filtered['gca'].str.startswith('GCA')]
-    logging.debug(f"Records after GCA filtering: {len(df_filtered)}")
-
-    logging.info(f"Filtered {len(df_filtered)} records based on the release date.")
 
     return df_filtered
 
@@ -250,7 +258,7 @@ def summarize_assemblies(df):
 def bin_by_genebuild_method(df):
     """Bins assemblies based on genebuild.method."""
     if 'genebuild_method' not in df.columns:
-        print("Column 'genebuild.method' not found in dataset.")
+        logging.error("Column 'genebuild.method' not found in dataset.")
         return pd.DataFrame()  # Return empty DataFrame if column is missing
 
     # Group by genebuild.method and count occurrences
@@ -290,8 +298,9 @@ def generate_yearly_summary(df_wide, df_info_result, filtered_df):
         filtered_df['year'] = pd.to_datetime(filtered_df['last_geneset_update']).dt.year
         annotated_per_year = filtered_df.groupby('year').size().reset_index(name='Number of Annotated Genomes')
     else:
-        print("No 'last_geneset_update' column found in annotations.")
+        logging.error("No last_geneset_update column found in annotations.")
         return pd.DataFrame()
+    logging.info("Created summary tables." )
 
     # Extract Ensembl release year
     if 'ensembl_release_date' in filtered_df.columns:
@@ -315,18 +324,18 @@ def generate_yearly_summary(df_wide, df_info_result, filtered_df):
 def bin_by_assembly_level(df):
     """Bins assemblies based on their assembly level."""
     if 'asm_level' not in df.columns:
-        print("Column 'Assembly level' not found in dataset.")
+        logging.error("Column 'Assembly level' not found in dataset.")
         return pd.DataFrame()  # Return empty DataFrame if column is missing
 
     # Group by Assembly level and count occurrences
     level_summary = df.groupby('asm_level', observed=False).size().reset_index(name='number_of_assemblies')
-
+    logging.info("Binning complete." )
     return level_summary
 
 
 def check_most_updated_annotation(df_info_result, filtered_df):
     """Checks if each annotated assembly is the latest available version and includes species name and latest GCA."""
-
+    logging.info("Checking if annotations are the latest available GCA version." )
     # Extract version number from GCA identifier
     asm_info = df_info_result
     asm_info['version'] = asm_info['gca'].str.extract(r'GCA_\d+\.(\d+)').astype(float)
@@ -362,8 +371,6 @@ def check_most_updated_annotation(df_info_result, filtered_df):
 
     # Order the DataFrame by Scientific name
     merged_df.sort_values(by='scientific_name', inplace=True)
-    print("merged df for debug:")
-    print(merged_df)
 
     return merged_df[['scientific_name', 'lowest_taxon_id', 'species_taxon_id', 'gca_annotated', 'gca_latest', 'latest_annotated']]
 
@@ -372,6 +379,7 @@ def check_annottations_in_main():
     conn = connect_db(db_config_key_main)
     cursor = conn.cursor()
 
+    logging.info("Checking annotations in main database.")
     query_main = f"""
                 SELECT a.assembly_accession AS gca, dr.release_date AS main_release_date
                 FROM assembly a
@@ -415,7 +423,13 @@ def main():
     asm_type = args.asm_type
     bioproject_id = args.bioproject_id
 
-    os.makedirs(output_dir, exist_ok=True)
+    # Ensure the output directory exists
+    if not os.path.exists(args.output_dir):
+        logging.info(f"Creating output directory {args.output_dir}")
+        os.makedirs(args.output_dir)
+
+    # Set up logging with the user-specified output directory
+    setup_logging(args.output_dir)
 
     # Define metrics to consider
     metric_thresholds = {k: v[0] if isinstance(v, list) else v for k, v in vars(args).items() if
@@ -427,11 +441,13 @@ def main():
 
     # Fetch assemblies released in the past 5 years
     df_wide, summary_df, df_info_result, df_gca_list = get_filtered_assemblies(bioproject_id, metric_thresholds, all_metrics, asm_level, asm_type, release_date, taxon_id)
+    logging.info(f"Filtered assemblies: {len(df_wide)}")
 
 
     # Check for transcriptomic data only if the user requested it
     if args.trans:
         # Check transcriptomic data for each taxon_id in the dataset
+        logging.info(f"Transcriptomic data check requested requested")
         taxon_ids = df_info_result["lowest_taxon_id"].unique()
         genus_taxon_ids = df_info_result["genus_taxon_id"].unique()
         all_taxon_ids = set(taxon_ids).union(set(genus_taxon_ids))
@@ -462,11 +478,10 @@ def main():
         # Drop redundant 'Taxon ID' columns (both for lowest and genus)
         df_info_result.drop(columns=["Taxon ID_lowest", "Taxon ID_genus"], inplace=True)
 
-        # Rename or reorder columns if needed, to better organize your data
-        #df_info_result.rename(columns={"Taxon ID": "Transcriptional Data"}, inplace=True)
 
     if isinstance(df_wide, str):  # Check if there's an error message
         print(df_wide)
+        logging.error(f"Error message: {df_wide})") # Print the error message
         return
 
     # Bin assemblies by Assembly level
@@ -476,6 +491,7 @@ def main():
     filtered_df = get_annotation(release_date, taxon_id, bioproject_id)
 
     # Create the FTP URL using the scientific_name, replacing spaces with underscores
+    logging.info("Generating FTP paths.")
     filtered_df['ftp'] = filtered_df.apply(
         lambda
             row: f"https://ftp.ebi.ac.uk/pub/ensemblorganisms/{row['scientific_name'].replace(' ', '_')}/{row['gca']}/"
@@ -491,8 +507,10 @@ def main():
     main_annotations = check_annottations_in_main()
 
     #Check annotation statusin beta and main
+    logging.info("Checking assemblies in main annotations.")
     df_info_result['annotated_main'] = df_info_result['gca'].str.extract(r'(GCA_\d+)', expand=False).isin(
         main_annotations['gca'].str.extract(r'(GCA_\d+)', expand=False)).map({True: 'Yes', False: 'No'})    # Add an 'Annotated' column to df_info_result
+    logging.info("Checking assemblies in beta annotations.")
     df_info_result['annotated_beta'] = df_info_result['gca'].str.extract(r'(GCA_\d+)', expand=False).isin(
         filtered_df['gca'].str.extract(r'(GCA_\d+)', expand=False)).map({True: 'Yes', False: 'No'})
 
@@ -528,6 +546,7 @@ def main():
     df_info_result.to_csv(os.path.join(output_dir, f"assembly_annotation_status_{date_str}.csv"), index=False)
     level_summary.to_csv(os.path.join(output_dir, f"assembly_level_summary_{date_str}.csv"), index=False)
     latest_annotated_df.to_csv(os.path.join(output_dir, f"annotation_GCA_update_status_{date_str}.csv"), index=False)
+    logging.info("Finished saving tables .")
 
 if __name__ == "__main__":
     main()
