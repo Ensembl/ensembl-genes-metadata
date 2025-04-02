@@ -427,26 +427,34 @@ def main():
         # Check transcriptomic data for each taxon_id in the dataset
         logging.info(f"Transcriptomic data check requested")
         taxon_ids = info_result["lowest_taxon_id"].unique()
+        genus_taxon_ids = info_result["genus_taxon_id"].unique()
+        all_taxon_ids = set(taxon_ids).union(set(genus_taxon_ids))
+
         semaphore = asyncio.Semaphore(5)
 
         # Run transcriptomic data retrieval asynchronously
         async def fetch_transcriptomic_data():
-            logging.info(f"Fetching transcriptomic data")
-            return await asyncio.gather(*[check_data_from_ena(taxon_id, tree=True, semaphore=semaphore) for taxon_id in taxon_ids])
+            return await asyncio.gather(
+                *[check_data_from_ena(taxon_id, tree=True, semaphore=semaphore) for taxon_id in all_taxon_ids]
+            )
 
         transcriptomic_results = asyncio.run(fetch_transcriptomic_data())
 
         # Convert results into a DataFrame
         transcriptomic_df = pd.DataFrame(transcriptomic_results)
-        logging.info(f"Transcriptomic data check done")
-        if transcriptomic_df.empty:
-            logging.warning("No transcriptomic data found")
 
-        # Merge the transcriptomic data into info_result using 'Taxon ID' as the key
-        info_result = info_result.merge(transcriptomic_df, left_on="lowest_taxon_id", right_on="Taxon ID", how="left")
+        # Merge for the lowest taxon ID
+        info_result = info_result.merge(
+            transcriptomic_df, left_on="lowest_taxon_id", right_on="Taxon ID", how="left"
+        )
 
-        # Drop redundant 'Taxon ID' column
-        info_result.drop(columns=["Taxon ID"], inplace=True)
+        # Merge for the genus taxon ID (separate column)
+        info_result = info_result.merge(
+            transcriptomic_df, left_on="genus_taxon_id", right_on="Taxon ID", how="left", suffixes=('_lowest', '_genus')
+        )
+
+        # Drop redundant 'Taxon ID' columns (both for lowest and genus)
+        info_result.drop(columns=["Taxon ID_lowest", "Taxon ID_genus"], inplace=True)
 
     # Check if 'df' is a string (error message)
     if isinstance(df, str):
