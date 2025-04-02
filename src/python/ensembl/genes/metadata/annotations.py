@@ -448,9 +448,32 @@ def main():
     if args.trans:
         # Check transcriptomic data for each taxon_id in the dataset
         logging.info(f"Transcriptomic data check requested requested")
-        taxon_ids = df_info_result["lowest_taxon_id"].unique()
-        genus_taxon_ids = df_info_result["genus_taxon_id"].unique()
-        all_taxon_ids = set(taxon_ids).union(set(genus_taxon_ids))
+        # Get unique taxon IDs and filter out NaN values
+        taxon_ids = [tid for tid in df_info_result["lowest_taxon_id"].unique() if pd.notna(tid)]
+        genus_taxon_ids = [gtid for gtid in df_info_result["genus_taxon_id"].unique() if pd.notna(gtid)]
+
+        # Count NaN values and log warning if any are found
+        nan_lowest_count = df_info_result["lowest_taxon_id"].isna().sum()
+        nan_genus_count = df_info_result["genus_taxon_id"].isna().sum()
+
+        if nan_lowest_count > 0:
+            logging.warning(f"Found {nan_lowest_count} NA values in lowest_taxon_id column")
+
+        if nan_genus_count > 0:
+            logging.warning(f"Found {nan_genus_count} NA values in genus_taxon_id column")
+
+        # Combine unique taxon IDs into a set and convert to integers
+        all_taxon_ids = set()
+        for tid in list(set(taxon_ids).union(set(genus_taxon_ids))):
+            try:
+                all_taxon_ids.add(int(tid))
+            except (ValueError, TypeError) as e:
+                logging.warning(f"Could not convert taxon ID {tid} to integer: {e}")
+
+        if not all_taxon_ids:
+            logging.warning("No valid taxon IDs found for transcriptomic data check")
+        else:
+            logging.info(f"Found {len(all_taxon_ids)} valid taxon IDs for transcriptomic data check")
 
         semaphore = asyncio.Semaphore(5)
 
