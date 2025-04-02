@@ -5,5 +5,12 @@
     "password": "",
     "database": "ensembl_genome_metadata",
     "port":
-  }
+  },
+
+  "main": {
+    "host": "mysql-ens-meta-prod-1",
+    "user": "",
+    "password": "",
+    "database": "ensembl_metadata",
+    "port":  }
 }
