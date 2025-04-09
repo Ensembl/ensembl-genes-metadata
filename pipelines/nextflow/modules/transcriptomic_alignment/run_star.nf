@@ -41,7 +41,7 @@ process RUN_STAR {
     --twopassMode Basic --runMode alignReads --genomeDir ${file(genomeDir)} \
     --readFilesIn ${pair1} ${pair2} --outFileNamePrefix ${outFileNamePrefix} \
     --outSAMattrRGline "ID:${run_accession}" --outTmpDir ${starTmpDir} --outSAMtype BAM \
-    SortedByCoordinate  
+    SortedByCoordinate  --limitGenomeGenerateRAM  40438158946
     """
     
 }

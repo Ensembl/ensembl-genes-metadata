@@ -32,9 +32,9 @@ process INDEX_GENOME {
 
     script:
     def genomeDirPath= new File(genomeDir)
-    def genomeIndexFile = genomeDirPath.listFiles().find { it.name.endsWith('Genome') }
+    def genomeIndexFile = genomeDirPath.listFiles()?.find { it.name.endsWith('Genome') }
     log.info("${genomeIndexFile}")
-    if (!genomeIndexFile || genomeIndexFile.length() == 0) {
+    if (genomeIndexFilePath == null) {
     //new File("${genomeDir}/Genome")
     //if (!genomeIndexFile.exists() || genomeIndexFile.length() == 0) {
     // Read the .fna file and perfor
@@ -97,7 +97,7 @@ process INDEX_GENOME {
     --outFileNamePrefix ${genomeDir} --genomeDir ${genomeDir} \
     --genomeSAindexNbases ${genomeSAindexNbases} \
     --genomeChrBinNbits ${genomeChrBinNbits} \
-    --genomeFastaFiles  ${genomeFile} --outTmpDir _STARtmp;fi
+    --genomeFastaFiles  ${genomeFile} --outTmpDir _STARtmp  --limitGenomeGenerateRAM  33533119242;fi
     """
     } else {
     """
