@@ -27,6 +27,7 @@ import java.util.concurrent.TimeUnit
 binding.driver = 'com.mysql.cj.jdbc.Driver'
 binding.jdbcUrl = "jdbc:mysql://${params.transcriptomic_dbhost}:${params.transcriptomic_dbport}/${params.transcriptomic_dbname}"
 
+
 class RetryUtil {
     static def retry(int maxAttempts, long delayMillis, Closure closure) {
         int attempt = 0
@@ -74,8 +75,8 @@ def getLastCheckDate(String taxonId) {
             //lastCheckedDate = dateFormat.parse(dateString)
         }
     } catch (Exception ex) {
-        ex.printStackTrace()    
-    } finally {
+        ex.printStackTrace()}
+    finally {
         sql.close()
     }
     return result
@@ -101,8 +102,8 @@ def setLastCheckDate(String taxonId,String query_option) {
         sql.execute 'UPDATE meta SET last_check = ?  WHERE taxon_id = ?', params
         }
     } catch (Exception ex) {
-        ex.printStackTrace()
-    } finally {
+        ex.printStackTrace()}
+    finally {
         sql.close()
     }
 
@@ -121,7 +122,7 @@ def setMetaDataRecord(String mysqlQuery){
     def matchCount = 0
     // Iterate through matches until the second occurrence is found
     while (matcher.find()) {
-        matchCount++
+        matchCount= matchCount + 1
         if (matchCount == 2) {
         // Extract the values from the match
         def paramValuesString = matcher.group(1)
@@ -147,10 +148,10 @@ def setMetaDataRecord(String mysqlQuery){
                 }
             } 
         } catch (Exception ex) {
-            ex.printStackTrace()
-        } finally {
-            sql.close()
-        }
+        ex.printStackTrace()}
+        finally {
+        sql.close()
+    }
     }else{
     log.info("no match found")
     }
@@ -176,15 +177,16 @@ def getDataFromTable(String queryKey, String queryTable, String tableColumn, Str
                 return result // Return the result if it's not null
             } else {
                 println("No result found, retrying... (${retryCount + 1}/${retries})")
-                retryCount++
+                retryCount=retryCount+1
                 Thread.sleep(sleepTime) // Wait before retrying
             }                                                                                            
         
     } catch (Exception ex) {
         ex.printStackTrace()
-        retryCount++
-        Thread.sleep(sleepTime) // Wait before retrying
-    }finally {
+        retryCount=retryCount+1
+        Thread.sleep(sleepTime)} // Wait before retrying
+
+    finally {
         sql.close()
     }
     }
@@ -250,11 +252,10 @@ def checkRunFastQCStatus(String runId) {
             return 'No data found'
         }
     } catch (Exception ex) {
-        ex.printStackTrace()
-        return 'Error'
-    } finally {
+        ex.printStackTrace()}
+        finally {
         sql.close()
-    }
+        }
 }
 
 def checkOverrepresentedSequences(String run_accession) {
@@ -269,21 +270,22 @@ def checkOverrepresentedSequences(String run_accession) {
     try {
         def result = sql.rows(query,[run_accession])
         // Process the results
-        results.each { row ->
-        def OverrepresentedSequences = row.overrepresented_sequences
-        if (OverrepresentedSequences=='WARN' || OverrepresentedSequences=='FAIL') {
-            overrepresented_sequences = true
+        result.each { row ->
+            def OverrepresentedSequences = row.overrepresented_sequences
+            if (OverrepresentedSequences == 'WARN' || OverrepresentedSequences == 'FAIL') {
+                overrepresented_sequences = true
             }
+            sql.close()
         }
+        return overrepresented_sequences
     } catch (Exception ex) {
         ex.printStackTrace()}
     finally {
         sql.close()
     }
-    return overrepresented_sequences
+
 }
 /*
-
 def calculateIndexBases(genomeFile) {
     def indexBases = Math.min(14, Math.floor((Math.log(genomeFile, 2) / 2) - 1))
     return indexBases
