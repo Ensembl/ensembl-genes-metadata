@@ -47,25 +47,21 @@ def get_sample_info(accession: str) -> str:
     try:
         response = requests.get(biosample_url, timeout=10)
         response.raise_for_status()  # Raise an HTTPError if the request was not successful
-
         biosample_data = response.json()
         characteristics = biosample_data.get("characteristics", {})
-
         sample = ""
         if "tissue" in characteristics:
             sample = characteristics["tissue"][0]["text"].lower()
         elif "source_name" in characteristics:
             sample = characteristics["source_name"][0]["text"].lower()
-
         sample = re.sub(r"[ ;\(\)\/\\]", " ", sample)
         # remove punctuation
         sample = re.sub(r"[!\"#$%&()*\+,\-\'.\/:;<=>?@\[\]^`{|}~]", "", sample)
-
         return sample.strip()
     except (requests.RequestException, requests.HTTPError, ConnectionError, requests.Timeout) as e:
         print(f"An error occurred while fetching data from {biosample_url}: {str(e)}")
         # Handle the error here, you can log it or take other appropriate actions.
-        return accession
+        return ''
 
 
 def clean_text(text):
