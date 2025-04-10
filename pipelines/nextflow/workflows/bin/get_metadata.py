@@ -35,18 +35,51 @@ import requests
 from tenacity import (
     retry,
     stop_after_attempt,
-    wait_fixed,
-    wait_exponential_jitter,
     wait_exponential,
     wait_random,
 )
 
 
+def get_sample_info(accession: str) -> str:
+    """Get info about sample name and description for the run accession"""
+    biosample_url = f"https://www.ebi.ac.uk/biosamples/samples/{accession}"
+
+    try:
+        response = requests.get(biosample_url, timeout=10)
+        response.raise_for_status()  # Raise an HTTPError if the request was not successful
+
+        biosample_data = response.json()
+        characteristics = biosample_data.get("characteristics", {})
+
+        sample = ""
+        if "tissue" in characteristics:
+            sample = characteristics["tissue"][0]["text"].lower()
+        elif "source_name" in characteristics:
+            sample = characteristics["source_name"][0]["text"].lower()
+
+        sample = re.sub(r"[ ;\(\)\/\\]", " ", sample)
+        # remove punctuation
+        sample = re.sub(r"[!\"#$%&()*\+,\-\'.\/:;<=>?@\[\]^`{|}~]", "", sample)
+
+        return sample.strip()
+    except (requests.RequestException, requests.HTTPError, ConnectionError, requests.Timeout) as e:
+        print(f"An error occurred while fetching data from {biosample_url}: {str(e)}")
+        # Handle the error here, you can log it or take other appropriate actions.
+        return accession
+
+
 def clean_text(text):
+    """Remove unwanted characters from the text.
+    Args:
+        text (str): Input text to be cleaned.
+    Returns:
+        str: Cleaned text with unwanted characters removed.
+    """
     # Define the regex pattern for unwanted characters
     pattern = r"[!\"#$%&()*+,\-./:;<=>?@[\]^`{|}~_\\']"
     # Substitute unwanted characters with an empty string
     return re.sub(pattern, "", text)
+
 
 def request_data(run_accession: str, fields: list) -> str:
     """Make an HTTP request for the metadata of the given run_accession.
@@ -155,6 +188,8 @@ def json_parse(response: str, fields: list):
                 ]
                 if value != ""
             ).rstrip(";"),
+            "sample_tissue": get_sample_info(output_data["sample_accession"]),
+            "tissue_prediction": "",
         }
     }
 

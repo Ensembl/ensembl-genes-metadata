@@ -50,7 +50,7 @@ create table run (
 	study_accession varchar(255) not null,
 	read_type varchar(255),
 	platform varchar(255),
-	paired bool not null,
+	paired int not null,
 	experiment varchar(255),
 	run_description text,
 	library_name varchar(255),
@@ -59,6 +59,8 @@ create table run (
 	cell_line varchar(255),
 	cell_type varchar(255),
 	strain varchar(255),
+	sample_tissue varchar(255),
+	tissue_prediction varchar(255),
 	primary key (run_id)
 );
 ALTER TABLE run ADD UNIQUE (run_accession);
