@@ -32,7 +32,15 @@ import re
 from typing import Dict
 import json
 import requests
-from tenacity import retry, stop_after_attempt, wait_fixed,wait_exponential_jitter,wait_exponential,wait_random
+from tenacity import (
+    retry,
+    stop_after_attempt,
+    wait_fixed,
+    wait_exponential_jitter,
+    wait_exponential,
+    wait_random,
+)
+
 
 def clean_text(text):
     # Define the regex pattern for unwanted characters
@@ -59,8 +67,12 @@ def request_data(run_accession: str, fields: list) -> str:
         "fields": ",".join(fields),
         "format": "tsv",
     }
-    #@retry(stop=stop_after_attempt(3), wait=wait_fixed(5))
-    @retry(stop=stop_after_attempt(5), wait=wait_exponential(multiplier=1, min=5, max=60) + wait_random(min=0, max=5))
+
+    # @retry(stop=stop_after_attempt(3), wait=wait_fixed(5))
+    @retry(
+        stop=stop_after_attempt(5),
+        wait=wait_exponential(multiplier=1, min=5, max=60) + wait_random(min=0, max=5),
+    )
     def make_request():
         try:
             response = requests.post("https://www.ebi.ac.uk/ena/portal/api/search", data=data, timeout=20)
@@ -104,7 +116,7 @@ def json_parse(response: str, fields: list):
             "study_accession": output_data["study_accession"],
             "read_type": output_data["library_strategy"],
             "platform": output_data["instrument_platform"],
-            "paired": output_data["library_layout"] == "PAIRED",
+            "paired": 1 if output_data["library_layout"] == "PAIRED" else 0,
             "experiment": " ".join(
                 value
                 for value in [
@@ -113,15 +125,13 @@ def json_parse(response: str, fields: list):
                 ]
                 if value is not None
             ).rstrip(";"),
-            "run_description": re.sub(
-                clean_text(output_data["description"]),
-            )[:250],
+            "run_description": clean_text(output_data["description"])[:250],
             "library_name": " ".join(
                 value
                 for value in [
                     clean_text(output_data["library_source"]),
                     clean_text(output_data["library_name"]),
-                            ]
+                ]
                 if value is not None
             ).rstrip(";"),
             "library_selection": output_data["library_selection"],
@@ -150,7 +160,9 @@ def json_parse(response: str, fields: list):
 
     table_study = {
         "study": {
-            "study_accession": clean_text(output_data["study_accession"])  if output_data["study_accession"] else None,
+            "study_accession": (
+                clean_text(output_data["study_accession"]) if output_data["study_accession"] else None
+            ),
             "center_name": clean_text(output_data["center_name"]) if output_data["center_name"] else None,
         }
     }
