@@ -34,7 +34,7 @@ process INDEX_GENOME {
     def genomeDirPath= new File(genomeDir)
     def genomeIndexFile = genomeDirPath.listFiles()?.find { it.name.endsWith('Genome') }
     log.info("${genomeIndexFile}")
-    if (genomeIndexFilePath == null) {
+    if (genomeIndexFile == null) {
     //new File("${genomeDir}/Genome")
     //if (!genomeIndexFile.exists() || genomeIndexFile.length() == 0) {
     // Read the .fna file and perfor
