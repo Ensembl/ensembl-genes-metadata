@@ -47,10 +47,10 @@ export default function App() {
   return (
     <div className="min-h-screen">
       <div className="container-wrapper m-16 mt-10">
-        <div className="container rounded-2xl border-accent shadow-lg">
+        <div className="rounded-2xl border-accent shadow-lg">
           {/* Base Fields */}
-          <div className="rounded-t-2xl bg-secondary p-8 gap-10 ">
-            <div className="grid grid-cols-4 gap-4">
+          <div className="rounded-t-2xl bg-secondary p-8 gap-10">
+            <div className="grid justify-center grid-cols-4 gap-4">
               {baseFields.map(({ label, placeholder }, index) => (
                 <div key={index}>
                   <Label htmlFor={label.toLowerCase().replace(" ", "-")}>
@@ -89,7 +89,7 @@ export default function App() {
 
           {/* Metrics Section (only if any metric is selected) */}
           {selectedMetrics.length > 0 && (
-            <div className="bg-color-sidebar-accent dark:border-x-2 dark:border-b-2 rounded-2xl p-8">
+            <div className="bg-color-sidebar-accent dark:border-x-2 dark:border-b-2 rounded-b-2xl grid gap-6 p-8">
 
               {/* Toggle Groups */}
               {selectedMetrics.some((metric) =>
