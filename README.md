@@ -98,14 +98,6 @@ Each output file is named using a structured format, where {date_str} correspond
 - `annotation_GCA_update_status_{date_str}.csv` – Status of GCAs of already released annotations.
 
 
-## GUI in the browser
-This currently only works with the assemblies module.
-Start the GUI from the command-line:
-```sh
-streamlit run src/python/ensembl/genes/metadata/app.py
-```
-
-![image](https://github.com/user-attachments/assets/c3aa162d-a616-432a-a0ed-7236ef072c8c)
 
 
 
