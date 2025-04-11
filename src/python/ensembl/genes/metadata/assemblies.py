@@ -136,11 +136,12 @@ def get_taxonomy_from_db(lowest_taxon_id):
     return taxonomy_hierarchy
 
 
-def assign_clade_and_species(lowest_taxon_id, clade_data, chordata_taxon_id=7711):
+def assign_clade_and_species(lowest_taxon_id, clade_data, taxonomy_dict, chordata_taxon_id=7711):
     """Assign internal clade and species taxon ID based on taxonomy using the provided clade data,
        and check if the taxon ID is a descendant of the chordata taxon ID (7711)."""
-    # Retrieve the taxonomy hierarchy for the given lowest_taxon_id
-    taxonomy_hierarchy = get_taxonomy_from_db(lowest_taxon_id)
+
+    # Retrieve the taxonomy hierarchy from the passed dictionary (no need to query DB again)
+    taxonomy_hierarchy = taxonomy_dict.get(lowest_taxon_id)
 
     if not taxonomy_hierarchy:
         logging.warning(f"Taxonomy hierarchy not found for taxon ID {lowest_taxon_id}")
@@ -176,7 +177,7 @@ def assign_clade_and_species(lowest_taxon_id, clade_data, chordata_taxon_id=7711
             if internal_clade != "Unassigned":
                 break
 
-        # Check if chordata is in the hierarchy
+    # Check if chordata is in the hierarchy
     is_chordata = any(t['taxon_class_id'] == chordata_taxon_id for t in taxonomy_hierarchy)
     pipeline = "main" if is_chordata else "anno"
 
@@ -234,7 +235,7 @@ def get_descendant_taxa(taxon_id):
 
     return taxon_ids
 
-def get_filtered_assemblies(bioproject_id, metric_thresholds, all_metrics, asm_level, asm_type, release_date,taxon_id):
+def get_filtered_assemblies(bioproject_id, metric_thresholds, all_metrics, asm_level, asm_type, release_date, taxon_id, current):
     """Fetch all assemblies and their metrics filter results based on given thresholds,
     and format the results with metrics as separate columns."""
 
@@ -265,6 +266,11 @@ def get_filtered_assemblies(bioproject_id, metric_thresholds, all_metrics, asm_l
         params.append(release_date)
         logging.info(f"Filtering by release date: {', '.join(release_date)}")
 
+    # Add filtering for 'current' if the argument is passed
+    if current == "1":
+        conditions.append("a.is_current = 'current'")
+        logging.info("Filtering by for current assemblies")
+
     if taxon_id:
         descendant_taxa = get_descendant_taxa(taxon_id)
         if not descendant_taxa:
@@ -294,6 +300,34 @@ def get_filtered_assemblies(bioproject_id, metric_thresholds, all_metrics, asm_l
     """
     cursor.execute(query, tuple(params))
     results = cursor.fetchall()
+
+    # Collect all unique lowest_taxon_ids from the query results
+    logging.info("Fetching taxonomy table started.")
+    lowest_taxon_ids = {row['lowest_taxon_id'] for row in results}
+
+    # Fetch all taxonomy data for the collected lowest_taxon_ids at once
+    taxonomy_query = """
+            SELECT lowest_taxon_id, taxon_class_id, taxon_class
+            FROM taxonomy
+            WHERE lowest_taxon_id IN ({})
+            ORDER BY FIELD(taxon_class, 'species', 'genus', 'family', 'order', 'class', 'phylum', 'kingdom');
+        """.format(','.join(['%s'] * len(lowest_taxon_ids)))
+
+    cursor.execute(taxonomy_query, tuple(lowest_taxon_ids))
+    taxonomy_results = cursor.fetchall()
+
+    # Create a dictionary to store taxonomy data based on lowest_taxon_id
+    taxonomy_dict = {}
+    for row in taxonomy_results:
+        lowest_taxon_id = row['lowest_taxon_id']
+        if lowest_taxon_id not in taxonomy_dict:
+            taxonomy_dict[lowest_taxon_id] = []
+        taxonomy_dict[lowest_taxon_id].append({
+            'taxon_class_id': row['taxon_class_id'],
+            'taxon_class': row['taxon_class']
+        })
+    logging.info("Fetching taxonomy table done.")
+
     conn.close()
 
     # Convert results to a Pandas DataFrame
@@ -376,10 +410,10 @@ def get_filtered_assemblies(bioproject_id, metric_thresholds, all_metrics, asm_l
 
     # Add internal clade and species taxon ID columns to the info_result DataFrame
     logging.info(f"Adding clade, pipeline, genus and species info")
-    df_info_result[['internal_clade', 'species_taxon_id', 'genus_taxon_id', 'pipeline']] = df_info_result['lowest_taxon_id'].apply(lambda x: pd.Series(assign_clade_and_species(x, clade_data)))
+    df_info_result[['internal_clade', 'species_taxon_id', 'genus_taxon_id', 'pipeline']] = df_info_result['lowest_taxon_id'].apply(lambda x: pd.Series(assign_clade_and_species(x, clade_data, taxonomy_dict)))
     logging.info(f"Added clade, pipeline, genus and species info")
 
-    return df_wide, summary_df, df_info_result, df_gca_list
+    return df_wide, summary_df, df_info_result, df_gca_list, taxonomy_dict
 
 
 def main():
@@ -399,6 +433,7 @@ def main():
     parser.add_argument('--taxon_id', type=int, help="NCBI Taxon ID to filter by (e.g., 40674 for Mammalia)")
     parser.add_argument('--reference', type=int, choices=[0, 1], default=0, help="Check if GCA is a reference genome (1 for yes, 0 for no)")
     parser.add_argument('--trans', type=int, choices=[0, 1], default=0, help="Check if a taxon ID has transcriptomic data from ENA (1 for yes, 0 for no)")
+    parser.add_argument('--current', type=int, choices=[0, 1], default=0, help="Check if GCA is the most current version (1 for yes, 0 for no)")
 
     args = parser.parse_args()
 
@@ -414,7 +449,7 @@ def main():
 
     all_metrics = ["gc_percent", "total_sequence_length", "contig_n50", "number_of_contigs", "number_of_scaffolds", "scaffold_n50", "genome_coverage"]
 
-    df, summary_df, info_result, df_gca_list = get_filtered_assemblies(args.bioproject_id, metric_thresholds, all_metrics, args.asm_level, args.asm_type, args.release_date, args.taxon_id)
+    df, summary_df, info_result, df_gca_list, taxonomy_dict = get_filtered_assemblies(args.bioproject_id, metric_thresholds, all_metrics, args.asm_level, args.asm_type, args.release_date, args.taxon_id, args.current)
     logging.info(f"Filtered assemblies: {len(df)}")
 
     # Check for reference genome only if the user requested it
