@@ -114,26 +114,6 @@ def load_clade_data():
         return json.load(f)
 
 
-def get_taxonomy_from_db(lowest_taxon_id):
-    """Retrieve taxonomy hierarchy from the MySQL database."""
-    conn = connect_db()
-    cursor = conn.cursor()
-
-    query = """
-    SELECT taxon_class_id, taxon_class 
-    FROM taxonomy
-    WHERE lowest_taxon_id = %s
-    ORDER BY FIELD(taxon_class, 'species', 'genus', 'family', 'order', 'class', 'phylum', 'kingdom');
-    """
-
-    cursor.execute(query, (lowest_taxon_id,))
-    taxonomy_hierarchy = cursor.fetchall()
-
-    if not taxonomy_hierarchy:
-        logging.warning(f"Taxonomy hierarchy not found in DB for {lowest_taxon_id}.")
-        return None
-
-    return taxonomy_hierarchy
 
 
 def assign_clade_and_species(lowest_taxon_id, clade_data, taxonomy_dict, chordata_taxon_id=7711):
