@@ -60,9 +60,17 @@ workflow RUN_ALIGNMENT{
         def run_Id = getDataFromTable("run_id", "run", "run_accession", run_accession)[0].run_id.toString()
         updateTable("run_id", run_Id, "run", "qc_status", "ALIGNED")
         setLastCheckDate(taxon_id,'update')
-        return tuple(taxon_id, gca, run_accession)
+        return tuple(taxon_id, run_accession)
     }
-    //CLEANING(runAccessionData_NewQCstatus)
+    def runAccessionCleaned = CLEANING(runAccessionData_NewQCstatus)
+    def predictionTissueInput = runAccessionCleaned.map { taxon_id ->
+    def (taxon_id) = taxon_id
+    log.info("taxon_id cleaned: ${taxon_id}")
+    return [taxon_id:taxon_id]
+    }
+    
+    emit:
 
+    taxonIdDataset = predictionTissueInput //channel: [taxon_id]
 }
 

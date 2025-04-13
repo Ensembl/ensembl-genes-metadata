@@ -94,6 +94,7 @@ include { PROCESS_TAXONOMY_INFO } from '../subworkflows/process_taxonomy_info.nf
 include { PROCESS_RUN_ACCESSION_METADATA } from '../subworkflows/process_run_accession_metadata.nf'
 include { FASTQC_PROCESSING } from '../subworkflows/fastqc_processing.nf'
 include { RUN_ALIGNMENT } from '../subworkflows/run_alignment.nf'
+include { TISSUE_PREDICTION } from '../modules/process_run_accession_metadata/tissue_prediction.nf'
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     MAIN WORKFLOW
@@ -112,7 +113,8 @@ workflow SHORT_READ {
     dd.each{ d-> d.view()}
     //def fastQCMetadata = FASTQC_PROCESSING(fastqFilesMetadata).collect()
     //RUN_ALIGNMENT(fastQCMetadata)
-    RUN_ALIGNMENT(fastqFilesMetadata)
+    def tissuePredictionInput =  RUN_ALIGNMENT(fastqFilesMetadata).collect()
+    TISSUE_PREDICTION= tissuePredictionInput.flatten()
     //if (params.cleanCache) {
         // Clean cache directories
     //    exec "rm -rf ${params.cacheDir}/*"
