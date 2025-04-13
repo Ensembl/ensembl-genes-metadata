@@ -158,7 +158,7 @@ def load_model(token_input: str) -> pipeline:
     model_name = "mistralai/Mistral-7B-Instruct-v0.3"
     tokenizer = AutoTokenizer.from_pretrained(
         model_name, token=token_input
-    )
+    ) 
 
     if tokenizer.pad_token_id is None:
         tokenizer.pad_token = tokenizer.eos_token  # Set pad token to EOS
