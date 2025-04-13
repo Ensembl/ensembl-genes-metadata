@@ -21,7 +21,10 @@ process CLEANING {
     tag "$taxon_id/$run_accession"
 
     input:
-    tuple val(taxon_id), val(gca), val(run_accession)
+    tuple val(taxon_id),  val(run_accession)
+    output:
+    val(taxon_id)
+
     
     script:
     //dirToRemove = joinPath(params.outDir, taxon_id, run_accession)
