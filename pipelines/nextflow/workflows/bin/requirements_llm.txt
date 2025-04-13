@@ -1,0 +1,12 @@
+requests
+tenacity
+pandas
+torch
+huggingface_hub
+transformers
+time
+datasets
+pymysql
+tqdm
+
+
