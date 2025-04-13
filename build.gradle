@@ -1,0 +1,25 @@
+apply plugin: 'java'
+apply plugin: 'java-test-fixtures'
+apply plugin: 'idea'
+apply plugin: 'groovy'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'org.codehaus.groovy:groovy-all:2.2.2'
+    //implementation 'org.slf4j:slf4j-api:1.7.32'
+    //implementation 'ch.qos.logback:logback-classic:1.2.6'
+    //implementation 'org.xerial:sqlite-jdbc:3.36.0.3'
+    
+    // Add any other dependencies your project needs
+}
+
+sourceSets {
+    main {
+        groovy {
+            srcDirs = ['lib', 'modules']
+        }
+    }
+}
