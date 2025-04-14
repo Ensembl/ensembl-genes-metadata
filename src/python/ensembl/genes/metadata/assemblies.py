@@ -36,12 +36,11 @@ def load_db_config():
 
 
 # Get DB credentials
-db_config = load_db_config()
-
-# Connect to DB
-def connect_db():
+def connect_db(config_key):
     """Establish connection to the MySQL database."""
-    return pymysql.connect(**db_config, cursorclass=pymysql.cursors.DictCursor)
+    db_config = load_db_config()
+    return pymysql.connect(**db_config[config_key], cursorclass=pymysql.cursors.DictCursor)
+
 
 # BioProject mapping
 bioproject_mapping = {
@@ -112,7 +111,6 @@ def load_clade_data():
     with open(json_file, "r") as f:
         logging.info("Loading clade settings json file.")
         return json.load(f)
-
 
 
 
@@ -215,11 +213,70 @@ def get_descendant_taxa(taxon_id):
 
     return taxon_ids
 
+def get_trancriptomic_assessment(taxonomy_dict):
+    db_config_key_t = "transcriptomic"
+    conn = connect_db(db_config_key_t)
+    cursor = conn.cursor()
+    logging.info(f"Retrieving trancriptomic assesment data from the registry.")
+
+    trans_taxon_ids = set()
+
+    for lowest_taxon_id, tax_list in taxonomy_dict.items():
+        trans_taxon_ids.add(lowest_taxon_id)  # Always include lowest_taxon_id
+        for taxon in tax_list:
+            if taxon['taxon_class'] in ['species', 'genus']:
+                trans_taxon_ids.add(taxon['taxon_class_id'])
+
+    trans_taxon_ids = list(trans_taxon_ids)
+
+    trans_placeholders = ','.join(['%s'] * len(trans_taxon_ids))
+    where_clause = f"WHERE m.taxon_id IN ({trans_placeholders})"
+
+    query = f"""
+        SELECT m.taxon_id, m.last_check AS transc_assess_date, r.qc_status AS transc_status
+        FROM meta m
+        JOIN run r ON m.taxon_id = r.taxon_id
+        {where_clause};
+    """
+
+    cursor.execute(query, trans_taxon_ids)
+    trans_results = cursor.fetchall()
+
+    trans_df = pd.DataFrame(trans_results, columns=['taxon_id', 'transc_assess_date', 'transc_status'])
+
+    found_ids = trans_df['taxon_id'].nunique()
+    logging.info(
+        f"Transcriptomic assessment data retrieved for {found_ids} taxon IDs out of {len(trans_taxon_ids)} provided.")
+
+    missing_count = len(trans_taxon_ids) - found_ids
+    if missing_count > 0:
+        logging.info(f"{missing_count} taxon IDs had no transcriptomic assessment data.")
+
+    return trans_df
+
+
+def add_transc_data_to_df(info_df, taxonomy_dict):
+
+    trans_df = get_trancriptomic_assessment(taxonomy_dict)
+
+    for level in ['lowest', 'species', 'genus']:
+        merged = info_df[[f"{level}_taxon_id"]].merge(
+            trans_df,
+            how='left',
+            left_on=f"{level}_taxon_id",
+            right_on='taxon_id'
+        )
+        info_df[f"{level}_transc_assess_date"] = merged['transc_assess_date']
+        info_df[f"{level}_transc_status"] = merged['transc_status']
+
+    return info_df
+
+
 def get_filtered_assemblies(bioproject_id, metric_thresholds, all_metrics, asm_level, asm_type, release_date, taxon_id, current):
     """Fetch all assemblies and their metrics filter results based on given thresholds,
     and format the results with metrics as separate columns."""
-
-    conn = connect_db()
+    db_config_key = "meta"
+    conn = connect_db(db_config_key)
     cursor = conn.cursor()
 
     # Check if bioproject_id is provided before validating
@@ -247,7 +304,7 @@ def get_filtered_assemblies(bioproject_id, metric_thresholds, all_metrics, asm_l
         logging.info(f"Filtering by release date: {', '.join(release_date)}")
 
     # Add filtering for 'current' if the argument is passed
-    if current == "1":
+    if current:
         conditions.append("a.is_current = 'current'")
         logging.info("Filtering by for current assemblies")
 
@@ -391,6 +448,8 @@ def get_filtered_assemblies(bioproject_id, metric_thresholds, all_metrics, asm_l
     # Add internal clade and species taxon ID columns to the info_result DataFrame
     logging.info(f"Adding clade, pipeline, genus and species info")
     df_info_result[['internal_clade', 'species_taxon_id', 'genus_taxon_id', 'pipeline']] = df_info_result['lowest_taxon_id'].apply(lambda x: pd.Series(assign_clade_and_species(x, clade_data, taxonomy_dict)))
+    df_info_result['genus_taxon_id'] = df_info_result['genus_taxon_id'].astype('Int64')  # Nullable integer type
+    logging.debug(f"Type of genus_taxon_id column: {df_info_result['genus_taxon_id'].dtype}")
     logging.info(f"Added clade, pipeline, genus and species info")
 
     return df_wide, summary_df, df_info_result, df_gca_list, taxonomy_dict
@@ -430,6 +489,7 @@ def main():
     all_metrics = ["gc_percent", "total_sequence_length", "contig_n50", "number_of_contigs", "number_of_scaffolds", "scaffold_n50", "genome_coverage"]
 
     df, summary_df, info_result, df_gca_list, taxonomy_dict = get_filtered_assemblies(args.bioproject_id, metric_thresholds, all_metrics, args.asm_level, args.asm_type, args.release_date, args.taxon_id, args.current)
+
     logging.info(f"Filtered assemblies: {len(df)}")
 
     # Check for reference genome only if the user requested it
@@ -494,6 +554,8 @@ def main():
 
         # Drop redundant 'Taxon ID' columns (both for lowest and genus)
         info_result.drop(columns=["Taxon ID_lowest", "Taxon ID_genus"], inplace=True)
+
+    info_result = add_transc_data_to_df(info_result, taxonomy_dict)
 
     # Check if 'df' is a string (error message)
     if isinstance(df, str):
