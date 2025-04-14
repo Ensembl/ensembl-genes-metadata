@@ -413,6 +413,7 @@ def main():
     parser.add_argument('--genome_coverage', type=float, help="Genome coverage in bp")
     parser.add_argument('--bioproject_id', type=str, nargs='+', help="One or more BioProject IDs")
     parser.add_argument('--trans', type=int, choices=[0, 1], default=0, help="Check if a taxon ID has transcriptomic data from ENA (1 for yes, 0 for no)")
+    parser.add_argument('--current', type=int, choices=[0, 1], default=0, help="Check if GCA is the most current version (1 for yes, 0 for no)")
 
     args = parser.parse_args()
 
@@ -440,7 +441,7 @@ def main():
                    "scaffold_n50", "genome_coverage"]
 
     # Fetch assemblies released in the past 5 years
-    df_wide, summary_df, df_info_result, df_gca_list = get_filtered_assemblies(bioproject_id, metric_thresholds, all_metrics, asm_level, asm_type, release_date, taxon_id)
+    df_wide, summary_df, df_info_result, df_gca_list, taxonomy_dict = get_filtered_assemblies(bioproject_id, metric_thresholds, all_metrics, asm_level, asm_type, release_date, taxon_id, args.current)
     logging.info(f"Filtered assemblies: {len(df_wide)}")
 
 

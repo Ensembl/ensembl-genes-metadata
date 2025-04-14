@@ -449,6 +449,7 @@ def get_filtered_assemblies(bioproject_id, metric_thresholds, all_metrics, asm_l
     logging.info(f"Adding clade, pipeline, genus and species info")
     df_info_result[['internal_clade', 'species_taxon_id', 'genus_taxon_id', 'pipeline']] = df_info_result['lowest_taxon_id'].apply(lambda x: pd.Series(assign_clade_and_species(x, clade_data, taxonomy_dict)))
     df_info_result['genus_taxon_id'] = df_info_result['genus_taxon_id'].astype('Int64')  # Nullable integer type
+    df_info_result = add_transc_data_to_df(df_info_result, taxonomy_dict)
     logging.debug(f"Type of genus_taxon_id column: {df_info_result['genus_taxon_id'].dtype}")
     logging.info(f"Added clade, pipeline, genus and species info")
 
@@ -555,7 +556,6 @@ def main():
         # Drop redundant 'Taxon ID' columns (both for lowest and genus)
         info_result.drop(columns=["Taxon ID_lowest", "Taxon ID_genus"], inplace=True)
 
-    info_result = add_transc_data_to_df(info_result, taxonomy_dict)
 
     # Check if 'df' is a string (error message)
     if isinstance(df, str):
