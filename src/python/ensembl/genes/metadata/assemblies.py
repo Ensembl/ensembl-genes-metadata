@@ -502,24 +502,29 @@ def main():
     # Check for transcriptomic data only if the user requested it
     if args.trans:
         # Check transcriptomic data for each taxon_id in the dataset
-        logging.info(f"Transcriptomic data check requested")
+        logging.info(f"Transcriptomic data check requested requested")
         # Get unique taxon IDs and filter out NaN values
-        taxon_ids = [tid for tid in info_result["lowest_taxon_id"].unique() if pd.notna(tid)]
-        genus_taxon_ids = [gtid for gtid in info_result["genus_taxon_id"].unique() if pd.notna(gtid)]
+        taxon_ids = [tid for tid in df_info_result["lowest_taxon_id"].unique() if pd.notna(tid)]
+        species_taxon_ids = [tid for tid in df_info_result["species_taxon_id"].unique() if pd.notna(tid)]
+        genus_taxon_ids = [gtid for gtid in df_info_result["genus_taxon_id"].unique() if pd.notna(gtid)]
 
         # Count NaN values and log warning if any are found
-        nan_lowest_count = info_result["lowest_taxon_id"].isna().sum()
-        nan_genus_count = info_result["genus_taxon_id"].isna().sum()
+        nan_lowest_count = df_info_result["lowest_taxon_id"].isna().sum()
+        nan_species_count = df_info_result["species_taxon_id"].isna().sum()
+        nan_genus_count = df_info_result["genus_taxon_id"].isna().sum()
 
         if nan_lowest_count > 0:
             logging.warning(f"Found {nan_lowest_count} NA values in lowest_taxon_id column")
+
+        if nan_lowest_count > 0:
+            logging.warning(f"Found {nan_species_count} NA values in species_taxon_id column")
 
         if nan_genus_count > 0:
             logging.warning(f"Found {nan_genus_count} NA values in genus_taxon_id column")
 
         # Combine unique taxon IDs into a set and convert to integers
         all_taxon_ids = set()
-        for tid in list(set(taxon_ids).union(set(genus_taxon_ids))):
+        for tid in list(set(taxon_ids).union(set(genus_taxon_ids)).union(set(species_taxon_ids))):
             try:
                 all_taxon_ids.add(int(tid))
             except (ValueError, TypeError) as e:
@@ -544,17 +549,23 @@ def main():
         transcriptomic_df = pd.DataFrame(transcriptomic_results)
 
         # Merge for the lowest taxon ID
-        info_result = info_result.merge(
-            transcriptomic_df, left_on="lowest_taxon_id", right_on="Taxon ID", how="left"
+        df_info_result = df_info_result.merge(
+            transcriptomic_df, left_on="lowest_taxon_id", right_on="Taxon ID", how="left", suffixes=('', '_lowest')
+        )
+
+        # Merge for the species taxon ID
+        df_info_result = df_info_result.merge(
+            transcriptomic_df, left_on="species_taxon_id", right_on="Taxon ID", how="left",
+            suffixes=('_lowest', '_species')
         )
 
         # Merge for the genus taxon ID (separate column)
-        info_result = info_result.merge(
+        df_info_result = df_info_result.merge(
             transcriptomic_df, left_on="genus_taxon_id", right_on="Taxon ID", how="left", suffixes=('_lowest', '_genus')
         )
 
         # Drop redundant 'Taxon ID' columns (both for lowest and genus)
-        info_result.drop(columns=["Taxon ID_lowest", "Taxon ID_genus"], inplace=True)
+        df_info_result.drop(columns=["Taxon ID_lowest", "Taxon ID_species", "Taxon ID"], inplace=True)
 
 
     # Check if 'df' is a string (error message)
