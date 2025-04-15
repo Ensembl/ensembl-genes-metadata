@@ -1,6 +1,6 @@
 "use client";
-
 import React, { useState } from "react";
+import { CircleX } from "lucide-react"
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -10,7 +10,6 @@ import {
   ToggleGroup,
   ToggleGroupItem,
 } from "@/components/ui/assembly_toggle";
-import { MetricBadge } from "@/components/ui/info_bedge"
 
 export default function App() {
   const baseFields = [
@@ -102,12 +101,16 @@ export default function App() {
                         <div key={metric}>
                           <div className="flex items-center justify-start mb-2">
                             <Label className="block mr-2">{metric}</Label>
-                            <MetricBadge
-                              label=""
-                              onRemove={() =>
-                                setSelectedMetrics((prev) => prev.filter((m) => m !== metric))
-                              }
-                            />
+                            <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-4 w-4 p-0 text-muted-foreground hover:text-foreground"
+                            onClick={() =>
+                              setSelectedMetrics((prev) => prev.filter((m) => m !== metric))
+                            }
+                          >
+                            <CircleX className="h-3 w-3" strokeWidth={2.5} />
+                          </Button>
                           </div>
                           <ToggleGroup
                             type="multiple"
@@ -143,12 +146,16 @@ export default function App() {
                             <Label className="mr-2" htmlFor={metric.toLowerCase().replace(" ", "-")}>
                               {metric}
                             </Label>
-                            <MetricBadge
-                              label=""
-                              onRemove={() =>
-                                setSelectedMetrics((prev) => prev.filter((m) => m !== metric))
-                              }
-                            />
+                            <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-4 w-4 p-0 text-muted-foreground hover:text-foreground"
+                            onClick={() =>
+                              setSelectedMetrics((prev) => prev.filter((m) => m !== metric))
+                            }
+                          >
+                            <CircleX className="h-3 w-3" strokeWidth={2.5} />
+                          </Button>
                           </div>
                           <Input
                             id={metric.toLowerCase().replace(" ", "-")}
