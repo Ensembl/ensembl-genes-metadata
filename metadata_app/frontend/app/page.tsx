@@ -10,17 +10,17 @@ export default function Page() {
       <div className="min-h-screen justify-center flex flex-wrap align-items-center">
           <div className="container m-16 mt-10 max-w-7xl">
             <div className="pt-8 pb-10 py-16">
-              <div className="grid grid-cols-1 md:grid-cols-1 gap-6 lg:grid-cols-2 justify-items-center">
-                  <div className="w-full">
+              <div className="columns-2 space-y-4">
+                  <div className="w-full break-inside-avoid">
                     <WelcomeCard></WelcomeCard>
                   </div>
-                  <div className="w-full">
-                    <CardsStats></CardsStats>
-                  </div>
-                  <div className="w-full">
+                  <div className="w-full break-inside-avoid">
                     <CardsCalendar></CardsCalendar>
                   </div>
-                 <div className="w-full">
+                  <div className="w-full break-inside-avoid">
+                    <CardsStats></CardsStats>
+                  </div>
+                 <div className="w-full break-inside-avoid">
                     <CardsDataTable></CardsDataTable>
                  </div>
               </div>

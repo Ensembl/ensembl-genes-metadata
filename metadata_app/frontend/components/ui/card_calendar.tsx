@@ -9,7 +9,7 @@ const start = new Date(2023, 5, 5)
 
 export function CardsCalendar() {
   return (
-    <div className="grid grid-cols-2 gap-6">
+    <div className="grid grid-cols-2 gap-4">
       <Card className="justify-items-center">
         <CardHeader>
             <CardTitle className="text-lg font-bold">Metadata registry updates</CardTitle>

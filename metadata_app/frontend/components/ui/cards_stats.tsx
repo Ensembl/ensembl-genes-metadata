@@ -2,6 +2,7 @@
 
 import { Tooltip, Line, LineChart } from "recharts"
 
+
 import {
   Card,
   CardContent,
@@ -59,7 +60,7 @@ const chartConfig = {
 
 export function CardsStats() {
   return (
-    <div className="grid grid-cols-2 gap-6">
+    <div className="grid grid-cols-2 gap-4">
       <Card>
         <CardHeader>
           <CardTitle className="text-lg font-bold">Annotations</CardTitle>
@@ -78,7 +79,16 @@ export function CardsStats() {
                 bottom: 0,
               }}
             >
-              <Tooltip />
+              <Tooltip
+                cursor={{ fill: 'rgba(0, 0, 0, 0.1)' }}
+                contentStyle={{ backgroundColor: 'var(--background)',
+                  borderRadius: '0.5rem',
+                  border: '1px solid var(--border)',
+                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)'
+                }}
+                labelStyle={{ fontWeight: 'bold', color: 'var(--chart-1)' }}
+                itemStyle={{ color: 'var(--chart-1)' }}
+              />
               <Line
                 type="monotone"
                 strokeWidth={2}
@@ -110,7 +120,16 @@ export function CardsStats() {
                 bottom: 0,
               }}
             >
-              <Tooltip />
+              <Tooltip
+                cursor={{ fill: 'rgba(0, 0, 0, 0.1)' }}
+                contentStyle={{ backgroundColor: 'var(--background)',
+                  borderRadius: '0.5rem',
+                  border: '1px solid var(--border)',
+                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)'
+                }}
+                labelStyle={{ fontWeight: 'bold', color: 'var(--chart-1)' }}
+                itemStyle={{ color: 'var(--chart-1)' }}
+              />
               <Line
                 type="monotone"
                 strokeWidth={2}
