@@ -10,14 +10,29 @@ export function MainNav() {
   const pathname = usePathname()
 
   return (
-    <div className="flex w-full items-center px-16 py-4">
-      <Link href="/" className="flex items-center mr-6 gap-2 lg:mr-6">
-        <Icons.logo className="h-6 w-6" />
-        <span className="hidden font-bold lg:inline-block leading-tight">
-          Genebuild<br />Metadata
-        </span>
-      </Link>
+  <div className="flex w-full items-center">
+    {/* Logo Section */}
+    <Link href="/" className="flex items-start mr-6 gap-2 lg:mr-6">
+      <Icons.logo className="h-6 w-6" />
+      <span className="hidden font-bold lg:inline-block leading-tight">
+        Genebuild<br />Metadata
+      </span>
+    </Link>
+
+    {/* Right-side nav + mode switch */}
+    <div className="flex items-center gap-6 ml-auto">
       <nav className="flex items-center gap-4 text-sm xl:gap-6">
+        <Link
+          href="/"
+          className={cn(
+            "transition-colors hover:text-foreground/80",
+            pathname === "/"
+              ? "text-foreground"
+              : "text-foreground/80"
+          )}
+        >
+          Home
+        </Link>
         <Link
           href="/assemblies"
           className={cn(
@@ -53,10 +68,8 @@ export function MainNav() {
         </Link>
       </nav>
 
-      {/* Pushes this to the far right */}
-      <div className="ml-auto">
-        <ModeSwitcher />
-      </div>
+      <ModeSwitcher />
     </div>
-  )
+  </div>
+)
 }
