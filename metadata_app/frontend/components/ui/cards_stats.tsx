@@ -59,7 +59,7 @@ const chartConfig = {
 
 export function CardsStats() {
   return (
-    <div className="grid grid-cols-2 gap-2">
+    <div className="grid grid-cols-2 gap-6">
       <Card>
         <CardHeader>
           <CardTitle className="text-lg font-bold">Annotations</CardTitle>

@@ -25,7 +25,7 @@ export function WelcomeCard() {
       </CardContent>
 
       <CardFooter className="justify-end">
-        <Button asChild className="bg-primary-foreground text-primary shadow hover:bg-primary-foreground/90">
+        <Button asChild className="bg-primary-foreground text-primary shadow hover:bg-primary-foreground/90 font-bold">
           <Link href="/assemblies">
             Search Assemblies <span className="ml-1">→</span>
           </Link>
