@@ -177,12 +177,12 @@ export function CardsDataTable() {
     <Card>
       <CardHeader className="mb-4">
         <CardTitle className="text-xl -mb-2">Biodiversity projects</CardTitle>
-        <CardDescription>Manage your payments.</CardDescription>
+        <CardDescription>See statistics on projects.</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="mb-4 flex items-center gap-4">
           <Input
-            placeholder="search project"
+            placeholder="Type project name"
             value={(table.getColumn("email")?.getFilterValue() as string) ?? ""}
             onChange={(event) =>
               table.getColumn("email")?.setFilterValue(event.target.value)
