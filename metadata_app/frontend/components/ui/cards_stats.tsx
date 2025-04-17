@@ -63,9 +63,9 @@ export function CardsStats() {
     <div className="grid grid-cols-2 gap-4">
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg font-bold">Annotations</CardTitle>
+          <CardTitle className="text-lg font-bold">Assemblies</CardTitle>
           <CardDescription className="text-sm font-light mb-2">
-            Number of annotations by year
+            Number of assemblies by year
           </CardDescription>
         </CardHeader>
         <CardContent className="pb-0">
