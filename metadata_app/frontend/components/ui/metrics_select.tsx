@@ -43,12 +43,14 @@ function PopoverCheckboxItem({
 interface PopoverWithMultiSelectProps {
   selectedItems: string[]
   setSelectedItems: React.Dispatch<React.SetStateAction<string[]>>
+  onAutoFillHighQuality: () => void
 }
 
 export function PopoverWithMultiSelect({
   selectedItems,
   setSelectedItems,
-}: PopoverWithMultiSelectProps) {
+  onAutoFillHighQuality,
+}: PopoverWithMultiSelectProps)  {
 
   const handleToggleItem = (item: string) => {
     setSelectedItems((prevSelectedItems) =>
@@ -57,6 +59,7 @@ export function PopoverWithMultiSelect({
         : [...prevSelectedItems, item]
     )
   }
+
 
   const group1 = ["Assembly level", "Assembly type", "Contig N50", "Sequence length"];
   const group2 = ["GC%", "Genome coverage", "Number of contigs", "Number of scaffolds", "Scaffold N50"];
@@ -71,7 +74,7 @@ export function PopoverWithMultiSelect({
       </PopoverTrigger>
 
       <PopoverContent className="w-full">  {/* Added w-full here */}
-        <Button variant="ghost" className="w-full justify-start ">
+        <Button variant="ghost" className="w-full justify-start" onClick={onAutoFillHighQuality}>
           <SlidersHorizontal className="" />
           Get annotation candidates
         </Button>
