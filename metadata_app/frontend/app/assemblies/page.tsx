@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { CircleX } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,7 +14,7 @@ import {
 import { Assemblies, columns } from "@/app/tables/assemblies_columns";
 import { DataTable } from "@/app/tables/data-table";
 
-// 👇 Mock data for now
+// 👇 Mock data
 async function getMockAssemblies(): Promise<Assemblies[]> {
   return [
     {
@@ -63,6 +63,8 @@ export default function Page() {
 
   const [selectedMetrics, setSelectedMetrics] = useState<string[]>([]);
   const [toggleStates, setToggleStates] = useState<{ [key: string]: string[] }>({});
+  const [metricValues, setMetricValues] = useState<{ [key: string]: string }>({});
+  const [autoFillRequested, setAutoFillRequested] = useState(false);
   const [assemblies, setAssemblies] = useState<Assemblies[]>([]);
 
   const handleToggleChange = (metric: string, values: string[]) => {
@@ -74,25 +76,33 @@ export default function Page() {
     setAssemblies(data);
   };
 
-    const handleAutoFillHighQuality = () => {
-    if (!selectedMetrics.includes("Contig N50")) {
-      setSelectedMetrics((prev) => [...prev, "Contig N50"]);
-    }
-    if (!selectedMetrics.includes("Assembly level")) {
-      setSelectedMetrics((prev) => [...prev, "Assembly level"]);
-    }
-
-    setToggleStates((prev) => ({
-      ...prev,
-      "Assembly level": ["Complete genome", "Chromosome"],
-    }));
-
-    // Optional: if you make the Contig N50 input controlled by state
-    const input = document.getElementById("contig-n50") as HTMLInputElement;
-    if (input) {
-      input.value = "100000";
-    }
+  const handleAutoFillHighQuality = () => {
+    setSelectedMetrics((prev) => {
+      const updated = [...prev];
+      if (!updated.includes("Contig N50")) updated.push("Contig N50");
+      if (!updated.includes("Assembly level")) updated.push("Assembly level");
+      return updated;
+    });
+    setAutoFillRequested(true);
   };
+
+  useEffect(() => {
+    if (
+      autoFillRequested &&
+      selectedMetrics.includes("Contig N50") &&
+      selectedMetrics.includes("Assembly level")
+    ) {
+      setMetricValues((prev) => ({
+        ...prev,
+        "Contig N50": "100000",
+      }));
+      setToggleStates((prev) => ({
+        ...prev,
+        "Assembly level": ["Complete genome", "Chromosome"],
+      }));
+      setAutoFillRequested(false);
+    }
+  }, [autoFillRequested, selectedMetrics]);
 
   const toggleMetrics = [
     {
@@ -154,7 +164,7 @@ export default function Page() {
 
           {/* Metric Toggles */}
           {selectedMetrics.length > 0 && (
-            <div className="bg-color-sidebar-accent dark:border-x-2 dark:border-b-2 rounded-b-2xl grid gap-6 p-8">
+            <div className="bg-color-sidebar-accent dark:border-x-2 dark:border-b-2 rounded-b-2xl flex flex-wrap space-y-8 p-8">
               <div className="space-y-6">
                 {selectedMetrics.map((metric) =>
                   toggleMetrics.some((tm) => tm.label === metric) ? (
@@ -205,12 +215,31 @@ export default function Page() {
                         htmlFor={metric.toLowerCase().replace(" ", "-")}
                       >
                         {metric}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-4 w-4 p-0 text-muted-foreground hover:text-foreground"
+                          onClick={() =>
+                            setSelectedMetrics((prev) =>
+                              prev.filter((m) => m !== metric)
+                            )
+                          }
+                        >
+                          <CircleX className="h-3 w-3" strokeWidth={2.5} />
+                        </Button>
                       </Label>
                       <Input
                         id={metric.toLowerCase().replace(" ", "-")}
                         type="text"
                         placeholder={`Enter threshold for ${metric}`}
                         className="mt-1 my-2"
+                        value={metricValues[metric] || ""}
+                        onChange={(e) =>
+                          setMetricValues((prev) => ({
+                            ...prev,
+                            [metric]: e.target.value,
+                          }))
+                        }
                       />
                     </div>
                   ) : null
@@ -228,43 +257,42 @@ export default function Page() {
         </div>
 
         {/* Result Table */}
-      {assemblies.length > 0 && (
-        <div className="mt-10 shadow-lg border border:border rounded-2xl">
-          <div className="flex items-center justify-between p-6 border-b border:border">
-            <h2 className="text-lg font-semibold">Filtered Assemblies</h2>
-            <Button
-              variant="secondary"
-              onClick={() => {
-                // Convert data to CSV and trigger download
-                const csv = [
-                  Object.keys(assemblies[0]).join(","), // Header row
-                  ...assemblies.map((row) =>
-                    Object.values(row)
-                      .map((value) =>
-                        typeof value === "string" && value.includes(",")
-                          ? `"${value}"`
-                          : value
-                      )
-                      .join(",")
-                  ),
-                ].join("\n");
+        {assemblies.length > 0 && (
+          <div className="mt-10 shadow-lg border border:border rounded-2xl">
+            <div className="flex items-center justify-between p-6 border-b border:border">
+              <h2 className="text-lg font-semibold">Filtered Assemblies</h2>
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  const csv = [
+                    Object.keys(assemblies[0]).join(","),
+                    ...assemblies.map((row) =>
+                      Object.values(row)
+                        .map((value) =>
+                          typeof value === "string" && value.includes(",")
+                            ? `"${value}"`
+                            : value
+                        )
+                        .join(",")
+                    ),
+                  ].join("\n");
 
-                const blob = new Blob([csv], { type: "text/csv" });
-                const url = URL.createObjectURL(blob);
-                const link = document.createElement("a");
-                link.href = url;
-                link.download = "assemblies.csv";
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-              }}
-                >
-                    Download CSV
-            </Button>
+                  const blob = new Blob([csv], { type: "text/csv" });
+                  const url = URL.createObjectURL(blob);
+                  const link = document.createElement("a");
+                  link.href = url;
+                  link.download = "assemblies.csv";
+                  document.body.appendChild(link);
+                  link.click();
+                  document.body.removeChild(link);
+                }}
+              >
+                Download CSV
+              </Button>
             </div>
-                <DataTable columns={columns} data={assemblies} />
-              </div>
-            )}
+            <DataTable columns={columns} data={assemblies} />
+          </div>
+        )}
       </div>
     </div>
   );

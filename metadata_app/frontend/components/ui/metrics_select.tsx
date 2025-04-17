@@ -73,7 +73,7 @@ export function PopoverWithMultiSelect({
         </Button>
       </PopoverTrigger>
 
-      <PopoverContent className="w-full">  {/* Added w-full here */}
+      <PopoverContent className="w-full">
         <Button variant="ghost" className="w-full justify-start" onClick={onAutoFillHighQuality}>
           <SlidersHorizontal className="" />
           Get annotation candidates
