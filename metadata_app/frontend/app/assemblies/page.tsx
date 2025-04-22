@@ -164,12 +164,12 @@ export default function Page() {
 
           {/* Metric Toggles */}
           {selectedMetrics.length > 0 && (
-            <div className="bg-color-sidebar-accent dark:border-x-2 dark:border-b-2 rounded-b-2xl flex flex-wrap space-y-8 p-8">
+            <div className="bg-color-sidebar-accent dark:border-x-2 dark:border-b-2 rounded-b-2xl flex flex-col space-y-8 p-8 ">
               <div className="space-y-6">
                 {selectedMetrics.map((metric) =>
                   toggleMetrics.some((tm) => tm.label === metric) ? (
                     <div key={metric}>
-                      <div className="flex items-center justify-start mb-2">
+                      <div className="flex items-center justify-start">
                         <Label className="block mr-2">{metric}</Label>
                         <Button
                           variant="ghost"
