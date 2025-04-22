@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { CircleX } from "lucide-react";
+import { XCircle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/assembly_toggle";
 import { Assemblies, columns } from "@/app/tables/assemblies_columns";
 import { DataTable } from "@/app/tables/data-table";
+import {cn} from "@/lib/utils";
 
 // 👇 Mock data
 async function getMockAssemblies(): Promise<Assemblies[]> {
@@ -121,6 +122,15 @@ export default function Page() {
     },
   ];
 
+    const hasToggleGroup = selectedMetrics.some((metric) =>
+  toggleMetrics.some((tm) => tm.label === metric)
+  );
+
+  const hasInputFields = selectedMetrics.some((metric) =>
+    !toggleMetrics.some((tm) => tm.label === metric)
+  );
+
+
   return (
     <div className="min-h-screen justify-center flex flex-wrap align-items-center">
       <div className="container m-16 mt-10 max-w-7xl">
@@ -164,25 +174,33 @@ export default function Page() {
 
           {/* Metric Toggles */}
           {selectedMetrics.length > 0 && (
-            <div className="bg-color-sidebar-accent dark:border-x-2 dark:border-b-2 rounded-b-2xl flex flex-col space-y-8 p-8 ">
+          <div
+            className={cn(
+              "bg-color-sidebar-accent dark:border-x-2 dark:border-b-2 rounded-b-2xl flex flex-col p-8",
+              hasToggleGroup && hasInputFields && "space-y-8"
+            )}
+          >
+            {hasToggleGroup && (
               <div className="space-y-6">
                 {selectedMetrics.map((metric) =>
                   toggleMetrics.some((tm) => tm.label === metric) ? (
                     <div key={metric}>
-                      <div className="flex items-center justify-start">
-                        <Label className="block mr-2">{metric}</Label>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-4 w-4 p-0 text-muted-foreground hover:text-foreground"
+                      <div className="flex items-center justify-start mb-2">
+                        <Label
+                        className="gap-1"
+                        htmlFor={metric.toLowerCase().replace(" ", "-")}
+                      >
+                        {metric}
+                        <XCircle
+                          className="h-5 w-5 cursor-pointer text-muted-foreground hover:text-foreground"
+                          strokeWidth={2.5}
+                          fill="currentColor"
+                          color="background"
                           onClick={() =>
-                            setSelectedMetrics((prev) =>
-                              prev.filter((m) => m !== metric)
-                            )
+                            setSelectedMetrics((prev) => prev.filter((m) => m !== metric))
                           }
-                        >
-                          <CircleX className="h-3 w-3" strokeWidth={2.5} />
-                        </Button>
+                        />
+                      </Label>
                       </div>
                       <ToggleGroup
                         type="multiple"
@@ -204,29 +222,27 @@ export default function Page() {
                   ) : null
                 )}
               </div>
+            )}
 
-              {/* Metric Input Fields */}
+            {hasInputFields && (
               <div className="grid grid-cols-4 gap-4">
                 {selectedMetrics.map((metric) =>
                   !toggleMetrics.some((tm) => tm.label === metric) ? (
                     <div key={metric}>
                       <Label
-                        className="mr-2"
+                        className="gap-1"
                         htmlFor={metric.toLowerCase().replace(" ", "-")}
                       >
                         {metric}
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-4 w-4 p-0 text-muted-foreground hover:text-foreground"
+                        <XCircle
+                          className="h-5 w-5 cursor-pointer text-muted-foreground hover:text-foreground"
+                          strokeWidth={2.5}
+                          fill="currentColor"
+                          color="background"
                           onClick={() =>
-                            setSelectedMetrics((prev) =>
-                              prev.filter((m) => m !== metric)
-                            )
+                            setSelectedMetrics((prev) => prev.filter((m) => m !== metric))
                           }
-                        >
-                          <CircleX className="h-3 w-3" strokeWidth={2.5} />
-                        </Button>
+                        />
                       </Label>
                       <Input
                         id={metric.toLowerCase().replace(" ", "-")}
@@ -245,8 +261,9 @@ export default function Page() {
                   ) : null
                 )}
               </div>
-            </div>
-          )}
+            )}
+          </div>
+        )}
         </div>
 
         {/* Get Results Button */}
@@ -256,39 +273,81 @@ export default function Page() {
           </Button>
         </div>
 
-        {/* Result Table */}
+        {/* Results */}
         {assemblies.length > 0 && (
           <div className="mt-10 shadow-lg border border:border rounded-2xl">
-            <div className="flex items-center justify-between p-6 border-b border:border">
+            <div className="flex items-center justify-between px-8 py-6 border-b border:border">
               <h2 className="text-lg font-semibold">Filtered Assemblies</h2>
-              <Button
-                variant="secondary"
-                onClick={() => {
-                  const csv = [
-                    Object.keys(assemblies[0]).join(","),
-                    ...assemblies.map((row) =>
-                      Object.values(row)
-                        .map((value) =>
-                          typeof value === "string" && value.includes(",")
-                            ? `"${value}"`
-                            : value
-                        )
-                        .join(",")
-                    ),
-                  ].join("\n");
+              <div className="flex gap-2">
+                {/* Download GCA List (.txt) */}
+                <Button
+                  variant="secondary"
+                  onClick={() => {
+                    const gcaList = assemblies
+                      .map((row) => row.gca) // replace with correct key if different
+                      .join("\n");
 
-                  const blob = new Blob([csv], { type: "text/csv" });
-                  const url = URL.createObjectURL(blob);
-                  const link = document.createElement("a");
-                  link.href = url;
-                  link.download = "assemblies.csv";
-                  document.body.appendChild(link);
-                  link.click();
-                  document.body.removeChild(link);
-                }}
-              >
-                Download CSV
-              </Button>
+                    const blob = new Blob([gcaList], { type: "text/plain" });
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement("a");
+                    link.href = url;
+                    link.download = "filtered_gca_list.txt";
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                  }}
+                >
+                  Download GCA List
+                </Button>
+
+                {/* Download Full Table (CSV, from frontend) */}
+                <Button
+                  variant="secondary"
+                  onClick={() => {
+                    const csv = [
+                      Object.keys(assemblies[0]).join(","),
+                      ...assemblies.map((row) =>
+                        Object.values(row)
+                          .map((value) =>
+                            typeof value === "string" && value.includes(",")
+                              ? `"${value}"`
+                              : value
+                          )
+                          .join(",")
+                      ),
+                    ].join("\n");
+
+                    const blob = new Blob([csv], { type: "text/csv" });
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement("a");
+                    link.href = url;
+                    link.download = "filtered_assemblies.csv";
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                  }}
+                >
+                  Download CSV
+                </Button>
+
+                {/* Download Full Table from Backend */}
+                <Button
+                  variant="secondary"
+                  onClick={async () => {
+                    const res = await fetch("/api/download-full-table"); // update to your actual route
+                    const blob = await res.blob();
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement("a");
+                    link.href = url;
+                    link.download = "full_table_filtered_assemblies.csv"; // or .xlsx depending on backend
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                  }}
+                >
+                  Download Full Table
+                </Button>
+              </div>
             </div>
             <DataTable columns={columns} data={assemblies} />
           </div>

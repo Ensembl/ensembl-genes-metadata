@@ -18,7 +18,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
+} from "@/components/ui/table_new"
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[]
@@ -44,7 +44,7 @@ export function DataTable<TData, TValue>({
   })
 
   return (
-    <div className="p-4">
+    <div className="">
       <Table>
         <TableHeader>
           {table.getHeaderGroups().map((headerGroup) => (
