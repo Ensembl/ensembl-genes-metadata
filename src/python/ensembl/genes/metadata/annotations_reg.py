@@ -7,7 +7,6 @@ import asyncio
 import argparse
 import requests
 import pandas as pd
-from typing import List
 from datetime import datetime
 from assemblies import get_filtered_assemblies
 from assemblies import get_descendant_taxa
@@ -166,6 +165,7 @@ def get_annotation(taxon_id, bioproject_id, annotation_release_date, annotation_
     conn.close()
 
     df_reg = pd.DataFrame(results)
+
 
     logging.debug(f"Total records fetched from registry: {len(df_reg)}")
 
@@ -497,7 +497,7 @@ def main():
     df_info_result.to_csv(os.path.join(output_dir, f"assembly_annotation_status_{date_str}.csv"), index=False)
     level_summary.to_csv(os.path.join(output_dir, f"assembly_level_summary_{date_str}.csv"), index=False)
     latest_annotated_df.to_csv(os.path.join(output_dir, f"annotation_GCA_update_status_{date_str}.csv"), index=False)
-    logging.info("Finished saving tables .")
+    logging.info("Finished saving tables.")
 
 if __name__ == "__main__":
     main()
