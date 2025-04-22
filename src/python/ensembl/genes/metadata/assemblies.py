@@ -1,3 +1,5 @@
+import sys
+
 import pandas as pd
 import json
 import pymysql
@@ -114,7 +116,7 @@ def load_clade_data():
 
 
 
-def assign_clade_and_species(lowest_taxon_id, clade_data, taxonomy_dict, chordata_taxon_id=7711):
+def assign_clade_and_species(lowest_taxon_id, clade_data, taxonomy_dict, chordata_taxon_id=7711, human = 9606):
     """Assign internal clade and species taxon ID based on taxonomy using the provided clade data,
        and check if the taxon ID is a descendant of the chordata taxon ID (7711)."""
 
@@ -157,7 +159,11 @@ def assign_clade_and_species(lowest_taxon_id, clade_data, taxonomy_dict, chordat
 
     # Check if chordata is in the hierarchy
     is_chordata = any(t['taxon_class_id'] == chordata_taxon_id for t in taxonomy_hierarchy)
-    pipeline = "main" if is_chordata else "anno"
+    if lowest_taxon_id == human:
+        pipeline = "hprc"
+    elif is_chordata:
+        pipeline = "main"
+    else: "anno"
 
     # Log the assignment results for debugging
     logging.debug(
@@ -272,7 +278,7 @@ def add_transc_data_to_df(info_df, taxonomy_dict):
     return info_df
 
 
-def get_filtered_assemblies(bioproject_id, metric_thresholds, all_metrics, asm_level, asm_type, release_date, taxon_id, current):
+def get_filtered_assemblies(bioproject_id, metric_thresholds, all_metrics, asm_level, asm_type, release_date, taxon_id, current, pipeline):
     """Fetch all assemblies and their metrics filter results based on given thresholds,
     and format the results with metrics as separate columns."""
     db_config_key = "meta"
@@ -453,6 +459,14 @@ def get_filtered_assemblies(bioproject_id, metric_thresholds, all_metrics, asm_l
     logging.debug(f"Type of genus_taxon_id column: {df_info_result['genus_taxon_id'].dtype}")
     logging.info(f"Added clade, pipeline, genus and species info")
 
+    if pipeline:
+        logging.info(f"Filtering results by pipeline(s): {pipeline}")
+        df_info_result = df_info_result[df_info_result['pipeline'].isin(pipeline)]
+
+        if df_info_result.empty:
+            logging.warning("No records matched the pipeline filter. Exiting.")
+            sys.exit(0)
+
     return df_wide, summary_df, df_info_result, df_gca_list, taxonomy_dict
 
 
@@ -474,6 +488,7 @@ def main():
     parser.add_argument('--reference', type=int, choices=[0, 1], default=0, help="Check if GCA is a reference genome (1 for yes, 0 for no)")
     parser.add_argument('--trans', type=int, choices=[0, 1], default=0, help="Check if a taxon ID has transcriptomic data from ENA (1 for yes, 0 for no)")
     parser.add_argument('--current', type=int, choices=[0, 1], default=0, help="Check if GCA is the most current version (1 for yes, 0 for no)")
+    parser.add_argument('--pipeline', type=str, choices=["anno", "main", "hprc"], nargs='+', help="Pipeline(s) to filter by: choose one or more from anno, main, hprc")
 
     args = parser.parse_args()
 
@@ -489,7 +504,7 @@ def main():
 
     all_metrics = ["gc_percent", "total_sequence_length", "contig_n50", "number_of_contigs", "number_of_scaffolds", "scaffold_n50", "genome_coverage"]
 
-    df, summary_df, info_result, df_gca_list, taxonomy_dict = get_filtered_assemblies(args.bioproject_id, metric_thresholds, all_metrics, args.asm_level, args.asm_type, args.release_date, args.taxon_id, args.current)
+    df, summary_df, info_result, df_gca_list, taxonomy_dict = get_filtered_assemblies(args.bioproject_id, metric_thresholds, all_metrics, args.asm_level, args.asm_type, args.release_date, args.taxon_id, args.current, args.pipeline)
 
     logging.info(f"Filtered assemblies: {len(df)}")
 
@@ -504,14 +519,14 @@ def main():
         # Check transcriptomic data for each taxon_id in the dataset
         logging.info(f"Transcriptomic data check requested requested")
         # Get unique taxon IDs and filter out NaN values
-        taxon_ids = [tid for tid in df_info_result["lowest_taxon_id"].unique() if pd.notna(tid)]
-        species_taxon_ids = [tid for tid in df_info_result["species_taxon_id"].unique() if pd.notna(tid)]
-        genus_taxon_ids = [gtid for gtid in df_info_result["genus_taxon_id"].unique() if pd.notna(gtid)]
+        taxon_ids = [tid for tid in info_result["lowest_taxon_id"].unique() if pd.notna(tid)]
+        species_taxon_ids = [tid for tid in info_result["species_taxon_id"].unique() if pd.notna(tid)]
+        genus_taxon_ids = [gtid for gtid in info_result["genus_taxon_id"].unique() if pd.notna(gtid)]
 
         # Count NaN values and log warning if any are found
-        nan_lowest_count = df_info_result["lowest_taxon_id"].isna().sum()
-        nan_species_count = df_info_result["species_taxon_id"].isna().sum()
-        nan_genus_count = df_info_result["genus_taxon_id"].isna().sum()
+        nan_lowest_count = info_result["lowest_taxon_id"].isna().sum()
+        nan_species_count = info_result["species_taxon_id"].isna().sum()
+        nan_genus_count = info_result["genus_taxon_id"].isna().sum()
 
         if nan_lowest_count > 0:
             logging.warning(f"Found {nan_lowest_count} NA values in lowest_taxon_id column")
@@ -549,23 +564,23 @@ def main():
         transcriptomic_df = pd.DataFrame(transcriptomic_results)
 
         # Merge for the lowest taxon ID
-        df_info_result = df_info_result.merge(
+        info_result = info_result.merge(
             transcriptomic_df, left_on="lowest_taxon_id", right_on="Taxon ID", how="left", suffixes=('', '_lowest')
         )
 
         # Merge for the species taxon ID
-        df_info_result = df_info_result.merge(
+        info_result = info_result.merge(
             transcriptomic_df, left_on="species_taxon_id", right_on="Taxon ID", how="left",
             suffixes=('_lowest', '_species')
         )
 
         # Merge for the genus taxon ID (separate column)
-        df_info_result = df_info_result.merge(
+        info_result = info_result.merge(
             transcriptomic_df, left_on="genus_taxon_id", right_on="Taxon ID", how="left", suffixes=('_lowest', '_genus')
         )
 
         # Drop redundant 'Taxon ID' columns (both for lowest and genus)
-        df_info_result.drop(columns=["Taxon ID_lowest", "Taxon ID_species", "Taxon ID"], inplace=True)
+        info_result.drop(columns=["Taxon ID_lowest", "Taxon ID_species", "Taxon ID"], inplace=True)
 
 
     # Check if 'df' is a string (error message)
