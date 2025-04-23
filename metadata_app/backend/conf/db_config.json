@@ -1,16 +1,16 @@
 {
     "meta": {
         "host": "mysql-ens-genebuild-prod-1",
-        "user": "ensro",
+        "user": "",
         "password": "",
         "database": "gb_assembly_metadata",
-        "port": 4527},
+        "port": },
 
     "transcriptomic": {
         "host": "mysql-ens-genebuild-prod-1",
-        "user": "ensro",
+        "user": "",
         "password": "",
         "database": "gb_transcriptomic_registry",
-        "port": 4527
+        "port":
     }
 }
