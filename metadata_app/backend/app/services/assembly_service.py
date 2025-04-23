@@ -217,7 +217,7 @@ def get_filtered_assemblies(bioproject_id, metric_thresholds, all_metrics, asm_l
 		# Pivot data for metrics
 		df["GCA"] = df["gca_chain"].astype(str) + "." + df["gca_version"].astype(str)
 		df_wide = df.pivot(
-			index=["bioproject_id", "asm_level", "asm_type", "asm_name", "gca", "release_date", "refseq_accession",
+			index=["bioproject_id", "associated_project", "scientific_name", "lowest_taxon_id", "asm_level", "asm_type", "asm_name", "gca", "release_date", "refseq_accession",
 			       "infra_type", "infra_name", "is_current"],
 			columns="metrics_name",
 			values="metrics_value"
@@ -255,15 +255,16 @@ def get_filtered_assemblies(bioproject_id, metric_thresholds, all_metrics, asm_l
 		if df_wide.empty:
 			return "No assemblies meet the given thresholds.", None, None, None, None
 
-		# Create info result table
-		df_info_result = df[['bioproject_id', 'release_date', 'scientific_name', 'common_name', 'group_name',
-		                     'associated_project', 'gca', 'lowest_taxon_id', 'infra_type', 'infra_name', 'is_current']]
-		df_info_result = df_info_result.drop_duplicates(subset=['gca'], keep='first')
+		# Create df_main table
+		df_main = df_wide[['bioproject_id', 'associated_project', 'gca', 'scientific_name', 'release_date',
+		                     'lowest_taxon_id', 'asm_type', 'asm_name', 'refseq_accession', 'is_current', 'asm_level',
+		              'contig_n50', 'total_sequence_length']]
+		df_main = df_main.drop_duplicates(subset=['gca'], keep='first')
 
 		# Clean final results
-		columns_to_drop = ['contig_l50', 'release_date', 'gc_count', 'number_of_component_sequences', 'scaffold_l50',
+		columns_to_drop = ['contig_l50', 'gc_count', 'number_of_component_sequences', 'scaffold_l50',
 		                   'total_ungapped_length', 'number_of_organelles', 'total_number_of_chromosomes',
-		                   'gaps_between_scaffolds_count', 'infra_type', 'infra_name']
+		                   'gaps_between_scaffolds_count']
 		df_wide.drop(columns=columns_to_drop, inplace=True, errors='ignore')
 		df_wide = df_wide.drop_duplicates(subset=['gca'], keep='first')
 
@@ -275,29 +276,30 @@ def get_filtered_assemblies(bioproject_id, metric_thresholds, all_metrics, asm_l
 		df_gca_list = df_wide[["gca"]]
 
 		# Filter info result to match filtered assemblies
-		df_info_result = df_info_result[df_info_result['gca'].isin(df_wide['gca'])]
+		df_main = df_main[df_main['gca'].isin(df_wide['gca'])]
 
 		# Add clade, species, and genus information
 		clade_data = load_clade_data()
-		df_info_result[['internal_clade', 'species_taxon_id', 'genus_taxon_id', 'pipeline']] = df_info_result[
+		df_main[['internal_clade', 'species_taxon_id', 'genus_taxon_id', 'pipeline']] = df_main[
 			'lowest_taxon_id'].apply(
 			lambda x: pd.Series(assign_clade_and_species(x, clade_data, taxonomy_dict))
 		)
 
-		df_info_result['genus_taxon_id'] = df_info_result['genus_taxon_id'].astype('Int64')  # Nullable integer type
+		df_main['genus_taxon_id'] = df_main['genus_taxon_id'].astype('Int64')  # Nullable integer type
 
 		# Add transcriptomic data if needed
-		df_info_result = add_transc_data_to_df(df_info_result, taxonomy_dict)
+		df_main = add_transc_data_to_df(df_main, taxonomy_dict)
 
 		# Filter by pipeline if requested
 		if pipeline:
 			logging.info(f"Filtering results by pipeline(s): {pipeline}")
-			df_info_result = df_info_result[df_info_result['pipeline'].isin(pipeline)]
+			df_main = df_main[df_main['pipeline'].isin(pipeline)]
+			df_wide = df_wide[df_wide['gca'].isin(df_main['gca'])]
 
-			if df_info_result.empty:
+			if df_main.empty:
 				return "No assemblies meet the pipeline filter criteria.", None, None, None, None
 
-		return df_wide, summary_df, df_info_result, df_gca_list, taxonomy_dict
+		return df_wide, summary_df, df_main, df_gca_list, taxonomy_dict
 
 	except Exception as e:
 		logging.error(f"Error in get_filtered_assemblies: {str(e)}")
