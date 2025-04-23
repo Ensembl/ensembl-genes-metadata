@@ -14,6 +14,7 @@ import {
 import { Assemblies, columns } from "@/app/tables/assemblies_columns";
 import { DataTable } from "@/app/tables/data-table";
 import {cn} from "@/lib/utils";
+import {StartAnnotationDialog} from "@/components/start_anno_dialog";
 
 // 👇 Mock data
 async function getMockAssemblies(): Promise<Assemblies[]> {
@@ -281,7 +282,7 @@ export default function Page() {
               <div className="flex gap-2">
                 {/* Download GCA List (.txt) */}
                 <Button
-                  variant="secondary"
+                  variant="outline"
                   onClick={() => {
                     const gcaList = assemblies
                       .map((row) => row.gca) // replace with correct key if different
@@ -302,7 +303,7 @@ export default function Page() {
 
                 {/* Download Full Table (CSV, from frontend) */}
                 <Button
-                  variant="secondary"
+                  variant="outline"
                   onClick={() => {
                     const csv = [
                       Object.keys(assemblies[0]).join(","),
@@ -332,7 +333,7 @@ export default function Page() {
 
                 {/* Download Full Table from Backend */}
                 <Button
-                  variant="secondary"
+                  variant="outline"
                   onClick={async () => {
                     const res = await fetch("/api/download-full-table"); // update to your actual route
                     const blob = await res.blob();
@@ -347,6 +348,10 @@ export default function Page() {
                 >
                   Download Full Table
                 </Button>
+
+                {/* Annotation start button */}
+                <StartAnnotationDialog/>
+
               </div>
             </div>
             <DataTable columns={columns} data={assemblies} />

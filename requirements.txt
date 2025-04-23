@@ -5,6 +5,6 @@ argparse
 asyncio
 aiohttp
 
-# To run GUI
-#streamlit
-#watchdog
+# App
+fastapi
+pydantic

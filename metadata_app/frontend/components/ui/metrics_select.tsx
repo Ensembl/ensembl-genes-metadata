@@ -67,7 +67,7 @@ export function PopoverWithMultiSelect({
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button variant="secondary" className="w-full shadow-sm dark:border-2 dark:shadow-accent flex items-center gap-2">
+        <Button variant="outline" className="w-full">
           <ListFilterPlus className="shrink-0" />
           <span className="hidden lg:inline">Assembly Metrics</span>
         </Button>
