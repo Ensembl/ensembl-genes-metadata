@@ -1,6 +1,6 @@
 import json
 import logging
-from datetime import time
+import time
 import requests
 
 
@@ -12,20 +12,31 @@ def load_clade_data():
         return json.load(f)
 
 
-
-def assign_clade_and_species(lowest_taxon_id, clade_data, taxonomy_dict, chordata_taxon_id=7711, human = 9606):
+def assign_clade_and_species(lowest_taxon_id, clade_data, taxonomy_dict, chordata_taxon_id=7711, human_taxon_id=9606):
     """Assign internal clade and species taxon ID based on taxonomy using the provided clade data,
        and check if the taxon ID is a descendant of the chordata taxon ID (7711)."""
 
-    # Retrieve the taxonomy hierarchy from the passed dictionary (no need to query DB again)
-    taxonomy_hierarchy = taxonomy_dict.get(lowest_taxon_id)
+    # Convert IDs to integers to ensure consistent comparison
+    lowest_taxon_id = int(lowest_taxon_id)
+    chordata_taxon_id = int(chordata_taxon_id)
+    human_taxon_id = int(human_taxon_id)
+
+    # Add debug logging to see what's being passed
+    logging.debug(f"Processing taxon ID: {lowest_taxon_id}")
+    logging.debug(f"Taxonomy dict keys available: {list(taxonomy_dict.keys())}")
+
+    # Retrieve the taxonomy hierarchy from the passed dictionary
+    taxonomy_hierarchy = taxonomy_dict.get(str(lowest_taxon_id)) or taxonomy_dict.get(lowest_taxon_id, [])
+
+    logging.debug(f"Taxonomy hierarchy for {lowest_taxon_id}: {taxonomy_hierarchy}")
 
     if not taxonomy_hierarchy:
         logging.warning(f"Taxonomy hierarchy not found for taxon ID {lowest_taxon_id}")
-        return "Unassigned", None, None, "anno"  # Default values
+        return "Unassigned", None, None, None
 
     species_taxon_id = None
     genus_taxon_id = None
+    pipeline = None
     internal_clade = "Unassigned"  # Default value if no clade is found
 
     # Define the taxon classes in hierarchical order
@@ -45,25 +56,36 @@ def assign_clade_and_species(lowest_taxon_id, clade_data, taxonomy_dict, chordat
         if matching_taxon:
             taxon_class_id = matching_taxon['taxon_class_id']
 
+            # Log clade data for debugging
+            logging.debug(f"Checking taxon class: {taxon_class}, id: {taxon_class_id}")
+            logging.debug(f"Available clades: {list(clade_data.keys())}")
+
             # Check for matching taxon_id in clade settings
             for clade_name, details in clade_data.items():
-                if details.get("taxon_id") == taxon_class_id:
+                clade_taxon_id = details.get("taxon_id")
+                logging.debug(f"Comparing with clade {clade_name}, taxon_id: {clade_taxon_id}")
+
+                if clade_taxon_id and int(clade_taxon_id) == int(taxon_class_id):
                     internal_clade = clade_name
+                    logging.info(f"Assigned clade {clade_name} for taxon {lowest_taxon_id}")
                     break
 
             if internal_clade != "Unassigned":
                 break
 
     # Check if chordata is in the hierarchy
-    is_chordata = any(t['taxon_class_id'] == chordata_taxon_id for t in taxonomy_hierarchy)
-    if lowest_taxon_id == human:
+    is_chordata = any(int(t['taxon_class_id']) == chordata_taxon_id for t in taxonomy_hierarchy)
+
+    # Assign pipeline - FIXED ASSIGNMENT
+    if lowest_taxon_id == human_taxon_id:
         pipeline = "hprc"
     elif is_chordata:
         pipeline = "main"
-    else: "anno"
+    else:
+        pipeline = "anno"  # FIXED: Properly assigned
 
     # Log the assignment results for debugging
-    logging.debug(
+    logging.info(
         f"Taxon {lowest_taxon_id}: clade={internal_clade}, species_id={species_taxon_id}, genus_id={genus_taxon_id}, pipeline={pipeline}")
 
     return internal_clade, species_taxon_id, genus_taxon_id, pipeline
