@@ -114,7 +114,8 @@ workflow SHORT_READ {
     //def fastQCMetadata = FASTQC_PROCESSING(fastqFilesMetadata).collect()
     //RUN_ALIGNMENT(fastQCMetadata)
     def tissuePredictionInput =  RUN_ALIGNMENT(fastqFilesMetadata).collect()
-    TISSUE_PREDICTION= tissuePredictionInput.flatten()
+    //def tissueUniqueTaxonIds = tissuePredictionInput.distinct()
+    TISSUE_PREDICTION(tissuePredictionInput)
     //if (params.cleanCache) {
         // Clean cache directories
     //    exec "rm -rf ${params.cacheDir}/*"
