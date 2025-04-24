@@ -4,9 +4,9 @@ pandas
 torch
 huggingface_hub
 transformers
-time
 datasets
 pymysql
 tqdm
-
-
+protobuf
+sentencepiece
+accelerate>=0.26.0
