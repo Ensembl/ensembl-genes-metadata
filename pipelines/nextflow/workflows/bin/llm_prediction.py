@@ -129,6 +129,7 @@ Examples:
 - "Illumina MiSeq paired end sequencing, NextSeq 500 sequencing" -> "NONE"
 - "muscle, CANCER/DISEASE tissue, CANCER/DISEASE tissue, CANCER/DISEASE tissue, CANCER/DISEASE tissue" -> "muscle"
 - "subcutaneous adipose 1" -> "subcutaneous adipose"
+- "Illumina NovaSeq 6000 sequencing GSM7866914 miR137OE 4 Rattus norvegicus RNASeq" -> "NONE"
 Based on the above rules and examples, now process the following biosample tissue "{biosample_tissue}". If not exists process run description "{sentence}" 
 Answer:
 """
@@ -158,11 +159,7 @@ def load_model(token_input: str) -> pipeline:
     model_name = "mistralai/Mistral-7B-Instruct-v0.3"
     tokenizer = AutoTokenizer.from_pretrained(
         model_name, token=token_input
-<<<<<<< HEAD
     ) 
-=======
-    )  # "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"
->>>>>>> a70c544... llm prediction script
 
     if tokenizer.pad_token_id is None:
         tokenizer.pad_token = tokenizer.eos_token  # Set pad token to EOS
@@ -239,6 +236,9 @@ def clean_tissue_prediction(df: pd.DataFrame) -> pd.DataFrame:
     df["tissue_prediction"] = df["tissue_prediction"].apply(
         lambda x: (m.group(1) if (m := re.search(r"^(.*?)\s*Based on", str(x))) else x)
     )
+    df["tissue_prediction"] = df["tissue_prediction"].apply(
+            lambda x: re.sub(r"[!\"#$%&()*+,\-./:;<=>?@[\]^`{|}~_\\']", "", str(x)).strip("_")
+                )
     #df["tissue_prediction"] = df["tissue_prediction"].apply(
     #    lambda x: (
     #        re.search(r"^(.*?)\s*Based on", str(x)).group(1) if re.search(r"^(.*?)\s*Based on", str(x)) else x
@@ -294,7 +294,7 @@ def main() -> None:
         required=True,
         help="Hugging Face login token",
     )
-    parser.add_argument("--taxonomy_id", default="10116", type=str, required=True, help="Taxonomy ID")
+    parser.add_argument("--taxon_id", default="10116", type=str, required=True, help="Taxonomy ID")
     parser.add_argument("--host",  type=str, required=True, help="Host")
     parser.add_argument("--user",  type=str, required=True, help="User")
     parser.add_argument("--password",  type=str, required=True, help="Password")
@@ -315,17 +315,18 @@ def main() -> None:
         "database": args.database,
         "port": args.port,
     }
-<<<<<<< HEAD
     login(args.hugging_face_token)
-=======
-    login(args.hugging_face_token)  # "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"
->>>>>>> a70c544... llm prediction script
 
     # Load the rows to fix (e.g., 150k rows)
+    taxon_ids = args.taxon_id.split(',')
+
+    # Safely join with quotes
+    placeholders = ','.join(f"'{tid.strip()}'" for tid in taxon_ids)
+    print(placeholders)
     query = (
-        "SELECT run_accession,run_description,tissue,sample_tissue  FROM run where taxon_id="
-        + args.taxonomy_id
-        + " and tissue_prediction is NULL"
+        "SELECT run_accession,run_description,tissue,sample_tissue  FROM run where taxon_id in ("
+        + placeholders
+        + ") and tissue_prediction is NULL"
     )
     # Connect to the database
     db_connection = connect_to_db(**db_config)
@@ -335,7 +336,7 @@ def main() -> None:
         df = pd.read_sql(query, db_connection)
     print(f"Loaded {len(df)} rows.")
 
-    start_time = time.time()
+    #start_time = time.time()
     df["llm_prompt"] = ""
     df["tissue_prediction"] = ""
     print(df.head())
@@ -344,12 +345,8 @@ def main() -> None:
         prompt = create_prompt(df["sample_tissue"][i], input_sentence)
         df.at[i, "llm_prompt"] = prompt
     define_model_dataset(df, "llm_prompt", "tissue_prediction", args.hugging_face_token, args.batch_size)
-    print(f"Total time: {time.time() - start_time:.2f} sec")
+    #print(f"Total time: {time.time() - start_time:.2f} sec")
     df = clean_tissue_prediction(df)
-    #df.to_csv(
-    #    "/nfs/production/flicek/ensembl/genebuild/ftricomi/script/learning-francesca/data/minitest_cleaned.csv",
-    #    sep="\t",
-    #) 
 
     # Update back to DB
     update_query = "UPDATE run set tissue_prediction = %s where run_accession = %s"
