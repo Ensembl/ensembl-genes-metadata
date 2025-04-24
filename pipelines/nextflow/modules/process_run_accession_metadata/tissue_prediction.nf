@@ -23,7 +23,7 @@ process TISSUE_PREDICTION {
     afterScript "sleep $params.files_latency"  // Needed because of file system latency
     
     input:
-    tuple val(taxon_id)
+    val(taxon_id)
 
 
     script:
@@ -34,14 +34,14 @@ process TISSUE_PREDICTION {
     if ! pip show -q "\$package" &>/dev/null; then 
         echo "\$package is not installed" 
         pip install "\$package"
+	
     else
         echo "\$package is already installed"
     fi
     done < ${projectDir}/bin/requirements_llm.txt
-
+    
     chmod +x $projectDir/bin/llm_prediction.py  # Set executable permissions
-    llm_prediction.py --taxon_id ${taxon_id}  --hugging_face_token  $params.hugging_face_token    --host $params.transcriptomic_dbhost --user $params.transcriptomic_dbuser --password $params.transcriptomic_dbpassword --database $params.transcriptomic_dbname --port $params.transcriptomic_dbport --batch_size $params.batch_size
-    fi
+    llm_prediction.py --taxon_id "${ (taxon_id instanceof List) ? taxon_id.join(',') : taxon_id }"  --hugging_face_token  $params.hugging_face_token    --host $params.transcriptomic_dbhost --user $params.transcriptomic_dbuser --password $params.transcriptomic_dbpassword --database $params.transcriptomic_dbname --port $params.transcriptomic_dbport --batch_size $params.batch_size
     """
 }
 
