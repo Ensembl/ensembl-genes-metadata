@@ -50,11 +50,6 @@ workflow RUN_ALIGNMENT{
     def updateValue = "False"
     def (runAccessionDataQuery) = BUILD_QUERY_ALIGN_METADATA(insertIntoAlign, updateValue)
     def (runAccessionData_StarOutput) = STORE_INTO_DB(runAccessionDataQuery)
-    //def data3=insertIntoAlignQuery
-    //data3.flatten().view { d -> "query ${d}"}
-    //insertIntoAlignQuery.subscribe { line ->
-    //    setMetaDataRecord(line.toString())
-    //}
     def runAccessionData_NewQCstatus = runAccessionData_StarOutput.map { result ->
         def (taxon_id, gca, run_accession) = result
         def run_Id = getDataFromTable("run_id", "run", "run_accession", run_accession)[0].run_id.toString()
@@ -63,14 +58,14 @@ workflow RUN_ALIGNMENT{
         return tuple(taxon_id, run_accession)
     }
     def runAccessionCleaned = CLEANING(runAccessionData_NewQCstatus)
-    def predictionTissueInput = runAccessionCleaned.map { taxon_id ->
-    def (taxon_id) = taxon_id
+    def predictionTissueInput = runAccessionCleaned.collect().map { result ->
+    def taxon_id=result
     log.info("taxon_id cleaned: ${taxon_id}")
-    return [taxon_id:taxon_id]
+    return [taxon_id]
     }
     
     emit:
 
-    taxonIdDataset = predictionTissueInput //channel: [taxon_id]
+    taxonIdDataset = predictionTissueInput  //channel: [taxon_id]
 }
 
