@@ -1,47 +1,67 @@
 "use client"
 
-import { addDays } from "date-fns"
+import { useEffect, useState } from "react"
+import { parseISO } from "date-fns"
 
 import { Calendar } from "@/components/ui/calendar"
-import {Card, CardHeader, CardContent, CardTitle} from "@/components/ui/card"
+import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card"
 
-const start = new Date(2023, 5, 5)
+async function fetchUpdateDates(endpoint: string): Promise<Date[]> {
+  const res = await fetch(endpoint)
+  const data = await res.json()
+  return data.map((d: string) => parseISO(d)) // Parse ISO strings to Date objects
+}
 
 export function CardsCalendar() {
+  const [metadataDates, setMetadataDates] = useState<Date[]>([])
+  const [transcriptomicDates, setTranscriptomicDates] = useState<Date[]>([])
+
+  useEffect(() => {
+    fetchUpdateDates("/api/meta_update").then(setMetadataDates)
+    fetchUpdateDates("/api/transc_update").then(setTranscriptomicDates)
+  }, [])
+
+  // Get the most recent date for the default month
+  const getLastDate = (dates: Date[]) => {
+    if (dates.length > 0) {
+      return dates.reduce((latest, current) => (current > latest ? current : latest))
+    }
+    return new Date()
+  }
+
   return (
     <div className="grid grid-cols-2 gap-4">
-      <Card className="justify-items-center">
+      <Card>
         <CardHeader>
-            <CardTitle className="text-lg font-bold">Metadata registry updates</CardTitle>
+          <CardTitle className="text-lg font-bold">Metadata registry updates</CardTitle>
         </CardHeader>
-        <CardContent className="justify-items-center w-full">
+        <CardContent className="w-full justify-items-center">
+          {metadataDates.length > 0 && (
             <Calendar
               numberOfMonths={1}
-              mode="range"
-              defaultMonth={start}
-              selected={{
-                from: start,
-                to: addDays(start, 8),
-              }}
+              mode="multiple"
+              selected={metadataDates}
+              defaultMonth={getLastDate(metadataDates)}
             />
-          </CardContent>
-        </Card>
-        <Card className="justify-items-center">
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
         <CardHeader>
-            <CardTitle className="text-lg font-bold">Transcriptomic registry updates</CardTitle>
+          <CardTitle className="text-lg font-bold">Transcriptomic registry updates</CardTitle>
         </CardHeader>
-        <CardContent className="justify-items-center w-full">
+        <CardContent className="w-full justify-items-center">
+          {transcriptomicDates.length > 0 && (
             <Calendar
               numberOfMonths={1}
-              mode="range"
-              defaultMonth={start}
-              selected={{
-                from: start,
-                to: addDays(start, 8),
-              }}
+              mode="multiple"
+              selected={transcriptomicDates}
+              defaultMonth={getLastDate(transcriptomicDates)}
             />
-          </CardContent>
-        </Card>
+          )}
+        </CardContent>
+      </Card>
     </div>
   )
 }
