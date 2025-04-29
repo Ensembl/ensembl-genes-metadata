@@ -2,7 +2,6 @@
 import pandas as pd
 import json
 import requests
-import time
 import logging
 from metadata_app.backend.app.core.database import get_db_connection
 from metadata_app.backend.app.services.taxonomy_service import get_descendant_taxa, assign_clade_and_species, load_clade_data
