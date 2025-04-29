@@ -1,7 +1,7 @@
 "use client"
 
-import { Tooltip, Line, LineChart } from "recharts"
-
+import React from "react"
+import { XAxis, Line, LineChart, CartesianGrid } from "recharts"
 
 import {
   Card,
@@ -10,55 +10,40 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card"
-import { ChartConfig, ChartContainer } from "@/components/ui/chart"
-
-const data = [
-  {
-    revenue: 10400,
-    subscription: 240,
-  },
-  {
-    revenue: 14405,
-    subscription: 300,
-  },
-  {
-    revenue: 9400,
-    subscription: 200,
-  },
-  {
-    revenue: 8200,
-    subscription: 278,
-  },
-  {
-    revenue: 7000,
-    subscription: 189,
-  },
-  {
-    revenue: 9600,
-    subscription: 239,
-  },
-  {
-    revenue: 11244,
-    subscription: 278,
-  },
-  {
-    revenue: 26475,
-    subscription: 189,
-  },
-]
+import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 
 const chartConfig = {
-  revenue: {
-    label: "Revenue",
+  assembly_count: {
+    label: "Assemblies",
     color: "hsl(var(--primary))",
   },
-  subscription: {
-    label: "Subscriptions",
+  annotation_count: {
+    label: "Annotations",
     color: "hsl(var(--primary))",
   },
 } satisfies ChartConfig
 
 export function CardsStats() {
+  const [assemblyData, setAssemblyData] = React.useState([])
+  const [annotationData, setAnnotationData] = React.useState([])
+
+  React.useEffect(() => {
+    const fetchAssemblies = async () => {
+      const res = await fetch("/api/assemblies")
+      const json = await res.json()
+      setAssemblyData(json)
+    }
+
+    const fetchAnnotations = async () => {
+      const res = await fetch("/api/annotations")
+      const json = await res.json()
+      setAnnotationData(json)
+    }
+
+    fetchAssemblies()
+    fetchAnnotations()
+  }, [])
+
   return (
     <div className="grid grid-cols-2 gap-4">
       <Card>
@@ -71,37 +56,31 @@ export function CardsStats() {
         <CardContent className="pb-0">
           <ChartContainer config={chartConfig} className="h-[80px] w-full">
             <LineChart
-              data={data}
-              margin={{
-                top: 5,
-                right: 10,
-                left: 10,
-                bottom: 0,
-              }}
+              data={assemblyData}
+              margin={{ top: 5, right: 10, left: 10, bottom: 4 }}
             >
-              <Tooltip
-                cursor={{ fill: 'rgba(0, 0, 0, 0.1)' }}
-                contentStyle={{ backgroundColor: 'var(--background)',
-                  borderRadius: '0.5rem',
-                  border: '1px solid var(--border)',
-                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)'
-                }}
-                labelStyle={{ fontWeight: 'bold', color: 'var(--chart-1)' }}
-                itemStyle={{ color: 'var(--chart-1)' }}
-              />
+              <ChartTooltip
+              cursor={false}
+              content={
+                <ChartTooltipContent
+                  labelFormatter={(label, payload) =>
+                    payload?.[0]?.payload?.year ?? label
+                  }
+                />
+              }
+            />
               <Line
-                type="monotone"
+                type="natural"
                 strokeWidth={2}
-                dataKey="revenue"
+                dataKey="assembly_count"
                 stroke="var(--chart-1)"
-                activeDot={{
-                  r: 6,
-                }}
+                activeDot={{ r: 6 }}
               />
             </LineChart>
           </ChartContainer>
         </CardContent>
       </Card>
+
       <Card>
         <CardHeader>
           <CardTitle className="text-lg font-bold">Annotations</CardTitle>
@@ -112,32 +91,25 @@ export function CardsStats() {
         <CardContent className="pb-0">
           <ChartContainer config={chartConfig} className="h-[80px] w-full">
             <LineChart
-              data={data}
-              margin={{
-                top: 5,
-                right: 10,
-                left: 10,
-                bottom: 0,
-              }}
+              data={annotationData}
+              margin={{ top: 5, right: 10, left: 10, bottom: 4}}
             >
-              <Tooltip
-                cursor={{ fill: 'rgba(0, 0, 0, 0.1)' }}
-                contentStyle={{ backgroundColor: 'var(--background)',
-                  borderRadius: '0.5rem',
-                  border: '1px solid var(--border)',
-                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)'
-                }}
-                labelStyle={{ fontWeight: 'bold', color: 'var(--chart-1)' }}
-                itemStyle={{ color: 'var(--chart-1)' }}
-              />
+              <ChartTooltip
+              cursor={false}
+              content={
+                <ChartTooltipContent
+                  labelFormatter={(label, payload) =>
+                    payload?.[0]?.payload?.year ?? label
+                  }
+                />
+              }
+            />
               <Line
                 type="monotone"
                 strokeWidth={2}
-                dataKey="revenue"
+                dataKey="annotation_count"
                 stroke="var(--chart-1)"
-                activeDot={{
-                  r: 6,
-                }}
+                activeDot={{ r: 6 }}
               />
             </LineChart>
           </ChartContainer>

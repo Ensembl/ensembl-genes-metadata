@@ -11,16 +11,16 @@ export default function Page() {
           <div className="container m-16 mt-10 max-w-7xl">
             <div className="pt-8 pb-10 py-16">
               <div className="columns-2 space-y-4">
-                  <div className="w-full mb-4 ">
+                  <div className="w-full mb-4 break-inside-avoid">
                     <WelcomeCard></WelcomeCard>
                   </div>
-                  <div className="w-full mb-4">
+                  <div className="w-full mb-4 break-inside-avoid">
                     <CardsCalendar></CardsCalendar>
                   </div>
-                  <div className="w-full mb-4">
+                  <div className="w-full mb-4 break-inside-avoid">
                     <CardsStats></CardsStats>
                   </div>
-                 <div className="w-full mb-4">
+                 <div className="w-full mb-4 break-inside-avoid">
                     <CardsDataTable></CardsDataTable>
                  </div>
               </div>

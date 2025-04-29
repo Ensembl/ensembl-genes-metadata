@@ -13,7 +13,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table"
-import { ArrowUpDown, ChevronDown, MoreHorizontal } from "lucide-react"
+import { ArrowUpDown } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -23,7 +23,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-
 import { Input } from "@/components/ui/input"
 import {
   Table,
@@ -33,33 +32,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-
-const data: Project[] = [
-  {
-    id: "m5gr84i9",
-    annotations: 316,
-    number: "BRGF4574",
-    name: "Tree of Life",
-  },
-  {
-    id: "3u1reuv4",
-    annotations: 242,
-    number: "BRGF4574",
-    name: "Tree of Life",
-  },
-  {
-    id: "derv1ws0",
-    annotations: 837,
-    number: "BRGF4574",
-    name: "Tree of Life",
-  },
-  {
-    id: "bhqecj4p",
-    annotations: 721,
-    number: "BRGF4574",
-    name: "Tree of Life",
-  },
-]
 
 export type Project = {
   id: string
@@ -78,17 +50,15 @@ export const columns: ColumnDef<Project>[] = [
   },
   {
     accessorKey: "name",
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Name
-          <ArrowUpDown />
-        </Button>
-      )
-    },
+    header: ({ column }) => (
+      <Button
+        variant="ghost"
+        onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+      >
+        Name
+        <ArrowUpDown />
+      </Button>
+    ),
     cell: ({ row }) => <div className="lowercase">{row.getValue("name")}</div>,
   },
   {
@@ -101,13 +71,35 @@ export const columns: ColumnDef<Project>[] = [
 ]
 
 export function CardsDataTable() {
+  const [data, setData] = React.useState<Project[]>([])
+  const [loading, setLoading] = React.useState(true)
   const [sorting, setSorting] = React.useState<SortingState>([])
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
-    []
-  )
-  const [columnVisibility, setColumnVisibility] =
-    React.useState<VisibilityState>({})
+  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
+  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
   const [rowSelection, setRowSelection] = React.useState({})
+
+  React.useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const res = await fetch("/api/bioprojects")
+        const json = await res.json()
+        console.log("API response:", json)
+        const formatted = json.map((item: any) => ({
+          id: item.bioproject_id,
+          annotations: item.annotation_count,
+          number: item.bioproject_id,
+          name: item.associated_project || "Unknown", // default fallback
+        }))
+        setData(formatted)
+      } catch (err) {
+        console.error("Error fetching data:", err)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchData()
+  }, [])
 
   const table = useReactTable({
     data,
@@ -146,60 +138,56 @@ export function CardsDataTable() {
           />
         </div>
         <div className="rounded-md">
-          <Table>
-            <TableHeader>
-              {table.getHeaderGroups().map((headerGroup) => (
-                <TableRow key={headerGroup.id}>
-                  {headerGroup.headers.map((header) => {
-                    return (
+          {loading ? (
+            <p className="text-muted-foreground">Loading data...</p>
+          ) : (
+            <Table>
+              <TableHeader>
+                {table.getHeaderGroups().map((headerGroup) => (
+                  <TableRow key={headerGroup.id}>
+                    {headerGroup.headers.map((header) => (
                       <TableHead
                         key={header.id}
                         className="[&:has([role=checkbox])]:pl-3"
                       >
                         {header.isPlaceholder
                           ? null
-                          : flexRender(
-                              header.column.columnDef.header,
-                              header.getContext()
-                            )}
+                          : flexRender(header.column.columnDef.header, header.getContext())}
                       </TableHead>
-                    )
-                  })}
-                </TableRow>
-              ))}
-            </TableHeader>
-            <TableBody>
-              {table.getRowModel().rows?.length ? (
-                table.getRowModel().rows.map((row) => (
-                  <TableRow
-                    key={row.id}
-                    data-state={row.getIsSelected() && "selected"}
-                  >
-                    {row.getVisibleCells().map((cell) => (
-                      <TableCell
-                        key={cell.id}
-                        className="[&:has([role=checkbox])]:pl-3"
-                      >
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext()
-                        )}
-                      </TableCell>
                     ))}
                   </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell
-                    colSpan={columns.length}
-                    className="h-24 text-center"
-                  >
-                    No results.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
+                ))}
+              </TableHeader>
+              <TableBody>
+                {table.getRowModel().rows.length ? (
+                  table.getRowModel().rows.map((row) => (
+                    <TableRow
+                      key={row.id}
+                      data-state={row.getIsSelected() && "selected"}
+                    >
+                      {row.getVisibleCells().map((cell) => (
+                        <TableCell
+                          key={cell.id}
+                          className="[&:has([role=checkbox])]:pl-3"
+                        >
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell
+                      colSpan={columns.length}
+                      className="h-24 text-center"
+                    >
+                      No results.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          )}
         </div>
       </CardContent>
     </Card>

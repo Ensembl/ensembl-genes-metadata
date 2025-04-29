@@ -64,10 +64,13 @@ def get_assemblies_per_year():
 
 		# Convert release_date to datetime and extract year
 		df['release_date'] = pd.to_datetime(df['release_date'], errors='coerce')
-		df['release_year'] = df['release_date'].dt.year
+		df['year'] = df['release_date'].dt.year
+
+		# Filter to include only 2019 and later
+		df = df[df['year'] >= 2019]
 
 		# Group by year and count
-		counts_by_year = df.groupby('release_year')['assembly_id'].count().reset_index()
+		counts_by_year = df.groupby('year')['assembly_id'].count().reset_index()
 		counts_by_year.columns = ['year', 'assembly_count']
 
 		return counts_by_year.to_dict(orient='records')
@@ -93,10 +96,12 @@ def get_annotations_per_year():
 
 		# Convert date_completed to datetime and extract year
 		df['date_completed'] = pd.to_datetime(df['date_completed'], errors='coerce')
-		df['date_completed'] = df['date_completed'].dt.year
+		df['year'] = df['date_completed'].dt.year
+		# Filter to include only 2019 and later
+		df = df[df['year'] >= 2019]
 
 		# Group by year and count
-		counts_by_year = df.groupby('date_completed')['genebuild_id'].count().reset_index()
+		counts_by_year = df.groupby('year')['genebuild_id'].count().reset_index()
 		counts_by_year.columns = ['year', 'annotation_count']
 
 		return counts_by_year.to_dict(orient='records')
