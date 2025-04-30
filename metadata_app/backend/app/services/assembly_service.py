@@ -1,4 +1,6 @@
 # app/services/assembly_service.py
+import datetime
+
 import pandas as pd
 import json
 import requests
@@ -76,8 +78,8 @@ def is_reference_genome(accession):
 		return False
 
 
-def get_filtered_assemblies(bioproject_id, metric_thresholds, all_metrics, asm_level, asm_type, release_date, taxon_id,
-                            current, pipeline):
+def get_filtered_assemblies(bioproject_id, metric_thresholds, asm_level, asm_type, release_date, taxon_id,
+                            current, pipeline, transc):
 	"""
 	Fetch all assemblies and their metrics, filter results based on given thresholds,
 	and format the results with metrics as separate columns.
@@ -92,11 +94,12 @@ def get_filtered_assemblies(bioproject_id, metric_thresholds, all_metrics, asm_l
 		taxon_id: NCBI Taxon ID to filter by
 		current: Whether to filter for current assemblies only
 		pipeline: Which pipeline(s) to filter by
+		transc: Whether to check transcriptomic data
 
 	Returns:
-		df: DataFrame of filtered assembly metrics
+		df_main: DataFrame of filtered assembly metrics
 		summary_df: Summary statistics DataFrame
-		info_result: DataFrame with additional information
+		fr_wide: DataFrame with additional information
 		df_gca_list: DataFrame with GCA accessions
 		taxonomy_dict: Dictionary of taxonomy information
 	"""
@@ -123,6 +126,10 @@ def get_filtered_assemblies(bioproject_id, metric_thresholds, all_metrics, asm_l
 				logging.info(f"Filtering by BioProject IDs: {', '.join(bioproject_id)}")
 
 			if release_date:
+				if isinstance(release_date, pd.Timestamp):
+					release_date = release_date.strftime('%Y-%m-%d')
+				elif isinstance(release_date, (datetime.date, datetime.datetime)):
+					release_date = release_date.strftime('%Y-%m-%d')
 				conditions.append("a.release_date >= %s")
 				params.append(release_date)
 				logging.info(f"Filtering by release date: {release_date}")
@@ -148,7 +155,7 @@ def get_filtered_assemblies(bioproject_id, metric_thresholds, all_metrics, asm_l
 			query = f"""
                 SELECT b.bioproject_id, a.asm_level, a.gca_chain, a.gca_version, a.asm_type, a.release_date, a.is_current,
                        m.metrics_name, m.metrics_value, s.scientific_name, s.common_name, a.asm_name,
-                       s.lowest_taxon_id, g.group_name, a.refseq_accession, o.infra_type, o.infra_name
+                       a.lowest_taxon_id, g.group_name, a.refseq_accession, o.infra_type, o.infra_name
                 FROM bioproject b
                 JOIN assembly_metrics m ON b.assembly_id = m.assembly_id
                 JOIN assembly a ON m.assembly_id = a.assembly_id
@@ -161,10 +168,12 @@ def get_filtered_assemblies(bioproject_id, metric_thresholds, all_metrics, asm_l
 
 			cursor.execute(query, tuple(params))
 			results = cursor.fetchall()
+			logging.info(f"Query executed successfully, retrieved {len(results)} results.")
 
 			# Get taxonomy data
 			lowest_taxon_ids = {row['lowest_taxon_id'] for row in results if
 			                    'lowest_taxon_id' in row and row['lowest_taxon_id'] is not None}
+			logging.debug(f"Collected lowest taxon IDs {print(lowest_taxon_ids)}")
 
 			if not lowest_taxon_ids:
 				# No results or no taxon IDs found
@@ -180,6 +189,7 @@ def get_filtered_assemblies(bioproject_id, metric_thresholds, all_metrics, asm_l
 
 			cursor.execute(taxonomy_query, tuple(lowest_taxon_ids))
 			taxonomy_results = cursor.fetchall()
+			logging.info(f"Taxonomy Query executed successfully, retrieved {len(taxonomy_results)} results.")
 
 		# Process taxonomy results
 		taxonomy_dict = {}
@@ -206,6 +216,7 @@ def get_filtered_assemblies(bioproject_id, metric_thresholds, all_metrics, asm_l
 		df["gca"] = df["gca_chain"].astype(str) + "." + df["gca_version"].astype(str)
 
 		# Clean genome_coverage
+		logging.info(f"Cleaning genome coverage")
 		df['metrics_value'] = df.apply(
 			lambda row: float(row['metrics_value'].rstrip('x')) if row[
 				                                                       'metrics_name'] == 'genome_coverage' and isinstance(
@@ -221,16 +232,13 @@ def get_filtered_assemblies(bioproject_id, metric_thresholds, all_metrics, asm_l
 			columns="metrics_name",
 			values="metrics_value"
 		)
+		logging.debug(f"Wide results: {print(df_wide)}")
 
-		# Ensure all metrics are present
-		for metric in all_metrics:
-			if metric not in df_wide.columns:
-				df_wide[metric] = None
-
-		# Convert metric values to numeric
-		for metric in all_metrics:
+		# Convert specified metric columns to numeric
+		for metric, _ in metric_thresholds.items():
 			if metric in df_wide.columns:
 				df_wide[metric] = pd.to_numeric(df_wide[metric], errors='coerce')
+		logging.info(f"metrics converted to numeric")
 
 		df_wide.reset_index(inplace=True)
 
@@ -254,51 +262,58 @@ def get_filtered_assemblies(bioproject_id, metric_thresholds, all_metrics, asm_l
 		if df_wide.empty:
 			return "No assemblies meet the given thresholds.", None, None, None, None
 
-		# Create df_main table
-		df_main = df_wide[['bioproject_id', 'associated_project', 'gca', 'scientific_name', 'release_date',
-		                     'lowest_taxon_id', 'asm_type', 'asm_name', 'refseq_accession', 'is_current', 'asm_level',
-		              'contig_n50', 'total_sequence_length']]
-		df_main = df_main.drop_duplicates(subset=['gca'], keep='first')
-
-		# Clean final results
-		columns_to_drop = ['contig_l50', 'gc_count', 'number_of_component_sequences', 'scaffold_l50',
-		                   'total_ungapped_length', 'number_of_organelles', 'total_number_of_chromosomes',
-		                   'gaps_between_scaffolds_count']
-		df_wide.drop(columns=columns_to_drop, inplace=True, errors='ignore')
-		df_wide = df_wide.drop_duplicates(subset=['gca'], keep='first')
-
-		# Calculate summary statistics
-		summary_metrics = ['contig_n50', 'scaffold_n50', 'total_sequence_length', 'gc_percent', 'genome_coverage']
-		summary_df = df_wide[summary_metrics].agg(['mean', 'min', 'max'])
-
-		# Create GCA list
-		df_gca_list = df_wide[["gca"]]
-
-		# Filter info result to match filtered assemblies
-		df_main = df_main[df_main['gca'].isin(df_wide['gca'])]
-
 		# Add clade, species, and genus information
 		clade_data = load_clade_data()
-		df_main[['internal_clade', 'species_taxon_id', 'genus_taxon_id', 'pipeline']] = df_main[
+
+		df_wide[['internal_clade', 'species_taxon_id', 'genus_taxon_id', 'pipeline']] = df_wide[
 			'lowest_taxon_id'].apply(
 			lambda x: pd.Series(assign_clade_and_species(x, clade_data, taxonomy_dict))
 		)
 
-		df_main['genus_taxon_id'] = df_main['genus_taxon_id'].astype('Int64')  # Nullable integer type
+		logging.info(f"Added clade data")
+		logging.info(f"Changing genus id format")
+		df_wide['genus_taxon_id'] = (
+			pd.to_numeric(df_wide['genus_taxon_id'].replace('', pd.NA), errors='coerce')
+			.astype('Int64')
+		)
+		logging.info(f"Changed genus id format")
 
 		# Add transcriptomic data if needed
-		df_main = add_transc_data_to_df(df_main, taxonomy_dict)
+		if transc:
+			df_wide = add_transc_data_to_df(df_wide, taxonomy_dict)
 
 		# Filter by pipeline if requested
 		if pipeline:
 			logging.info(f"Filtering results by pipeline(s): {pipeline}")
-			df_main = df_main[df_main['pipeline'].isin(pipeline)]
-			df_wide = df_wide[df_wide['gca'].isin(df_main['gca'])]
+			df_wide = df_wide[df_wide['pipeline'].isin(pipeline)]
 
-			if df_main.empty:
+			if df_wide.empty:
 				return "No assemblies meet the pipeline filter criteria.", None, None, None, None
 
-		return df_wide, summary_df, df_main, df_gca_list, taxonomy_dict
+		# Create df_main table
+		df_main = df_wide[['bioproject_id', 'associated_project', 'gca', 'scientific_name', 'release_date',
+		                     'lowest_taxon_id', 'genus_taxon_id', 'internal_clade', 'asm_type', 'asm_name', 'refseq_accession', 'is_current', 'asm_level',
+		              'contig_n50', 'total_sequence_length']]
+		df_main = df_main.drop_duplicates(subset=['gca'], keep='first')
+		logging.info(f"Created main table")
+		# Clean final results
+		columns_to_drop = ['contig_l50', 'gc_count', 'number_of_component_sequences', 'scaffold_l50',
+		                   'total_ungapped_length', 'number_of_organelles', 'total_number_of_chromosomes',
+		                   'gaps_between_scaffolds_count']
+
+		df_wide.drop(columns=columns_to_drop, inplace=True, errors='ignore')
+		df_wide = df_wide.drop_duplicates(subset=['gca'], keep='first')
+
+
+		# Create GCA list
+		df_gca_list = df_wide[["gca"]]
+		logging.info(f"Created gca_list")
+
+		df_main = df_main.apply(lambda col: col.fillna("") if col.dtype == "object" else col)
+		df_wide = df_wide.apply(lambda col: col.fillna("") if col.dtype == "object" else col)
+
+
+		return df_wide, df_main, df_gca_list, taxonomy_dict
 
 	except Exception as e:
 		logging.error(f"Error in get_filtered_assemblies: {str(e)}")
