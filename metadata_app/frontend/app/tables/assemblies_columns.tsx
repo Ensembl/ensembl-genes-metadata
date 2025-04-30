@@ -26,7 +26,7 @@ function sortableHeader(label: string, accessor: string) {
   return ({ column }: { column: any }) => (
     <Button
       variant="ghost"
-      className="p-0"
+      className="hover:bg-transparent hover:text-inherit cursor-pointer"
       onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
     >
       {label}
@@ -53,8 +53,13 @@ export const columns: ColumnDef<Assemblies>[] = [
     header: sortableHeader("Scientific Name", "scientific_name"),
   },
   {
-    accessorKey: "release_date",
-    header: sortableHeader("Release Date", "release_date"),
+  accessorKey: "release_date",
+  header: sortableHeader("Release Date", "release_date"),
+    cell: ({ row }) => {
+      const fullDate = row.getValue("release_date") as string;
+      const dateOnly = fullDate.split("T")[0]; // or use new Date(fullDate).toISOString().split("T")[0]
+      return dateOnly;
+    },
   },
   {
     accessorKey: "lowest_taxon_id",

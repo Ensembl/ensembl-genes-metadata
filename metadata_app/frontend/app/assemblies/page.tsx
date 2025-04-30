@@ -187,7 +187,7 @@ export default function Page() {
 
   return (
     <div className="min-h-screen justify-center flex flex-wrap align-items-center">
-      <div className="container m-16 mt-10 max-w-7xl">
+      <div className="container m-16 mt-10 max-w-6xl">
         <div className="rounded-2xl border-accent shadow-lg">
           {/* Filter Section */}
           <div className="rounded-t-2xl bg-secondary p-8 gap-10">
@@ -364,7 +364,7 @@ export default function Page() {
                   variant="outline"
                   onClick={() => handleDownload(downloadables?.df_main, "df_main.csv", "text/csv;charset=utf-8;")}
                 >
-                  Download df_main.csv
+                  Download CSV
                 </Button>
 
                 {/* Download Full Table from Backend */}
