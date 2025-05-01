@@ -201,7 +201,7 @@ export default function Page() {
                     id={label.toLowerCase().replace(" ", "-")}
                     type="text"
                     placeholder={placeholder}
-                    className="mt-3 gap-2 bg-background"
+                    className="mt-3 gap-2 bg-filter-input-bg dark:text-background"
                     value={baseFieldValues[label] || ""}
                     onChange={(e) =>
                       setBaseFieldValues((prev) => ({
@@ -313,7 +313,7 @@ export default function Page() {
                         id={metric.toLowerCase().replace(" ", "-")}
                         type="text"
                         placeholder={`Enter threshold for ${metric}`}
-                        className="mt-1 my-2"
+                        className="mt-1 my-2 bg-filter-input-bg dark:text-background"
                         value={metricValues[metric] || ""}
                         onChange={(e) =>
                           setMetricValues((prev) => ({

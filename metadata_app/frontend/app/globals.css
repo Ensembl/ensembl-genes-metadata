@@ -40,6 +40,7 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-filter-background: var(--filter-background);
+  --color-filter-input-bg: var(--filter-input-bg);
 }
 
 :root {
@@ -76,6 +77,8 @@
   --sidebar-border: oklch(0.92 0.004 286.32);
   --sidebar-ring: oklch(0.705 0.015 286.067);
   --filter-background: oklch(0.98 0.0017 247.84);
+  --filter-input-bg: oklch(1 0 0);
+
 }
 
 .dark {
@@ -111,6 +114,7 @@
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.552 0.016 285.938);
   --filter-background: oklch(0.141 0.005 285.823);
+  --filter-input-bg: oklch(0.8629 0 0);
 
 }
 
