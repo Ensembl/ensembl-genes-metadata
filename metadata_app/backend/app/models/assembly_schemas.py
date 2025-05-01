@@ -13,3 +13,4 @@ class AssemblyFilterRequest(BaseModel):
     current: Optional[bool] = False
     pipeline: Optional[List[str]] = None
     transc: Optional[bool] = False
+    transc_ena: Optional[bool] = False

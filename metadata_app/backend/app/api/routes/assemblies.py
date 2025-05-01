@@ -15,7 +15,8 @@ def filter_assemblies(filters: AssemblyFilterRequest):
         taxon_id=filters.taxon_id,
         current=filters.current,
         pipeline=filters.pipeline,
-        transc=filters.transc
+        transc=filters.transc,
+        transc_ena=filters.transc_ena
     )
 
     if isinstance(result[0], str):  # Error string

@@ -8,6 +8,7 @@ import logging
 from metadata_app.backend.app.core.database import get_db_connection
 from metadata_app.backend.app.services.taxonomy_service import get_descendant_taxa, assign_clade_and_species, load_clade_data
 from metadata_app.backend.app.services.transcriptomics_service import add_transc_data_to_df
+from metadata_app.backend.app.services.get_transcriptomic_data_ENA_service import add_data_from_ena
 
 
 def load_bioproject_mapping():
@@ -79,7 +80,7 @@ def is_reference_genome(accession):
 
 
 def get_filtered_assemblies(bioproject_id, metric_thresholds, asm_level, asm_type, release_date, taxon_id,
-                            current, pipeline, transc):
+                            current, pipeline, transc, transc_ena):
 	"""
 	Fetch all assemblies and their metrics, filter results based on given thresholds,
 	and format the results with metrics as separate columns.
@@ -94,12 +95,13 @@ def get_filtered_assemblies(bioproject_id, metric_thresholds, asm_level, asm_typ
 		taxon_id: NCBI Taxon ID to filter by
 		current: Whether to filter for current assemblies only
 		pipeline: Which pipeline(s) to filter by
-		transc: Whether to check transcriptomic data
+		transc: Whether to check transcriptomic data from registry
+		transc_ena: Whether to check transcriptomic data from ena
 
 	Returns:
 		df_main: DataFrame of filtered assembly metrics
 		summary_df: Summary statistics DataFrame
-		fr_wide: DataFrame with additional information
+		dr_wide: DataFrame with additional information
 		df_gca_list: DataFrame with GCA accessions
 		taxonomy_dict: Dictionary of taxonomy information
 	"""
@@ -281,6 +283,39 @@ def get_filtered_assemblies(bioproject_id, metric_thresholds, asm_level, asm_typ
 		# Add transcriptomic data if needed
 		if transc:
 			df_wide = add_transc_data_to_df(df_wide, taxonomy_dict)
+
+		if transc_ena:
+			transcriptomic_df = add_data_from_ena(df_wide)
+
+			# Merge for the lowest taxon ID
+			logging.info(f"Merging transcriptomic data lowest taxon id")
+			df_wide = df_wide.merge(
+				transcriptomic_df, left_on="lowest_taxon_id", right_on="Taxon ID", how="left", suffixes=('', '_lowest')
+			)
+			logging.info(f"After lowest_taxon_id merge: {df_wide.shape}")
+			logging.info(f"Columns: {df_wide.columns.tolist()}")
+
+			# Merge for the species taxon ID
+			logging.info(f"Merging transcriptomic data species taxon id")
+
+			df_wide = df_wide.merge(
+				transcriptomic_df, left_on="species_taxon_id", right_on="Taxon ID", how="left",
+				suffixes=('_lowest', '_species')
+			)
+			logging.info(f"After species_taxon_id merge: {df_wide.shape}")
+			logging.info(f"Columns: {df_wide.columns.tolist()}")
+
+			# Merge for the genus taxon ID (separate column)
+			logging.info(f"Meging transcriptomic data genus taxon id")
+			df_wide = df_wide.merge(
+				transcriptomic_df, left_on="genus_taxon_id", right_on="Taxon ID", how="left",
+				suffixes=('_lowest', '_genus')
+			)
+			logging.info(f"After genus_taxon_id merge: {df_wide.shape}")
+			logging.info(f"Columns: {df_wide.columns.tolist()}")
+
+			# Drop redundant 'Taxon ID' columns (both for lowest and genus)
+			df_wide.drop(columns=["Taxon ID_lowest", "Taxon ID_species", "Taxon ID"], inplace=True)
 
 		# Filter by pipeline if requested
 		if pipeline:
