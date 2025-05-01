@@ -40,72 +40,112 @@ export default function Page() {
     df_wide: string
   } | null>(null);
   const [loading, setLoading] = useState(false);
+
   const isNumeric = (value: string) => /^\d+(\.\d+)?$/.test(value);
-    for (const [metric, value] of Object.entries(metricValues)) {
-    if (!isNumeric(value)) {
-      alert(`Invalid value for metric "${metric}". Please enter a numeric threshold.`);
-      return;
-    }
-  }
 
   const handleToggleChange = (metric: string, values: string[]) => {
     setToggleStates((prev) => ({ ...prev, [metric]: values }));
   };
 
   const handleGetResults = async () => {
-  setLoading(true);
-  try {
-    const payload = {
-      bioproject_id: baseFieldValues["BioProject ID"] || null,
-      taxon_id: baseFieldValues["Taxon ID"] || null,
-      release_date: baseFieldValues["Release date"] || null,
-      metrics: Object.fromEntries(
-        Object.entries(metricValues).map(([metric, value]) => [metric, Number(value)])
-      ),
-      toggles: toggleStates,
-      reference_check: checkReference,
-      transcript_check: checkTranscript,
-      current_check: checkCurrent
-    };
-
-    const res = await fetch("/api/get_assemblies", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(payload),
-    });
-
-    if (!res.ok) {
-      const errorText = await res.text();
-      console.error("Failed to fetch assemblies", errorText);
-      alert("Failed to fetch assemblies: " + errorText);
-      return;
+    // Validate numeric inputs before proceeding
+    for (const [metric, value] of Object.entries(metricValues)) {
+      if (value && !isNumeric(value)) {
+        alert(`Invalid value for metric "${metric}". Please enter a numeric threshold.`);
+        return; // Stop execution if validation fails
+      }
     }
 
-    const result = await res.json();
-    console.log("API response:", result);
+    setLoading(true);
+    try {
+      // Format BioProject ID as an array
+      let bioprojectArray = null;
+      const bioprojectId = baseFieldValues["BioProject ID"];
 
-    if (result.df_main) {
-      setAssemblies(result.df_main);
-    } else {
-      console.error("No assemblies data in response");
-      alert("No assemblies data found in response");
-    }
+      if (bioprojectId) {
+        if (bioprojectId.includes(',')) {
+          bioprojectArray = bioprojectId.split(',').map(id => id.trim()).filter(id => id);
+        } else {
+          bioprojectArray = [bioprojectId.trim()];
+        }
+      }
 
-    if (result.downloadables) {
-      console.log("Downloadables from backend:", result.downloadables);
-      setDownloadables(result.downloadables);
-    } else {
-      console.error("No downloadable data in response");
+      // Format metric thresholds
+      const metric_thresholds: Record<string, number> = {};      Object.entries(metricValues)
+        .filter(([_, value]) => value) // Only include fields with values
+        .forEach(([metric, value]) => {
+          metric_thresholds[metric] = Number(value);
+        });
+
+      // Get Assembly Level and Assembly Type values from toggleStates
+      const asm_level = toggleStates["Assembly level"] || null;
+      const asm_type = toggleStates["Assembly type"] || null;
+      const pipeline = toggleStates["Pipeline"] || null;
+
+      // Format taxon_id as number
+      const taxon_id = baseFieldValues["Taxon ID"] ?
+        parseInt(baseFieldValues["Taxon ID"], 10) : null;
+
+      // Format the payload according to API expectations
+      const payload = {
+        bioproject_id: bioprojectArray,
+        metric_thresholds: Object.keys(metric_thresholds).length > 0 ? metric_thresholds : null,
+        asm_level: asm_level,
+        asm_type: asm_type,
+        release_date: baseFieldValues["Release date"] || null,
+        taxon_id: taxon_id,
+        current: checkCurrent,
+        pipeline: pipeline,
+        transc: checkTranscript
+      };
+
+      // Remove null fields to keep payload clean
+      const cleanPayload = Object.fromEntries(
+      Object.entries(payload).filter(([_, value]) => value !== null && value !== undefined)
+      );
+
+      console.log("Sending payload:", JSON.stringify(payload));
+
+      // Update the endpoint URL to match your API
+      const res = await fetch("http://127.0.0.1:8000/api/assemblies/assemblies/filter", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "accept": "application/json"
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error("Failed to fetch assemblies", errorText);
+        alert("Failed to fetch assemblies: " + errorText);
+        return;
+      }
+
+      const result = await res.json();
+      console.log("API response:", result);
+
+      if (result.df_main) {
+        setAssemblies(result.df_main);
+      } else {
+        console.error("No assemblies data in response");
+        alert("No assemblies data found in response");
+      }
+
+      if (result.downloadables) {
+        console.log("Downloadables from backend:", result.downloadables);
+        setDownloadables(result.downloadables);
+      } else {
+        console.error("No downloadable data in response");
+      }
+    } catch (error) {
+      console.error("Error fetching assemblies:", error);
+      alert("Error fetching assemblies: " + (error instanceof Error ? error.message : String(error)));
+    } finally {
+      setLoading(false);
     }
-  } catch (error) {
-    console.error("Error fetching assemblies:", error);
-    alert("Error fetching assemblies: " + (error instanceof Error ? error.message : String(error)));
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   const handleDownload = (content: string | undefined, filename: string, type: string = "text/plain") => {
     if (!content) {
@@ -139,8 +179,6 @@ export default function Page() {
     setAutoFillRequested(true);
   };
 
-
-
   useEffect(() => {
     if (
       autoFillRequested &&
@@ -164,6 +202,10 @@ export default function Page() {
       label: "Assembly level",
       options: ["Contig", "Scaffold", "Chromosome", "Complete genome"],
     },
+      {
+      label: "Pipeline",
+      options: ["anno", "main", "hpc"],
+    },
     {
       label: "Assembly type",
       options: [
@@ -176,14 +218,13 @@ export default function Page() {
     },
   ];
 
-    const hasToggleGroup = selectedMetrics.some((metric) =>
-  toggleMetrics.some((tm) => tm.label === metric)
+  const hasToggleGroup = selectedMetrics.some((metric) =>
+    toggleMetrics.some((tm) => tm.label === metric)
   );
 
   const hasInputFields = selectedMetrics.some((metric) =>
     !toggleMetrics.some((tm) => tm.label === metric)
   );
-
 
   return (
     <div className="min-h-screen justify-center flex flex-wrap align-items-center">

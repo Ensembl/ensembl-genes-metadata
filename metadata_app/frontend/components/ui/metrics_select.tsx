@@ -62,7 +62,7 @@ export function PopoverWithMultiSelect({
 
 
   const group1 = ["Assembly level", "Assembly type", "Contig N50", "Sequence length"];
-  const group2 = ["GC%", "Genome coverage", "Number of contigs", "Number of scaffolds", "Scaffold N50"];
+  const group2 = ["GC%", "Genome coverage", "Number of contigs", "Number of scaffolds", "Scaffold N50", "Pipeline"];
 
   return (
     <Popover>
