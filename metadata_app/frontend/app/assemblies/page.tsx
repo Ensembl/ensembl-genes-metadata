@@ -265,7 +265,7 @@ export default function Page() {
             <div className="flex gap-10 mt-6">
               <div className="flex items-center space-x-2">
                 <Switch id="reference" checked={checkReference} onCheckedChange={setCheckReference} />
-                <Label htmlFor="reference">Check reference status from NCBI</Label>
+                <Label htmlFor="reference">Check transcriptomic data from ENA</Label>
               </div>
               <div className="flex items-center space-x-2">
                 <Switch id="transcript_check" checked={checkTranscript} onCheckedChange={setCheckTranscript} />
