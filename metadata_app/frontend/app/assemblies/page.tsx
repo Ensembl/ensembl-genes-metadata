@@ -204,7 +204,7 @@ export default function Page() {
     },
       {
       label: "Pipeline",
-      options: ["anno", "main", "hpc"],
+      options: ["anno", "main", "hprc"],
     },
     {
       label: "Assembly type",
