@@ -4,6 +4,8 @@ import json
 import logging
 from metadata_app.backend.app.core.database import get_db_connection
 import pandas as pd
+from datetime import datetime, timedelta, date
+
 
 
 def load_bioproject_mapping():
@@ -157,4 +159,38 @@ def get_transcriptomic_registry_update_dates():
 
 	except Exception as e:
 		print(f"Error fetching transcriptomic registry update dates: {e}")
+		return []
+
+def get_annotations_per_genebuilder():
+	try:
+		with get_db_connection("meta") as conn:
+			cursor = conn.cursor()
+			query = """
+                SELECT g.genebuild_id, g.date_completed, g.genebuilder
+                FROM genebuild g
+            """
+			cursor.execute(query)
+			result = cursor.fetchall()
+
+		df = pd.DataFrame(result, columns=["genebuild_id", "date_completed", "genebuilder"])
+
+		if df.empty:
+			return []
+
+		# Filter to last 30 days
+		logging.info(f"getting timeframe")
+		thirty_days_ago = (datetime.now() - timedelta(days=30)).date()
+		df["date_completed"] = pd.to_datetime(df["date_completed"]).dt.date
+		recent_df = df[df["date_completed"] >= thirty_days_ago]
+		logging.info(f"filtered last 30 days")
+		logging.debug(print(recent_df))
+
+		# Group by genebuilder and count
+		count_df = recent_df.groupby("genebuilder").size().reset_index(name="annotations")
+
+		return count_df.to_dict(orient='records')
+
+	except Exception as e:
+		# Optionally log or re-raise
+		print(f"Error in get_annotations_per_genebuilder: {e}")
 		return []

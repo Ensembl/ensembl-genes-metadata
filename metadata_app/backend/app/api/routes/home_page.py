@@ -6,6 +6,7 @@ from metadata_app.backend.app.services.home_page_service import get_assemblies_p
 from metadata_app.backend.app.services.home_page_service import get_annotations_per_year
 from metadata_app.backend.app.services.home_page_service import get_metadata_registry_update_dates
 from metadata_app.backend.app.services.home_page_service import get_transcriptomic_registry_update_dates
+from metadata_app.backend.app.services.home_page_service import get_annotations_per_genebuilder
 
 
 
@@ -46,3 +47,10 @@ def transcriptomic_registry_update_dates():
     Get counts of assemblies per year.
     """
     return get_transcriptomic_registry_update_dates()
+
+@home_page.get("/home/genebuilder")
+def annotations_per_genebuilder():
+    """
+    Get counts of assemblies per year.
+    """
+    return get_annotations_per_genebuilder()
