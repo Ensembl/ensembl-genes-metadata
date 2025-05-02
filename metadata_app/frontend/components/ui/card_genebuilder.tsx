@@ -16,17 +16,24 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart"
-const chartData = [
-  { genebuilder: "Anna", annotations: 275, fill: "var(--color-anna)" },
-  { genebuilder: "Jose", annotations: 200, fill: "var(--color-jose)" },
-  { genebuilder: "Francesca", annotations: 287, fill: "var(--color-francesca)" },
-  { genebuilder: "Vianey", annotations: 173, fill: "var(--color-vianey)" },
-  { genebuilder: "Swati", annotations: 190, fill: "var(--color-swati)" },
-  { genebuilder: "Jack", annotations: 190, fill: "var(--color-jack)" },
 
-]
+// Map API genebuilder names to display names
+const nameMapping: Record<string, string> = {
+  lazar: "Anna",
+  jose: "Jose",
+  ftricomi: "Francesca",
+  vianey: "Vianey",
+  swati: "Swati",
+  jackt: "Jack",
+}
 
-const chartConfig = {
+// Define type for chart config entries
+interface ChartConfigEntry {
+  label: string;
+  color?: string;
+}
+
+const chartConfig: Record<string, ChartConfigEntry> = {
   annotations: {
     label: "Annotations",
   },
@@ -54,12 +61,73 @@ const chartConfig = {
     label: "Jack",
     color: "var(--chart-6)",
   },
-
 } satisfies ChartConfig
 
+  // Define types for our data
+  interface GenebuilderItem {
+    genebuilder: string;
+    annotations: number;
+    [key: string]: any;
+  }
+
+  interface TransformedItem extends GenebuilderItem {
+    displayName: string;
+    fill?: string; // Add fill property for color
+  }
+
 export function CardGeneBuilder() {
-  const totalAnnotations = React.useMemo(() => {
-    return chartData.reduce((acc, curr) => acc + curr.annotations, 0)
+  const [genebuilderData, setGenebuilderData] = React.useState<GenebuilderItem[]>([])
+  const [totalAnnotations, setTotalAnnotations] = React.useState(0)
+
+  React.useEffect(() => {
+    const fetchGenebuilderData = async () => {
+      try {
+        const res = await fetch("/api/genebuilder")
+        const json = await res.json()
+
+        // Define the structure of the genebuilder data
+        interface GenebuilderItem {
+          genebuilder: string;
+          annotations: number;
+          [key: string]: any;
+        }
+
+        interface TransformedItem extends GenebuilderItem {
+          displayName: string;
+        }
+
+        // Transform the data to use display names instead of API names
+        // Only include genebuilders who are in our nameMapping list
+        const transformedData = json
+          .filter((item: GenebuilderItem) => nameMapping[item.genebuilder] !== undefined)
+          .map((item: GenebuilderItem): TransformedItem => {
+            const displayName = nameMapping[item.genebuilder];
+            // Get the corresponding chart config key (lowercase name)
+            const configKey = displayName.toLowerCase();
+            // Get the color from chartConfig if available
+            const configEntry = chartConfig[configKey as keyof typeof chartConfig];
+            const color = configEntry && 'color' in configEntry ? configEntry.color : "";
+
+            return {
+              ...item,
+              displayName,
+              fill: color // Add the color directly to each data item
+            };
+          });
+
+        setGenebuilderData(transformedData)
+
+        // Calculate total annotations by summing all annotation counts
+        const total = transformedData.reduce((sum: number, item: TransformedItem) => sum + (item.annotations || 0), 0)
+        setTotalAnnotations(total)
+      } catch (error) {
+        console.error("Error fetching genebuilder data:", error)
+        setGenebuilderData([])
+        setTotalAnnotations(0)
+      }
+    }
+
+    fetchGenebuilderData()
   }, [])
 
   return (
@@ -79,11 +147,12 @@ export function CardGeneBuilder() {
               content={<ChartTooltipContent hideLabel />}
             />
             <Pie
-              data={chartData}
+              data={genebuilderData}
               dataKey="annotations"
-              nameKey="genebuilder"
+              nameKey="displayName"
               innerRadius={60}
               strokeWidth={5}
+              // No need to specify cell colors - they come from each data point's fill property
             >
               <Label
                 content={({ viewBox }) => {
@@ -112,6 +181,7 @@ export function CardGeneBuilder() {
                       </text>
                     )
                   }
+                  return null;
                 }}
               />
             </Pie>
