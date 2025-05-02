@@ -31,7 +31,7 @@ export default function Page() {
   const [metricValues, setMetricValues] = useState<{ [key: string]: string }>({});
   const [autoFillRequested, setAutoFillRequested] = useState(false);
   const [assemblies, setAssemblies] = useState<Assemblies[]>([]);
-  const [checkReference, setCheckReference] = useState(false);
+  const [checkENA, setCheckENA] = useState(false);
   const [checkTranscript, setCheckTranscript] = useState(false);
   const [checkCurrent, setCheckCurrent] = useState(false);
   const [downloadables, setDownloadables] = useState<{
@@ -96,7 +96,8 @@ export default function Page() {
         taxon_id: taxon_id,
         current: checkCurrent,
         pipeline: pipeline,
-        transc: checkTranscript
+        transc: checkTranscript,
+        transc_ena: checkENA,
       };
 
       // Remove null fields to keep payload clean
@@ -264,8 +265,8 @@ export default function Page() {
 
             <div className="flex gap-10 mt-6">
               <div className="flex items-center space-x-2">
-                <Switch id="reference" checked={checkReference} onCheckedChange={setCheckReference} />
-                <Label htmlFor="reference">Check transcriptomic data from ENA</Label>
+                <Switch id="ena" checked={checkENA} onCheckedChange={setCheckENA} />
+                <Label htmlFor="ena">Check transcriptomic data from ENA</Label>
               </div>
               <div className="flex items-center space-x-2">
                 <Switch id="transcript_check" checked={checkTranscript} onCheckedChange={setCheckTranscript} />

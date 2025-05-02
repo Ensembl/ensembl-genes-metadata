@@ -15,11 +15,11 @@ import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "
 const chartConfig = {
   assembly_count: {
     label: "Assemblies",
-    color: "hsl(var(--primary))",
+    color: "hsl(var(--chart-1))",
   },
   annotation_count: {
     label: "Annotations",
-    color: "hsl(var(--primary))",
+    color: "hsl(var(--chart-1))",
   },
 } satisfies ChartConfig
 

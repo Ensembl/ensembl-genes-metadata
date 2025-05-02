@@ -4,6 +4,7 @@ import { CardsStats } from "@/components/ui/cards_stats"
 import { CardsCalendar } from "@/components/ui/card_calendar"
 import  { CardsDataTable } from "@/components/ui/card_projects"
 import { WelcomeCard } from "@/components/ui/card_welcome"
+import  { CardGeneBuilder } from "@/components/ui/card_genebuilder"
 
 export default function Page() {
   return (
@@ -16,6 +17,9 @@ export default function Page() {
                   </div>
                   <div className="w-full mb-4 break-inside-avoid">
                     <CardsCalendar></CardsCalendar>
+                  </div>
+                  <div className="w-full mb-4 break-inside-avoid">
+                    <CardGeneBuilder></CardGeneBuilder>
                   </div>
                   <div className="w-full mb-4 break-inside-avoid">
                     <CardsStats></CardsStats>
