@@ -14,3 +14,4 @@ class AssemblyFilterRequest(BaseModel):
     pipeline: Optional[List[str]] = None
     transc: Optional[bool] = False
     transc_ena: Optional[bool] = False
+    non_annotated: Optional[bool] = False

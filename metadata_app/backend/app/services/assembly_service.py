@@ -80,7 +80,7 @@ def is_reference_genome(accession):
 
 
 def get_filtered_assemblies(bioproject_id, metric_thresholds, asm_level, asm_type, release_date, taxon_id,
-                            current, pipeline, transc, transc_ena):
+                            current, pipeline, transc, transc_ena, non_annotated):
 	"""
 	Fetch all assemblies and their metrics, filter results based on given thresholds,
 	and format the results with metrics as separate columns.
@@ -97,6 +97,7 @@ def get_filtered_assemblies(bioproject_id, metric_thresholds, asm_level, asm_typ
 		pipeline: Which pipeline(s) to filter by
 		transc: Whether to check transcriptomic data from registry
 		transc_ena: Whether to check transcriptomic data from ena
+		non_annotated: Only show non-annotated assemblies
 
 	Returns:
 		df_main: DataFrame of filtered assembly metrics
@@ -157,13 +158,15 @@ def get_filtered_assemblies(bioproject_id, metric_thresholds, asm_level, asm_typ
 			query = f"""
                 SELECT b.bioproject_id, a.asm_level, a.gca_chain, a.gca_version, a.asm_type, a.release_date, a.is_current,
                        m.metrics_name, m.metrics_value, s.scientific_name, s.common_name, a.asm_name,
-                       a.lowest_taxon_id, g.group_name, a.refseq_accession, o.infra_type, o.infra_name
+                       a.lowest_taxon_id, g.group_name, a.refseq_accession, o.infra_type, o.infra_name,
+                       IF(gb.assembly_id IS NOT NULL, 'annotated/started', 'not started') AS annotation_status
                 FROM bioproject b
                 JOIN assembly_metrics m ON b.assembly_id = m.assembly_id
                 JOIN assembly a ON m.assembly_id = a.assembly_id
                 LEFT JOIN species s ON a.lowest_taxon_id = s.lowest_taxon_id
                 LEFT JOIN group_assembly g ON a.assembly_id = g.assembly_id
                 LEFT JOIN organism o ON a.assembly_id = o.assembly_id
+                LEFT JOIN genebuild gb ON a.assembly_id = gb.assembly_id
                 {where_clause}
                 ORDER BY m.metrics_name;
             """
@@ -230,7 +233,7 @@ def get_filtered_assemblies(bioproject_id, metric_thresholds, asm_level, asm_typ
 		df["GCA"] = df["gca_chain"].astype(str) + "." + df["gca_version"].astype(str)
 		df_wide = df.pivot(
 			index=["bioproject_id", "associated_project", "scientific_name", "lowest_taxon_id", "asm_level", "asm_type", "asm_name", "gca", "release_date", "refseq_accession",
-			       "infra_type", "infra_name", "is_current"],
+			       "infra_type", "infra_name", "is_current", "annotation_status"],
 			columns="metrics_name",
 			values="metrics_value"
 		)
@@ -324,6 +327,13 @@ def get_filtered_assemblies(bioproject_id, metric_thresholds, asm_level, asm_typ
 
 			if df_wide.empty:
 				return "No assemblies meet the pipeline filter criteria.", None, None, None, None
+
+		# Filter non annoteted assemblies only
+
+		if non_annotated:
+			logging.info(f"Filtring for non-annotated assemblies")
+			df_wide = df_wide
+			df_wide = df_wide[df_wide['annotation_status'] == 'not started']
 
 		# Create df_main table
 		df_main = df_wide[['bioproject_id', 'associated_project', 'gca', 'scientific_name', 'release_date',
