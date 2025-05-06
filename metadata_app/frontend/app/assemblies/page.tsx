@@ -32,6 +32,7 @@ export default function Page() {
   const [autoFillRequested, setAutoFillRequested] = useState(false);
   const [assemblies, setAssemblies] = useState<Assemblies[]>([]);
   const [checkENA, setCheckENA] = useState(false);
+  const [nonAnnotated, setNonAnnotated] = useState(false);
   const [checkTranscript, setCheckTranscript] = useState(false);
   const [checkCurrent, setCheckCurrent] = useState(false);
   const [downloadables, setDownloadables] = useState<{
@@ -98,6 +99,7 @@ export default function Page() {
         pipeline: pipeline,
         transc: checkTranscript,
         transc_ena: checkENA,
+        non_annotated: nonAnnotated,
       };
 
       // Remove null fields to keep payload clean
@@ -266,15 +268,19 @@ export default function Page() {
             <div className="flex gap-10 mt-6">
               <div className="flex items-center space-x-2">
                 <Switch id="ena" checked={checkENA} onCheckedChange={setCheckENA} />
-                <Label htmlFor="ena">Check transcriptomic data from ENA</Label>
+                <Label htmlFor="ena">Check ENA</Label>
               </div>
               <div className="flex items-center space-x-2">
                 <Switch id="transcript_check" checked={checkTranscript} onCheckedChange={setCheckTranscript} />
-                <Label htmlFor="transcript_check">Check transcriptomic data from registry</Label>
+                <Label htmlFor="transcript_check">Check transcriptomic registry</Label>
               </div>
               <div className="flex items-center space-x-2">
                 <Switch id="current_check" checked={checkCurrent} onCheckedChange={setCheckCurrent} />
                 <Label htmlFor="current_check">Only show current records</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Switch id="non_annotated" checked={nonAnnotated} onCheckedChange={setNonAnnotated} />
+                <Label htmlFor="non_annotated">Only show non-annotated assemblies</Label>
               </div>
             </div>
           </div>
