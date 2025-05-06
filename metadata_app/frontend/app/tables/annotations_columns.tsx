@@ -4,7 +4,7 @@ import { ColumnDef } from "@tanstack/react-table"
 import { ArrowUpDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
-export type Assemblies = {
+export type Annotations = {
   id: number
   bioproject_id: string
   associated_project: string
@@ -30,7 +30,7 @@ function sortableHeader(label: string, accessor: string) {
   )
 }
 
-export const columns: ColumnDef<Assemblies>[] = [
+export const columns: ColumnDef<Annotations>[] = [
   {
     accessorKey: "gca",
     header: sortableHeader("GCA", "gca"),
