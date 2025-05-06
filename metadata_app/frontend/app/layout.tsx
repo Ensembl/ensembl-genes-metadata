@@ -3,7 +3,6 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils"
 import { ThemeProvider } from "@/components/theme-provider";
-import { ModeSwitcher } from "@/components/mode_switcher"; // Assuming you have this component
 import { META_THEME_COLORS, siteConfig } from "@/config/site"
 import { SiteHeader } from "@/components/ui/site_header"
 
