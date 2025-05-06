@@ -25,7 +25,6 @@ import pandas as pd
 import pymysql
 
 
-
 def connect_to_db(host, user, password, database, port=3306) -> pymysql.connections.Connection:
     """
     Establishes a connection to the MySQL database.
@@ -62,7 +61,7 @@ def fastqc_quality(row) -> bool:
         row["per_base_n_content"] in ["PASS", "WARN"],
         row["per_sequence_quality_scores"] in ["PASS", "WARN"],
     ]
-    return sum(fastqc_criteria) == 4  # At least 3 out of 4 must pass
+    return sum(fastqc_criteria) == 4
 
 
 # Define STAR Quality classification
@@ -169,7 +168,7 @@ def filter_data(df) -> list:
     print(df_no_tissue.head())
     # Apply FastQC and STAR quality to each row
 
-    run_accession = []
+    run_accessions = []
     # for i in range(len(df_tissue)):
     for current_tissue, group in df_tissue.groupby("tissue_prediction"):
         # Check if the run has passed both FastQC and STAR
@@ -178,57 +177,51 @@ def filter_data(df) -> list:
         if not df_both.empty:
             # for j in range(len(df_both)):
             for _, row in group[group["passed_both"]].iterrows():
-                total_length += row["total_sequences"]
-                run_accession.append(row["run_accession"])
-                print("both ", row["run_accession"], total_length)
-                if total_length >= 250 * 10**6:
-                    break
+                if total_length + row["total_sequences"] <= 250 * 10**6:
+                    total_length += row["total_sequences"]
+                    run_accessions.append(row["run_accession"])
+                    print("both ", row["run_accession"], total_length)
+
             if total_length <= 250 * 10**6:
                 df_fastq = group[(~group["passed_both"]) & (group["final_fastqc_status"] == "Passed")]
                 for _, row in df_fastq.iterrows():
-                    print("both fastqc ", row["run_accession"])
-                    total_length += row["total_sequences"]
-                    run_accession.append(row["run_accession"])
-                    if total_length >= 250 * 10**6:
-                        break
+                    if total_length + row["total_sequences"] <= 250 * 10**6:
+                        print("both fastqc ", row["run_accession"])
+                        total_length += row["total_sequences"]
+                        run_accessions.append(row["run_accession"])
+
             if total_length <= 250 * 10**6:
                 df_star = group[(~group["passed_both"]) & (group["final_star_status"] == "Passed")]
                 for _, row in df_star.iterrows():
-                    print("both star ", row["run_accession"])
-                    total_length += row["total_sequences"]
-                    run_accession.append(row["run_accession"])
-                    if total_length >= 250 * 10**6:
-                        break
+                    if total_length + row["total_sequences"] <= 250 * 10**6:
+                        print("both star ", row["run_accession"])
+                        total_length += row["total_sequences"]
+                        run_accessions.append(row["run_accession"])
+
         else:
             df_fastq = group[(~group["passed_both"]) & (group["final_fastqc_status"] == "Passed")]
             for j in range(len(df_fastq)):
-                total_length += df_fastq["total_sequences"].iloc[j]
-                run_accession.append(df_fastq["run_accession"].iloc[j])
-                if total_length >= 250 * 10**6:
-                    break
+                if total_length + row["total_sequences"] <= 250 * 10**6:
+                    total_length += df_fastq["total_sequences"].iloc[j]
+                    run_accessions.append(df_fastq["run_accession"].iloc[j])
+
             if total_length <= 250 * 10**6:
                 df_star = group[(~group["passed_both"]) & (group["final_star_status"] == "Passed")]
                 for j in range(len(df_star)):
-                    total_length += df_star["total_sequences"].iloc[j]
-                    run_accession.append(df_star["run_accession"].iloc[j])
-                    if total_length >= 250 * 10**6:
-                        break
+                    if total_length + row["total_sequences"] <= 250 * 10**6:
+                        total_length += df_star["total_sequences"].iloc[j]
+                        run_accessions.append(df_star["run_accession"].iloc[j])
 
     for run, group in df_no_tissue.groupby("run_accession"):
-        # current_tissue = df_no_tissue.iloc[i]['predicted_tissue']
-        # df_both=df_no_tissue[df_no_tissue["run_accession"]==current_tissue & df_no_tissue["passed_both"]==True]
         total_length = 0
         if group["passed_both"].any():
             for _, row in group[group["passed_both"]].iterrows():
-                total_length += row["total_sequences"]
-                print(row["run_accession"])
-                run_accession.append(row["run_accession"])
-                # for j in range(len(df_both)):
-                # total_length_both+=df_both["total_sequences"].iloc[j]
-                # run_accession.append(df_both["run_accession"].iloc[j])
-                if total_length >= 250 * 10**6:
-                    break
-    return run_accession
+                if total_length + row["total_sequences"] <= 250 * 10**6:
+                    total_length += row["total_sequences"]
+                    print(row["run_accession"])
+                    run_accessions.append(row["run_accession"])
+
+    return run_accessions
 
 
 def main() -> None:
@@ -247,9 +240,14 @@ def main() -> None:
         help="Database",
     )
     parser.add_argument("--port", default=4527, type=int, required=False, help="Port")
-    parser.add_argument("--file_name", type=str, required=False, help="Port")
+    parser.add_argument("--file_name", type=str, required=False, help="Output file name")
     parser.add_argument(
-        "--read_type", type=["short", "long"], default="short", required=False, help="read type short/long"
+        "--read_type",
+        type=str,
+        choices=["short", "long"],
+        default="short",
+        required=False,
+        help="Read type short/long",
     )
     args = parser.parse_args()
     db_config = {
@@ -261,6 +259,7 @@ def main() -> None:
     }
 
     # Load the rows to fix (e.g., 150k rows)
+    query = ""
     if args.read_type == "short":
         query = (
             "SELECT r.taxon_id, r.run_accession, r.sample_accession, r.platform, r.paired, r.tissue_prediction, \
@@ -289,11 +288,14 @@ def main() -> None:
 
     if db_connection:
         df = pd.read_sql(query, db_connection)
-    print(f"Loaded {len(df)} rows.")
+        print(f"Loaded {len(df)} rows.")
     df = check_fastqc_star_quality(df)
 
+    #df["tissue_prediction"] = df["tissue_prediction"].apply(
+    #    lambda x: re.search(r"^(.*)", str(x)).group(1) if re.search(r"^(.*)", str(x)) else x
+    #)
     df["tissue_prediction"] = df["tissue_prediction"].apply(
-        lambda x: re.search(r"^(.*)", str(x)).group(1) if re.search(r"^(.*)", str(x)) else x
+        lambda x: (m.group(1) if (m := re.search(r"^(.*)", str(x))) else x)
     )
     df["tissue_prediction"] = (
         df["tissue_prediction"]
@@ -325,13 +327,16 @@ def main() -> None:
     print(df.head())
     # Remove duplicates based on 'run_accession' while keeping the first row for each
     df_original = df.copy()
-    run_accession = filter_data(df)
+    run_accessions = filter_data(df)
 
     # Build a regex pattern from run_accession list
-    pattern = "|".join(re.escape(acc) for acc in run_accession)
+    pattern = "|".join(re.escape(acc) for acc in run_accessions)
 
     # Filter df_original where file_name contains any of the run_accessions
-    df_final = df_original[df_original["file_name"].str.contains(pattern, na=False)].copy()
+    # df_final = df_original[df_original["file_name"].str.contains(pattern, na=False)].copy()
+
+    df_final = df_original[df_original["run_accession"].isin(run_accessions[0:250])].copy()
+
     df_final.drop_duplicates(inplace=True)
 
     df_final.loc[:, "file_name"] = df_final["file_name"].astype(str) + ".fastq.gz"
