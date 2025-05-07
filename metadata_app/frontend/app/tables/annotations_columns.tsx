@@ -3,6 +3,8 @@
 import { ColumnDef } from "@tanstack/react-table"
 import { ArrowUpDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { BadgeCheck, Badge } from "lucide-react";
+
 
 export type Annotations = {
   id: number
@@ -48,10 +50,23 @@ export const columns: ColumnDef<Annotations>[] = [
     header: sortableHeader("Scientific Name", "scientific_name"),
   },
   {
-  accessorKey: "annotation_date",
-  header: sortableHeader("Annotation Date", "annotation_date"),
+  accessorKey: "date_completed_beta",
+  header: sortableHeader("Annotation Date", "date_completed_beta"),
     cell: ({ row }) => {
-      const fullDate = row.getValue("annotation_date") as string;
+      const fullDate = row.getValue("date_completed_beta") as string;
+      const dateOnly = fullDate.split("T")[0]; // or use new Date(fullDate).toISOString().split("T")[0]
+      return dateOnly;
+    },
+  },
+  {
+    accessorKey: "gb_status",
+    header: sortableHeader("Annotation status", "gb_status"),
+  },
+  {
+  accessorKey: "release_date_beta",
+  header: sortableHeader("Release Date Beta", "release_date_beta"),
+    cell: ({ row }) => {
+      const fullDate = row.getValue("release_date_beta") as string;
       const dateOnly = fullDate.split("T")[0]; // or use new Date(fullDate).toISOString().split("T")[0]
       return dateOnly;
     },
@@ -61,11 +76,19 @@ export const columns: ColumnDef<Annotations>[] = [
     header: sortableHeader("Lowest Taxon ID", "lowest_taxon_id"),
   },
   {
-    accessorKey: "release_site",
-    header: sortableHeader("Release site", "release_site"),
+    accessorKey: "release_type",
+    header: sortableHeader("Release site", "release_type"),
   },
-  {
-    accessorKey: "latest_annotated",
-    header: sortableHeader("Latest GCA annotated", "latest_annotated"),
-  }
+{
+  accessorKey: "latest_annotated",
+  header: sortableHeader("Latest GCA Annotated", "latest_annotated"),
+  cell: ({ row }) => {
+    const isLatest = row.getValue("latest_annotated") === "Yes";
+    return isLatest ? (
+      <BadgeCheck className="text-foreground w-5 h-5"  />
+    ) : (
+      <Badge className="text-foreground w-5 h-5"  />
+    );
+  },
+}
 ]
