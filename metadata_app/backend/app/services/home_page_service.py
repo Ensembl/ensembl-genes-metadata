@@ -230,7 +230,7 @@ def bin_by_genebuild_method(bioproject_id, release_type, taxon_id, release_date)
                 logging.info(f"Filtering by lowest taxon ID: {', '.join(str(id) for id in descendant_taxa)}")
 
             if release_type:
-                conditions.append(f"gb.release_type IN ({','.join(['%s'] * len(release_type))})")
+                conditions.append(f"g.release_type IN ({','.join(['%s'] * len(release_type))})")
                 params.extend(release_type)
                 logging.info(f"Filtering by Release Type: {', '.join(release_type)}")
 
