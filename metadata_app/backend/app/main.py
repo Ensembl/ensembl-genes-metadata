@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 import logging
 
-from metadata_app.backend.app.api.routes import assemblies, taxonomy, transcriptomics, home_page
+from metadata_app.backend.app.api.routes import assemblies, taxonomy, transcriptomics, home_page, annotations
 from metadata_app.backend.app.core.database import setup_logging
 
 # Initialize FastAPI app
@@ -30,6 +30,8 @@ setup_logging()
 
 # Include routers from different modules
 app.include_router(assemblies.router, prefix="/api/assemblies", tags=["assemblies"])
+app.include_router(annotations.annotations, prefix="/api/annotations", tags=["annotations"])
+
 app.include_router(taxonomy.taxonomy, prefix="/api/taxonomy", tags=["taxonomy"])
 app.include_router(transcriptomics.transcriptomics, prefix="/api/transcriptomics", tags=["transcriptomics"])
 app.include_router(home_page.home_page, prefix="/api/home_page", tags=["home_page"])
