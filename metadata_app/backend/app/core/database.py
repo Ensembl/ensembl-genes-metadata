@@ -23,7 +23,7 @@ def setup_logging():
 
 def load_db_config():
 	"""Load database configuration from file or environment"""
-	config_path = os.environ.get("DB_CONFIG_PATH", "conf/db_config.json")
+	config_path = os.environ.get("DB_CONFIG_PATH", "metadata_app/backend/conf/db_config.json")
 
 	if not os.path.exists(config_path):
 		logging.error(f"Config file not found: {config_path}")
@@ -39,7 +39,7 @@ def get_db_connection(config_key):
 	db_config = load_db_config()
 
 	if config_key not in db_config:
-		raise KeyError(f"Database config key '{config_key}' not found")
+		raise KeyError(f"Database config key '{config_key}' not found. Available keys: {list(db_config.keys())}")
 
 	connection = None
 	try:
