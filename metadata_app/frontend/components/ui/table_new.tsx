@@ -8,7 +8,7 @@ function Table({ className, ...props }: React.ComponentProps<"table">) {
   return (
     <div
       data-slot="table-container"
-      className="relative w-full max-h-[500px] overflow-x-auto overflow-y-auto"
+      className="relative w-full max-h-[500px] overflow-x-auto"
     >
       <table
         data-slot="table"
@@ -70,7 +70,7 @@ function TableHead({ className, ...props }: React.ComponentProps<"th">) {
     <th
       data-slot="table-head"
       className={cn(
-        "text-foreground h-10 px-8 py-2 text-left align-middle font-medium whitespace-nowrap [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]",
+        "bg-background text-foreground h-10 px-8 py-2 text-left align-middle sticky top-0 font-medium whitespace-nowrap [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]",
         className
       )}
       {...props}
