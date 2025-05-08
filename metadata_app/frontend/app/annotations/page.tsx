@@ -46,14 +46,13 @@ export default function Page() {
         ? parseInt(baseFieldValues["Taxon ID"], 10)
         : null;
 
-      // Determine release_type based on checkbox states
-      let release_type = null;
-      if (releaseSites.main && !releaseSites.beta) {
-        release_type = "main";
-      } else if (!releaseSites.main && releaseSites.beta) {
-        release_type = "beta";
-      }
-      // If both are checked or none are checked, release_type remains null
+     let release_type: string[] | null = [];
+    if (releaseSites.main) release_type.push("main");
+    if (releaseSites.beta) release_type.push("beta");
+
+    if (release_type.length === 0 || release_type.length === 2) {
+      release_type = null; // means "no filter" to the backend
+    }
 
       const payload = {
         bioproject_id: bioprojectArray,
@@ -128,8 +127,8 @@ export default function Page() {
   return (
     <div className="min-h-screen justify-center flex flex-wrap align-items-center">
       <div className="container m-16 mt-10 max-w-6xl">
-        <div className="rounded-2xl border-accent shadow-lg">
-          <div className="rounded-2xl bg-secondary p-8 gap-10">
+        <div className="rounded-2xl border-accent">
+          <div className="rounded-2xl bg-secondary p-8 gap-10 shadow-lg">
             <div className="grid justify-center grid-cols-4 gap-4">
               {baseFields.map(({ label, placeholder }, index) => (
                 <div key={index}>
@@ -158,6 +157,7 @@ export default function Page() {
                   <div className="flex items-center space-x-2">
                     <Checkbox
                       id="checkbox-main"
+                      className= "cursor-pointer"
                       checked={releaseSites.main}
                       onCheckedChange={(checked) => {
                         setReleaseSites(prev => ({
@@ -171,6 +171,7 @@ export default function Page() {
                   <div className="flex items-center space-x-2">
                     <Checkbox
                       id="checkbox-beta"
+                      className= "cursor-pointer"
                       checked={releaseSites.beta}
                       onCheckedChange={(checked) => {
                         setReleaseSites(prev => ({
