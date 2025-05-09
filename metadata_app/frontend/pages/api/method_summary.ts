@@ -1,4 +1,4 @@
-// pages/api/genebuilder.ts
+// pages/api/method_summary.ts
 import type { NextApiRequest, NextApiResponse } from 'next'
 
 export default async function handler(
@@ -6,7 +6,7 @@ export default async function handler(
   res: NextApiResponse
 ) {
   try {
-    const response = await fetch("http://localhost:8000/api/home_page/home/genebuilder")
+    const response = await fetch("http://localhost:8000/api/home_page/home/method_summary")
     const data = await response.json()
 
     if (Array.isArray(data)) {
@@ -16,6 +16,6 @@ export default async function handler(
     }
   } catch (error) {
     console.error("API proxy error:", error)
-    res.status(500).json({ error: "Failed to fetch annotations per genebuilder data" })
+    res.status(500).json({ error: "Failed to fetch annotations data" })
   }
 }
