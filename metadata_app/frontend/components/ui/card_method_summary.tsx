@@ -38,7 +38,7 @@ const chartConfig: Record<string, { label: string; color?: string }> = {
   full_genebuild: { label: "Full Genebuild", color: "var(--chart-4)" },
   import: { label: "Import", color: "var(--chart-5)" },
   mixed_strategy_build: { label: "Mixed Strategy Build", color: "var(--chart-6)" },
-  projection_build: { label: "Projection Build", color: "var(--chart-6)" },
+  projection_build: { label: "Projection Build", color: "var(--chart-7)" },
 }
 
 interface MethodItem {
