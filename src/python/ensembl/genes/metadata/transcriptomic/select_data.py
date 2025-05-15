@@ -284,11 +284,15 @@ def main() -> None:
         )
     # Connect to the database
     db_connection = connect_to_db(**db_config)
-    # Clean the input text
 
-    if db_connection:
+    # Clean the input text
+    try:
+    #if db_connection:
         df = pd.read_sql(query, db_connection)
         print(f"Loaded {len(df)} rows.")
+    except pymysql.MySQLError as e:
+        print(f"Error connecting to MySQL: {e}")
+
     df = check_fastqc_star_quality(df)
 
     #df["tissue_prediction"] = df["tissue_prediction"].apply(
