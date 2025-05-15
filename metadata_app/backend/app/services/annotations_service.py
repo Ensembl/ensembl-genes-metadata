@@ -44,13 +44,19 @@ def query_meta_registry(annotation_date, taxon_id, bioproject_id, release_type):
                 logging.info(f"Filtering by Release Type: {', '.join(release_type)}")
 
             if taxon_id:
-                descendant_taxa = get_descendant_taxa(taxon_id)
-                logging.info(f"Retrieving annotation for taxon ID {taxon_id}.")
-                if not descendant_taxa:
-                    return f"No descendant taxa found for Taxon ID {taxon_id}.", None
+                all_descendant_taxa = set()
+                for tax_id in taxon_id:
+                    descendant_taxa = get_descendant_taxa(tax_id)
+                    if not descendant_taxa:
+                        logging.warning(f"No descendants found for taxon ID {tax_id}")
+                    all_descendant_taxa.update(descendant_taxa)
 
-                conditions.append(f"a.lowest_taxon_id IN ({','.join(['%s'] * len(descendant_taxa))})")
-                parameters.extend(descendant_taxa)
+                if not all_descendant_taxa:
+                    return f"No descendant taxa found for any of the provided Taxon IDs: {', '.join(map(str, taxon_id))}", None, None, None, None
+
+                conditions.append(f"s.lowest_taxon_id IN ({','.join(['%s'] * len(all_descendant_taxa))})")
+                parameters.extend(all_descendant_taxa)
+                logging.info(f"Filtering by lowest taxon IDs: {', '.join(str(id) for id in all_descendant_taxa)}")
 
             if annotation_date:
                 logging.info(f"Retrieving annotation for annotation date {annotation_date}.")

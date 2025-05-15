@@ -142,14 +142,19 @@ def get_filtered_assemblies(bioproject_id, metric_thresholds, asm_level, asm_typ
 				logging.info("Filtering for current assemblies")
 
 			if taxon_id:
-				descendant_taxa = get_descendant_taxa(taxon_id)
-				if not descendant_taxa:
-					logging.error(f"No descendant taxon IDs found for {taxon_id}.")
-					return f"No descendant taxa found for Taxon ID {taxon_id}.", None, None, None, None
+				all_descendant_taxa = set()
+				for tax_id in taxon_id:
+					descendant_taxa = get_descendant_taxa(tax_id)
+					if not descendant_taxa:
+						logging.warning(f"No descendants found for taxon ID {tax_id}")
+					all_descendant_taxa.update(descendant_taxa)
 
-				conditions.append(f"s.lowest_taxon_id IN ({','.join(['%s'] * len(descendant_taxa))})")
-				params.extend(descendant_taxa)
-				logging.info(f"Filtering by lowest taxon ID: {', '.join(str(id) for id in descendant_taxa)}")
+				if not all_descendant_taxa:
+					return f"No descendant taxa found for any of the provided Taxon IDs: {', '.join(map(str, taxon_id))}", None, None, None, None
+
+				conditions.append(f"s.lowest_taxon_id IN ({','.join(['%s'] * len(all_descendant_taxa))})")
+				params.extend(all_descendant_taxa)
+				logging.info(f"Filtering by lowest taxon IDs: {', '.join(str(id) for id in all_descendant_taxa)}")
 
 			# Create WHERE clause
 			where_clause = " WHERE " + " AND ".join(conditions) if conditions else ""

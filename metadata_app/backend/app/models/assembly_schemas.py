@@ -9,7 +9,7 @@ class AssemblyFilterRequest(BaseModel):
     asm_level: Optional[List[str]] = None
     asm_type: Optional[List[str]] = None
     release_date: Optional[date] = None
-    taxon_id: Optional[int] = None
+    taxon_id: Optional[List[int]] = None
     current: Optional[bool] = False
     pipeline: Optional[List[str]] = None
     transc: Optional[bool] = False
