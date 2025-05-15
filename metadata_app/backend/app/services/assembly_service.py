@@ -237,7 +237,7 @@ def get_filtered_assemblies(bioproject_id, metric_thresholds, asm_level, asm_typ
 		# Pivot data for metrics
 		df["GCA"] = df["gca_chain"].astype(str) + "." + df["gca_version"].astype(str)
 		df_wide = df.pivot(
-			index=["bioproject_id", "associated_project", "scientific_name", "lowest_taxon_id", "asm_level", "asm_type", "asm_name", "gca", "release_date", "refseq_accession",
+			index=["bioproject_id", "associated_project", "group_name", "scientific_name", "lowest_taxon_id", "asm_level", "asm_type", "asm_name", "gca", "release_date", "refseq_accession",
 			       "infra_type", "infra_name", "is_current", "annotation_status"],
 			columns="metrics_name",
 			values="metrics_value"

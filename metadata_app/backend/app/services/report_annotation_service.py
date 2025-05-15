@@ -3,6 +3,8 @@ import logging
 import pandas as pd
 import datetime
 from fastapi import HTTPException
+from numpy.ma.extras import average
+
 from metadata_app.backend.app.core.database import get_db_connection
 from metadata_app.backend.app.services.taxonomy_service import get_descendant_taxa
 
@@ -14,7 +16,7 @@ def load_bioproject_mapping():
         return json.load(f)
 
 
-def query_meta_registry(annotation_date, taxon_id, bioproject_id, release_type):
+def query_meta_registry(start_date, end_date, group_name, taxon_id, bioproject_id, release_type):
     """Checks if each annotated assembly is the latest available version."""
     try:
         # Connect to database
@@ -38,34 +40,42 @@ def query_meta_registry(annotation_date, taxon_id, bioproject_id, release_type):
                 parameters.extend(bioproject_id)
                 logging.info(f"Filtering by BioProject IDs: {', '.join(bioproject_id)}")
 
+            if group_name:
+                conditions.append("g.group_name = %s")
+                parameters.append(group_name)
+                logging.info(f"Filtering by group name: {group_name}")
+
             if release_type:
                 conditions.append(f"gb.release_type IN ({','.join(['%s'] * len(release_type))})")
                 parameters.extend(release_type)
                 logging.info(f"Filtering by Release Type: {', '.join(release_type)}")
 
             if taxon_id:
-                all_descendant_taxa = set()
-                for tax_id in taxon_id:
-                    descendant_taxa = get_descendant_taxa(tax_id)
-                    if not descendant_taxa:
-                        logging.warning(f"No descendants found for taxon ID {tax_id}")
-                    all_descendant_taxa.update(descendant_taxa)
+                descendant_taxa = get_descendant_taxa(taxon_id)
+                logging.info(f"Retrieving annotation for taxon ID {taxon_id}.")
+                if not descendant_taxa:
+                    return f"No descendant taxa found for Taxon ID {taxon_id}.", None
 
-                if not all_descendant_taxa:
-                    return f"No descendant taxa found for any of the provided Taxon IDs: {', '.join(map(str, taxon_id))}", None, None, None, None
+                conditions.append(f"a.lowest_taxon_id IN ({','.join(['%s'] * len(descendant_taxa))})")
+                parameters.extend(descendant_taxa)
 
-                conditions.append(f"s.lowest_taxon_id IN ({','.join(['%s'] * len(all_descendant_taxa))})")
-                parameters.extend(all_descendant_taxa)
-                logging.info(f"Filtering by lowest taxon IDs: {', '.join(str(id) for id in all_descendant_taxa)}")
-
-            if annotation_date:
-                logging.info(f"Retrieving annotation for annotation date {annotation_date}.")
-                if isinstance(annotation_date, pd.Timestamp):
-                    annotation_date = annotation_date.strftime('%Y-%m-%d')
-                elif isinstance(annotation_date, (datetime.date, datetime.datetime)):
-                    annotation_date = annotation_date.strftime('%Y-%m-%d')
+            if start_date:
+                logging.info(f"Retrieving annotation for start date {start_date}.")
+                if isinstance(start_date, pd.Timestamp):
+                    start_date = start_date.strftime('%Y-%m-%d')
+                elif isinstance(start_date, (datetime.date, datetime.datetime)):
+                    start_date = start_date.strftime('%Y-%m-%d')
                 conditions.append("gb.date_completed_beta >= %s")
-                parameters.append(annotation_date)
+                parameters.append(start_date)
+
+            if end_date:
+                logging.info(f"Retrieving annotation for end date {end_date}.")
+                if isinstance(end_date, pd.Timestamp):
+                    end_date = end_date.strftime('%Y-%m-%d')
+                elif isinstance(end_date, (datetime.date, datetime.datetime)):
+                    end_date = end_date.strftime('%Y-%m-%d')
+                conditions.append("gb.date_completed_beta <= %s")
+                parameters.append(end_date)
 
             # If there are conditions, join them with AND; otherwise, select all
             where_clause = " WHERE " + " AND ".join(conditions) if conditions else ""
@@ -116,8 +126,6 @@ def get_annotation_info_beta(df_meta_genebuild):
     gca_list = df_meta_genebuild['gca'].unique().tolist()
     placeholders = ', '.join(['%s'] * len(gca_list))
     logging.info(f"Retrieving annotations for GCAs: {', '.join(gca_list)}")
-
-
 
     try:
         # Connect to database
@@ -186,7 +194,7 @@ def get_annotation_info_beta(df_meta_genebuild):
 def check_if_gca_is_latest_annotated(anno_wide):
     taxon_id_list = anno_wide['lowest_taxon_id'].unique().tolist()
     placeholders = ', '.join(['%s'] * len(taxon_id_list))
-    logging.info(f"taxon/_id list: {taxon_id_list}")
+    logging.info(f"taxon_id list: {taxon_id_list}")
     try:
         # Connect to database
         with get_db_connection("meta") as conn:
@@ -244,9 +252,9 @@ def check_if_gca_is_latest_annotated(anno_wide):
     return None
 
 
-def generate_tables(annotation_date, taxon_id, bioproject_id, release_type):
-    logging.info(f"Generating tables for annotation date: {annotation_date}, taxon_id: {taxon_id}, bioproject_id: {bioproject_id}, release_type: {release_type}")
-    df_meta_genebuild= query_meta_registry(annotation_date, taxon_id, bioproject_id, release_type)
+def generate_report(end_date, start_date, group_name, taxon_id, bioproject_id, release_type):
+    logging.info(f"Generating tables for end date: {end_date}, start date: {start_date}, group name: {group_name}, taxon id: {taxon_id}, bioproject id: {bioproject_id}, release type: {release_type}")
+    df_meta_genebuild= query_meta_registry(end_date, start_date, group_name, taxon_id, bioproject_id, release_type)
     if df_meta_genebuild is None or df_meta_genebuild.empty:
         logging.error("No metadata records returned from query_meta_registry.")
         raise HTTPException(status_code=404, detail="No records found for the given filters.")
@@ -270,13 +278,55 @@ def generate_tables(annotation_date, taxon_id, bioproject_id, release_type):
     #filtered_df = filtered_df.drop(columns=['year', 'gca', 'version'])
     #df_info_result = df_info_result.drop(columns=['year', 'version', 'gca_latest'])
 
-    # Create main display table
-    anno_main = anno_wide[['bioproject_id', 'associated_project', 'gca', 'scientific_name', 'date_completed_beta',
-                       'release_date_beta','lowest_taxon_id', 'gb_status', 'release_type', 'latest_annotated']]
+    # Create tables for charts
+    number_of_annotations = (
+        anno_wide[['gca', 'gb_status']]
+        .groupby('gb_status')
+        .size()
+        .reset_index(name='number_of_annotations'))
+
+    method_report = (
+        anno_wide[['gca', 'annotation_method']]
+        .groupby('annotation_method')
+        .size()
+        .reset_index(name='number_of_annotations'))
+
+    num_unique_taxa = anno_wide['lowest_taxon_id'].nunique()
+    top_3_taxa = (
+        anno_wide.groupby(['scientific_name'])
+        .size()
+        .reset_index(name='count')
+        .sort_values(by='count', ascending=False)
+        .head(3)
+    )
+
+    project_report = (
+        anno_wide[['gca', 'associated_project']]
+        .groupby('associated_project')
+        .size()
+        .reset_index(name='number_of_annotations'))
+
+    # Extract C: value
+    busco_complete_series = (
+        anno_wide['busco_protein']
+        .str.extract(r'C:(\d+\.\d+)%')[0]
+        .astype(float)
+    )
+
+    # Compute the average
+    average_busco = busco_complete_series.mean()
+
+
+    main_report = anno_wide[['associated_project', 'gca', 'genebuilder', 'gb_status', 'release_type', 'ftp', 'latest_annotated', 'busco_protein', 'date_completed_beta', 'release_date_beta']]
+
 
     # Transforming out of range float values that are not JSON compliant: nan
     logging.info(f"Transfroming Out of range float values that are not JSON compliant")
-    anno_main = anno_main.apply(lambda col: col.fillna("") if col.dtype == "object" else col)
     anno_wide = anno_wide.apply(lambda col: col.fillna("") if col.dtype == "object" else col)
+    number_of_annotations = number_of_annotations.apply(lambda col: col.fillna("") if col.dtype == "object" else col)
+    method_report = method_report.apply(lambda col: col.fillna("") if col.dtype == "object" else col)
+    top_3_taxa = top_3_taxa.apply(lambda col: col.fillna("") if col.dtype == "object" else col)
+    project_report = project_report.apply(lambda col: col.fillna("") if col.dtype == "object" else col)
+    main_report = main_report.apply(lambda col: col.fillna("") if col.dtype == "object" else col)
 
-    return anno_wide, anno_main
+    return anno_wide, number_of_annotations, method_report, num_unique_taxa, top_3_taxa, project_report, average_busco, main_report
