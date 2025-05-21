@@ -163,7 +163,8 @@ def assign_clade_and_species(lowest_taxon_id, clade_data, taxonomy_dict, chordat
         pipeline = "hprc"
     elif is_chordata:
         pipeline = "main"
-    else: "anno"
+    else:
+        pipeline = "anno"
 
     # Log the assignment results for debugging
     logging.debug(
