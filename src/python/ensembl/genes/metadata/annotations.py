@@ -414,6 +414,7 @@ def main():
     parser.add_argument('--bioproject_id', type=str, nargs='+', help="One or more BioProject IDs")
     parser.add_argument('--trans', type=int, choices=[0, 1], default=0, help="Check if a taxon ID has transcriptomic data from ENA (1 for yes, 0 for no)")
     parser.add_argument('--current', type=int, choices=[0, 1], default=0, help="Check if GCA is the most current version (1 for yes, 0 for no)")
+    parser.add_argument('--pipeline', type=str, choices=["anno", "main", "hprc"], nargs='+', help="Pipeline(s) to filter by: choose one or more from anno, main, hprc")
 
     args = parser.parse_args()
 
@@ -423,6 +424,7 @@ def main():
     asm_level = args.asm_level
     asm_type = args.asm_type
     bioproject_id = args.bioproject_id
+    pipeline = args.pipeline
 
     # Ensure the output directory exists
     if not os.path.exists(args.output_dir):
@@ -440,8 +442,8 @@ def main():
     all_metrics = ["gc_percent", "total_sequence_length", "contig_n50", "number_of_contigs", "number_of_scaffolds",
                    "scaffold_n50", "genome_coverage"]
 
-    # Fetch assemblies released in the past 5 years
-    df_wide, summary_df, df_info_result, df_gca_list, taxonomy_dict = get_filtered_assemblies(bioproject_id, metric_thresholds, all_metrics, asm_level, asm_type, release_date, taxon_id, args.current)
+    # Fetch assemblies
+    df_wide, summary_df, df_info_result, df_gca_list, taxonomy_dict = get_filtered_assemblies(bioproject_id, metric_thresholds, all_metrics, asm_level, asm_type, release_date, taxon_id, args.current, pipeline)
     logging.info(f"Filtered assemblies: {len(df_wide)}")
 
 
