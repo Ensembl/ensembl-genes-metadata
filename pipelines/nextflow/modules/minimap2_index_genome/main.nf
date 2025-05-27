@@ -41,7 +41,7 @@ process MINIMAP2_INDEX_GENOME {
     }
     def genomefilePath = fnaFiles[0]
     """
-    if [ -z "$(find "${genomeDir}" -name '*.mmi' -type f -size +0c)" ]; then
+    if [ -z "\$(find "${genomeDir}" -name '*.mmi' -type f -size +0c)" ]; then
         minimap2 --threads ${task.cpus} \
             -d ${genomefilePath}.mmi ${genomefilePath}
     else
