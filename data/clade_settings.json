@@ -1,4 +1,10 @@
 {
+    "chordata":{
+        "taxon_id": 7711
+    },
+    "hemichordata":{
+        "taxon_id": 10219
+    },
     "lepidoptera": {
         "taxon_id": 7088,
         "protein_file": "lepidoptera_uniprot_proteins.fa",
@@ -6,22 +12,6 @@
         "rfam_accessions_file": "rfam_insect_ids.txt",
         "species_division": "EnsemblMetazoa",
         "busco_group": "lepidoptera_odb10"
-    },
-    "trichoptera": {
-        "taxon_id": 30263,
-        "protein_file": "trichoptera_uniprot_proteins.fa",
-        "busco_protein_file": "holometabola_orthodb11v0_proteins.fa",
-        "rfam_accessions_file": "rfam_insect_ids.txt",
-        "species_division": "EnsemblMetazoa",
-        "busco_group": "endopterygota_odb10"
-    },
-    "polyneoptera": {
-        "taxon_id": 33341,
-        "protein_file": "polyneoptera_uniprot_proteins.fa",
-        "busco_protein_file": "hexapoda_orthodb11v0_proteins.fa",
-        "rfam_accessions_file": "rfam_insect_ids.txt",
-        "species_division": "EnsemblMetazoa",
-        "busco_group": "insecta_odb10"
     },
     "plasmodium": {
         "taxon_id": 5820,
@@ -46,14 +36,7 @@
         "rfam_accessions_file": "rfam_teleost_ids.txt",
         "species_division": "EnsemblVertebrates"
     },
-    "hymenoptera": {
-        "taxon_id": 7399,
-        "protein_file": "hymenoptera_uniprot_proteins.fa",
-        "busco_protein_file": "hymenoptera_orthodb_proteins.fa",
-        "rfam_accessions_file": "rfam_insect_ids.txt",
-        "species_division": "EnsemblMetazoa",
-        "busco_group": "hymenoptera_odb10"
-    },
+
     "diptera": {
         "taxon_id": 7147,
         "protein_file": "diptera_uniprot_proteins.fa",
@@ -85,14 +68,6 @@
         "rfam_accessions_file": "rfam_mollusc_ids.txt",
         "species_division": "EnsemblMetazoa",
         "busco_group": "mollusca_odb10"
-    },
-    "hemiptera": {
-        "taxon_id": 7524,
-        "protein_file": "hemiptera_uniprot_proteins.fa",
-        "busco_protein_file": "hemiptera_orthodb_proteins.fa",
-        "rfam_accessions_file": "rfam_hemiptera_ids.txt",
-        "species_division": "EnsemblMetazoa",
-        "busco_group": "hemiptera_odb10"
     },
     "viridiplantae": {
         "taxon_id": 33090,
@@ -174,78 +149,6 @@
         "species_division": "EnsemblMetazoa",
         "busco_group": "metazoa_odb10"
     },
-    "odonata": {
-        "taxon_id": 6961,
-        "protein_file": "insecta_uniprot_proteins.fa",
-        "busco_protein_file": "insecta_orthodb11v0_proteins.fa",
-        "rfam_accessions_file": "rfam_insect_ids.txt",
-        "species_division": "EnsemblMetazoa",
-        "busco_group": "metazoa_odb10"
-    },
-    "megaloptera": {
-        "taxon_id": 50553,
-        "protein_file": "insecta_uniprot_proteins.fa",
-        "busco_protein_file": "insecta_orthodb11v0_proteins.fa",
-        "rfam_accessions_file": "rfam_insect_ids.txt",
-        "species_division": "EnsemblMetazoa",
-        "busco_group": "metazoa_odb10"
-    },
-    "ephemeroptera": {
-        "taxon_id": 30073,
-        "protein_file": "insecta_uniprot_proteins.fa",
-        "busco_protein_file": "insecta_orthodb11v0_proteins.fa",
-        "rfam_accessions_file": "rfam_insect_ids.txt",
-        "species_division": "EnsemblMetazoa",
-        "busco_group": "metazoa_odb10"
-    },
-    "psocoptera": {
-        "taxon_id": 30259,
-        "protein_file": "insecta_uniprot_proteins.fa",
-        "busco_protein_file": "insecta_orthodb11v0_proteins.fa",
-        "rfam_accessions_file": "rfam_insect_ids.txt",
-        "species_division": "EnsemblMetazoa",
-        "busco_group": "metazoa_odb10"
-    },
-    "dermaptera": {
-        "taxon_id": 27434,
-        "protein_file": "insecta_uniprot_proteins.fa",
-        "busco_protein_file": "insecta_orthodb11v0_proteins.fa",
-        "rfam_accessions_file": "rfam_insect_ids.txt",
-        "species_division": "EnsemblMetazoa",
-        "busco_group": "metazoa_odb10"
-    },
-    "raphidioptera": {
-        "taxon_id": 50482,
-        "protein_file": "insecta_uniprot_proteins.fa",
-        "busco_protein_file": "insecta_orthodb11v0_proteins.fa",
-        "rfam_accessions_file": "rfam_insect_ids.txt",
-        "species_division": "EnsemblMetazoa",
-        "busco_group": "metazoa_odb10"
-    },
-    "mecoptera": {
-        "taxon_id": 27420,
-        "protein_file": "insecta_uniprot_proteins.fa",
-        "busco_protein_file": "insecta_orthodb11v0_proteins.fa",
-        "rfam_accessions_file": "rfam_insect_ids.txt",
-        "species_division": "EnsemblMetazoa",
-        "busco_group": "metazoa_odb10"
-    },
-    "neuroptera": {
-        "taxon_id": 7516,
-        "protein_file": "insecta_uniprot_proteins.fa",
-        "busco_protein_file": "insecta_orthodb11v0_proteins.fa",
-        "rfam_accessions_file": "rfam_insect_ids.txt",
-        "species_division": "EnsemblMetazoa",
-        "busco_group": "metazoa_odb10"
-    },
-    "plecoptera": {
-        "taxon_id": 1266065,
-        "protein_file": "insecta_uniprot_proteins.fa",
-        "busco_protein_file": "insecta_orthodb11v0_proteins.fa",
-        "rfam_accessions_file": "rfam_insect_ids.txt",
-        "species_division": "EnsemblMetazoa",
-        "busco_group": "metazoa_odb10"
-    },
     "nematoda": {
         "taxon_id": 6231,
         "protein_file": "nematoda_uniprot_proteins.fa",
@@ -275,16 +178,6 @@
     },
     "mammalia": {
         "taxon_id": 40674,
-        "repbase_library": "mammals",
-        "repbase_logic_name": "mammals",
-        "uniprot_set": "mammals_basic",
-        "sanity_set": "mammals_basic",
-        "ig_tr_fasta_file": "imgt_mammals_ig_tr.fa",
-        "projection_source_production_name": "homo_sapiens",
-        "projection_source_db_name": "current_projection_source_db(homo_sapiens)"
-    },
-    "marsupials": {
-        "taxon_id": 9263,
         "repbase_library": "mammals",
         "repbase_logic_name": "mammals",
         "uniprot_set": "mammals_basic",
@@ -380,6 +273,9 @@
     },
     "basidiomycota": {
         "taxon_id": 52
+    },
+    "mucoromycota": {
+        "taxon_id": 1913637
     }
 
 }
