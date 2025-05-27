@@ -1,11 +1,11 @@
 {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
-    "$id": "https://raw.githubusercontent.com/ensembl-genes-metadata/master/nextflow_schema.json",
+    "$id": "https://raw.githubusercontent.com/nf-core/testpipeline/master/nextflow_schema.json",
     "title": "Ensembl-genes-metadata pipeline parameters",
-    "description": "",
+    "description": "Describe input parameters and pipeline options",
     "type": "object",
     "$defs": {
-        "input_output_options": {
+        "main_parameters": {
             "title": "Input/output options",
             "type": "object",
             "fa_icon": "fas fa-terminal",
@@ -45,7 +45,10 @@
         },
         "csvFile": {
             "type": "string",
-            "required": true,
+            "format": "file-path",
+            "exists": true,
+            "mimetype": "text/csv",
+            "schema": "assets/schema_input.json",
             "description": "Path to the input CSV metadata file."
         },
         "ftpBaseUrl": {
@@ -78,6 +81,11 @@
             "type": "integer",
             "default": 60,
             "description": "Latency in seconds for file operations."
+        },
+        "max_intron_size": {
+            "type": "integer",
+            "default": 100000,
+            "description": "STAR option max_intron_size."
         }
     }
 }
@@ -85,7 +93,7 @@
 
 "allOf": [
         {
-            "$ref": "#/$defs/input_output_options"
+            "$ref": "#/$defs/main_parameters"
         }
     ]
 }
