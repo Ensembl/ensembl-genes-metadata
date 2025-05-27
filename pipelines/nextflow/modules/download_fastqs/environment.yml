@@ -1,0 +1,18 @@
+# conda environment file: for use with 'conda env create -f environment.yml'
+# name: NXF_aligment
+# conda env create -f environment.yml
+# - conda env update -f environment.yml
+# - conda activate NXF_aligment
+# - conda env remove -n NXF_aligment
+# - conda env list
+# - conda env export > environment.yml
+
+name: NXF_aligment
+channels:
+  - conda-forge
+  - bioconda
+  - nodefaults
+dependencies:
+  - conda-forge::python=3.10.14
+  - conda-forge::pip
+  - wget
