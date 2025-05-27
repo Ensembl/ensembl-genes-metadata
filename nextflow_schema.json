@@ -1,79 +1,77 @@
 {
-    "$schema": "http://json-schema.org/draft-07/schema",
-    "$id": "https://raw.githubusercontent.com//Users/ftricomi/Documents/projects/ensembl-genes-metadata/master/nextflow_schema.json",
-    "title": "/Users/ftricomi/Documents/projects/ensembl-genes-metadata pipeline parameters",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://raw.githubusercontent.com/ensembl-genes-metadata/master/nextflow_schema.json",
+    "title": "Ensembl-genes-metadata pipeline parameters",
     "description": "",
     "type": "object",
-    "definitions": {
-        "generic_options": {
-            "title": "Generic options",
-            "type": "object",
-            "fa_icon": "fas fa-file-import",
-            "description": "Less common options for the pipeline, typically set in a config file.",
-            "help_text": "These options are common to all nf-core pipelines and allow you to customise some of the core preferences for how the pipeline runs.\n\nTypically these options would be set in a Nextflow config file loaded for all pipeline runs, such as `~/.nextflow/config`.",
-            "properties": {
-                "help": {
-                    "type": "boolean",
-                    "description": "Display help text.",
-                    "fa_icon": "fas fa-question-circle",
-                    "hidden": true
-                }
-            }
-        }
-    },
-    "allOf": [
-        {
-            "$ref": "#/definitions/generic_options"
-        }
-    ],
     "properties": {
+        "help": {
+            "type": "boolean",
+            "description": "Display help text.",
+            "fa_icon": "fas fa-question-circle",
+            "hidden": true
+    }
+        },
+
         "bam2cram": {
             "type": "boolean",
-            "default": true
+            "default": true,
+            "description": "Option to convert BAM files to CRAM format."
         },
         "mergeTissue": {
             "type": "boolean",
-            "default": true
+            "default": true,
+            "description": "Option to merge tissue-specific BAM files into a single file."
         },
         "stranded": {
             "type": "boolean",
-            "default": true
+            "default": true,
+            "description": "Option to produce stranded BAM files."
         },
         "bam2bigWig": {
             "type": "boolean",
-            "default": true
+            "default": true,
+            "description": "Option to convert BAM files to BigWig format."
         },
         "cleanOutputDir": {
             "type": "boolean",
-            "default": true
+            "default": true,
+            "description": "Option to clean the output directory after running the pipeline."
         },
         "csvFile": {
-            "type": "string"
+            "type": "string",
+            "required": true,
+            "description": "Path to the input CSV metadata file."
         },
         "ftpBaseUrl": {
             "type": "string",
-            "default": "ftp://ftp.sra.ebi.ac.uk/vol1/fastq"
+            "default": "ftp://ftp.sra.ebi.ac.uk/vol1/fastq",
+            "description": "Base URL for the FTP server where FASTQ files are stored."
         },
         "ncbiBaseUrl": {
             "type": "string",
-            "default": "https://api.ncbi.nlm.nih.gov/datasets/v2alpha/genome/accession/"
+            "default": "https://api.ncbi.nlm.nih.gov/datasets/v2alpha/genome/accession/",
+            "description": "Base URL for the NCBI Datasets API."
         },
         "enscode": {
             "type": "string"
         },
         "cleanCache": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Option to clean the cache directory after running the pipeline."
         },
         "outDir": {
-            "type": "string"
+            "type": "string",
+            "description": "Output directory for the pipeline results."
         },
         "cacheDir": {
             "type": "string",
-            "default": "/cache"
+            "default": "/cache",
+            "description": "Directory for caching files."
         },
         "files_latency": {
             "type": "integer",
-            "default": 60
+            "default": 60,
+            "description": "Latency in seconds for file operations."
         }
-    }
 }
