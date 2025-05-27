@@ -4,15 +4,20 @@
     "title": "Ensembl-genes-metadata pipeline parameters",
     "description": "",
     "type": "object",
+    "$defs": {
+        "input_output_options": {
+            "title": "Input/output options",
+            "type": "object",
+            "fa_icon": "fas fa-terminal",
+            "description": "Define where the pipeline should find input data and save output data.",
+            "required": ["csvFile", "outDir"],
     "properties": {
         "help": {
             "type": "boolean",
             "description": "Display help text.",
             "fa_icon": "fas fa-question-circle",
             "hidden": true
-    }
         },
-
         "bam2cram": {
             "type": "boolean",
             "default": true,
@@ -74,4 +79,13 @@
             "default": 60,
             "description": "Latency in seconds for file operations."
         }
+    }
+}
+},
+
+"allOf": [
+        {
+            "$ref": "#/$defs/input_output_options"
+        }
+    ]
 }

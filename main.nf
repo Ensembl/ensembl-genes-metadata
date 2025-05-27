@@ -45,7 +45,8 @@ workflow  {
 
     // Validate input parameters
     validateParameters()
-    paramsSummaryLog()
+    // Print summary of supplied parameters
+    log.info paramsSummaryLog(workflow)
     // Print summary of supplied parameters
     ALIGNMENT_PIPELINE(params.csvFile, params.bam2cram, params.mergeTissue, params.stranded, params.bam2bigWig)
     
