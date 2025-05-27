@@ -136,8 +136,9 @@ workflow ALIGNMENT_PIPELINE {
         //finalBam = output2process.groupBy{ it.tissue }.flatten()
 
     } else{
-        //finalBam = output2process.flatten()
-        Channel.fromList(output2process).set { finalBam }
+        finalBam = output2process.flatten()
+    
+        //Channel.fromList(output2process).set { finalBam }
     }
     if (stranded){
         def bamToStrand=finalBam
