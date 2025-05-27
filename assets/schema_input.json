@@ -10,7 +10,7 @@
         "additionalProperties": false,
         "properties": {
             "taxon_id": {
-                "type": "string",
+                "type": "integer",
                 "description": "NCBI taxon ID",
                 "pattern": "^\\d+$",
                 "errorMessage": "Taxon ID must be a number",
@@ -45,27 +45,23 @@
             "run_accession": {
                 "type": "string",
                 "description": "Run accession number",
-                "pattern": "^\\S+$",
                 "errorMessage": "Run accession must be provided and cannot contain spaces",
                 "meta": ["run_accession"]
             },
             "pair1": {
                 "type": "string",
                 "description": "Path to the first read file",
-                "format": "file-path",
                 "pattern": "^\\S+\\.fastq\\.gz$",
                 "errorMessage": "Pair 1 file must be a gzipped FASTQ file"
             },
             "md5_1": {
                 "type": "string",
                 "description": "MD5 checksum for the first read file",
-                "pattern": "^[a-f0-9]{32}$",
                 "errorMessage": "MD5 checksum must be a 32-character hexadecimal string"
             },
             "pair2": {
                 "type": "string",
                 "description": "Path to the second read file",
-                "format": "file-path",
                 "pattern": "^\\S+\\.fastq\\.gz$",
                 "errorMessage": "Pair 2 file must be a gzipped FASTQ file"
             },
@@ -73,7 +69,6 @@
             "md5_2": {
                 "type": "string",
                 "description": "MD5 checksum for the second read file",
-                "pattern": "^[a-f0-9]{32}$",
                 "errorMessage": "MD5 checksum must be a 32-character hexadecimal string"
             }
         }
