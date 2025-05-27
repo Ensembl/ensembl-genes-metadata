@@ -67,12 +67,12 @@ workflow ALIGNMENT_PIPELINE {
     main:
     def data = Channel.fromList(samplesheetToList(csvFile, "${projectDir}/assets/schema_input.json"))
             .map { row -> 
-                def url2 = row.paired == "true" ? row.pair2 : null
-                def md5_2 = row.paired == "true" ? row.md5_2 : null
-                tuple(taxon_id:row.get('taxon_id'), gca:row.get('gca'),platform:row.get('platform'), \
+                def url2 = row.get('paired') == "true" ? row.pair2 : null
+                def md5_2 = row.get('paired') == "true" ? row.md5_2 : null
+                [taxon_id:row.get('taxon_id'), gca:row.get('gca'),platform:row.get('platform'), \
                 paired:row.get('paired'),
                 tissue:row.get('tissue'),run_accession:row.get('run_accession'), pair1:row.get('pair1'),
-                md5_1:row.get('md5_1'),pair2:url2,md5_2:md5_2)}
+                md5_1:row.get('md5_1'),pair2:url2,md5_2:md5_2]}
     //def data = Channel.fromPath(params.csvFile, type: 'file', checkIfExists: true)
     //           .splitCsv(sep:',', header:true)
     //            .map { row -> [taxon_id:row.get('taxon_id'), gca:row.get('gca'), \
@@ -84,7 +84,7 @@ workflow ALIGNMENT_PIPELINE {
 
     def genomeAndDataToAlign = FETCH_GENOME(data.flatten())
     def downloadedFastqFiles=DOWNLOAD_FASTQS(genomeAndDataToAlign)
-    if (downloadedFastqFiles.paired=='true'){
+    if (downloadedFastqFiles[4] == "true"){
         def genomeIndexShortData = STAR_INDEX_GENOME(downloadedFastqFiles)
         alignStarOutput = STAR(genomeIndexShortData)
         alignOutput = INDEX_BAM (alignStarOutput,'bai')
