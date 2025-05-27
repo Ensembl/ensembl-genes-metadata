@@ -30,8 +30,7 @@
                 "meta": ["platform"]
             },
             "paired": {
-                "type": "string",
-                "enum": ["true", "false"],
+                "type": "boolean",
                 "description": "Whether the reads are paired-end or single-end",
                 "meta": ["paired"]
             },
@@ -74,6 +73,6 @@
         }
     },
     "allOf": [
-        {"if": {"properties": {"paired": {"const": "true"}}}, "then": {"required": ["pair2", "md5_2"]}}
+        {"if": {"properties": {"paired": {"const": true}}}, "then": {"required": ["pair2", "md5_2"]}}
     ]
 }
