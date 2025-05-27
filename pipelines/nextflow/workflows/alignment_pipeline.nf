@@ -76,8 +76,9 @@ workflow ALIGNMENT_PIPELINE {
     //            run_accession:row.get('run_accession'), pair1:row.get('pair1'),
     //            pair2:row.get('pair2'),md5_1:row.get('md5_1'),md5_2:row.get('md5_2')]}
     data.each { dataRow -> dataRow.view() }    
+    def alignOutput
+    def finalBam
     
-
     def genomeAndDataToAlign = FETCH_GENOME(data.flatten())
     def downloadedFastqFiles=DOWNLOAD_FASTQS(genomeAndDataToAlign)
     if (downloadedFastqFiles.paired=='true'){
