@@ -6,7 +6,7 @@
     "type": "array",
     "items": {
         "type": "object",
-        "required": ["taxon_id", "gca", "platform", "tissue", "run_accession", "pair1", "md5_1"],
+        "required": ["taxon_id", "gca", "platform", "paired", "tissue", "run_accession", "pair1", "md5_1"],
         "additionalProperties": false,
         "properties": {
             "taxon_id": {
@@ -30,9 +30,9 @@
                 "meta": ["platform"]
             },
             "paired": {
-                "type": "boolean",
+                "type": "string",
+                "enum": ["true", "false"],
                 "description": "Whether the reads are paired-end or single-end",
-                "default": true,
                 "meta": ["paired"]
             },
             "tissue": {
@@ -74,10 +74,6 @@
         }
     },
     "allOf": [
-        {"if": {"properties": {"paired": {"const": true}}}, "then": {"required": ["pair2", "md5_2"]}},
-        {
-            "if": {"properties": {"paired": {"const": false}}},
-            "then": {"not": {"anyOf": [{"required": ["pair2"]}, {"required": ["md5_2"]}]}}
-        }
+        {"if": {"properties": {"paired": {"const": "true"}}}, "then": {"required": ["pair2", "md5_2"]}}
     ]
 }
