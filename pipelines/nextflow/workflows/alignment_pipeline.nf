@@ -66,10 +66,13 @@ workflow ALIGNMENT_PIPELINE {
 
     main:
     def data = Channel.fromList(samplesheetToList(csvFile, "${projectDir}/assets/schema_input.json"))
-            .map { row -> [taxon_id:row.get('taxon_id'), gca:row.get('gca'),platform:row.get('platform'), \
+            .map { row -> 
+                def url2 = row.paired == "true" ? row.pair2 : null
+                def md5_2 = row.paired == "true" ? row.md5_2 : null
+                tuple(taxon_id:row.get('taxon_id'), gca:row.get('gca'),platform:row.get('platform'), \
                 paired:row.get('paired'),
                 tissue:row.get('tissue'),run_accession:row.get('run_accession'), pair1:row.get('pair1'),
-                md5_1:row.get('md5_1'),pair2:row.get('pair2'),md5_2:row.get('md5_2')]}
+                md5_1:row.get('md5_1'),pair2:url2,md5_2:md5_2)}
     //def data = Channel.fromPath(params.csvFile, type: 'file', checkIfExists: true)
     //           .splitCsv(sep:',', header:true)
     //            .map { row -> [taxon_id:row.get('taxon_id'), gca:row.get('gca'), \
@@ -78,7 +81,7 @@ workflow ALIGNMENT_PIPELINE {
     data.each { dataRow -> dataRow.view() }    
     def alignOutput
     def finalBam
-    
+
     def genomeAndDataToAlign = FETCH_GENOME(data.flatten())
     def downloadedFastqFiles=DOWNLOAD_FASTQS(genomeAndDataToAlign)
     if (downloadedFastqFiles.paired=='true'){

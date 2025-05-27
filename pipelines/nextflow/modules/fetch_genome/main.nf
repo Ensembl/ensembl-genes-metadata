@@ -25,7 +25,7 @@ process FETCH_GENOME {
   maxForks 10
 
   input:
-  tuple val(taxon_id), val(gca), val(platform), val(paired), val(tissue), val(run_accession), val(url1), val(md5_1), val(url2, optional: true),  val(md5_2, optional: true) 
+  tuple val(taxon_id), val(gca), val(platform), val(paired), val(tissue), val(run_accession), val(url1), val(md5_1), val(url2),  val(md5_2) 
   
   output:
   tuple val(taxon_id), val(gca), val(platform), val(paired), val(tissue), val(run_accession), val("${params.outDir}/$taxon_id/$gca/"), val(url1), val(md5_1), val(url2), val(md5_2)

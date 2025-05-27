@@ -28,7 +28,7 @@ process DOWNLOAD_FASTQS {
     conda "${projectDir}/bin/environment.yml"
 
     input:
-    tuple val(taxon_id), val(gca), val(platform), val(paired), val(tissue), val(run_accession), val(genomeDir),  val(url1), val(md5_1), val(url2, optional: true),  val(md5_2, optional: true)
+    tuple val(taxon_id), val(gca), val(platform), val(paired), val(tissue), val(run_accession), val(genomeDir),  val(url1), val(md5_1), val(url2),  val(md5_2)
 
     output:
     tuple val(taxon_id), val(genomeDir), val(gca), val(platform), val(paired), val(tissue), val(run_accession), path("${params.outDir}/$taxon_id/$run_accession/*_1.fastq.gz") , val(paired ? path("${params.outDir}/$taxon_id/$run_accession/*_2.fastq.gz") : null)
