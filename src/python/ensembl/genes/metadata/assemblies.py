@@ -55,6 +55,17 @@ bioproject_mapping = {
     "PRJNA489243": "VGP",
     "PRJNA813333": "CBP"}
 
+
+def read_ids_as_set(file_path: str) -> set:
+    """
+    Reads a text file with one ID per line and returns a set of integers.
+
+    :param file_path: Path to the text file
+    :return: A set of unique IDs as integers
+    """
+    with open(file_path, "r") as f:
+        return {int(line.strip()) for line in f if line.strip()}
+
 def is_reference_genome(accession):
     """
     Checks if a given accession is a reference genome by querying NCBI's Assembly database.
@@ -116,7 +127,7 @@ def load_clade_data():
 
 
 
-def assign_clade_and_species(lowest_taxon_id, clade_data, taxonomy_dict, vertebrata_taxon_id=7742, human = 9606):
+def assign_clade_and_species(lowest_taxon_id, clade_data, taxonomy_dict, human = 9606):
     """Assign internal clade and species taxon ID based on taxonomy using the provided clade data,
        and check if the taxon ID is a descendant of the vertebrata taxon ID (7742)."""
 
@@ -157,11 +168,11 @@ def assign_clade_and_species(lowest_taxon_id, clade_data, taxonomy_dict, vertebr
             if internal_clade != "Unassigned":
                 break
 
-    # Check if chordata is in the hierarchy
-    is_chordata = any(t['taxon_class_id'] == vertebrata_taxon_id for t in taxonomy_hierarchy)
+    # Check if vertebrate and assign pipeline
+    vert_taxon_id_set = read_ids_as_set("data/vertebrata_taxids.txt")
     if lowest_taxon_id == human:
         pipeline = "hprc"
-    elif is_chordata:
+    elif lowest_taxon_id in vert_taxon_id_set:
         pipeline = "main"
     else:
         pipeline = "anno"
