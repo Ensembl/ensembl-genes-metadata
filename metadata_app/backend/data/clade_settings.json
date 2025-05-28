@@ -5,6 +5,12 @@
     "hemichordata":{
         "taxon_id": 10219
     },
+    "annelida": {
+        "taxon_id":6340
+    },
+    "metazoa": {
+        "taxon_id": 33208
+    },
     "lepidoptera": {
         "taxon_id": 7088,
         "protein_file": "lepidoptera_uniprot_proteins.fa",
