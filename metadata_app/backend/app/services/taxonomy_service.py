@@ -11,14 +11,23 @@ def load_clade_data():
         logging.info("Loading clade settings json file.")
         return json.load(f)
 
+def read_ids_as_set(file_path: str) -> set:
+    """
+    Reads a text file with one ID per line and returns a set of integers.
 
-def assign_clade_and_species(lowest_taxon_id, clade_data, taxonomy_dict, vertebrata_taxon_id=7742, human_taxon_id=9606):
+    :param file_path: Path to the text file
+    :return: A set of unique IDs as integers
+    """
+    with open(file_path, "r") as f:
+        return {int(line.strip()) for line in f if line.strip()}
+
+
+def assign_clade_and_species(lowest_taxon_id, clade_data, taxonomy_dict, human_taxon_id=9606):
     """Assign internal clade and species taxon ID based on taxonomy using the provided clade data,
        and check if the taxon ID is a descendant of the vertebrata taxon ID (7742)."""
 
     # Convert IDs to integers to ensure consistent comparison
     lowest_taxon_id = int(lowest_taxon_id)
-    vertebrata_taxon_id = int(vertebrata_taxon_id)
     human_taxon_id = int(human_taxon_id)
 
     # Add debug logging to see what's being passed
@@ -73,16 +82,14 @@ def assign_clade_and_species(lowest_taxon_id, clade_data, taxonomy_dict, vertebr
             if internal_clade != "Unassigned":
                 break
 
-    # Check if chordata is in the hierarchy
-    is_chordata = any(int(t['taxon_class_id']) == vertebrata_taxon_id for t in taxonomy_hierarchy)
-
-    # Assign pipeline - FIXED ASSIGNMENT
+    # Check if vertebrate and assign pipeline
+    vert_taxon_id_set = read_ids_as_set("data/vertebrata_taxids.txt")
     if lowest_taxon_id == human_taxon_id:
         pipeline = "hprc"
-    elif is_chordata:
+    elif lowest_taxon_id in vert_taxon_id_set:
         pipeline = "main"
     else:
-        pipeline = "anno"  # FIXED: Properly assigned
+        pipeline = "anno"
 
     # Log the assignment results for debugging
     logging.info(
