@@ -240,8 +240,8 @@ def bin_by_genebuild_method(bioproject_id, release_type, taxon_id, release_date)
             query = f"""
                     SELECT g.annotation_method, g.release_type, g.release_date_beta, b.bioproject_id, a.lowest_taxon_id
                     FROM genebuild g
-                    LEFT JOIN assembly a ON g.assembly_id = a.assembly_id
-                    LEFT JOIN bioproject b on g.assembly_id = b.assembly_id
+                    JOIN assembly a ON g.assembly_id = a.assembly_id
+                    JOIN bioproject b on g.assembly_id = b.assembly_id
                     {where_clause};
                 """
             cursor.execute(query, params)
