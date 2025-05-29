@@ -238,7 +238,7 @@ def bin_by_genebuild_method(bioproject_id, release_type, taxon_id, release_date)
             where_clause = " WHERE " + " AND ".join(conditions) if conditions else ""
 
             query = f"""
-                    SELECT g.annotation_method, g.release_type, g.release_date_beta, b.bioproject_id, a.lowest_taxon_id
+                    SELECT g.annotation_method, g.release_type, g.release_date_beta, b.bioproject_id, a.lowest_taxon_id, g.genebuild_id
                     FROM genebuild g
                     JOIN assembly a ON g.assembly_id = a.assembly_id
                     JOIN bioproject b on g.assembly_id = b.assembly_id
@@ -247,7 +247,9 @@ def bin_by_genebuild_method(bioproject_id, release_type, taxon_id, release_date)
             cursor.execute(query, params)
             result = cursor.fetchall()
 
-        df = pd.DataFrame(result, columns=["annotation_method", "release_type", "release_date_beta", "bioproject_id", "lowest_taxon_id"])
+        df = pd.DataFrame(result, columns=["genebuild_id","annotation_method", "release_type", "release_date_beta", "bioproject_id", "lowest_taxon_id"])
+
+        df = df.drop_duplicates(subset='genebuild_id', keep='first')
 
         if df.empty:
             return []
