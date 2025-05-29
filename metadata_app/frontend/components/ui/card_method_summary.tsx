@@ -19,15 +19,6 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Label as FormLabel } from "@/components/ui/label"
 
-// Mapping API names to display names
-const nameMapping: Record<string, string> = {
-  lazar: "Anna",
-  jose: "Jose",
-  ftricomi: "Francesca",
-  vianey: "Vianey",
-  swati: "Swati",
-  jackt: "Jack",
-}
 
 // Define chart config entries
 const chartConfig: Record<string, { label: string; color?: string }> = {
@@ -95,7 +86,7 @@ const fetchMethodData = async (filtersData: FilterData = {}) => {
     if (!Array.isArray(json)) throw new Error("API did not return an array")
 
     const transformedData = json.map((item: MethodItem): TransformedItem => {
-      const displayName = nameMapping[item.annotation_method] || item.annotation_method
+      const displayName = item.annotation_method
       const configKey = displayName.toLowerCase()
       const configEntry = chartConfig[configKey as keyof typeof chartConfig]
       const color = configEntry?.color ?? ""
@@ -138,16 +129,7 @@ const fetchMethodData = async (filtersData: FilterData = {}) => {
         <CardTitle>Annotation method summary</CardTitle>
         <CardDescription>Use the filters below to refine the data</CardDescription>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
-          <div>
-            <FormLabel htmlFor="bioproject_id" className="mb-2 block">BioProject ID</FormLabel>
-            <Input
-              id="bioproject_id"
-              placeholder="PRJNA123456"
-              value={filters.bioproject_id[0]}
-              onChange={(e) => handleChange("bioproject_id", e.target.value)}
-            />
-          </div>
+        <div className="grid grid-cols-3 gap-4 mt-4">
 
           <div>
             <FormLabel htmlFor="release_date" className="mb-2 block">Release Date</FormLabel>
