@@ -84,8 +84,22 @@ export default function Page() {
       const pipeline = toggleStates["Pipeline"] || null;
 
       // Format taxon_id as number
-      const taxon_id = baseFieldValues["Taxon ID"] ?
-        parseInt(baseFieldValues["Taxon ID"], 10) : null;
+      let taxonIdArray = null;
+      const taxonInput = baseFieldValues["Taxon ID"];
+
+      if (taxonInput) {
+        if (taxonInput.includes(',')) {
+          taxonIdArray = taxonInput
+            .split(',')
+            .map(id => parseInt(id.trim(), 10))
+            .filter(id => !isNaN(id));
+        } else {
+          const parsed = parseInt(taxonInput.trim(), 10);
+          if (!isNaN(parsed)) {
+            taxonIdArray = [parsed];
+          }
+        }
+      }
 
       // Format the payload according to API expectations
       const payload = {
@@ -94,7 +108,7 @@ export default function Page() {
         asm_level: asm_level,
         asm_type: asm_type,
         release_date: baseFieldValues["Release date"] || null,
-        taxon_id: taxon_id,
+        taxon_id: taxonIdArray,
         current: checkCurrent,
         pipeline: pipeline,
         transc: checkTranscript,
