@@ -195,61 +195,55 @@ def check_if_gca_is_latest_annotated(anno_wide):
     taxon_id_list = anno_wide['lowest_taxon_id'].unique().tolist()
     placeholders = ', '.join(['%s'] * len(taxon_id_list))
     logging.info(f"taxon_id list: {taxon_id_list}")
+
     try:
         # Connect to database
         with get_db_connection("meta") as conn:
             cursor = conn.cursor()
-
             update_query = f"""
-                SELECT CONCAT(a.gca_chain, '.', a.gca_version) AS gca, a.lowest_taxon_id
+                SELECT CONCAT(a.gca_chain, '.', a.gca_version) AS full_gca, a.lowest_taxon_id
                 FROM assembly a
                 WHERE a.lowest_taxon_id IN ({placeholders});
             """
-
             cursor.execute(update_query, taxon_id_list)
-
             results = cursor.fetchall()
 
-        update_df = pd.DataFrame(results)
+        # Convert to DataFrame
+        update_df = pd.DataFrame(results, columns=['full_gca', 'lowest_taxon_id'])
+        update_df['version'] = update_df['full_gca'].str.extract(r'GCA_\d+\.(\d+)').astype(float)
+        update_df['gca_root'] = update_df['full_gca'].str.replace(r'\.\d+$', '', regex=True)
 
-        # Extract version number from GCA identifier
-        asm = update_df
-        asm['version'] = asm['gca'].str.extract(r'GCA_\d+\.(\d+)').astype(float)
-        asm['gca_latest'] = asm['gca']
-        ann = anno_wide
-        ann['version'] = ann['gca'].str.extract(r'GCA_\d+\.(\d+)').astype(float)
-        ann['gca_annotated'] = ann['gca']
-
-        # Create a DataFrame with all GCA and Version pairs
-        latest_versions = asm[['gca', 'version', 'gca_latest']].rename(
-            columns={'version': 'latest_version'}
+        # Keep only the latest version for each root GCA
+        latest_versions = (
+            update_df.sort_values('version', ascending=False)
+            .drop_duplicates('gca_root', keep='first')
+            .rename(columns={'version': 'latest_version'})
+            [['gca_root', 'latest_version']]
         )
-        latest_versions['gca'] = latest_versions['gca'].str.replace(r'\.\d+$', '', regex=True)
 
-        # Rename GCA column in filtered_df for clarity
-        ann['gca'] = ann['gca'].str.replace(r'\.\d+$', '', regex=True)
+        # Prepare the annotation DataFrame
+        ann = anno_wide.copy()
+        ann['version'] = ann['gca'].str.extract(r'GCA_\d+\.(\d+)').astype(float)
+        ann['gca_root'] = ann['gca'].str.replace(r'\.\d+$', '', regex=True)
 
-        # Merge latest versions with filtered_df based on GCA
-        anno_wide = ann.merge(latest_versions, on="gca", how='left')
+        # Merge to get the latest version info
+        merged = ann.merge(latest_versions, on='gca_root', how='left')
 
-        # Create new columns for annotated and assembly versions
-        anno_wide['annotated_version'] = anno_wide['version']
-        anno_wide['assembly_version'] = anno_wide['latest_version']
-
-
-        # Check if the annotated GCA is the same as the latest assembly GCA
+        # Compare versions
         def check_latest_annotated(row):
-            if pd.isna(row['assembly_version']):
+            if pd.isna(row['latest_version']):
                 return 'Yes, low quality assembly version'
-            return 'Yes' if row['annotated_version'] == row['assembly_version'] else 'No'
+            return 'Yes' if row['version'] == row['latest_version'] else 'No'
 
-        anno_wide['latest_annotated'] = anno_wide.apply(check_latest_annotated, axis=1)
+        merged['annotated_version'] = merged['version']
+        merged['assembly_version'] = merged['latest_version']
+        merged['latest_annotated'] = merged.apply(check_latest_annotated, axis=1)
 
-        return anno_wide
+        return merged
 
     except Exception as e:
         logging.error(f"Error in check_if_gca_is_latest_annotated: {str(e)}")
-    return None
+        return None
 
 
 def generate_report(end_date, start_date, group_name, taxon_id, bioproject_id, release_type):
@@ -260,7 +254,30 @@ def generate_report(end_date, start_date, group_name, taxon_id, bioproject_id, r
         raise HTTPException(status_code=404, detail="No records found for the given filters.")
 
     logging.info(f"Adding additional info from beta prod server")
-    anno_wide_pre_check = get_annotation_info_beta(df_meta_genebuild)
+    logging.info(f"Original df_meta_genebuild: {df_meta_genebuild.shape}")
+    # Split the dataframe into beta and non-beta
+    df_meta_genebuild_beta = df_meta_genebuild[df_meta_genebuild["release_type"] == "beta"].copy()
+    logging.info(f"Beta subset: {df_meta_genebuild_beta.shape}")
+
+    df_meta_genebuild_other = df_meta_genebuild[df_meta_genebuild["release_type"] != "beta"].copy()
+    logging.info(f"Other subset: {df_meta_genebuild_other.shape}")
+
+    if not df_meta_genebuild_beta.empty:
+        df_meta_genebuild_beta_updated = get_annotation_info_beta(df_meta_genebuild_beta)
+
+        # If the function fails and returns None, fallback to original beta with "Error"
+        if df_meta_genebuild_beta_updated is None:
+            df_meta_genebuild_beta["latest_annotated"] = "Error"
+            df_meta_genebuild_beta_updated = df_meta_genebuild_beta
+    else:
+        df_meta_genebuild_beta_updated = pd.DataFrame(
+            columns=df_meta_genebuild.columns.tolist() + ["latest_annotated"])
+    logging.info(f"Updated beta: {df_meta_genebuild_beta_updated.shape}")
+
+    # Concatenate the updated beta subset with the rest
+    anno_wide_pre_check = pd.concat([df_meta_genebuild_beta_updated, df_meta_genebuild_other], ignore_index=True)
+    logging.info(f"Final combined: {anno_wide_pre_check.shape}")
+    logging.info(f"After beta info check: {anno_wide_pre_check.shape}")
 
     logging.info(f"Checking if annotation is the latest GCA version")
     anno_wide = check_if_gca_is_latest_annotated(anno_wide_pre_check)
@@ -274,16 +291,25 @@ def generate_report(end_date, start_date, group_name, taxon_id, bioproject_id, r
             row.get('ensembl_release_date')) else None,
         axis=1)
 
-
-    #filtered_df = filtered_df.drop(columns=['year', 'gca', 'version'])
-    #df_info_result = df_info_result.drop(columns=['year', 'version', 'gca_latest'])
+    anno_wide = anno_wide.drop_duplicates(subset='gca', keep='first')
 
     # Create tables for charts
-    number_of_annotations = (
+    # Create tables for charts
+    number_of_annotations_raw = (
         anno_wide[['gca', 'gb_status']]
         .groupby('gb_status')
         .size()
-        .reset_index(name='number_of_annotations'))
+        .reset_index(name='count')
+    )
+
+    # Transform into desired format
+    number_of_annotations = [
+        {
+            "gb_status": row['gb_status'],
+            "count": row['count']
+        }
+        for _, row in number_of_annotations_raw.iterrows()
+    ]
 
     method_report = (
         anno_wide[['gca', 'annotation_method']]
@@ -306,15 +332,19 @@ def generate_report(end_date, start_date, group_name, taxon_id, bioproject_id, r
         .size()
         .reset_index(name='number_of_annotations'))
 
-    # Extract C: value
-    busco_complete_series = (
-        anno_wide['busco_protein']
-        .str.extract(r'C:(\d+\.\d+)%')[0]
-        .astype(float)
-    )
+    if 'busco_protein' in anno_wide.columns:
+        # Extract C: value
+        busco_complete_series = (
+            anno_wide['busco_protein']
+            .str.extract(r'C:(\d+\.\d+)%')[0]
+            .astype(float)
+        )
 
-    # Compute the average
-    average_busco = busco_complete_series.mean()
+        # Compute the average
+        average_busco = busco_complete_series.mean()
+    else:
+        anno_wide['busco_protein'] = "Not available"
+        average_busco = "Not available"
 
 
     main_report = anno_wide[['associated_project', 'gca', 'genebuilder', 'gb_status', 'release_type', 'ftp', 'latest_annotated', 'busco_protein', 'date_completed_beta', 'release_date_beta']]
@@ -323,7 +353,6 @@ def generate_report(end_date, start_date, group_name, taxon_id, bioproject_id, r
     # Transforming out of range float values that are not JSON compliant: nan
     logging.info(f"Transfroming Out of range float values that are not JSON compliant")
     anno_wide = anno_wide.apply(lambda col: col.fillna("") if col.dtype == "object" else col)
-    number_of_annotations = number_of_annotations.apply(lambda col: col.fillna("") if col.dtype == "object" else col)
     method_report = method_report.apply(lambda col: col.fillna("") if col.dtype == "object" else col)
     top_3_taxa = top_3_taxa.apply(lambda col: col.fillna("") if col.dtype == "object" else col)
     project_report = project_report.apply(lambda col: col.fillna("") if col.dtype == "object" else col)

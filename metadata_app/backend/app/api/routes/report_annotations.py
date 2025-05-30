@@ -18,14 +18,14 @@ def filter_annotations(filters: ReportFilterRequest):
 
         return {
             "main_report": main_report.to_dict(orient="records"),
-            "number_of_annotations": number_of_annotations.to_dict(orient="records"),
+            "number_of_annotations": number_of_annotations,
             "method_report": method_report.to_dict(orient="records"),
             "num_unique_taxa": {"value": num_unique_taxa},
             "top_3_taxa": top_3_taxa.to_dict(orient="records"),
             "project_report": project_report.to_dict(orient="records"),
             "average_busco": {"value": average_busco},
 
-        "downloadables_anno": {
+        "downloadables_report": {
                 "anno_main": main_report.to_csv(index=False),
                 "anno_wide": anno_wide.to_csv(index=False)
             }
