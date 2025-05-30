@@ -217,6 +217,8 @@ def get_filtered_assemblies(bioproject_id, metric_thresholds, asm_level, asm_typ
 		if df.empty:
 			return "No assemblies meet the given criteria.", None, None, None, None
 
+
+
 		#Load bioproject_mapping
 		bioproject_mapping = load_bioproject_mapping()
 
@@ -224,6 +226,7 @@ def get_filtered_assemblies(bioproject_id, metric_thresholds, asm_level, asm_typ
 		df["release_date"] = pd.to_datetime(df["release_date"], errors="coerce")
 		df["associated_project"] = df["bioproject_id"].map(bioproject_mapping)
 		df["gca"] = df["gca_chain"].astype(str) + "." + df["gca_version"].astype(str)
+
 
 		# Clean genome_coverage
 		logging.info(f"Cleaning genome coverage")
@@ -339,6 +342,8 @@ def get_filtered_assemblies(bioproject_id, metric_thresholds, asm_level, asm_typ
 			logging.info(f"Filtring for non-annotated assemblies")
 			df_wide = df_wide
 			df_wide = df_wide[df_wide['annotation_status'] == 'not started']
+
+		df_wide = df_wide.drop_duplicates(subset='gca', keep='first')
 
 		# Create df_main table
 		df_main = df_wide[['bioproject_id', 'associated_project', 'gca', 'scientific_name', 'release_date',

@@ -291,12 +291,13 @@ def generate_tables(annotation_date, taxon_id, bioproject_id, release_type):
 
     #filtered_df = filtered_df.drop(columns=['year', 'gca', 'version'])
     #df_info_result = df_info_result.drop(columns=['year', 'version', 'gca_latest'])
-
+    anno_wide = anno_wide.drop_duplicates(subset='gca', keep='first')
     # Create main display table
     anno_main = anno_wide[
         ['bioproject_id', 'associated_project', 'gca', 'scientific_name', 'date_completed_beta',
          'release_date_beta', 'lowest_taxon_id', 'gb_status', 'release_type', 'latest_annotated']
     ]
+
     # Transforming out of range float values that are not JSON compliant: nan
     logging.info(f"Transfroming Out of range float values that are not JSON compliant")
     anno_main = anno_main.apply(lambda col: col.fillna("") if col.dtype == "object" else col)
