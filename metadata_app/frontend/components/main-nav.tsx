@@ -56,15 +56,15 @@ export function MainNav() {
           Annotations
         </Link>
         <Link
-          href="/transcriptomic"
+          href="/report"
           className={cn(
             "transition-colors hover:text-foreground/80",
-            pathname?.startsWith("/transcriptomic")
+            pathname?.startsWith("/report")
               ? "text-foreground"
               : "text-foreground/80"
           )}
         >
-          Transcriptomic assessment
+          Report
         </Link>
       </nav>
 
