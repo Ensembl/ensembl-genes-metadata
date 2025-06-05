@@ -1,10 +1,9 @@
+
 import json
 import logging
 import pandas as pd
 import datetime
 from fastapi import HTTPException
-from numpy.ma.extras import average
-
 from metadata_app.backend.app.core.database import get_db_connection
 from metadata_app.backend.app.services.taxonomy_service import get_descendant_taxa
 
@@ -315,7 +314,7 @@ def generate_report(end_date, start_date, group_name, taxon_id, bioproject_id, r
         anno_wide[['gca', 'annotation_method']]
         .groupby('annotation_method')
         .size()
-        .reset_index(name='number_of_annotations'))
+        .reset_index(name='count'))
 
     num_unique_taxa = anno_wide['lowest_taxon_id'].nunique()
     top_3_taxa = (
@@ -330,7 +329,7 @@ def generate_report(end_date, start_date, group_name, taxon_id, bioproject_id, r
         anno_wide[['gca', 'associated_project']]
         .groupby('associated_project')
         .size()
-        .reset_index(name='number_of_annotations'))
+        .reset_index(name='count'))
 
     if 'busco_protein' in anno_wide.columns:
         # Extract C: value
@@ -357,5 +356,7 @@ def generate_report(end_date, start_date, group_name, taxon_id, bioproject_id, r
     top_3_taxa = top_3_taxa.apply(lambda col: col.fillna("") if col.dtype == "object" else col)
     project_report = project_report.apply(lambda col: col.fillna("") if col.dtype == "object" else col)
     main_report = main_report.apply(lambda col: col.fillna("") if col.dtype == "object" else col)
+
+    logging.info(f"Run successfully")
 
     return anno_wide, number_of_annotations, method_report, num_unique_taxa, top_3_taxa, project_report, average_busco, main_report

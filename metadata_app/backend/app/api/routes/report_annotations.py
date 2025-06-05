@@ -4,7 +4,7 @@ from metadata_app.backend.app.services.report_annotation_service import generate
 
 report = APIRouter()
 
-@report.post("/report/filter")
+@report.post("/report/anno/filter")
 def filter_annotations(filters: ReportFilterRequest):
     try:
         anno_wide, number_of_annotations, method_report, num_unique_taxa, top_3_taxa, project_report, average_busco, main_report = generate_report(
