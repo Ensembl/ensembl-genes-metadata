@@ -1,7 +1,7 @@
 "use client"
 
 import React from "react"
-import { XAxis, Line, LineChart, CartesianGrid } from "recharts"
+import {  Line, LineChart } from "recharts"
 
 import {
   Card,
@@ -46,7 +46,7 @@ export function CardsStats() {
 
   return (
     <div className="grid grid-cols-2 gap-4">
-      <Card>
+      <Card className="dark:bg-secondary">
         <CardHeader>
           <CardTitle className="text-lg font-bold">Assemblies</CardTitle>
           <CardDescription className="text-sm font-light mb-2">
@@ -81,7 +81,7 @@ export function CardsStats() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="dark:bg-secondary">
         <CardHeader>
           <CardTitle className="text-lg font-bold">Annotations</CardTitle>
           <CardDescription className="text-sm font-light mb-2">

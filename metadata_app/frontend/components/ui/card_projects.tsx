@@ -121,7 +121,7 @@ export function CardsDataTable() {
   })
 
   return (
-    <Card>
+    <Card className="dark:bg-secondary">
       <CardHeader className="mb-4">
         <CardTitle className="text-xl -mb-2">Biodiversity projects</CardTitle>
         <CardDescription>See statistics on projects.</CardDescription>

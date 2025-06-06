@@ -31,7 +31,7 @@ export function CardsCalendar() {
 
   return (
     <div className="grid grid-cols-2 gap-4">
-      <Card>
+      <Card className="dark:bg-secondary">
         <CardHeader>
           <CardTitle className="text-lg font-bold">Metadata registry updates</CardTitle>
         </CardHeader>
@@ -47,7 +47,7 @@ export function CardsCalendar() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="dark:bg-secondary">
         <CardHeader>
           <CardTitle className="text-lg font-bold">Transcriptomic registry updates</CardTitle>
         </CardHeader>

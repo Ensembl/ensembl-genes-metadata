@@ -124,7 +124,7 @@ const fetchMethodData = async (filtersData: FilterData = {}) => {
   }
 
   return (
-    <Card className="flex flex-col">
+    <Card className="flex flex-col dark:bg-secondary">
       <CardHeader className="pb-0">
         <CardTitle>Annotation method summary</CardTitle>
         <CardDescription>Use the filters below to refine the data</CardDescription>
