@@ -357,11 +357,10 @@ def generate_tables(bioproject_id, candidate, taxon_id,
     )
 
     asm_length = asm_length.sort_values(by='total_sequence_length', ascending=False).reset_index(drop=True)
-    asm_length['genome_number'] = asm_length.index + 1
     asm_length['total_sequence_length'] = pd.to_numeric(asm_length['total_sequence_length'], errors='coerce')
-    asm_length['total_sequence_length_Mb'] = asm_length['total_sequence_length'] / 1e6
+    asm_length['total_sequence_length_Gb'] = asm_length['total_sequence_length'] / 1e9
     asm_length = (
-        asm_length[['genome_number', 'total_sequence_length_Mb']]
+        asm_length[['gca', 'total_sequence_length_Gb']]
     )
     logging.info(f"Type of length: {type(asm_length)}")
     logging.info(f"Total length: {asm_length}")

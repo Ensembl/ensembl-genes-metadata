@@ -18,34 +18,31 @@ import {
 import {MethodItem} from "@/components/ui/rep_anno_method";
 import * as React from "react";
 
-export type ProjectItem = {
-  associated_project: string
+export type AsmTypeItem = {
+  asm_type: string
   count: number
 }
 type Props = {
-  data: ProjectItem[]
+  data: AsmTypeItem[]
 }
 
 const chartConfig: Record<string, { label: string; color?: string }> = {
-  number_of_annotations: { label: "Annotations" },
-  DToL: { label: "DToL", color: "var(--chart-1)" },
-  "ERGA/BGE": { label: "ERGA/BG", color: "var(--chart-2)" },
-  ERGA: { label: "ERGA", color: "var(--chart-3)" },
-  EBP: { label: "EBP", color: "var(--chart-4)" },
-  ERGA_pilot: { label: "ERGA_pilot", color: "var(--chart-5)" },
-  ASG: { label: "ASG", color: "var(--chart-6)" },
-  VGP: { label: "VGP", color: "var(--chart-7)" },
-  CBP: { label: "CBP", color: "var(--chart-7)" },
+  count: { label: "Assemblies" },
+  haploid: { label: "haploid", color: "var(--chart-1)" },
+  "alternate-pseudohaplotype": { label: "alternate-pseudohaplotype", color: "var(--chart-2)" },
+  "unresolved-diploid": { label: "unresolved-diploid", color: "var(--chart-3)" },
+  "haploid-with-alt-loci": { label: "haploid-with-alt-loci", color: "var(--chart-4)" },
+  diploid: { label: "diploid", color: "var(--chart-5)" },
 } satisfies ChartConfig
 
 
 
-export function RepProject({ data }: Props) {
+export function RepAsmType({ data }: Props) {
 const transformedData = React.useMemo(() => {
     return data.map((item) => ({
       ...item,
-      displayName: chartConfig[item.associated_project]?.label || item.associated_project,
-      fill: chartConfig[item.associated_project]?.color,
+      displayName: chartConfig[item.asm_type]?.label || item.asm_type,
+      fill: chartConfig[item.asm_type]?.color,
     }))
   }, [data])
 
@@ -57,8 +54,8 @@ const transformedData = React.useMemo(() => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Associated biodiversity projects</CardTitle>
-        <CardDescription>Number of annotations per project</CardDescription>
+        <CardTitle>Assembly types</CardTitle>
+        <CardDescription>Number of assemblies per type</CardDescription>
       </CardHeader>
       <CardContent>
         <ChartContainer config={chartConfig}>

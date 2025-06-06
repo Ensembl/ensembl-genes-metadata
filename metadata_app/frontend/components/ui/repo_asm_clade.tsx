@@ -1,6 +1,6 @@
 "use client"
 
-import {Bar, BarChart, CartesianGrid, LabelList, XAxis} from "recharts"
+import {Bar, BarChart, CartesianGrid, LabelList, ResponsiveContainer, XAxis} from "recharts"
 import {
   Card,
   CardContent,
@@ -18,34 +18,24 @@ import {
 import {MethodItem} from "@/components/ui/rep_anno_method";
 import * as React from "react";
 
-export type ProjectItem = {
-  associated_project: string
+export type CladeItem = {
+  internal_clade: string
   count: number
 }
 type Props = {
-  data: ProjectItem[]
+  data: CladeItem[]
 }
 
 const chartConfig: Record<string, { label: string; color?: string }> = {
-  number_of_annotations: { label: "Annotations" },
-  DToL: { label: "DToL", color: "var(--chart-1)" },
-  "ERGA/BGE": { label: "ERGA/BG", color: "var(--chart-2)" },
-  ERGA: { label: "ERGA", color: "var(--chart-3)" },
-  EBP: { label: "EBP", color: "var(--chart-4)" },
-  ERGA_pilot: { label: "ERGA_pilot", color: "var(--chart-5)" },
-  ASG: { label: "ASG", color: "var(--chart-6)" },
-  VGP: { label: "VGP", color: "var(--chart-7)" },
-  CBP: { label: "CBP", color: "var(--chart-7)" },
+  count: { label: "Annotations" },
 } satisfies ChartConfig
 
 
 
-export function RepProject({ data }: Props) {
+export function RepClade({ data }: Props) {
 const transformedData = React.useMemo(() => {
     return data.map((item) => ({
       ...item,
-      displayName: chartConfig[item.associated_project]?.label || item.associated_project,
-      fill: chartConfig[item.associated_project]?.color,
     }))
   }, [data])
 
@@ -57,17 +47,20 @@ const transformedData = React.useMemo(() => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Associated biodiversity projects</CardTitle>
-        <CardDescription>Number of annotations per project</CardDescription>
+        <CardTitle>Associated internal clades</CardTitle>
+        <CardDescription>Number of assemblies per clade</CardDescription>
       </CardHeader>
       <CardContent>
+          <div style={{ height: 300 }}>
         <ChartContainer config={chartConfig}>
+            <div style={{ height: 300 }}>
+                <ResponsiveContainer width="100%" height={300}>
         <BarChart accessibilityLayer data={transformedData} margin={{
               top: 30,
             }} >
           <CartesianGrid vertical={false} />
           <XAxis
-              dataKey="displayName"
+              dataKey="internal_clade"
               tickLine={false}
               axisLine={false}
           />
@@ -84,7 +77,10 @@ const transformedData = React.useMemo(() => {
               />
             </Bar>
         </BarChart>
+                </ResponsiveContainer>
+            </div>
       </ChartContainer>
+              </div>
       </CardContent>
     </Card>
   )

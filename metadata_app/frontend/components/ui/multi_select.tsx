@@ -1,7 +1,7 @@
 'use client';
 
 import { Command as CommandPrimitive, useCommandState } from 'cmdk';
-import { X } from 'lucide-react';
+import { X, ChevronDown } from 'lucide-react';
 import * as React from 'react';
 import { forwardRef, useEffect } from 'react';
 
@@ -432,7 +432,7 @@ const MultipleSelector = React.forwardRef<MultipleSelectorRef, MultipleSelectorP
           handleKeyDown(e);
           commandProps?.onKeyDown?.(e);
         }}
-        className={cn('h-auto overflow-visible bg-filter-input-bg', commandProps?.className)}
+        className={cn('h-auto overflow-visible bg-filter-input-bg dark:bg-transparent', commandProps?.className)}
         shouldFilter={
           commandProps?.shouldFilter !== undefined ? commandProps.shouldFilter : !onSearch
         } // When onSearch is provided, we don't want to filter the options. You can still override it.
@@ -440,7 +440,7 @@ const MultipleSelector = React.forwardRef<MultipleSelectorRef, MultipleSelectorP
       >
         <div
           className={cn(
-            'min-h-10 rounded-md border border-input text-base ring-offset-background focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 md:text-sm',
+            'min-h-10 rounded-md border border-input text-base ring-offset-background focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 md:text-sm shadow-sm',
             {
               'px-3 py-2': selected.length !== 0,
               'cursor-text': !disabled && selected.length !== 0,

@@ -28,7 +28,7 @@ const chartConfig: Record<string, { label: string; color?: string }> = {
 
 export type MethodItem = {
   annotation_method: string
-  number_of_annotations: number
+  count: number
 }
 
 type Props = {
@@ -45,7 +45,7 @@ export function AnoMethodSummaryChart({ data }: Props) {
   }, [data])
 
   const totalAnnotations = React.useMemo(() => {
-    return transformedData.reduce((sum, item) => sum + (item.number_of_annotations || 0), 0)
+    return transformedData.reduce((sum, item) => sum + (item.count || 0), 0)
   }, [transformedData])
 
   return (
@@ -64,7 +64,7 @@ export function AnoMethodSummaryChart({ data }: Props) {
               <ChartTooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
               <Pie
                 data={transformedData}
-                dataKey="number_of_annotations"
+                dataKey="count"
                 nameKey="displayName"
                 innerRadius={60}
                 strokeWidth={5}

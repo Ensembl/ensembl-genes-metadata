@@ -6,34 +6,35 @@ import { useReactToPrint } from 'react-to-print';
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import {
-  ToggleGroup,
-  ToggleGroupItem,
-} from "@/components/ui/toggle-group";
 import { DataTable } from "@/app/tables/data-table";
-import { Report, columns } from "@/app/tables/report_columns";
+import { Report, columns } from "@/app/tables/asm_report_columns";
 import MultipleSelector, { Option } from "@/components/ui/multi_select";
-import {RepStatus, StatusItem} from "@/components/ui/rep_anno_status";
-import {AnnotatedBuscoCard, BuscoItem} from "@/components/ui/rep_anno_busco"
-import {MethodItem, AnoMethodSummaryChart } from "@/components/ui/rep_anno_method"
-import {AnnotatedTaxaCard, NumTaxaItem} from "@/components/ui/rep_anno_num_taxa"
+import {AsmTaxaCard, NumTaxaItem} from "@/components/ui/rep_asm_num_taxa"
 import {RepTopTaxa, TaxaItem} from "@/components/ui/rep_anno_top_taxa"
 import {ProjectItem, RepProject} from "@/components/ui/repo_anno_project"
 import {Card, CardContent} from "@/components/ui/card";
 import {DropdownMenu, DropdownMenuContent, DropdownMenuLabel, DropdownMenuItem, DropdownMenuTrigger} from "@/components/ui/dropdown-menu";
+import {Switch} from "@/components/ui/switch";
+import {CladeItem, RepClade} from "@/components/ui/repo_asm_clade";
+import {AsmTypeItem, RepAsmType} from "@/components/ui/repo_asm_type";
+import {TranscItem, TranscCard} from "@/components/ui/rep_asm_transc";
+import {LengthItem, LengthChart} from "@/components/ui/rep_asm_length";
+import {RepTranscENA, TranscENAItem} from "@/components/ui/repo_asm_transc_ena";
+import {ToggleGroup, ToggleGroupItem} from "@/components/ui/toggle-group";
+
 
 
 type Downloadables = {
-  main_report: string;
-  anno_wide: string;
+  rep_asm_main: string;
+  rep_asm_wide: string;
 };
 
 export default function Page() {
   const baseFields = [
     { label: "BioProject ID", placeholder: "PRJNA123456" },
+    { label: "Taxon ID", placeholder: "9606" },
     { label: "Report start date", placeholder: "2024-12-31" },
     { label: "Report end date", placeholder: "2024-03-05" },
-    { label: "Taxon ID", placeholder: "9606" },
   ];
 
   const projectOptions: Option[] = [
@@ -51,22 +52,33 @@ export default function Page() {
 
   const [selectedProjects, setSelectedProjects] = useState<Option[]>([]);
   const [baseFieldValues, setBaseFieldValues] = useState<{ [key: string]: string }>({});
-  const [annotations, setReport] = useState<Report[]>([]);
+  const [assemblies, setReport] = useState<Report[]>([]);
   const [downloadables, setDownloadables] = useState<Downloadables | null>(null);
   const [loading, setLoading] = useState(false);
-  const [releaseSites, setReleaseSites] = useState<string[]>([]);
-  const [statusData, setStatus] = useState<StatusItem[]>([])
-  const [methodData, setMethod] = useState<MethodItem[]>([])
-  const [buscoData, setBusco] = useState<BuscoItem | null>(null);
+  const [candidate, setCandidate] = useState<boolean>(false);
+  const [asmtypeData, setAsmType] = useState<AsmTypeItem[]>([]);
+  const [transcData, setTransc] = useState<TranscItem| null>(null);
   const [taxaData, setTaxa] = useState<NumTaxaItem | null>(null);
-  const [topTaxaData, setTopTaxa] = useState<TaxaItem[]>([])
-  const [projectData, setProject] = useState<ProjectItem[]>([])
+  const [topTaxaData, setTopTaxa] = useState<TaxaItem[]>([]);
+  const [transcenaData, setTranscENA] = useState<TranscENAItem[]>([]);
+  const [projectData, setProject] = useState<ProjectItem[]>([]);
+  const [cladeData, setClade] = useState<CladeItem[]>([]);
+  const [lengthData, setLength] = useState<LengthItem[]>([]);
+  const [transc_ena, setENA] = useState<boolean>(false);
+  const [transc, setTransc_check_reg] = useState<boolean>(false);
+  const [pipeline_var, setPipeline] = useState<string[]>([]);
 
-  const title = "Generate annotation report";
+
+
+
+  const title = "Generate assembly report";
   const description =
-    "Select a biodiversity project or enter a BioProject ID to generate an overview of annotations by Genebuild. Use the optional filters to further customize your report. Generate a table with annotations and download a PDF report.";
+    "Select a biodiversity project or enter a BioProject ID to generate an overview of assemblies to be annotated by Genebuild. Use the optional filters to further customize your report. Generate a table with annotations and download a PDF report.";
 
   const groupNameValues = ["farmed_animals_2023", "AQUA-FAANG"];
+  const hasBioprojectInput =
+  selectedProjects.some(item => !groupNameValues.includes(item.value)) ||
+  (baseFieldValues["BioProject ID"]?.trim() ?? "") !== "";
 
   const handleGetAnnotations = async () => {
     setLoading(true);
@@ -113,9 +125,9 @@ export default function Page() {
         }
       }
 
-      let release_type: string[] | null = null;
-      if (releaseSites.length === 1) {
-        release_type = releaseSites;
+      let pipeline: string[] | null = null;
+      if (pipeline_var.length === 1 && pipeline_var[0] !== "both") {
+        pipeline = pipeline_var;
       }
 
       const payload = {
@@ -124,14 +136,17 @@ export default function Page() {
         taxon_id: taxonIdArray,
         start_date: baseFieldValues["Report start date"] || null,
         end_date: baseFieldValues["Report end date"] || null,
-        release_type: release_type,
+        candidate: candidate,
+        transc_ena: transc_ena,
+        transc: transc,
+        pipeline: pipeline,
       };
 
       const cleanPayload = Object.fromEntries(
         Object.entries(payload).filter(([_, value]) => value !== null && value !== undefined)
       );
 
-      const res = await fetch("http://127.0.0.1:8000/api/report/anno/report/anno/filter", {
+      const res = await fetch("http://127.0.0.1:8000/api/report/asm/report/asm/filter", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -150,14 +165,16 @@ export default function Page() {
       const result = await res.json();
       console.log("API response:", result);
 
-      if (result.main_report) {
-        setReport(result.main_report);
-        setStatus(result.number_of_annotations);
-        setMethod(result.method_report);
-        setBusco(result.average_busco);
+      if (result.rep_asm_main) {
+        setReport(result.rep_asm_main);
+        setAsmType(result.asm_type_group);
+        setTransc(result.transc_reg_count);
         setTaxa(result.num_unique_taxa);
         setTopTaxa(result.top_3_taxa);
         setProject(result.project_report);
+        setClade(result.clade_group);
+        setLength(result.asm_length);
+        setTranscENA(result.transc_data);
       } else {
         alert("No data found.");
       }
@@ -200,7 +217,7 @@ export default function Page() {
 
   const handlePrint = useReactToPrint({
     contentRef: componentRef,
-    documentTitle: 'Annotation report',
+    documentTitle: 'Assembly report',
     pageStyle: `
       @page {
         size: A4;
@@ -233,23 +250,27 @@ export default function Page() {
                   onChange={(values) => setSelectedProjects(values)}
                 />
               </div>
-
               <div>
-                <Label className="mb-2 block">Release site</Label>
+                <Label className="mb-2 block">Pipeline</Label>
                 <ToggleGroup
                   type="multiple"
                   size="lg"
-                  value={releaseSites}
-                  onValueChange={setReleaseSites}
+                  variant="outline"
+                  value={pipeline_var}
+                  onValueChange={setPipeline}
                 >
                   <ToggleGroupItem value="main" aria-label="main">
                     Main
                   </ToggleGroupItem>
-                  <ToggleGroupItem value="beta" aria-label="beta">
-                    Beta
+                  <ToggleGroupItem value="anno" aria-label="anno">
+                    Anno
+                  </ToggleGroupItem>
+                  <ToggleGroupItem value="both" aria-label="both">
+                    Both
                   </ToggleGroupItem>
                 </ToggleGroup>
               </div>
+
 
               {baseFields.map(({ label, placeholder }, index) => (
                 <div key={index}>
@@ -258,7 +279,7 @@ export default function Page() {
                     id={label.toLowerCase().replace(" ", "-")}
                     type="text"
                     placeholder={placeholder}
-                    className="mt-3 gap-2 bg-filter-input-bg dark:text-background"
+                    className="mt-3 gap-2 bg-filter-input-bg dark:bg-transparent"
                     value={baseFieldValues[label] || ""}
                     onChange={(e) =>
                       setBaseFieldValues((prev) => ({
@@ -269,6 +290,35 @@ export default function Page() {
                   />
                 </div>
               ))}
+
+              <div className="grid justify-center grid-cols-2 mt-4">
+              <div className="flex flex-wrap gap-2">
+                <Switch
+                  checked={transc_ena}
+                  onCheckedChange={setENA}
+                />
+                <Label className="mt-1 block">Check ENA for RNA</Label>
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                <Switch
+                  checked={transc}
+                  onCheckedChange={setTransc_check_reg}
+                />
+                <Label className="mt-1 block">Check transcriptomic registry</Label>
+              </div>
+              </div>
+
+              <div className="grid justify-center grid-cols-2 gap-4 mt-4">
+              <div className="flex flex-wrap gap-2">
+                <Switch
+                  checked={candidate}
+                  onCheckedChange={setCandidate}
+                />
+                <Label className="mt-1 block">Annotation candidates</Label>
+              </div>
+             </div>
+
             </div>
             <div className="mt-6 flex justify-end">
               <Button onClick={handleGetAnnotations} disabled={loading}>
@@ -278,10 +328,10 @@ export default function Page() {
           </div>
         </div>
 
-        {annotations.length > 0 && (
+        {assemblies.length > 0 && (
           <div className="p-8">
             <div className="flex items-center justify-between mt-4 mb-6">
-              <h1 className="text-xl font-semibold">Annotations report</h1>
+              <h1 className="text-xl font-semibold">Assembly report</h1>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline">Download</Button>
@@ -290,36 +340,57 @@ export default function Page() {
                   <DropdownMenuLabel>Download report</DropdownMenuLabel>
                   <DropdownMenuItem onClick={handlePrint}>
                     PDF</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleDownload(downloadables?.anno_wide, "annotations_report.csv", "text/csv")}
+                  <DropdownMenuItem onClick={() => handleDownload(downloadables?.rep_asm_main, "assembly_report.csv", "text/csv")}
                   >CSV</DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
             <div className="grid grid-cols-1 gap-6">
-              {/* Two-column card layout */}
               <div ref={componentRef} className="grid grid-cols-2 gap-6">
-                <RepStatus data={statusData} />
-                <RepProject data={projectData} />
+                {!hasBioprojectInput &&
+                    <RepProject data={projectData} />}
+                <RepAsmType data={asmtypeData} />
 
-                <AnnotatedBuscoCard data={buscoData} />
-                <AnoMethodSummaryChart data={methodData} />
+                {baseFieldValues["Taxon ID"] && (
+                  <>
+                    <RepTopTaxa data={topTaxaData} />
+                    <AsmTaxaCard data={taxaData} />
+                  </>
+                )}
 
-                <RepTopTaxa data={topTaxaData} />
-                <AnnotatedTaxaCard data={taxaData} />
+                {transc &&  (
+                  <TranscCard data={transcData} />
+                  )}
+                {transc_ena && (
+                <RepTranscENA data={transcenaData} />
+                )}
+
+                <div className="col-span-2">
+                <RepClade data={cladeData} />
+                </div>
+
+                <div className="col-span-2">
+                <LengthChart data={lengthData} />
+                </div>
+
               </div>
+
+
 
               {/* Full-width annotations table */}
               <div>
-                <h2 className="text-xl font-semibold my-8">Annotations table</h2>
+                <h2 className="text-xl font-semibold my-8">Assemblies table</h2>
                 <Card>
                   <CardContent>
-                    <DataTable columns={columns} data={annotations} />
+                    <DataTable columns={columns} data={assemblies} />
                   </CardContent>
                 </Card>
               </div>
             </div>
           </div>
+
         )}
+
       </div>
     </div>
   );
