@@ -57,9 +57,9 @@ export default function Page() {
         }
       }
 
-    let release_type: string | null = null;
+    let release_type: string[] | null = null;
       if (releaseSites && releaseSites !== "both") {
-        release_type = releaseSites;
+        release_type = [releaseSites];
       }
 
       const payload = {

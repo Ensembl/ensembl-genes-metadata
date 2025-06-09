@@ -124,9 +124,9 @@ const [pipeline_var, setPipeline] = useState<string>("");
         }
       }
 
-      let pipeline: string | null = null;
+      let pipeline: string[] | null = null;
       if (pipeline_var && pipeline_var !== "both") {
-        pipeline = pipeline_var;
+        pipeline = [pipeline_var];
       }
 
       const payload = {

@@ -17,7 +17,7 @@ export default function ReportSelectorPage() {
       <div className="container m-16 mt-10 max-w-6xl">
         <div className="grid grid-cols-2 gap-4 justify-center">
           <Link href="/report/asm" className="group">
-            <Card className="relative hover:shadow-lg transition-shadow cursor-pointer h-full">
+            <Card className="relative hover:shadow-lg transition-shadow cursor-pointer h-full dark:bg-secondary">
               <CardHeader>
                 <CardTitle>Assemblies</CardTitle>
                 <CardDescription>
@@ -31,7 +31,7 @@ export default function ReportSelectorPage() {
           </Link>
 
           <Link href="/report/anno" className="group">
-            <Card className="relative hover:shadow-lg transition-shadow cursor-pointer h-full">
+            <Card className="relative hover:shadow-lg transition-shadow cursor-pointer h-full dark:bg-secondary">
               <CardHeader>
                 <CardTitle>Annotations</CardTitle>
                 <CardDescription>
