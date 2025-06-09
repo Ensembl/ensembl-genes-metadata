@@ -12,5 +12,5 @@ class ReportFilterRequest(BaseModel):
     candidate: Optional[bool] = False
     transc: Optional[bool] = False
     transc_ena: Optional[bool] = False
-    pipeline : Optional[str] = None
+    pipeline : Optional[List[str]] = None
 
