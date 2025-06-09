@@ -11,7 +11,7 @@ class AssemblyFilterRequest(BaseModel):
     release_date: Optional[date] = None
     taxon_id: Optional[List[int]] = None
     current: Optional[bool] = False
-    pipeline: Optional[List[str]] = None
+    pipeline: Optional[str] = None
     transc: Optional[bool] = False
     transc_ena: Optional[bool] = False
     non_annotated: Optional[bool] = False
