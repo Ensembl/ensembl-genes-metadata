@@ -66,8 +66,7 @@ export default function Page() {
   const [lengthData, setLength] = useState<LengthItem[]>([]);
   const [transc_ena, setENA] = useState<boolean>(false);
   const [transc, setTransc_check_reg] = useState<boolean>(false);
-  const [pipeline_var, setPipeline] = useState<string[]>([]);
-
+const [pipeline_var, setPipeline] = useState<string>("");
 
 
 
@@ -125,8 +124,8 @@ export default function Page() {
         }
       }
 
-      let pipeline: string[] | null = null;
-      if (pipeline_var.length === 1 && pipeline_var[0] !== "both") {
+      let pipeline: string | null = null;
+      if (pipeline_var && pipeline_var !== "both") {
         pipeline = pipeline_var;
       }
 
