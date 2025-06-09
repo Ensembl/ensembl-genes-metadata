@@ -253,7 +253,7 @@ export default function Page() {
               <div>
                 <Label className="mb-2 block">Pipeline</Label>
                 <ToggleGroup
-                  type="multiple"
+                  type="single"
                   size="lg"
                   variant="outline"
                   value={pipeline_var}
