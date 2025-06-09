@@ -54,13 +54,14 @@ export default function Page() {
   const [annotations, setReport] = useState<Report[]>([]);
   const [downloadables, setDownloadables] = useState<Downloadables | null>(null);
   const [loading, setLoading] = useState(false);
-  const [releaseSites, setReleaseSites] = useState<string[]>([]);
   const [statusData, setStatus] = useState<StatusItem[]>([])
   const [methodData, setMethod] = useState<MethodItem[]>([])
   const [buscoData, setBusco] = useState<BuscoItem | null>(null);
   const [taxaData, setTaxa] = useState<NumTaxaItem | null>(null);
   const [topTaxaData, setTopTaxa] = useState<TaxaItem[]>([])
   const [projectData, setProject] = useState<ProjectItem[]>([])
+  const [releaseSites, setReleaseSites] = useState<string>("");
+
 
   const title = "Generate annotation report";
   const description =
@@ -113,8 +114,9 @@ export default function Page() {
         }
       }
 
-      let release_type: string[] | null = null;
-      if (releaseSites.length === 1) {
+
+      let release_type: string | null = null;
+      if (releaseSites && releaseSites !== "both") {
         release_type = releaseSites;
       }
 
@@ -237,8 +239,9 @@ export default function Page() {
               <div>
                 <Label className="mb-2 block">Release site</Label>
                 <ToggleGroup
-                  type="multiple"
+                  type="single"
                   size="lg"
+                  variant="outline"
                   value={releaseSites}
                   onValueChange={setReleaseSites}
                 >
@@ -247,6 +250,9 @@ export default function Page() {
                   </ToggleGroupItem>
                   <ToggleGroupItem value="beta" aria-label="beta">
                     Beta
+                  </ToggleGroupItem>
+                  <ToggleGroupItem value="both" aria-label="both">
+                    Both
                   </ToggleGroupItem>
                 </ToggleGroup>
               </div>
@@ -258,7 +264,7 @@ export default function Page() {
                     id={label.toLowerCase().replace(" ", "-")}
                     type="text"
                     placeholder={placeholder}
-                    className="mt-3 gap-2 bg-filter-input-bg dark:text-background"
+                    className="mt-3 gap-2 bg-filter-input-bg dark:bg-transparent"
                     value={baseFieldValues[label] || ""}
                     onChange={(e) =>
                       setBaseFieldValues((prev) => ({

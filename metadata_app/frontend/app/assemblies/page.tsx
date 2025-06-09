@@ -259,7 +259,7 @@ export default function Page() {
                     id={label.toLowerCase().replace(" ", "-")}
                     type="text"
                     placeholder={placeholder}
-                    className="mt-3 gap-2 bg-filter-input-bg dark:text-background"
+                    className="mt-3 gap-2 bg-filter-input-bg dark:bg-transparent"
                     value={baseFieldValues[label] || ""}
                     onChange={(e) =>
                       setBaseFieldValues((prev) => ({

@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { DataTable } from "@/app/tables/data-table";
 import { Annotations, columns } from "@/app/tables/annotations_columns";
-import { Checkbox } from "@/components/ui/checkbox";
+import {ToggleGroup, ToggleGroupItem} from "@/components/ui/toggle-group";
 
 type Downloadables = {
   anno_main: string;
@@ -25,10 +25,8 @@ export default function Page() {
   const [annotations, setAnnotations] = useState<Annotations[]>([]);
   const [downloadables, setDownloadables] = useState<Downloadables | null>(null);
   const [loading, setLoading] = useState(false);
-  const [releaseSites, setReleaseSites] = useState({
-    main: true,
-    beta: true
-  });
+  const [releaseSites, setReleaseSites] = useState<string>("");
+
 
   const handleGetAnnotations = async () => {
     setLoading(true);
@@ -59,13 +57,10 @@ export default function Page() {
         }
       }
 
-     let release_type: string[] | null = [];
-    if (releaseSites.main) release_type.push("main");
-    if (releaseSites.beta) release_type.push("beta");
-
-    if (release_type.length === 0 || release_type.length === 2) {
-      release_type = null; // means "no filter" to the backend
-    }
+    let release_type: string | null = null;
+      if (releaseSites && releaseSites !== "both") {
+        release_type = releaseSites;
+      }
 
       const payload = {
         bioproject_id: bioprojectArray,
@@ -152,7 +147,7 @@ export default function Page() {
                     id={label.toLowerCase().replace(" ", "-")}
                     type="text"
                     placeholder={placeholder}
-                    className="mt-3 gap-2 bg-filter-input-bg dark:text-background"
+                    className="mt-3 gap-2 bg-filter-input-bg dark:bg-transparent"
                     value={baseFieldValues[label] || ""}
                     onChange={(e) =>
                       setBaseFieldValues((prev) => ({
@@ -166,36 +161,22 @@ export default function Page() {
 
               <div>
                 <Label className="mb-2 block">Release site</Label>
-                <div className="flex space-x-4 mt-3">
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="checkbox-main"
-                      className= "cursor-pointer"
-                      checked={releaseSites.main}
-                      onCheckedChange={(checked) => {
-                        setReleaseSites(prev => ({
-                          ...prev,
-                          main: checked === true
-                        }));
-                      }}
-                    />
-                    <Label htmlFor="checkbox-main" className="cursor-pointer">Main</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="checkbox-beta"
-                      className= "cursor-pointer"
-                      checked={releaseSites.beta}
-                      onCheckedChange={(checked) => {
-                        setReleaseSites(prev => ({
-                          ...prev,
-                          beta: checked === true
-                        }));
-                      }}
-                    />
-                    <Label htmlFor="checkbox-beta" className="cursor-pointer">Beta</Label>
-                  </div>
-                </div>
+                <ToggleGroup
+                  type="single"
+                  variant="outline"
+                  value={releaseSites}
+                  onValueChange={setReleaseSites}
+                >
+                  <ToggleGroupItem value="main" aria-label="main">
+                    Main
+                  </ToggleGroupItem>
+                  <ToggleGroupItem value="beta" aria-label="beta">
+                    Beta
+                  </ToggleGroupItem>
+                  <ToggleGroupItem value="both" aria-label="both">
+                    Both
+                  </ToggleGroupItem>
+                </ToggleGroup>
               </div>
             </div>
           </div>
