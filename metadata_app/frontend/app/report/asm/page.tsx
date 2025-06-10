@@ -21,6 +21,7 @@ import {TranscItem, TranscCard} from "@/components/ui/rep_asm_transc";
 import {LengthItem, LengthChart} from "@/components/ui/rep_asm_length";
 import {RepTranscENA, TranscENAItem} from "@/components/ui/repo_asm_transc_ena";
 import {ToggleGroup, ToggleGroupItem} from "@/components/ui/toggle-group";
+import {Tooltip, TooltipContent, TooltipTrigger} from "@/components/ui/tooltip";
 
 
 
@@ -291,13 +292,23 @@ const [pipeline_var, setPipeline] = useState<string>("");
               ))}
 
               <div className="grid justify-center grid-cols-2 mt-4">
-              <div className="flex flex-wrap gap-2">
-                <Switch
-                  checked={transc_ena}
-                  onCheckedChange={setENA}
-                />
-                <Label className="mt-1 block">Check ENA for RNA</Label>
-              </div>
+
+                <div className="flex items-center space-x-2">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="flex flex-wrap gap-2">
+                    <Switch
+                      checked={transc_ena}
+                      onCheckedChange={setENA}
+                    />
+                    <Label className="mt-1 block">Check ENA for RNASeq</Label>
+                    </div>
+                  </TooltipTrigger>
+                <TooltipContent>
+                  <p>This will take longer to process</p>
+                </TooltipContent>
+                </Tooltip>
+                </div>
 
               <div className="flex flex-wrap gap-2">
                 <Switch
