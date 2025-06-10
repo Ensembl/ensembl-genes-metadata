@@ -352,7 +352,7 @@ export default function Page() {
                         {toggleMetrics
                           .find((tm) => tm.label === metric)!
                           .options.map((option) => (
-                            <ToggleGroupItem key={option} value={option}>
+                            <ToggleGroupItem key={option} value={option} variant="outline_filter">
                               {option}
                             </ToggleGroupItem>
                           ))}
@@ -387,7 +387,7 @@ export default function Page() {
                         id={metric.toLowerCase().replace(" ", "-")}
                         type="text"
                         placeholder={`Enter threshold for ${metric}`}
-                        className="mt-1 my-2 bg-filter-input-bg dark:text-background"
+                        className="mt-1 my-2 bg-transparent"
                         value={metricValues[metric] || ""}
                         onChange={(e) =>
                           setMetricValues((prev) => ({
