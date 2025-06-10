@@ -12,10 +12,18 @@ import {
 import { ArrowRight } from "lucide-react";
 
 export default function ReportSelectorPage() {
+  const title = "Generate reports";
+  const description =
+    "This page lets you generate reports on biodiversity projects and more. Select your filtering criteria to create visual summaries and download tables and figures. Select from the functions bellow.";
+
+
+
   return (
-    <div className="flex items-center justify-center mt-60">
-      <div className="container m-16 mt-10 max-w-6xl">
-        <div className="grid grid-cols-2 gap-4 justify-center">
+    <div className="flex items-center justify-center mt-15">
+      <div className="container m-16 max-w-6xl">
+        <h1 className="scroll-m-20 text-4xl font-extrabold tracking-tight text-balance">{title}</h1>
+        <p className="leading-7 [&:not(:first-child)]:mt-6">{description}</p>
+        <div className="grid grid-cols-2 gap-4 justify-center mt-8">
           <Link href="/report/asm" className="group">
             <Card className="relative hover:shadow-lg transition-shadow cursor-pointer h-full dark:bg-secondary">
               <CardHeader>
