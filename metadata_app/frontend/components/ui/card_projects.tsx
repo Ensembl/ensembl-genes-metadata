@@ -124,7 +124,7 @@ export function CardsDataTable() {
     <Card className="dark:bg-secondary">
       <CardHeader className="mb-4">
         <CardTitle className="text-xl -mb-2">Biodiversity projects</CardTitle>
-        <CardDescription>See statistics on projects.</CardDescription>
+        <CardDescription>Number of annotations per project</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="mb-4 flex items-center gap-4">

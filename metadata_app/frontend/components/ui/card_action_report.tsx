@@ -10,25 +10,32 @@ import {
 } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 
-export function WelcomeCard() {
+export function ReportCard() {
   return (
     <Card className="bg-primary text-primary-foreground">
       <CardHeader>
         <CardTitle className="text-primary-foreground">
-          Welcome to Genebuild Metadata
+          Generate reports
         </CardTitle>
       </CardHeader>
 
       <CardContent className="text-muted-foreground text-sm">
-        Quickly access and explore genome assembly and annotation metadata. Filter assemblies and annotations by project, release date, taxonomy, and more. Download ready-to-use tables and figures for your reports. Always up-to-date.
+        Generate reports on available annotations by Genebuild or identify assemblies ready for annotation. Create and download publication-ready tables and visualizations.
       </CardContent>
 
       <CardFooter className="justify-end">
-        <Button variant="secondary">
-          <Link href="/assemblies">
-            Search Assemblies <span className="ml-1">→</span>
+        <div className="flex gap-4">
+          <Button variant="secondary">
+          <Link href="/report/asm">
+            Assembly report <span className="ml-1">→</span>
           </Link>
         </Button>
+          <Button variant="secondary">
+          <Link href="/report/anno">
+            Annotation report <span className="ml-1">→</span>
+          </Link>
+        </Button>
+            </div>
       </CardFooter>
     </Card>
   )

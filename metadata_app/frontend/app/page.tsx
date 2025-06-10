@@ -5,6 +5,7 @@ import { CardsCalendar } from "@/components/ui/card_calendar"
 import  { CardsDataTable } from "@/components/ui/card_projects"
 import { WelcomeCard } from "@/components/ui/card_welcome"
 import  { AnoMethodSummaryChart } from "@/components/ui/card_method_summary"
+import {ReportCard} from "@/components/ui/card_action_report";
 
 export default function Page() {
   return (
@@ -27,6 +28,9 @@ export default function Page() {
                  <div className="w-full mb-4 break-inside-avoid">
                     <CardsDataTable></CardsDataTable>
                  </div>
+                  <div className="w-full mb-4 break-inside-avoid">
+                    <ReportCard></ReportCard>
+                  </div>
               </div>
             </div>
           </div>
