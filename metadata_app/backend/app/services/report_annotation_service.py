@@ -306,7 +306,7 @@ def generate_report(end_date, start_date, group_name, taxon_id, bioproject_id, r
     try:
         df_meta_genebuild= query_meta_registry(end_date, start_date, group_name, taxon_id, bioproject_id, release_type)
     except HTTPException:
-        logging.error("HTTPException raised during assembly filtering")
+        logging.error("HTTPException raised during annotation filtering")
         raise
     except Exception as e:
         logging.error("Unexpected error occurred during annotations filtering", exc_info=True)

@@ -1,13 +1,14 @@
 "use client";
 
 import React, { useState } from "react";
-import { Loader2 } from "lucide-react";
+import {Loader2, Terminal} from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { DataTable } from "@/app/tables/data-table";
 import { Annotations, columns } from "@/app/tables/annotations_columns";
 import {ToggleGroup, ToggleGroupItem} from "@/components/ui/toggle-group";
+import {Alert, AlertDescription, AlertTitle} from "@/components/ui/alert";
 
 type Downloadables = {
   anno_main: string;
@@ -26,6 +27,7 @@ export default function Page() {
   const [downloadables, setDownloadables] = useState<Downloadables | null>(null);
   const [loading, setLoading] = useState(false);
   const [releaseSites, setReleaseSites] = useState<string>("");
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
 
   const handleGetAnnotations = async () => {
@@ -85,7 +87,7 @@ export default function Page() {
       if (!res.ok) {
         const errorText = await res.text();
         console.error("Failed to fetch annotations", errorText);
-        alert("Failed to fetch annotations: " + errorText);
+        setErrorMessage("Failed to fetch report: " + errorText);
         return;
       }
 
@@ -104,7 +106,7 @@ export default function Page() {
       }
     } catch (error) {
       console.error("Error fetching annotations:", error);
-      alert("Error fetching annotations: " + (error instanceof Error ? error.message : String(error)));
+      setErrorMessage("Error fetching data: " + (error instanceof Error ? error.message : String(error)));
     } finally {
       setLoading(false);
     }
@@ -194,6 +196,16 @@ export default function Page() {
               )}
             </Button>
           </div>
+
+          {errorMessage && (
+            <Alert variant="destructive" className="mt-8">
+              <Terminal />
+              <AlertTitle>Heads up!</AlertTitle>
+              <AlertDescription>
+                {errorMessage}
+              </AlertDescription>
+            </Alert>
+        )}
 
           {/* Results */}
           {annotations.length > 0 && (

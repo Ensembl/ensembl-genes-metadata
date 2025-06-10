@@ -1,6 +1,6 @@
 # app/services/assembly_service.py
 import datetime
-
+from fastapi import HTTPException
 import pandas as pd
 import json
 import requests
@@ -59,7 +59,10 @@ def is_reference_genome(accession):
 		summary_response = requests.get(summary_url, params=summary_params, timeout=10)
 		if summary_response.status_code != 200:
 			logging.error(f"Error retrieving assembly summary: {summary_response.status_code}")
-			return False
+			raise HTTPException(
+				status_code=400,
+				detail=f"Error retrieving assembly summary: {summary_response.status_code}"
+			)
 
 		summary_data = summary_response.json()
 
@@ -67,16 +70,23 @@ def is_reference_genome(accession):
 		try:
 			assembly_info = summary_data["result"][assembly_id]
 			return assembly_info.get("refseq_category", "") == "reference genome"
-		except KeyError:
-			logging.warning(f"Unexpected response format from NCBI.")
-			return False
+		except Exception as e:
+			logging.error(f"Unexpected error in is_reference: {e}", exc_info=True)
+			raise HTTPException(
+				status_code=500,
+				detail=f"Internal server error occurred while processing assemblies: {str(e)}"
+			)
 
-	except requests.exceptions.RequestException as e:
-		logging.error(f"Request error when checking reference genome: {e}")
-		return False
+
+	except HTTPException:
+		# Re-raise HTTPExceptions as they are already properly formatted
+		raise
 	except Exception as e:
-		logging.error(f"Error checking reference genome: {e}")
-		return False
+		logging.error(f"Unexpected error when checking reference genome: {e}", exc_info=True)
+		raise HTTPException(
+			status_code=500,
+			detail=f"Internal server error occurred while processing assemblies: {str(e)}"
+		)
 
 
 def get_filtered_assemblies(bioproject_id, metric_thresholds, asm_level, asm_type, release_date, taxon_id,
@@ -117,7 +127,10 @@ def get_filtered_assemblies(bioproject_id, metric_thresholds, asm_level, asm_typ
 				valid_bioprojects = {row['bioproject_id'] for row in cursor.fetchall()}
 				invalid_bioprojects = set(bioproject_id) - valid_bioprojects
 				if invalid_bioprojects:
-					return f"The following BioProject IDs were not found: {', '.join(invalid_bioprojects)}", None, None, None, None
+					raise HTTPException(
+						status_code=400,
+						detail=f"The following BioProject IDs were not found: {', '.join(invalid_bioprojects)}"
+					)
 
 			# Build query conditions
 			conditions = []
@@ -178,6 +191,12 @@ def get_filtered_assemblies(bioproject_id, metric_thresholds, asm_level, asm_typ
 
 			cursor.execute(query, tuple(params))
 			results = cursor.fetchall()
+			# Check if we have any results from the main query
+			if not results:
+				raise HTTPException(
+					status_code=404,
+					detail="No assemblies found matching the specified criteria."
+				)
 			logging.info(f"Query executed successfully, retrieved {len(results)} results.")
 
 			# Get taxonomy data
@@ -187,7 +206,7 @@ def get_filtered_assemblies(bioproject_id, metric_thresholds, asm_level, asm_typ
 
 			if not lowest_taxon_ids:
 				# No results or no taxon IDs found
-				return "No assemblies meet the given criteria.", None, None, None, None
+				raise HTTPException(status_code=404, detail="No valid taxon IDs found in the results.")
 
 			# Fetch all taxonomy data for the collected lowest_taxon_ids
 			taxonomy_query = """
@@ -215,8 +234,7 @@ def get_filtered_assemblies(bioproject_id, metric_thresholds, asm_level, asm_typ
 		# Convert results to DataFrame and process
 		df = pd.DataFrame(results)
 		if df.empty:
-			return "No assemblies meet the given criteria.", None, None, None, None
-
+			raise HTTPException(status_code=404, detail="No assemblies meet the given criteria.")
 
 
 		#Load bioproject_mapping
@@ -334,7 +352,10 @@ def get_filtered_assemblies(bioproject_id, metric_thresholds, asm_level, asm_typ
 			df_wide = df_wide[df_wide['pipeline'].isin(pipeline)]
 
 			if df_wide.empty:
-				return "No assemblies meet the pipeline filter criteria.", None, None, None, None
+				raise HTTPException(
+					status_code=400,
+					detail=f"No assemblies matching pipeline filter: {pipeline}"
+				)
 
 		# Filter non annoteted assemblies only
 
@@ -342,6 +363,13 @@ def get_filtered_assemblies(bioproject_id, metric_thresholds, asm_level, asm_typ
 			logging.info(f"Filtring for non-annotated assemblies")
 			df_wide = df_wide
 			df_wide = df_wide[df_wide['annotation_status'] == 'not started']
+
+			if df_wide.empty:
+				raise HTTPException(
+					status_code=400,
+					detail=f"No assemblies matching pipeline filter: {non_annotated}"
+				)
+
 
 		df_wide = df_wide.drop_duplicates(subset='gca', keep='first')
 
@@ -370,6 +398,13 @@ def get_filtered_assemblies(bioproject_id, metric_thresholds, asm_level, asm_typ
 
 		return df_wide, df_main, df_gca_list, taxonomy_dict
 
+
+	except HTTPException:
+		# Re-raise HTTPExceptions as they are already properly formatted
+		raise
 	except Exception as e:
-		logging.error(f"Error in get_filtered_assemblies: {str(e)}")
-		return f"Error processing request: {str(e)}", None, None, None, None
+		logging.error(f"Unexpected error in get_filtered_assemblies: {e}", exc_info=True)
+		raise HTTPException(
+			status_code=500,
+			detail=f"Internal server error occurred while processing assemblies: {str(e)}"
+		)

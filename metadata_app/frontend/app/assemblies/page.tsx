@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { XCircle, Loader2 } from "lucide-react";
+import {XCircle, Loader2, Terminal} from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,7 @@ import { DataTable } from "@/app/tables/data-table";
 import {cn} from "@/lib/utils";
 import {StartAnnotationDialog} from "@/components/start_anno_dialog";
 import {Tooltip, TooltipContent, TooltipTrigger} from "@/components/ui/tooltip";
+import {Alert, AlertDescription, AlertTitle} from "@/components/ui/alert";
 
 
 
@@ -42,6 +43,8 @@ export default function Page() {
     df_wide: string
   } | null>(null);
   const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
 
   const isNumeric = (value: string) => /^\d+(\.\d+)?$/.test(value);
 
@@ -136,7 +139,7 @@ export default function Page() {
 
       if (!res.ok) {
         const errorText = await res.text();
-        console.error("Failed to fetch assemblies", errorText);
+        setErrorMessage("Failed to fetch report: " + errorText);
         alert("Failed to fetch assemblies: " + errorText);
         return;
       }
@@ -159,7 +162,7 @@ export default function Page() {
       }
     } catch (error) {
       console.error("Error fetching assemblies:", error);
-      alert("Error fetching assemblies: " + (error instanceof Error ? error.message : String(error)));
+      setErrorMessage("Error fetching data: " + (error instanceof Error ? error.message : String(error)));
     } finally {
       setLoading(false);
     }
@@ -418,6 +421,16 @@ export default function Page() {
             )}
           </Button>
         </div>
+
+        {errorMessage && (
+            <Alert variant="destructive" className="mt-8">
+              <Terminal />
+              <AlertTitle>Heads up!</AlertTitle>
+              <AlertDescription>
+                {errorMessage}
+              </AlertDescription>
+            </Alert>
+        )}
 
         {/* Results */}
         {assemblies.length > 0 && (

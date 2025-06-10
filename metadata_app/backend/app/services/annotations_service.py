@@ -27,7 +27,10 @@ def query_meta_registry(annotation_date, taxon_id, bioproject_id, release_type):
                 valid_bioprojects = {row['bioproject_id'] for row in cursor.fetchall()}
                 invalid_bioprojects = set(bioproject_id) - valid_bioprojects
                 if invalid_bioprojects:
-                    return f"The following BioProject IDs were not found: {', '.join(invalid_bioprojects)}", None, None
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"The following BioProject IDs were not found: {', '.join(invalid_bioprojects)}"
+                    )
 
             # Build dynamic SQL filtering
             conditions = []
@@ -52,7 +55,10 @@ def query_meta_registry(annotation_date, taxon_id, bioproject_id, release_type):
                     all_descendant_taxa.update(descendant_taxa)
 
                 if not all_descendant_taxa:
-                    return f"No descendant taxa found for any of the provided Taxon IDs: {', '.join(map(str, taxon_id))}", None, None, None, None
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"No descendant taxa found for any of the provided Taxon IDs: {', '.join(map(str, taxon_id))}"
+                    )
 
                 conditions.append(f"s.lowest_taxon_id IN ({','.join(['%s'] * len(all_descendant_taxa))})")
                 parameters.extend(all_descendant_taxa)
@@ -85,6 +91,11 @@ def query_meta_registry(annotation_date, taxon_id, bioproject_id, release_type):
 
             cursor.execute(meta_query, parameters)
             results = cursor.fetchall()
+            if not results:
+                raise HTTPException(
+                    status_code=404,
+                    detail="No annotations found matching the specified criteria."
+                )
             logging.info(f"Query returned {len(results)} annotations.")
 
         df_meta_genebuild = pd.DataFrame(results)
@@ -100,9 +111,13 @@ def query_meta_registry(annotation_date, taxon_id, bioproject_id, release_type):
 
         return df_meta_genebuild
 
+
     except Exception as e:
-        logging.error(f"Error in query_meta_registry: {str(e)}")
-        return None
+        logging.error(f"Unexpected error in query_meta_registry: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Internal server error occurred while processing annotations: {str(e)}"
+        )
 
 def get_annotation_info_beta(df_meta_genebuild):
     """
@@ -142,6 +157,12 @@ def get_annotation_info_beta(df_meta_genebuild):
 
             cursor.execute(query, gca_list)
             results = cursor.fetchall()
+            # Check if we have any results from the main query
+            if not results:
+                raise HTTPException(
+                    status_code=404,
+                    detail="No annotations found in production DB."
+                )
             logging.info(f"Query returned {len(results)} records.")
 
         df_prod = pd.DataFrame(results)
@@ -181,9 +202,19 @@ def get_annotation_info_beta(df_meta_genebuild):
         return anno_wide
 
 
+
+    except HTTPException:
+
+        # Re-raise HTTPExceptions as they are already properly formatted
+
+        raise
+
     except Exception as e:
-            logging.error(f"Error in get_annotation_info_beta: {str(e)}")
-            return None
+        logging.error(f"Unexpected error in get_annotation_info_beta: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Internal server error occurred while processing assemblies: {str(e)}"
+        )
 
 
 def check_if_gca_is_latest_annotated(anno_wide):
@@ -236,17 +267,26 @@ def check_if_gca_is_latest_annotated(anno_wide):
 
         return merged
 
+
     except Exception as e:
-        logging.error(f"Error in check_if_gca_is_latest_annotated: {str(e)}")
-        return None
+        logging.error(f"Unexpected error in check_if_gca_is_latest_annotated: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Internal server error occurred while processing annotations: {str(e)}"
+
+        )
 
 
 def generate_tables(annotation_date, taxon_id, bioproject_id, release_type):
     logging.info(f"Generating tables for annotation date: {annotation_date}, taxon_id: {taxon_id}, bioproject_id: {bioproject_id}, release_type: {release_type}")
-    df_meta_genebuild= query_meta_registry(annotation_date, taxon_id, bioproject_id, release_type)
-    if df_meta_genebuild is None or df_meta_genebuild.empty:
-        logging.error("No metadata records returned from query_meta_registry.")
-        raise HTTPException(status_code=404, detail="No records found for the given filters.")
+    try:
+        df_meta_genebuild= query_meta_registry(annotation_date, taxon_id, bioproject_id, release_type)
+    except HTTPException:
+        logging.error("HTTPException raised during annotation filtering")
+        raise
+    except Exception as e:
+        logging.error("Unexpected error occurred during annotations filtering", exc_info=True)
+        raise HTTPException(status_code=500, detail="An unexpected error occurred.")
 
     logging.info(f"Adding additional info from beta prod server")
     logging.info(f"Original df_meta_genebuild: {df_meta_genebuild.shape}")
