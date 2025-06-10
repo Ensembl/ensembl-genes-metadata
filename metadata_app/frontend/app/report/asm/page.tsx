@@ -81,6 +81,9 @@ export default function Page() {
   (baseFieldValues["BioProject ID"]?.trim() ?? "") !== "";
 
   const handleGetAnnotations = async () => {
+    setErrorMessage(null);
+    setReport([]);
+
     setLoading(true);
     try {
       const bioprojectArray: string[] = [];

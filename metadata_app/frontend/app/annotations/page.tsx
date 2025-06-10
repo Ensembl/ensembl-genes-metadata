@@ -31,6 +31,9 @@ export default function Page() {
 
 
   const handleGetAnnotations = async () => {
+    setErrorMessage(null);
+    setAnnotations([]);
+
     setLoading(true);
     try {
       let bioprojectArray = null;

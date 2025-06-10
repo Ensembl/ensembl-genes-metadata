@@ -53,6 +53,10 @@ export default function Page() {
   };
 
   const handleGetResults = async () => {
+      // Reset states at the beginning
+    setErrorMessage(null);
+    setAssemblies([]);
+
     // Validate numeric inputs before proceeding
     for (const [metric, value] of Object.entries(metricValues)) {
       if (value && !isNumeric(value)) {
@@ -139,8 +143,8 @@ export default function Page() {
 
       if (!res.ok) {
         const errorText = await res.text();
+        console.error("Failed to fetch report", errorText);
         setErrorMessage("Failed to fetch report: " + errorText);
-        alert("Failed to fetch assemblies: " + errorText);
         return;
       }
 
@@ -433,7 +437,7 @@ export default function Page() {
         )}
 
         {/* Results */}
-        {assemblies.length > 0 && (
+        {assemblies.length > 0 &&  (
           <div className="mt-10 shadow-lg border border:border rounded-2xl">
             <div className="flex items-center justify-between px-8 py-6 border-b border:border">
               <h2 className="text-lg font-semibold">Filtered Assemblies ({assemblies.length}) </h2>

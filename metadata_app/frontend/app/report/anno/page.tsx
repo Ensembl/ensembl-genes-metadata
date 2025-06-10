@@ -72,6 +72,9 @@ export default function Page() {
   const groupNameValues = ["farmed_animals_2023", "AQUA-FAANG"];
 
   const handleGetAnnotations = async () => {
+    setErrorMessage(null);
+    setReport([]);
+
     setLoading(true);
     try {
       const bioprojectArray: string[] = [];
