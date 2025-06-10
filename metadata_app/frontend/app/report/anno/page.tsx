@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useRef, useState } from "react";
-import { Loader2 } from "lucide-react";
+import {Loader2, Terminal} from "lucide-react";
 import { useReactToPrint } from 'react-to-print';
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,6 +20,7 @@ import {AnnotatedTaxaCard, NumTaxaItem} from "@/components/ui/rep_anno_num_taxa"
 import {RepTopTaxa, TaxaItem} from "@/components/ui/rep_anno_top_taxa"
 import {ProjectItem, RepProject} from "@/components/ui/repo_anno_project"
 import {Card, CardContent} from "@/components/ui/card";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import {DropdownMenu, DropdownMenuContent, DropdownMenuLabel, DropdownMenuItem, DropdownMenuTrigger} from "@/components/ui/dropdown-menu";
 
 
@@ -31,9 +32,9 @@ type Downloadables = {
 export default function Page() {
   const baseFields = [
     { label: "BioProject ID", placeholder: "PRJNA123456" },
+    { label: "Taxon ID", placeholder: "9606" },
     { label: "Report start date", placeholder: "2024-12-31" },
     { label: "Report end date", placeholder: "2024-03-05" },
-    { label: "Taxon ID", placeholder: "9606" },
   ];
 
   const projectOptions: Option[] = [
@@ -61,6 +62,7 @@ export default function Page() {
   const [topTaxaData, setTopTaxa] = useState<TaxaItem[]>([])
   const [projectData, setProject] = useState<ProjectItem[]>([])
   const [releaseSites, setReleaseSites] = useState<string>("");
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
 
   const title = "Generate annotation report";
@@ -145,7 +147,7 @@ export default function Page() {
       if (!res.ok) {
         const errorText = await res.text();
         console.error("Failed to fetch report", errorText);
-        alert("Failed to fetch report: " + errorText);
+        setErrorMessage("Failed to fetch report: " + errorText);
         return;
       }
 
@@ -171,7 +173,7 @@ export default function Page() {
       }
     } catch (error) {
       console.error("Error fetching data:", error);
-      alert("Error fetching data: " + (error instanceof Error ? error.message : String(error)));
+      setErrorMessage("Error fetching data: " + (error instanceof Error ? error.message : String(error)));
     } finally {
       setLoading(false);
     }
@@ -283,6 +285,16 @@ export default function Page() {
             </div>
           </div>
         </div>
+
+        {errorMessage && (
+            <Alert variant="destructive" className="mt-8">
+              <Terminal />
+              <AlertTitle>Heads up!</AlertTitle>
+              <AlertDescription>
+                {errorMessage}
+              </AlertDescription>
+            </Alert>
+        )}
 
         {annotations.length > 0 && (
           <div className="p-8">

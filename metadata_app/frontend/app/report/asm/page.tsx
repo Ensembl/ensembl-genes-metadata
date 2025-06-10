@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useRef, useState } from "react";
-import { Loader2 } from "lucide-react";
+import {Loader2, Terminal} from "lucide-react";
 import { useReactToPrint } from 'react-to-print';
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,6 +22,7 @@ import {LengthItem, LengthChart} from "@/components/ui/rep_asm_length";
 import {RepTranscENA, TranscENAItem} from "@/components/ui/repo_asm_transc_ena";
 import {ToggleGroup, ToggleGroupItem} from "@/components/ui/toggle-group";
 import {Tooltip, TooltipContent, TooltipTrigger} from "@/components/ui/tooltip";
+import {Alert, AlertDescription, AlertTitle} from "@/components/ui/alert";
 
 
 
@@ -67,9 +68,8 @@ export default function Page() {
   const [lengthData, setLength] = useState<LengthItem[]>([]);
   const [transc_ena, setENA] = useState<boolean>(false);
   const [transc, setTransc_check_reg] = useState<boolean>(false);
-const [pipeline_var, setPipeline] = useState<string>("");
-
-
+  const [pipeline_var, setPipeline] = useState<string>("");
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const title = "Generate assembly report";
   const description =
@@ -158,7 +158,7 @@ const [pipeline_var, setPipeline] = useState<string>("");
       if (!res.ok) {
         const errorText = await res.text();
         console.error("Failed to fetch report", errorText);
-        alert("Failed to fetch report: " + errorText);
+        setErrorMessage("Failed to fetch report: " + errorText);
         return;
       }
 
@@ -186,7 +186,7 @@ const [pipeline_var, setPipeline] = useState<string>("");
       }
     } catch (error) {
       console.error("Error fetching data:", error);
-      alert("Error fetching data: " + (error instanceof Error ? error.message : String(error)));
+      setErrorMessage("Error fetching data: " + (error instanceof Error ? error.message : String(error)));
     } finally {
       setLoading(false);
     }
@@ -320,13 +320,22 @@ const [pipeline_var, setPipeline] = useState<string>("");
               </div>
 
               <div className="grid justify-center grid-cols-2 gap-4 mt-4">
-              <div className="flex flex-wrap gap-2">
+              <div className="flex items-center space-x-2">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                <div className="flex flex-wrap gap-2">
                 <Switch
                   checked={candidate}
                   onCheckedChange={setCandidate}
                 />
                 <Label className="mt-1 block">Annotation candidates</Label>
               </div>
+                    </TooltipTrigger>
+                <TooltipContent>
+                  <p>Contig N50 min. 100.000, scaffold, chromosome and complete genome.</p>
+                </TooltipContent>
+                </Tooltip>
+                </div>
              </div>
 
             </div>
@@ -337,6 +346,16 @@ const [pipeline_var, setPipeline] = useState<string>("");
             </div>
           </div>
         </div>
+
+        {errorMessage && (
+            <Alert variant="destructive" className="mt-8">
+              <Terminal />
+              <AlertTitle>Heads up!</AlertTitle>
+              <AlertDescription>
+                {errorMessage}
+              </AlertDescription>
+            </Alert>
+        )}
 
         {assemblies.length > 0 && (
           <div className="p-8">
