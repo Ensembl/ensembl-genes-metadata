@@ -15,6 +15,7 @@ import { Assemblies, columns } from "@/app/tables/assemblies_columns";
 import { DataTable } from "@/app/tables/data-table";
 import {cn} from "@/lib/utils";
 import {StartAnnotationDialog} from "@/components/start_anno_dialog";
+import {Tooltip, TooltipContent, TooltipTrigger} from "@/components/ui/tooltip";
 
 
 
@@ -280,10 +281,21 @@ export default function Page() {
             </div>
 
             <div className="flex gap-10 mt-6">
+
               <div className="flex items-center space-x-2">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="flex items-center space-x-2">
                 <Switch id="ena" checked={checkENA} onCheckedChange={setCheckENA} />
                 <Label htmlFor="ena">Check ENA</Label>
+                      </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>This will take longer to process</p>
+                </TooltipContent>
+              </Tooltip>
               </div>
+
               <div className="flex items-center space-x-2">
                 <Switch id="transcript_check" checked={checkTranscript} onCheckedChange={setCheckTranscript} />
                 <Label htmlFor="transcript_check">Check transcriptomic registry</Label>
