@@ -37,7 +37,7 @@ def filter_assemblies(filters: ReportFilterRequest):
         "rep_asm_main": rep_asm_main.to_dict(orient="records"),
 
 
-        "downloadables": {
+        "downloadables_report": {
             "rep_asm_main": rep_asm_main.to_csv(index=False),
             "rep_asm_wide": rep_asm_wide.to_csv(index=False),
             "gca_list": df_gca_list.to_csv(index=False)

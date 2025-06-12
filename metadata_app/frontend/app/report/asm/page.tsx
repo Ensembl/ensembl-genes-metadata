@@ -13,7 +13,14 @@ import {AsmTaxaCard, NumTaxaItem} from "@/components/ui/rep_asm_num_taxa"
 import {RepTopTaxa, TaxaItem} from "@/components/ui/rep_anno_top_taxa"
 import {ProjectItem, RepProject} from "@/components/ui/repo_anno_project"
 import {Card, CardContent} from "@/components/ui/card";
-import {DropdownMenu, DropdownMenuContent, DropdownMenuLabel, DropdownMenuItem, DropdownMenuTrigger} from "@/components/ui/dropdown-menu";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator
+} from "@/components/ui/dropdown-menu";
 import {Switch} from "@/components/ui/switch";
 import {CladeItem, RepClade} from "@/components/ui/repo_asm_clade";
 import {AsmTypeItem, RepAsmType} from "@/components/ui/repo_asm_type";
@@ -29,6 +36,7 @@ import {Alert, AlertDescription, AlertTitle} from "@/components/ui/alert";
 type Downloadables = {
   rep_asm_main: string;
   rep_asm_wide: string;
+  gca_list: string;
 };
 
 export default function Page() {
@@ -370,10 +378,13 @@ export default function Page() {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-56" align="end">
                   <DropdownMenuLabel>Download report</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handlePrint}>
                     PDF</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleDownload(downloadables?.rep_asm_main, "assembly_report.csv", "text/csv")}
+                  <DropdownMenuItem onClick={() => handleDownload(downloadables?.rep_asm_wide, "assembly_report.csv", "text/csv")}
                   >CSV</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleDownload(downloadables?.gca_list, "gca_report.csv", "text/csv")}
+                  >GCA list</DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
