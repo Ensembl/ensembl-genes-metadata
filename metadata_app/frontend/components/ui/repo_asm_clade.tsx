@@ -27,7 +27,7 @@ type Props = {
 }
 
 const chartConfig: Record<string, { label: string; color?: string }> = {
-  count: { label: "Annotations" },
+  count: { label: "Assemblies" },
 } satisfies ChartConfig
 
 
