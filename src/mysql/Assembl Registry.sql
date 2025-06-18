@@ -71,6 +71,16 @@ CREATE TABLE taxonomy (
 ) ENGINE=MyISAM AUTO_INCREMENT=1 DEFAULT CHARSET=latin1;
 
 
+DROP TABLE IF EXISTS taxonomy_names
+
+CREATE TABLE taxonomy_name (
+  taxon_class_id int(15) NOT NULL,
+  taxon_class_name varchar(50) NOT NULL,
+  FOREIGN KEY (`taxon_class_id`) REFERENCES taxonomy(`taxon_class_id`),
+  CONSTRAINT taxon_id_name UNIQUE (taxon_class_id, taxon_class_name)
+) ENGINE=MyISAM AUTO_INCREMENT=1 DEFAULT CHARSET=latin1;
+
+
 DROP TABLE IF EXISTS organism
 
 CREATE TABLE organism (
@@ -96,6 +106,17 @@ CREATE TABLE bioproject (
   FOREIGN KEY (`assembly_id`) REFERENCES assembly(`assembly_id`),
   CONSTRAINT lineage UNIQUE (assembly_id, bioproject_id)
 ) ENGINE=MyISAM AUTO_INCREMENT=1 DEFAULT CHARSET=latin1;
+
+DROP TABLE IF EXISTS main_bioproject
+
+CREATE TABLE main_bioproject (
+  bioproject_id varchar(50) NOT NULL,
+  bioproject_name varchar(50) NOT NULL,
+  FOREIGN KEY (`bioproject_id`) REFERENCES bioproject(`bioproject_id`),
+  CONSTRAINT unique_bioproject UNIQUE (bioproject_id),
+  CONSTRAINT unique_id_name UNIQUE (bioproject_id, bioproject_name)
+) ENGINE=MyISAM AUTO_INCREMENT=1 DEFAULT CHARSET=latin1;
+
 
 DROP TABLE IF EXISTS custom_group
 
@@ -129,25 +150,37 @@ CREATE TABLE species_spaces (
 	CONSTRAINT species_space_assign UNIQUE (lowest_taxon_id, assembly_id, stable_space_id)
 ) ENGINE=MyISAM AUTO_INCREMENT=1 DEFAULT CHARSET=latin1;
 
+DROP TABLE IF EXISTS genebuilder
 
-DROP TABLE IF EXISTS genebuild
+CREATE TABLE genebuilder (
+  genebuilder_id int NOT NULL,
+  genebuilder varchar(20),
+  PRIMARY KEY (`genebuilder_id`)
+) ENGINE=MyISAM AUTO_INCREMENT=1 DEFAULT CHARSET=latin1;
 
-CREATE TABLE genebuild (
+DROP TABLE IF EXISTS genebuild_status
+
+CREATE TABLE genebuild_status (
   genebuild_id int NOT NULL AUTO_INCREMENT,
   assembly_id int NOT NULL,
+  gca_accession VARCHAR(20) NOT NULL, 
   gb_status ENUM('in_progress', 'completed', 'handed_over'),
-  is_current int(2),
+  last_attempt int(2),
   genebuilder varchar(20) NOT NULL,
-  annotation_source ENUM('ensembl', 'external','imported_refseq', 'imported_community', 'imported_wormbase', 'imported_flybase', 'import_genbank', 'import_noninsdc'),
-  annotation_method ENUM('full_genebuild', 'anno', 'braker', 'projection_build', 'mixed_strategy_build','imported', 'external_annotation_import'),
-  date_started datetime,
-  date_complete datetime,
+  annotation_source ENUM('ensembl', 'external','import_refseq', 'import_community', 'import_wormbase', 'import_flybase', 'import_genbank', 'import_noninsdc'),
+  annotation_method ENUM('pending','full_genebuild', 'anno', 'braker', 'projection_build', 'mixed_strategy_build','import', 'external_annotation_import'),
+  date_started date NOT NULL,
+  date_completed date NULL,
+  date_completed_beta date NULL,
   release_type ENUM('main', 'beta', 'not_available'),
-  release_date date,
-  release_version int(5),
+  release_date date NULL,
+  release_date_beta date NULL,
+  release_version int(5) NULL,
+  release_version_beta int(5) NULL,
   PRIMARY KEY (`genebuild_id`),
   FOREIGN KEY (`assembly_id`) REFERENCES assembly(`assembly_id`),
   FOREIGN KEY (`genebuilder`) REFERENCES genebuilder(`genebuilder`)
+  CONSTRAINT species_space_assign UNIQUE (lowest_taxon_id, assembly_id, stable_space_id)
 ) ENGINE=MyISAM AUTO_INCREMENT=1 DEFAULT CHARSET=latin1;
 
 
@@ -163,10 +196,3 @@ CREATE TABLE genebuild_metrics (
 ) ENGINE=MyISAM AUTO_INCREMENT=1 DEFAULT CHARSET=latin1;
 
 
-DROP TABLE IF EXISTS genebuilder
-
-CREATE TABLE genebuilder (
-  genebuilder_id int NOT NULL,
-  genebuilder varchar(20) NOT NULL,
-  PRIMARY KEY (`genebuilder_id`)
-) ENGINE=MyISAM AUTO_INCREMENT=1 DEFAULT CHARSET=latin1;
