@@ -74,6 +74,8 @@ python src/python/ensembl/genes/metadata/assemblies.py --bioproject_id PRJEB4066
 - `--output_dir`: Directory to save the CSV output files.
 - `--reference`: Check if GCA is a reference genome (1 for yes, 0 for no). Default 0. Note: NCBI API times out if checking a large number of assemblies.
 - `--trans`: Check if taxon ID has transcriptomic data in ENA. This uses the check_transcriptomic_data.py (1 for yes, 0 for no). Default 0.
+- `--pipeline`: Filter by annotation pipeline: choose one or more from anno, main, hprc
+- `--current`: Check if GCA is the most current version (1 for yes, 0 for no). Default 0.
 
 
 ### Output
@@ -96,6 +98,24 @@ Each output file is named using a structured format, where {date_str} correspond
 - `assembly_annotation_status_{date_str}.csv` – Status of assembly annotations, including metadata.
 - `assembly_level_summary_{date_str}.csv` – Summary of assembly levels across the dataset.
 - `annotation_GCA_update_status_{date_str}.csv` – Status of GCAs of already released annotations.
+
+## Metadata app
+
+### Genebuild Metadata API Endpoints
+
+| Endpoint                     | Method    | Description                                                   | Tags             |
+|-----------------------------|-----------|---------------------------------------------------------------|------------------|
+| `/`                         | GET       | Welcome message                                               | Root             |
+| `/health`                   | GET       | Health check                                                  | Health           |
+| `/api/assemblies/...`       | GET/POST  | Retrieve and filter assembly metadata                         | assemblies       |
+| `/api/annotations/...`      | GET/POST  | Access annotation data and tool usage reports                 | annotations      |
+| `/api/taxonomy/...`         | GET/POST  | Query taxonomy data by ID or clade                            | taxonomy         |
+| `/api/transcriptomics/...`  | GET/POST  | Get transcriptomic experiment metadata (e.g. RNA-Seq)         | transcriptomics  |
+| `/api/home_page/...`        | GET       | Retrieve dashboard summary statistics                         | home_page        |
+| `/api/report/anno/...`      | POST      | Generate filtered annotation reports (methods, counts, etc.)  | report_anno      |
+| `/api/report/asm/...`       | POST      | Generate filtered assembly reports (metrics, release types)   | report_asm       |
+
+
 
 
 
