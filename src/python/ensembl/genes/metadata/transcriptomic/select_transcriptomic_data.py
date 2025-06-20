@@ -421,147 +421,148 @@ def main() -> None:
     except pymysql.MySQLError as e:
         print(f"Error connecting to MySQL: {e}")
 
-    df = check_fastqc_star_quality(df)
+    if not df.empty:
+        df = check_fastqc_star_quality(df)
 
-    #df["tissue_prediction"] = df["tissue_prediction"].apply(
-    #    lambda x: re.search(r"^(.*)", str(x)).group(1) if re.search(r"^(.*)", str(x)) else x
-    #)
-    df["tissue_prediction"] = df["tissue_prediction"].apply(
-    lambda x: str(x) if pd.notnull(x) else x
-    )
-    # df["tissue_prediction"] = df["tissue_prediction"].apply(
-    #    lambda x: (m.group(1) if (m := re.search(r"^(.*)", str(x))) else x)
-    # )
-    df["tissue_prediction"] = (
-        df["tissue_prediction"]
-        .astype(str)
-        .str.replace('"', "", regex=True)
-        .replace("Answer: ", "", regex=True)
-        .replace("\n", "", regex=True)
-        .replace("Output: ", "", regex=True)
-    )
-    df["tissue_prediction"] = df["tissue_prediction"].apply(
-        lambda x: re.sub(
-            r"[, ]+",
-            "_",  # replace space/comma with underscore
-            re.sub(
-                r"\b\d+\b|\bday\b|\b[a-zA-Z]\b",
-                "",  # remove numbers, "day", and single letters
-                clean_repeated_words(str(x)),
+        #df["tissue_prediction"] = df["tissue_prediction"].apply(
+        #    lambda x: re.search(r"^(.*)", str(x)).group(1) if re.search(r"^(.*)", str(x)) else x
+        #)
+        df["tissue_prediction"] = df["tissue_prediction"].apply(
+        lambda x: str(x) if pd.notnull(x) else x
+        )
+        # df["tissue_prediction"] = df["tissue_prediction"].apply(
+        #    lambda x: (m.group(1) if (m := re.search(r"^(.*)", str(x))) else x)
+        # )
+        df["tissue_prediction"] = (
+            df["tissue_prediction"]
+            .astype(str)
+            .str.replace('"', "", regex=True)
+            .replace("Answer: ", "", regex=True)
+            .replace("\n", "", regex=True)
+            .replace("Output: ", "", regex=True)
+        )
+        df["tissue_prediction"] = df["tissue_prediction"].apply(
+            lambda x: re.sub(
+                r"[, ]+",
+                "_",  # replace space/comma with underscore
+                re.sub(
+                    r"\b\d+\b|\bday\b|\b[a-zA-Z]\b",
+                    "",  # remove numbers, "day", and single letters
+                    clean_repeated_words(str(x)),
+                ),
+            ).strip(
+                "_"
+            )  # remove leading/trailing underscores
+        )
+        df["tissue_prediction"] = df["tissue_prediction"].astype(str).str.lower()
+
+        df.loc[
+            df["tissue_prediction"].astype(str).str.contains("NONE", case=False, na=False), "tissue_prediction"
+        ] = None
+        df.loc[
+            df["tissue_prediction"].astype(str).str.contains("nan", case=False, na=False), "tissue_prediction"
+        ] = None
+
+        create_report(df, f"{Path(args.file_name).parent}/{args.taxon_id}_tissue_summary.txt")
+        # print(df.head())
+        # Remove duplicates based on 'run_accession' while keeping the first row for each
+        df_original = df.copy()
+        run_accessions = filter_data(df)
+
+        # Build a regex pattern from run_accession list
+        selected_accessions = run_accessions[0:25000]
+        # df_final = df_original[df_original["run_accession"].isin(run_accessions[0:250])].copy()
+        df_final = df_original[df_original["run_accession"].isin(selected_accessions)].copy()
+        df_final["run_accession"] = pd.Categorical(
+            df_final["run_accession"], categories=selected_accessions, ordered=True
+        )
+        df_final = df_final.sort_values(by=["run_accession", "file_name"])  # "run_accession")
+
+        df_final.drop_duplicates(inplace=True)
+        df_final["predicted_tissue"] = df_final.apply(
+            lambda row: (
+                row["sample_accession"] if pd.isnull(row["tissue_prediction"]) else row["tissue_prediction"]
             ),
-        ).strip(
-            "_"
-        )  # remove leading/trailing underscores
-    )
-    df["tissue_prediction"] = df["tissue_prediction"].astype(str).str.lower()
+            axis=1,
+        )
+        # print(df_final.head())
+        if args.csv_for_main:
+            df_final.loc[:, "file_name"] = df_final["file_name"].astype(str) + ".fastq.gz"
+            df_final.loc[:, "col1"] = 1
+            df_final.loc[:, "col_1"] = -1
+            df_final.loc[:, "col0"] = 0
+            df_final.loc[:, "ENA"] = "ENA"
 
-    df.loc[
-        df["tissue_prediction"].astype(str).str.contains("NONE", case=False, na=False), "tissue_prediction"
-    ] = None
-    df.loc[
-        df["tissue_prediction"].astype(str).str.contains("nan", case=False, na=False), "tissue_prediction"
-    ] = None
-
-    create_report(df, f"{Path(args.file_name).parent}/{args.taxon_id}_tissue_summary.txt")
-    # print(df.head())
-    # Remove duplicates based on 'run_accession' while keeping the first row for each
-    df_original = df.copy()
-    run_accessions = filter_data(df)
-
-    # Build a regex pattern from run_accession list
-    selected_accessions = run_accessions[0:25000]
-    # df_final = df_original[df_original["run_accession"].isin(run_accessions[0:250])].copy()
-    df_final = df_original[df_original["run_accession"].isin(selected_accessions)].copy()
-    df_final["run_accession"] = pd.Categorical(
-        df_final["run_accession"], categories=selected_accessions, ordered=True
-    )
-    df_final = df_final.sort_values(by=["run_accession", "file_name"])  # "run_accession")
-
-    df_final.drop_duplicates(inplace=True)
-    df_final["predicted_tissue"] = df_final.apply(
-        lambda row: (
-            row["sample_accession"] if pd.isnull(row["tissue_prediction"]) else row["tissue_prediction"]
-        ),
-        axis=1,
-    )
-    # print(df_final.head())
-    if args.csv_for_main:
-        df_final.loc[:, "file_name"] = df_final["file_name"].astype(str) + ".fastq.gz"
-        df_final.loc[:, "col1"] = 1
-        df_final.loc[:, "col_1"] = -1
-        df_final.loc[:, "col0"] = 0
-        df_final.loc[:, "ENA"] = "ENA"
-
-        with open(args.file_name, "w") as f:
-            df_final.to_csv(
-                f,
-                sep="\t",
-                index=False,
-                columns=[
-                    "predicted_tissue",
-                    "run_accession",
-                    "col1",
-                    "file_name",
-                    "col_1",
-                    "col1",
-                    "col0",
-                    "ENA",
-                    "platform",
-                    "sample_accession",
-                    "file_url",
-                    "md5",
-                ],
-                header=False,
-            )
-    else:
-        # taxon_id,gca,platform,paired,tissue,run_accession,pair1,md5_1,pair2,md5_2
-        output_df = (
-            df_final.groupby("run_accession")
-            .apply(
-                lambda g: pd.Series(
-                    {
-                        "taxon_id": g["taxon_id"].iloc[0],
-                        "assembly_accession": g.get("assembly_accession", pd.Series(["NA"])).iloc[
-                            0
-                        ],  # optional if gca exists
-                        "platform": g["platform"].iloc[0],
-                        "paired": bool(int(g["paired"].iloc[0])),
-                        # "paired": g["paired"].iloc[0],
-                        "predicted_tissue": g["predicted_tissue"].iloc[0],
-                        "pair1": g[g["file_name"].str.contains("_1")]["file_url"].values[0],
-                        "md5_1": g[g["file_name"].str.contains("_1")]["md5"].values[0],
-                        "pair2": g[g["file_name"].str.contains("_2")]["file_url"].values[0],
-                        "md5_2": g[g["file_name"].str.contains("_2")]["md5"].values[0],
-                    }
+            with open(args.file_name, "w") as f:
+                df_final.to_csv(
+                    f,
+                    sep="\t",
+                    index=False,
+                    columns=[
+                        "predicted_tissue",
+                        "run_accession",
+                        "col1",
+                        "file_name",
+                        "col_1",
+                        "col1",
+                        "col0",
+                        "ENA",
+                        "platform",
+                        "sample_accession",
+                        "file_url",
+                        "md5",
+                    ],
+                    header=False,
                 )
+        else:
+            # taxon_id,gca,platform,paired,tissue,run_accession,pair1,md5_1,pair2,md5_2
+            output_df = (
+                df_final.groupby("run_accession")
+                .apply(
+                    lambda g: pd.Series(
+                        {
+                            "taxon_id": g["taxon_id"].iloc[0],
+                            "assembly_accession": g.get("assembly_accession", pd.Series(["NA"])).iloc[
+                                0
+                            ],  # optional if gca exists
+                            "platform": g["platform"].iloc[0],
+                            "paired": bool(int(g["paired"].iloc[0])),
+                            # "paired": g["paired"].iloc[0],
+                            "predicted_tissue": g["predicted_tissue"].iloc[0],
+                            "pair1": g[g["file_name"].str.contains("_1")]["file_url"].values[0],
+                            "md5_1": g[g["file_name"].str.contains("_1")]["md5"].values[0],
+                            "pair2": g[g["file_name"].str.contains("_2")]["file_url"].values[0],
+                            "md5_2": g[g["file_name"].str.contains("_2")]["md5"].values[0],
+                        }
+                    )
+                )
+                .reset_index()
             )
-            .reset_index()
-        )
-        output_df = output_df.drop(columns=["tissue"], errors="ignore").rename(
-            columns={"predicted_tissue": "tissue"}
-        )
-
-        with open(args.file_name, "w") as f:
-            output_df.to_csv(
-                f,
-                sep=",",
-                index=False,
-                columns=[
-                    "taxon_id",
-                    "assembly_accession",
-                    "platform",
-                    "paired",
-                    "tissue",
-                    "run_accession",
-                    "pair1",
-                    "md5_1",
-                    "pair2",
-                    "md5_2",
-                ],
-                header=True,
+            output_df = output_df.drop(columns=["tissue"], errors="ignore").rename(
+                columns={"predicted_tissue": "tissue"}
             )
 
-    # print("✅ CSV READY!!!!.")
+            with open(args.file_name, "w") as f:
+                output_df.to_csv(
+                    f,
+                    sep=",",
+                    index=False,
+                    columns=[
+                        "taxon_id",
+                        "assembly_accession",
+                        "platform",
+                        "paired",
+                        "tissue",
+                        "run_accession",
+                        "pair1",
+                        "md5_1",
+                        "pair2",
+                        "md5_2",
+                    ],
+                    header=True,
+                )
+
+        # print("✅ CSV READY!!!!.")
 
 
 if __name__ == "__main__":
