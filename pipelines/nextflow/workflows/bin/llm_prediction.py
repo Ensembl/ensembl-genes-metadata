@@ -61,20 +61,21 @@ def create_prompt(biosample_tissue, sentence) -> str:
 You are an expert in biomedical text processing specialised in eukaryiotic life ontologies. Extract only valid anatomicial entities (tissues, organs, cells) from biomedical text.
 You will be given a biosample tissue or a run description.
 If biosample tissue is available, use only that.
-If not, then extract tissues from the run description.
+If `biosample_tissue` is missing or ambiguous, fallback to `run_description`.
 
 Rules:
 1. Extract only tissues or body parts (e.g., "liver," "brain," "whole larvae")  and  return them in lower case singular  with no extra text
 2. Do NOT extract sequencing or experimental terms (e.g., "Illumina", "NovaSeq", "RNA-seq")
 3. STRICTLY IGNORE all taxonomy scientific names and common names of vertebrates, invertebrates, and plants. If an example  matches an animal species only, return "NONE". Example ignored species include (case insensitive): Macaca fascicularis, Macaca nemestrina, Rattus norvegicus, Bos grunniens, Cricetulus griseus, Homo sapiens, Pan troglodytes, Oryctolagus cuniculus, Mus musculus, Gallus gallus, Danio rerio, Drosophila melanogaster, Arabidopsis thaliana, Zea mays, rabbit, sheep, moths, salmon
-4. Normalize extracted tissue names: replace underscores (_) with spaces, remove new line, numbers, dates, stopwords, singularize plurals, remove duplicates.
+4. Normalize extracted tissue names: replace underscores (_) with spaces, remove new line, numbers, dates, stopwords, singularize plurals if possible, remove duplicates.
 5. If multiple tissues are mentioned, return them in a comma-separated list without repetition.
-6. If the sentence contains explicit reference to cancer or disease (e.g., 'glioblastoma', 'tumor sample', 'g2_t2', 'tumor'), add 'CANCER/DISEASE' next to it.
+6. If the sentence contains explicit reference to cancer or disease (e.g., 'melanoma', 'glioblastoma', 'tumor sample', 'g2_t2', 'tumor'), add 'CANCER/DISEASE' next to it.
 7. Ignore IDs, alphanumeric codes, and random labels (e.g., xz_l_13b, sample_XYZ123)
 8  Only output the tissue(s) with no explanation. Do not explain your reasoning. Output only the final result.
 9. If no valid tissue is found, return "NONE" with no extra text.
 
 Examples:
+- "missing" -> "NONE"    
 - "Illumina NovaSeq 6000 paired end sequencing" -> "NONE"
 - "pool of 60 whole larvae" → "whole larvae"
 - "plasma" -> "plasma"
@@ -127,10 +128,19 @@ Examples:
 - "lung10" -> "lung"
 - "lowfat_S180_ME_L001_R" -> "low fat"
 - "Illumina MiSeq paired end sequencing, NextSeq 500 sequencing" -> "NONE"
+- "pooled tissue" -> "pooled tissue"
 - "muscle, CANCER/DISEASE tissue, CANCER/DISEASE tissue, CANCER/DISEASE tissue, CANCER/DISEASE tissue" -> "muscle"
 - "subcutaneous adipose 1" -> "subcutaneous adipose"
 - "Illumina NovaSeq 6000 sequencing GSM7866914 miR137OE 4 Rattus norvegicus RNASeq" -> "NONE"
-Based on the above rules and examples, now process the following biosample tissue "{biosample_tissue}". If not exists process run description "{sentence}" 
+- "tail" -> "tail"
+- "1hpf" -> "NONE"
+- "embryo, 2 dpf embryos" -> "embryo"
+- "head" -> "head"
+- "precancerous microenvironment" -> "precancerous microenvironment, CANCER/DISEASE tissue"
+- "control microenvironment" -> "control microenvironment"
+Based on the above rules and examples, now process the following biosample tissue "{biosample_tissue}". 
+If empty or None process run description "{sentence}". Please respond only with the tissue formatted output as the output 
+of this response will be directly fed into a database. 
 Answer:
 """
 
@@ -335,41 +345,41 @@ def main() -> None:
     if db_connection:
         df = pd.read_sql(query, db_connection)
     print(f"Loaded {len(df)} rows.")
+    if not df.empty:
+        start_time = time.time()
+        df["llm_prompt"] = ""
+        df["tissue_prediction"] = ""
+        print(df.head())
+        for i in range(0, len(df)):
+            input_sentence = " ".join(df.iloc[i][["tissue", "run_description"]].dropna().values.astype(str))
+            prompt = create_prompt(df["sample_tissue"][i], input_sentence)
+            df.at[i, "llm_prompt"] = prompt
+        define_model_dataset(df, "llm_prompt", "tissue_prediction", args.hugging_face_token, args.batch_size)
+        #print(f"Total time: {time.time() - start_time:.2f} sec")
+        df = clean_tissue_prediction(df)
 
-    #start_time = time.time()
-    df["llm_prompt"] = ""
-    df["tissue_prediction"] = ""
-    print(df.head())
-    for i in range(0, len(df)):
-        input_sentence = " ".join(df.iloc[i][["tissue", "run_description"]].dropna().values.astype(str))
-        prompt = create_prompt(df["sample_tissue"][i], input_sentence)
-        df.at[i, "llm_prompt"] = prompt
-    define_model_dataset(df, "llm_prompt", "tissue_prediction", args.hugging_face_token, args.batch_size)
-    #print(f"Total time: {time.time() - start_time:.2f} sec")
-    df = clean_tissue_prediction(df)
+        # Update back to DB
+        update_query = "UPDATE run set tissue_prediction = %s where run_accession = %s"
+        counter = 0
+        for _, row in tqdm(df.iterrows(), total=len(df)):
+            try:
+                run_acc = row["run_accession"]
+                tissue = row["tissue_prediction"]
+                print(f"Updating row {row['run_accession']}")
+                cursor.execute(update_query, (tissue, run_acc))
+                counter += 1
+                # Commit every BATCH_SIZE rows
+                if counter % BATCH_SIZE == 0:
+                    db_connection.commit()
+                    print(f"Committed {counter} rows...")
+            except Exception as e:
+                print(f"Failed to update row {row['run_accession']}: {e}")
 
-    # Update back to DB
-    update_query = "UPDATE run set tissue_prediction = %s where run_accession = %s"
-    counter = 0
-    for _, row in tqdm(df.iterrows(), total=len(df)):
-        try:
-            run_acc = row["run_accession"]
-            tissue = row["tissue_prediction"]
-            print(f"Updating row {row['run_accession']}")
-            cursor.execute(update_query, (tissue, run_acc))
-            counter += 1
-            # Commit every BATCH_SIZE rows
-            if counter % BATCH_SIZE == 0:
-                db_connection.commit()
-                print(f"Committed {counter} rows...")
-        except Exception as e:
-            print(f"Failed to update row {row['run_accession']}: {e}")
-
-    # Commit changes
-    db_connection.commit()
-    cursor.close()
-    db_connection.close()
-    print("✅ Update complete.")
+        # Commit changes
+        db_connection.commit()
+        cursor.close()
+        db_connection.close()
+        print("✅ Update complete.")
 
 
 if __name__ == "__main__":
