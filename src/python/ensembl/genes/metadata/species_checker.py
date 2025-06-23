@@ -59,7 +59,7 @@ def get_taxon_data(taxon_id:str, ncbi_url) -> dict:
 
     return taxon_data
 
-def get_taxon_classification(taxon_data) -> dict:
+def get_taxon_classification(taxon_data) -> tuple[dict, dict]:
     """
     This function retrieves the taxonomy classification of the lowest taxon id.
     It returns the classification dictionary that will be user to update the taxonomy table.
@@ -71,11 +71,13 @@ def get_taxon_classification(taxon_data) -> dict:
     classification = taxon_data['reports'][0]['taxonomy']['classification']
 
     classification_dic = {}
+    classification_name_dic = {}
     for rank in classification:
         if rank not in ['domain', 'superkingdom']:
             classification_dic.update({classification[rank]['id']: rank})
+            classification_name_dic.update({classification[rank]['id']: classification[rank]['name']})
 
-    return classification_dic
+    return classification_dic, classification_name_dic
 
 def species_taxon(taxon_data, taxon_id) -> tuple[int, bool]:
     """
@@ -105,7 +107,7 @@ def species_taxon(taxon_data, taxon_id) -> tuple[int, bool]:
             raise ValueError(f"Incorrect taxonomy ({taxonomy})")
     except KeyError:
         if 'errors' in taxon_data['reports'][0]:
-            species_taxon_id = 0
+            species_taxon_id = 0 #Set species taxon as zero to be identified by the reporting module
             taxon_exists = False
             logging.info("Taxon %s is not a recognized NCBI Taxonomy name", taxon_id)
         elif 'taxonomy' in taxon_data['reports'][0]:
@@ -253,10 +255,10 @@ def main():
     parser = argparse.ArgumentParser(prog="species_checker.py",
                                     description=
                                     """
-                                    Add species_taxon_id and parlance_name to the species main key to json-like (.tmp) species file.
-                                    It all retrieve the taxonomy classification to be store in the taxonomy table.
+                                    The module add species_taxon_id and parlance_name to the species main key to json-like (.tmp) species file.
+                                    It retrieves the taxonomy classification and names to be store in the taxonomy and taxonomy_name tables.
                                     The module when used in the pipeline requires --json-path, --ncbi_url and --enscode.
-                                    Additionally, to be used as standalone script, it requires --taxonomy_update and --taxon_id.
+                                    Additionally, to be used as standalone script to update the taxonomy tables, it requires --taxonomy_update and --taxon_id.
                                     """)
     parser.add_argument("--json-path",
                         type=str,
@@ -300,7 +302,7 @@ def main():
         if taxon_exists:
             parlance_name = get_parlance_name(species_dict['species']['scientific_name'], args.enscode)
             species_prefix = ""
-            taxon_classification = get_taxon_classification(taxon_data)
+            taxon_classification, taxon_name_classification = get_taxon_classification(taxon_data)
             taxon_classification_check=True
             #species_prefix = get_species_prefix(species_dict['species']['lowest_taxon_id'], registy_params, metadata_params)
         else:
@@ -333,9 +335,11 @@ def main():
         logging.info("Updating taxonomy table")
         taxon_dict = {}
         taxon_data = get_taxon_data(args.taxon_id , args.ncbi_url)
-        taxon_classification = get_taxon_classification(taxon_data)
-        taxon_dict['taxonomy']= taxon_classification
+        taxon_classification, taxon_name_classification = get_taxon_classification(taxon_data)
+        taxon_dict['taxonomy'] = taxon_classification
         taxon_dict['taxonomy'].update({'lowest_taxon_id': args.taxon_id})
+        logging.info("Updating taxonomy name table")
+        taxon_dict['taxonomy_name'] = taxon_name_classification
 
         # Saving results
         output_file_taxon = f"taxonomy_{args.taxon_id}.json"

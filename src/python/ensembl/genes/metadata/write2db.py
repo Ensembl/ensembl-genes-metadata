@@ -114,6 +114,7 @@ def insert_query(data_dict: Dict , table_name: str, table_conf, metadata_params)
         logging.info(f"{table_name} is an attribute table (key:value pairs) ")
         
         dkey = table_conf[table_name]['dkey']
+        logging.info(f"The dkey is {dkey}")
         
         # Getting columns names
         conn = pymysql.connect(**metadata_params)
@@ -124,24 +125,34 @@ def insert_query(data_dict: Dict , table_name: str, table_conf, metadata_params)
         columns_string = ', '.join(columns)
         #
         value_list = []
-        dkey_value = data_dict[dkey]
-        
-        for key,value in data_dict.items():
-            if key !=  dkey: 
-                if table_conf[table_name]['method'] in ['per_row']:
-                    value_item = f"('{dkey_value}', '{key}', '{value}')"
-                elif table_conf[table_name]['method'] in ['per_row_key']:
-                    logging.info(f"{table_name} is an attribute table (key only) ")
-                    value_item = f"('{dkey_value}', '{key}')"
-                else:
-                    raise ValueError(f"Invalid value in table config - method: {table_conf[table_name]['method'] } ")   
-                
+        if dkey is None or dkey == 'None':
+            logging.info(f"{table_name} is a per_row table without dkey {dkey}")
+            for key,value in data_dict.items():
+                value_item = f"('{key}', '{value}')"
                 value_list.append(value_item)
                 values_string =  ', '.join(value_list)
-        return f"""INSERT INTO {table_name} ({columns_string}) VALUES {values_string}"""
+
+            return f"""INSERT INTO {table_name} ({columns_string}) VALUES {values_string}"""
+        else:
+            logging.info(f"{table_name} is a per_row table with a dkey {dkey}")    
+            dkey_value = data_dict[dkey]
+            for key,value in data_dict.items():
+                if key !=  dkey: 
+                    if table_conf[table_name]['method'] in ['per_row']:
+                        value_item = f"('{dkey_value}', '{key}', '{value}')"
+                    elif table_conf[table_name]['method'] in ['per_row_key']:
+                        logging.info(f"{table_name} is an attribute table (key only) ")
+                        value_item = f"('{dkey_value}', '{key}')"
+                    else:
+                        raise ValueError(f"Invalid value in table config - method: {table_conf[table_name]['method'] } ")   
+                    
+                    value_list.append(value_item)
+                    values_string =  ', '.join(value_list)
+            return f"""INSERT INTO {table_name} ({columns_string}) VALUES {values_string}"""
 
     else:
         # crete basic query
+        logging.info(f"Creating basic query for table {table_name}")
         table_var_string = ", ".join(list(data_dict.keys()))
         values_strings = ','.join([f"'{value}'" for value in list(data_dict.values())]).replace("''" , "NULL" )
         return f"""INSERT INTO {table_name} ({table_var_string}) VALUES ({values_strings}) ;"""
@@ -204,7 +215,7 @@ def retrieve_row_id(data_dict: Dict, table_name: str, table_conf, metadata_param
     Returns:
         int: id of the row
     """
-
+    logging.info("Retriving IDs of inserted data")
     # Establishing connection to DB
     conn = pymysql.connect(**metadata_params)
     cur  = conn.cursor()
@@ -228,7 +239,7 @@ def retrieve_row_id(data_dict: Dict, table_name: str, table_conf, metadata_param
 
     # Per row method
     if table_conf[table_name]['method'] in ['per_row', 'per_row_key']:
-        print(f"{table_name} is an attribute table (key:value paris) ")
+        logging.info(f"{table_name} is an attribute table (key:value paris) ")
         dkey = table_conf[table_name]['dkey']
 
         # Getting columns names
@@ -237,22 +248,27 @@ def retrieve_row_id(data_dict: Dict, table_name: str, table_conf, metadata_param
         cur.execute(f"SHOW COLUMNS FROM {table_name}")
         table_columns = cur.fetchall()
         columns = [column[0] for column in table_columns if column[3] != 'PRI']
+        if dkey is None or dkey == 'None':
+            dkey_value = 'None'
+        else: 
+            dkey_value = data_dict[dkey]
 
-        dkey_value = data_dict[dkey]
-
+        logging.info(f"Retriving IDs of inserted data. Table:{table_name}. dkey: {dkey_value} ")
         for key,value in data_dict.items():
             if key !=  dkey:
-                if table_conf[table_name]['method'] in ['per_row']:
+                if table_conf[table_name]['method'] in ['per_row'] and dkey_value != 'None':
                     condition_string = f"{columns[0]} = '{dkey_value}' AND {columns[1]} =  '{key}' AND {columns[2]} = '{value}'"
                 elif table_conf[table_name]['method'] in ['per_row_key']:
                     condition_string = f"{columns[0]} = '{dkey_value}' AND {columns[1]} =  '{key}'"
+                elif table_conf[table_name]['method'] in ['per_row'] and dkey_value == 'None':
+                    condition_string = f"{columns[0]} =  '{key}' AND {columns[1]} = '{value}'"
                 else:
                     raise ValueError(f"Invalid value in table config - method: {table_conf[table_name]['method'] } ")
 
                 conn = pymysql.connect(**metadata_params)
                 cur  = conn.cursor()
                 retrieving_query = f"SELECT {id_name} FROM {table_name} WHERE {condition_string} ;"
-                logging.info(f"Retrieving query: {retrieving_query}")
+                logging.info(f"Retriving IDs of inserted data. Query: {retrieving_query}")
                 cur.execute(retrieving_query)
                 last_id_tmp = cur.fetchall()
                 cur.close()
@@ -263,6 +279,8 @@ def retrieve_row_id(data_dict: Dict, table_name: str, table_conf, metadata_param
                     logging.info("Failed to retrieve value for last id. Inserting missing data")
                     if table_name == "taxonomy":
                         query_missing_insert = f"UPDATE {table_name} SET {columns[1]} = '{key}' WHERE {columns[0]} = '{dkey_value}' AND {columns[2]} = '{value}' ;"
+                    elif table_name == 'taxonomy_name':
+                        query_missing_insert = f"INSERT INTO {table_name} ({columns[0]}, {columns[1]}) VALUES ('{key}', '{value}') ;"
                     else:
                         query_missing_insert = f"INSERT INTO {table_name} ({columns[0]}, {columns[1]}, {columns[2]}) VALUES ('{dkey_value}', '{key}', '{value}') ;"
                     logging.info("Insert/update query: %s", query_missing_insert)
@@ -369,12 +387,14 @@ def main():
     input_data = json.load(file)
     file.close()
 
+    # Checking input file 
     if not input_data and args.empty:
         logging.info("Input data is empty. There is not data to process")
     elif not input_data and not args.empty:
         logging.info("Input data is empty. Data was expected in the file")
         raise ValueError("Input file is empty. Data expected or empty option was not provided")
 
+    # Check Configuration File
     if args.config:
         if not os.path.exists(args.config):
             logging.info(f"File {args.config} does not exist")
@@ -383,6 +403,7 @@ def main():
             with open(args.config) as file:
                 table_conf = json.load(file)
 
+    # Check metadata DB params
     if args.metadata:
         if not os.path.exists(args.metadata):
             logging.info(f"File {args.metadata} does not exist")
@@ -393,14 +414,15 @@ def main():
 
     # Update optional command
     update = args.update
-    # Output
+
+    # Get output name and create file
     root_name, _ = os.path.splitext(args.file_path)
     output = root_name + ".last_id"
     with open(output, 'w') as file:
         pass
 
     last_id_dict = {}
-    # Module
+    # Process each key from input json file
     for table_name in input_data:
         logging.info(f"Processing input data, loading {table_name} table")
         # Check input data structure
@@ -409,7 +431,7 @@ def main():
             logging.info("Lists of dictionaries detected, processing each dictionary")
             for row in input_data[table_name]:
                 query = create_query(row, table_name, update, table_conf, metadata_params)
-                id_value, id_name= execute_query(query, table_name, input_data[table_name], table_conf, metadata_params)
+                id_value, id_name = execute_query(query, table_name, input_data[table_name], table_conf, metadata_params)
                 logging.info(f"Data was inserted in {table_name}. Last value of {id_name} is {id_value}")
                 # saving last id in dict
                 last_id_dict.update({id_name:id_value})
@@ -417,7 +439,7 @@ def main():
             logging.info("Regular dictionary detected, processing key:value pair values")
             # Data is a dictionary (This part is not tested yet)
             query = create_query(input_data[table_name], table_name, update, table_conf, metadata_params)
-            id_value, id_name= execute_query(query,table_name, input_data[table_name], table_conf, metadata_params)
+            id_value, id_name = execute_query(query, table_name, input_data[table_name], table_conf, metadata_params)
             logging.info(f"Data was inserted in {table_name}. Last value of {id_name} is {id_value}")
             # saving last id in dict
             last_id_dict.update({id_name:id_value})
