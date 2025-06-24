@@ -89,10 +89,10 @@ def format_section(header, data):
     
     return f"{header}:\n{formatted_data if formatted_data else 'No data available'}\n\n"
 
-def create_report(args, report_data):
+def create_report(update_date, report_data):
     sections = [
         ("Num GCA", len(report_data['gca_list'])),
-        ("Update Date", args.update_date),
+        ("Update Date", update_date),
         ("Overview Assembly Type", report_data['asm_type']),
         ("Overview Assembly Level", report_data['asm_level']),
         ("Assemblies from Relevant Bioprojects", report_data['bioproject_species']),
@@ -106,6 +106,14 @@ def create_report(args, report_data):
 
     with open("report.txt", 'w') as file:
         file.write(report)
+
+def update_date(update_date, metadata_params):
+    logging.info(f"Store last update date ({update_date}) in assembly metadata DB")
+    update_query = f"UPDATE update_date SET date_value = '{update_date}' WHERE update_type = 'regular_update';"
+    connection = pymysql.connect(**metadata_params)
+    with connection.cursor() as cursor:
+        cursor.execute(update_query)
+        connection.close()
 
 def main():
     logging.basicConfig(
@@ -138,8 +146,10 @@ def main():
     report_data = fetch_report_data(metadata_params, gca_list, args.bioprojects)
     report_data['gca_list'] = gca_list 
 
-    create_report(args, report_data)
+    create_report(args.update_date, report_data)
     logging.info("Report generated successfully.")
+
+    update_date(args.update_date, metadata_params)
 
 if __name__ == '__main__':
     main()
