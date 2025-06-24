@@ -3,6 +3,7 @@ import argparse
 import pymysql
 import json
 import os
+from datetime import date 
 
 def load_json(filepath):
     if not os.path.exists(filepath):
@@ -107,9 +108,10 @@ def create_report(update_date, report_data):
     with open("report.txt", 'w') as file:
         file.write(report)
 
-def update_date(update_date, metadata_params):
-    logging.info(f"Store last update date ({update_date}) in assembly metadata DB")
-    update_query = f"UPDATE update_date SET date_value = '{update_date}' WHERE update_type = 'regular_update';"
+def update_date(metadata_params):
+    current_date = date.today()
+    logging.info(f"Store last update date ({current_date}) in assembly metadata DB")
+    update_query = f"UPDATE update_date SET date_value = '{current_date}' WHERE update_type = 'regular_update';"
     connection = pymysql.connect(**metadata_params)
     with connection.cursor() as cursor:
         cursor.execute(update_query)
