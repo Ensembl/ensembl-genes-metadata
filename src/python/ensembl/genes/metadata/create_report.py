@@ -111,11 +111,16 @@ def create_report(update_date, report_data):
 def update_date(metadata_params):
     current_date = date.today()
     logging.info(f"Store last update date ({current_date}) in assembly metadata DB")
-    update_query = f"UPDATE update_date SET date_value = '{current_date}' WHERE update_type = 'regular_update';"
-    connection = pymysql.connect(**metadata_params)
-    with connection.cursor() as cursor:
-        cursor.execute(update_query)
-        connection.close()
+    try:
+        connection = pymysql.connect(**metadata_params)
+        with connection:
+            with connection.cursor() as cursor:
+                update_query = """UPDATE update_date SET date_value = %s WHERE update_type = 'regular_update';"""
+                cursor.execute(sql, (current_date,))
+                logging.info("Update Successful")
+    except Exception as e:
+        logging.error(f"Failed to update date: {e}")
+        raise  
 
 def main():
     logging.basicConfig(
@@ -151,7 +156,7 @@ def main():
     create_report(args.update_date, report_data)
     logging.info("Report generated successfully.")
 
-    update_date(args.update_date, metadata_params)
+    update_date(metadata_params)
 
 if __name__ == '__main__':
     main()
