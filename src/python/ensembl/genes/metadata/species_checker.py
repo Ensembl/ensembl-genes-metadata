@@ -75,7 +75,7 @@ def get_taxon_classification(taxon_data) -> tuple[dict, dict]:
     for rank in classification:
         if rank not in ['domain', 'superkingdom']:
             classification_dic.update({classification[rank]['id']: rank})
-            classification_name_dic.update({classification[rank]['id']: classification[rank]['name']})
+            classification_name_dic.update({classification[rank]['id']: classification[rank]['name'].replace("'", "''")})
 
     return classification_dic, classification_name_dic
 
