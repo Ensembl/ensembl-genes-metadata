@@ -1,8 +1,0 @@
-pytest
-pylint
-Sphinx
-pymysql==1.0.2
-sqlalchemy==1.4.9
-requests
-biopython
-argschema
