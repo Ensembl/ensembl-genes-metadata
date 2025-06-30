@@ -139,7 +139,7 @@ def update_date(metadata_params):
         with connection:
             with connection.cursor() as cursor:
                 update_query = """UPDATE update_date SET date_value = %s WHERE update_type = 'regular_update';"""
-                cursor.execute(sql, (current_date,))
+                cursor.execute(update_query, (current_date,))
                 logging.info("Update Successful")
     except Exception as e:
         logging.error(f"Failed to update date: {e}")
