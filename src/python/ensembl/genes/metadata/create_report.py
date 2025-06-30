@@ -27,6 +27,8 @@ def execute_query(metadata_params, query):
 def fetch_report_data(metadata_params, gca_list, bioprojects):
     gca_string = ','.join([f"'{gca}'" for gca in gca_list])
     bioprojects_string = ','.join([f"'{project}'" for project in bioprojects])
+    logging.info(f"GCA string for report:{gca_string}")
+    
 
     queries = {
         'asm_type': f"""
@@ -42,7 +44,7 @@ def fetch_report_data(metadata_params, gca_list, bioprojects):
             GROUP BY asm_level;
         """,
         'bioproject_species': f"""
-            SELECT assembly.GCA_chain, bioproject.bioproject_id, species.scientific_name, species.clade
+            SELECT CONCAT(assembly.GCA_chain, '.', assembly.gca_version), bioproject.bioproject_id, species.scientific_name
             FROM assembly
             INNER JOIN bioproject ON assembly.assembly_id = bioproject.assembly_id
             INNER JOIN species ON assembly.lowest_taxon_id = species.lowest_taxon_id
@@ -108,6 +110,26 @@ def create_report(update_date, report_data):
     with open("report.txt", 'w') as file:
         file.write(report)
 
+def create_csv_busco(gca_list, bioprojects, metadata_params):
+    gca_string = ','.join([f"'{gca}'" for gca in gca_list])
+    bioprojects_string = ','.join([f"'{project}'" for project in bioprojects])
+        
+    get_data_query = f"""
+    select DISTINCT CONCAT(assembly.gca_chain, '.', assembly.gca_version) , assembly.lowest_taxon_id from assembly
+    JOIN bioproject on assembly.assembly_id = bioproject.assembly_id
+    JOIN taxonomy on taxonomy.lowest_taxon_id = assembly.lowest_taxon_id
+    WHERE (taxonomy.taxon_class_id = '7711' OR bioproject_id IN ({bioprojects_string}))
+    and assembly.lowest_taxon_id != '9606' 
+    and asm_type = 'haploid' and assembly.is_current = 'current' 
+    and CONCAT(assembly.GCA_chain, '.', assembly.gca_version) IN ({gca_string});
+    """
+    output = execute_query(metadata_params, get_data_query)
+    
+    with open("gca_to_run_ncbi.txt", 'w') as file:
+        file.write("gca,taxon_id\n")
+        for gca, taxon_id in output:
+            file.write(f"{gca},{taxon_id}\n")
+        
 def update_date(metadata_params):
     current_date = date.today()
     logging.info(f"Store last update date ({current_date}) in assembly metadata DB")
@@ -140,7 +162,7 @@ def main():
     parser.add_argument(
         '--bioprojects', 
         nargs='+', 
-        default=['PRJEB47820', 'PRJEB61747', 'PRJEB40665', 'PRJEB43743', 'PRJNA489243', 'PRJNA813333'],
+        default=['PRJEB40665', 'PRJEB43510', 'PRJEB43743', 'PRJEB47820', 'PRJEB61747', '','PRJNA489243', 'PRJNA533106','PRJNA813333'],
         help='List of bioproject IDs to filter assemblies (default: specific bioprojects)'
     )
 
@@ -155,6 +177,9 @@ def main():
 
     create_report(args.update_date, report_data)
     logging.info("Report generated successfully.")
+    
+    logging.info("Create CSV file for Busco genome ")
+    create_csv_busco(gca_list, args.bioprojects, metadata_params)
 
     update_date(metadata_params)
 

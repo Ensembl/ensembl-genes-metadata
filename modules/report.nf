@@ -7,6 +7,7 @@ process REPORT {
 
     output:
     path "report.txt"
+    path "gca_to_run_ncbi.csv"
 
     script:
     """
