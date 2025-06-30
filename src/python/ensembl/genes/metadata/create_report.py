@@ -118,7 +118,8 @@ def create_csv_busco(gca_list, bioprojects, metadata_params):
     select DISTINCT CONCAT(assembly.gca_chain, '.', assembly.gca_version) , assembly.lowest_taxon_id from assembly
     JOIN bioproject on assembly.assembly_id = bioproject.assembly_id
     JOIN taxonomy on taxonomy.lowest_taxon_id = assembly.lowest_taxon_id
-    WHERE (taxonomy.taxon_class_id = '7711' OR bioproject_id IN ({bioprojects_string}))
+    WHERE ((taxonomy.taxon_class_id = '40674' and assembly.lowest_taxon_id != '9606') 
+    OR bioproject_id IN ({bioprojects_string}))
     and assembly.lowest_taxon_id != '9606' 
     and asm_type = 'haploid' and assembly.is_current = 'current' 
     and CONCAT(assembly.GCA_chain, '.', assembly.gca_version) IN ({gca_string});
@@ -162,7 +163,7 @@ def main():
     parser.add_argument(
         '--bioprojects', 
         nargs='+', 
-        default=['PRJEB40665', 'PRJEB43510', 'PRJEB43743', 'PRJEB47820', 'PRJEB61747', '','PRJNA489243', 'PRJNA533106','PRJNA813333'],
+        default=['PRJNA730823','PRJEB40665', 'PRJEB43510', 'PRJEB43743', 'PRJEB47820', 'PRJEB61747', '','PRJNA489243', 'PRJNA533106','PRJNA813333'],
         help='List of bioproject IDs to filter assemblies (default: specific bioprojects)'
     )
 
