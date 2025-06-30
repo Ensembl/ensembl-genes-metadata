@@ -126,8 +126,7 @@ def create_csv_busco(gca_list, bioprojects, metadata_params):
     """
     output = execute_query(metadata_params, get_data_query)
     
-    with open("gca_to_run_ncbi.txt", 'w') as file:
-        file.write("gca,taxon_id\n")
+    with open("gca_to_run_ncbi.txt", 'a') as file:
         for gca, taxon_id in output:
             file.write(f"{gca},{taxon_id}\n")
         
@@ -180,6 +179,10 @@ def main():
     logging.info("Report generated successfully.")
     
     logging.info("Create CSV file for Busco genome ")
+    with open("gca_to_run_ncbi.txt", 'w') as file:
+        file.write("gca,taxon_id\n")
+        
+    logging.info("Getting shorlisted gca for Busco genome ")
     create_csv_busco(gca_list, args.bioprojects, metadata_params)
 
     update_date(metadata_params)
