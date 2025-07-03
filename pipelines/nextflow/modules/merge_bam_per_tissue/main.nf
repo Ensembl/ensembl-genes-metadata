@@ -20,20 +20,23 @@ process MERGE_BAM_PER_TISSUE {
     label "samtools"
     tag "${taxon_id}"
     maxForks 25
-    storeDir "${params.outDir}/$taxon_id/$outputDir/alignment"
+    storeDir "${params.outDir}/$taxon_id/$platform/$tissue/alignment"
     afterScript "sleep $params.files_latency"  // Needed because of file system latency
 
 
     input:
     //tuple val(taxon_id), val(genomeDir), val(gca), val(platform), val(paired), val(tissue), val(run_accession), path(aligned_file)
-    tuple val(taxon_id), val(genomeDir), val(tissue), val(outputDir),path(bamFiles)
+    tuple val(taxon_id), val(genomeDir), val(tissue), val(platform), path(bamFiles)
     output:
-    tuple val(taxon_id), val(genomeDir), val(tissue), val(outputDir),path("${tissue}.bam")
+    tuple val(taxon_id), val(genomeDir), val(tissue), val(platform), val("${params.outDir}/$taxon_id/$platform/$tissue/alignment"),path("${tissue}.bam")
 
     script:
+    def outputDir="${params.outDir}/$taxon_id/$platform/$tissue/alignment"
     """
-    samtools merge ${tissue}.bam ${bamFiles.join(' ')}
-    samtools index ${tissue}.bam ${tissue}.bam.bai
+    mkdir -p ${outputDir}
+    samtools merge -f -o ${outputDir}/${tissue}.bam ${bamFiles.join(' ')}
+    samtools index ${outputDir}/${tissue}.bam ${outputDir}/${tissue}.bam.bai
+    ln -s ${outputDir}/${tissue}.bam .
     """
 }
 
