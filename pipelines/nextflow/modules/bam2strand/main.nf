@@ -19,30 +19,30 @@ limitations under the License.
 process BAM2STRAND {
     tag "$aligned_file"
     label 'samtools'
-    storeDir "${params.outDir}/$taxon_id/$output_dir/alignment"
+    storeDir "$output_dir"
     //publishDir "${params.outDir}/$taxon_id/$outut_dir/alignment", mode: 'copy'
     afterScript "sleep $params.files_latency"  // Needed because of file system latency
 
     input:
-    tuple val(taxon_id), val(genomeDir), val(tissue), val(output_dir), path(aligned_file)
+    tuple val(taxon_id), val(genomeDir), val(tissue), val(platform), val(output_dir), path(aligned_file)
 
 
-    //output:
+    output:
 
-    //tuple val(taxon_id), val(genomeDir), val(tissue), val(output_dir), path(aligned_file)
-
+    tuple val(taxon_id), val(genomeDir), val(tissue), val(platform), val(output_dir), path("*_forward_strand.bam"), path("*_reverse_strand.bam")
 
 
 
     script:
+    def bam_basename = aligned_file.baseName  // strips .bam
     """
     # Plus strand
-    samtools view -h ${aligned_file} | grep -E '^@|XS:A:\+' | samtools view -Sb - > ${aligned_file}_plus_strand.bam
-    samtools index ${aligned_file}_plus_strand.bam ${aligned_file}_plus_strand.bam.bai
+    samtools view -h ${aligned_file} | grep -E '^@|XS:A:\\+' | samtools view -Sb - > ${output_dir}/${bam_basename}_forward_strand.bam
+    samtools index ${output_dir}/${bam_basename}_forward_strand.bam ${output_dir}/${bam_basename}_forward_strand.bam.bai
 
     # Minus strand
-    samtools view -h ${aligned_file} | grep -E '^@|XS:A:-' | samtools view -Sb - > ${aligned_file}_minus_strand.bam
-    samtools index ${aligned_file}_minus_strand.bam ${aligned_file}_minus_strand.bam.bai
+    samtools view -h ${aligned_file} | grep -E '^@|XS:A:-' | samtools view -Sb - > ${output_dir}/${bam_basename}_reverse_strand.bam
+    samtools index ${output_dir}/${bam_basename}_reverse_strand.bam ${output_dir}/${bam_basename}_reverse_strand.bam.bai
 
     """
 }
