@@ -60,7 +60,7 @@ def create_prompt(biosample_tissue, sentence) -> str:
     return f"""
 You are an expert in biomedical text processing specialised in eukaryiotic life ontologies. Extract only valid anatomicial entities (tissues, organs, cells) from biomedical text.
 You will be given a biosample tissue or a run description.
-If biosample tissue is available, use only that.
+If biosample tissue is available, ignore `run_description`.
 If `biosample_tissue` is missing or ambiguous, fallback to `run_description`.
 
 Rules:
@@ -136,6 +136,10 @@ Examples:
 - "1hpf" -> "NONE"
 - "embryo, 2 dpf embryos" -> "embryo"
 - "head" -> "head"
+- "fat brown" -> "fat brown"
+- "cjh" -> "cjh"
+- "cjr" -> "cjr"
+- "Castor canadensis tissues" -> "NONE"
 - "precancerous microenvironment" -> "precancerous microenvironment, CANCER/DISEASE tissue"
 - "control microenvironment" -> "control microenvironment"
 Based on the above rules and examples, now process the following biosample tissue "{biosample_tissue}". 
@@ -209,8 +213,14 @@ def define_model_dataset(df, column_input, column_output, token_input: str, batc
     responses = pipe(
         dataset[f"{column_input}"],  # Directly pass all prompts
         batch_size=batch_size,
-        max_new_tokens=60,
+        max_new_tokens=30,
+        do_sample=True,
+        temperature=0.3,
+        top_k=50,
+        top_p=0.9,
+        repetition_penalty=1.2,
         return_full_text=True,
+
     )
 
     # ✅ Assign responses back to DataFrame (keeping order)
@@ -247,7 +257,7 @@ def clean_tissue_prediction(df: pd.DataFrame) -> pd.DataFrame:
         lambda x: (m.group(1) if (m := re.search(r"^(.*?)\s*Based on", str(x))) else x)
     )
     df["tissue_prediction"] = df["tissue_prediction"].apply(
-            lambda x: re.sub(r"[!\"#$%&()*+,\-./:;<=>?@[\]^`{|}~_\\']", "", str(x)).strip("_")
+            lambda x: re.sub(r"[!\"#$%&()*+,\-.:;<=>?@[\]^`{|}~_\\']", "", str(x)).strip("_")
                 )
     #df["tissue_prediction"] = df["tissue_prediction"].apply(
     #    lambda x: (
@@ -334,9 +344,9 @@ def main() -> None:
     placeholders = ','.join(f"'{tid.strip()}'" for tid in taxon_ids)
     print(placeholders)
     query = (
-        "SELECT run_accession,run_description,tissue,sample_tissue  FROM run where taxon_id in ("
+        "SELECT run_accession,run_description,tissue,cell_type, sample_tissue  FROM run where taxon_id in ("
         + placeholders
-        + ") and tissue_prediction is NULL"
+        + ")"
     )
     # Connect to the database
     db_connection = connect_to_db(**db_config)
@@ -351,13 +361,12 @@ def main() -> None:
         df["tissue_prediction"] = ""
         print(df.head())
         for i in range(0, len(df)):
-            input_sentence = " ".join(df.iloc[i][["tissue", "run_description"]].dropna().values.astype(str))
+            input_sentence = " ".join(df.iloc[i][["tissue", "run_description", "cell_type"]].dropna().values.astype(str))
             prompt = create_prompt(df["sample_tissue"][i], input_sentence)
             df.at[i, "llm_prompt"] = prompt
         define_model_dataset(df, "llm_prompt", "tissue_prediction", args.hugging_face_token, args.batch_size)
         #print(f"Total time: {time.time() - start_time:.2f} sec")
         df = clean_tissue_prediction(df)
-
         # Update back to DB
         update_query = "UPDATE run set tissue_prediction = %s where run_accession = %s"
         counter = 0
