@@ -55,7 +55,11 @@ process STAR_INDEX_GENOME {
     //def retryCount = 0
     def maxRetries = 3
     //def filesValid = false
-    (0..<maxRetries).find { retryCount ->
+    def success = false
+
+for (int retryCount = 0; retryCount < maxRetries; retryCount++) {
+  
+  //  (0..<maxRetries).find { retryCount ->
     try {
     //while (!filesValid && retryCount < maxRetries) {
         // Read the FASTA file line by line
@@ -71,7 +75,9 @@ process STAR_INDEX_GENOME {
     if (numberOfReferences == 0 || genomeLength == 0) {
                 throw new IllegalStateException("The .fna file is empty or invalid: ${genomefilePath}")
             }
-    return true        
+    //return true        
+    success=true
+    break
     // Read the FASTA file
     //def fastaContent = genomefilePath.text
 
@@ -87,16 +93,21 @@ process STAR_INDEX_GENOME {
     }
     catch (Exception e) {
         log.warn("Attempt ${retryCount + 1} failed: ${e.message}")
-        return false
+        //return false
     }
-    } ?: { throw new RuntimeException("File validation failed after ${maxRetries} retries.") }()
+}
+ //   } ?: { throw new RuntimeException("File validation failed after ${maxRetries} retries.") }()
+ if (!success) {
+    throw new RuntimeException("File validation failed after ${maxRetries} retries.")
+}
     // Define read length (you may need to adjust this based on your data)
     def readLength = 100
 
     // Calculate genomeSAindexNbases
-    def genomeSAindexNbases = genomeLength > 0 ? 
-        min(14, (Math.log(genomeLength.abs() as Double) / Math.log(2) / 2 - 1) as int) : 
-        0 // Default value or handle the case where genomeLength is 0
+    def genomeSAindexNbases = min(14, (Math.log(genomeLength.abs() as Double) / Math.log(2) / 2 - 1) as int)
+    //def genomeSAindexNbases = genomeLength > 0 ? 
+   //     min(14, Math.floor((Math.log(genomeLength.abs() as Double) / Math.log(2)) / 2 - 1) as int) : 
+    //    0 // Default value or handle the case where genomeLength is 0
 
     def genomeChrBinNbits = numberOfReferences > 0 ? 
         min(18, (Math.log(Math.max((genomeLength.abs() / numberOfReferences) as Double, readLength as Double)) / Math.log(2)) as int) : 
@@ -116,7 +127,7 @@ process STAR_INDEX_GENOME {
             --genomeSAindexNbases ${genomeSAindexNbases} \
             --genomeChrBinNbits ${genomeChrBinNbits} \
             --genomeFastaFiles ${genomeFile} \
-            --outTmpDir _STARtmp
+            --outTmpDir _STARtmp;
     fi
     """
     } else {
