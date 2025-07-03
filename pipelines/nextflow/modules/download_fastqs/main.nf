@@ -23,33 +23,43 @@ process DOWNLOAD_FASTQS {
     label "python"
     tag "${taxon_id}:${run_accession}"
     maxForks 25
-    storeDir "${params.outDir}/$taxon_id/$run_accession"
+    //storeDir "${params.outDir}/$taxon_id/$run_accession"
     afterScript "sleep $params.files_latency"  // Needed because of file system latency
-    conda "${projectDir}/bin/environment.yml"
+    //conda "$projectDir/pipelines/nextflow/modules/download_fastqs/environment.yml"
 
     input:
     tuple val(taxon_id), val(gca), val(platform), val(paired), val(tissue), val(run_accession), val(genomeDir),  val(url1), val(md5_1), val(url2),  val(md5_2)
 
     output:
-    tuple val(taxon_id), val(genomeDir), val(gca), val(platform), val(paired), val(tissue), val(run_accession), path(fastq1), path(fastq2, optional: true)
+    tuple val(taxon_id), val(genomeDir), val(gca), val(platform), val(paired), val(tissue), val(run_accession), path("*_1.fastq.gz"), path("*_2.fastq.gz", optional: true)
+//    path(fastq1), path(fastq2, optional: true)
 //input:
-//    tuple val(taxon_id), val(gca), val(run_accession), path(pair1), path(pair2, optional: true), val(genomeDir)
+//    tuple val(taxon_id), val(gca), val(paired), val(run_accession), path(pair1), path(pair2, optional: true), val(genomeDir)
 
     script: 
     // define fastq paths
-    def fastq1 = file("${params.outDir}/${taxon_id}/${run_accession}/*_1.fastq.gz")
-    def fastq2 = paired ? file("${params.outDir}/${taxon_id}/${run_accession}/*_2.fastq.gz") : null
+  //  def fastq1 = file("${params.outDir}/${taxon_id}/${run_accession}/*_1.fastq.gz")
+   // def fastq2 = paired ? file("${params.outDir}/${taxon_id}/${run_accession}/*_2.fastq.gz") : null
 
     def optionalArgs = paired ? "--url2 ${url2} --md5_2 ${md5_2} --paired" : ""
-    """"
-    chmod +x $projectDir/bin/download_fastqs.py
-    python3 download_fastqs.py \\
-        --taxon_id ${taxon_id} \\
-        --run_accession ${run_accession} \\
-        --url1 ${url1} \\
-        --md5_1 ${md5_1} \\
-        ${optionalArgs} \\
-        --outDir ${params.outDir} \\
+    """
+    if [ ! -s "${params.outDir}/$taxon_id/$run_accession/alignment/${run_accession}*.fastq.gz" ]; then
+    chmod +x $projectDir/pipelines/nextflow/workflows/bin/download_fastq.py
+    python3 $projectDir/pipelines/nextflow/workflows/bin/download_fastq.py \
+        --taxon_id ${taxon_id} \
+        --run_accession ${run_accession} \
+        --url1 ${url1} \
+        --md5_1 ${md5_1} \
+        ${optionalArgs} \
+        --outDir ${params.outDir} 
+
+ln -s ${params.outDir}/${taxon_id}/${run_accession}/*_1.fastq.gz ./
+${paired ? "ln -s ${params.outDir}/${taxon_id}/${run_accession}/*_2.fastq.gz ./" : ""}
+else
+echo "skipping"
+ln -s ${params.outDir}/${taxon_id}/${run_accession}/*_1.fastq.gz ./
+${paired ? "ln -s ${params.outDir}/${taxon_id}/${run_accession}/*_2.fastq.gz ./" : ""}
+fi
 
     """
     
