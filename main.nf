@@ -39,7 +39,6 @@ include {ALIGNMENT_PIPELINE} from "./pipelines/nextflow/workflows/alignment_pipe
 
 workflow  {
 
-    main:
     log.info "Pipeline started at: ${new Date().format('dd-MM-yyyy HH:mm:ss')}"
     
 
@@ -50,10 +49,9 @@ workflow  {
     // Print summary of supplied parameters
     ALIGNMENT_PIPELINE(params.csvFile, params.bam2cram, params.mergeTissue, params.stranded, params.bam2bigWig)
     
-
+}
 workflow.onComplete {
     log.info "Pipeline completed at: ${new Date().format('dd-MM-yyyy HH:mm:ss')}"
-    log.info  "Time to complete workflow execution: ${workflow.duration}"
     log.info  "Execution status: ${workflow.success ? 'Successful' : 'Failed'}"
     if (params.cleanOutputDir) {    
     try {
@@ -70,10 +68,12 @@ workflow.onComplete {
     }
     }
 }
+
 workflow.onError {
-    println "Error... Pipeline execution stopped with the following message: $workflow.errorMessage"
+    println "Error: Pipeline execution stopped with the following message: ${workflow.errorMessage}"
 }
-}
+
+
 def deleteRecursively(Path path) {
     if (java.nio.file.Files.isDirectory(path)) {
         java.nio.file.Files.newDirectoryStream(path).each { subPath ->
