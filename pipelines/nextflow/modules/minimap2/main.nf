@@ -26,7 +26,7 @@ process MINIMAP2 {
     tuple val(taxon_id), val(genomeDir), val(platform), val(tissue), val(run_accession), val(input_file), path(minimap_index_file)
 
     output:
-    tuple val(taxon_id), val(genomeDir), val(tissue), val(run_accession), path("*.sam")
+    tuple val(taxon_id), val(genomeDir), val(tissue),val(platform),  val(run_accession), path("*.sam")
 
     script:
     def sam_file = "${run_accession}.sam"
