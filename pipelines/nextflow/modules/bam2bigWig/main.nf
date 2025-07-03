@@ -17,23 +17,31 @@ limitations under the License.
 */
 
 process BAM2BIGWIG {
-    tag "$aligned_file"
+    tag "$bam_file1"
     label 'bamCoverage'
-    publishDir "${params.outDir}/$taxon_id/$output_dir/alignment", mode: "copy"
+    publishDir "$output_dir", mode: "copy"
     afterScript "sleep $params.files_latency"  // Needed because of file system latency
 
     input:
-    tuple val(taxon_id), val(genomeDir), val(tissue),  val(output_dir),path(aligned_file)
+    //tuple val(taxon_id), val(genomeDir), val(tissue), val(platform),  val(output_dir),path(aligned_file)
+    tuple val(taxon_id), val(genomeDir), val(tissue), val(platform), val(output_dir), path(bam_file1),  path(bam_file2)
 
     //output:
-    //tuple val(taxon_id), val(genomeDir), val(tissue),  val(output_dir), path("*.bw")
+    //tuple val(taxon_id), val(genomeDir), val(tissue), val(platform),  val(output_dir), path("*.bw")
 
     script:
-
+    def bam_basename = bam_file1.baseName  // strips .bam 
+    def bam2_provided = bam_file2 ? true : false
     """
-    bamCoverage -b ${aligned_file} -o ${aligned_file}.bw --binSize 1 --numberOfProcessors $params.num_cpus 
-    """
-    
+    ln -s ${output_dir}/${bam_file1}.bai .
+    bamCoverage -b ${output_dir}/${bam_file1} -o ${output_dir}/${bam_basename}.bw --binSize 1 --numberOfProcessors ${task.cpus} 
+    ln -s ${output_dir}/${bam_basename}.bw .
+ if [  -s "${bam_file2}" ]; then
+   ln -s ${output_dir}/${bam_file2}.bai .
+  bamCoverage -b ${output_dir}/${bam_file2} -o ${output_dir}/${bam_file2.baseName}.bw --binSize 1 --numberOfProcessors ${task.cpus}
+  ln -s ${output_dir}/${bam_file2.baseName}.bw .
+ fi 
+ """
 }
 
 
