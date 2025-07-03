@@ -19,21 +19,23 @@ limitations under the License.
 process BAM2CRAM {
     tag "$aligned_file"
     label 'samtools'
-    publishDir "${params.outDir}/$taxon_id/$output_dir/alignment", mode: "copy"
+    publishDir "$output_dir", mode: "copy"
     afterScript "sleep $params.files_latency"  // Needed because of file system latency
 
     input:
-    tuple val(taxon_id), val(genomeDir), val(tissue), val(output_dir), path(aligned_file)
+    tuple val(taxon_id), val(genomeDir), val(tissue), val(platform), val(output_dir), path(aligned_file)
 
     output:
-    tuple val(taxon_id), val(genomeDir), val(tissue), val(output_dir), path("*.cram")
+    tuple val(taxon_id), val(genomeDir), val(tissue), val(platform), path("*.cram")
 
     script:
+
     def genomeDirPath= new File(genomeDir)
     def genomeFile = genomeDirPath.listFiles().find { it.name.endsWith('fna') }
-
+    def bam_basename = aligned_file.baseName  // strips .bam
     """
-    samtools view -C -T ${genomeFile} -o ${aligned_file}.cram ${aligned_file}
+    samtools view -C -T ${genomeFile} -o $output_dir/${bam_basename}.cram ${aligned_file}
+    ln -s $output_dir/${bam_basename}.cram .
     """
     
 }
