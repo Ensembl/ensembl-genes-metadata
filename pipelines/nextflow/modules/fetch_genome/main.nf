@@ -20,7 +20,7 @@ process FETCH_GENOME {
   tag "$taxon_id:$gca"
   label 'fetch_file'
 
-  publishDir "${params.outDir}/$taxon_id/$gca/", mode: "copy"
+  //publishDir "${params.outDir}/$taxon_id/$gca/", mode: "copy"  doesn't work for multiple files
   afterScript "sleep $params.files_latency"  // Needed because of file system latency
   maxForks 10
 
@@ -32,10 +32,12 @@ process FETCH_GENOME {
   
   script:
   """
-  if [ ! -d "${params.outDir}/${taxon_id}/${gca}/ncbi_dataset/" ]; then
+  if [ ! -d "${params.outDir}/${taxon_id}/${gca}/" ]; then
     echo "Directory ncbi_dataset does not exist. Proceeding with download..."
     curl --retry 3  -X GET "${params.ncbiBaseUrl}/${gca}/download?include_annotation_type=GENOME_FASTA&hydrated=FULLY_HYDRATED" -H "Accept: application/zip" --output genome_file.zip
     unzip -j genome_file.zip
+    mkdir -p ${params.outDir}/${taxon_id}/${gca} 
+    cp -r * ${params.outDir}/${taxon_id}/${gca}/
   else
     echo "Directory ncbi_dataset already exists. Skipping download."
   fi
