@@ -6,46 +6,40 @@
     "type": "array",
     "items": {
         "type": "object",
-        "required": ["taxon_id", "gca", "platform", "paired", "tissue", "run_accession", "pair1", "md5_1"],
+        "required": ["taxon_id", "assembly_accession", "platform", "paired", "tissue", "run_accession", "pair1", "md5_1"],
         "additionalProperties": false,
         "properties": {
             "taxon_id": {
                 "type": "integer",
                 "description": "NCBI taxon ID",
                 "pattern": "^\\d+$",
-                "errorMessage": "Taxon ID must be a number",
-                "meta": ["taxon_id"]
+                "errorMessage": "Taxon ID must be a number"
             },
-            "gca": {
+            "assembly_accession": {
                 "type": "string",
                 "description": "Genome assembly accession",
                 "pattern": "^GCA_\\d{9}\\.\\d$",
-                "errorMessage": "GCA must be in the format GCA_000000000.0",
-                "meta": ["gca"]
+                "errorMessage": "GCA must be in the format GCA_000000000.0"
             },
             "platform": {
                 "type": "string",
                 "description": "Sequencing platform",
-                "enum": ["ILLUMINA", "IONTORRENT", "PACBIO", "OXFORDNANOPORE"],
-                "meta": ["platform"]
+                "enum": ["ILLUMINA", "IONTORRENT", "PACBIO", "OXFORDNANOPORE"]
             },
             "paired": {
                 "type": "boolean",
-                "description": "Whether the reads are paired-end or single-end",
-                "meta": ["paired"]
+                "description": "Whether the reads are paired-end or single-end"
             },
             "tissue": {
                 "type": "string",
                 "description": "Tissue type",
                 "pattern": "^\\S+$",
-                "errorMessage": "Tissue type must be provided and cannot contain spaces",
-                "meta": ["tissue"]
+                "errorMessage": "Tissue type must be provided and cannot contain spaces"
             },
             "run_accession": {
                 "type": "string",
                 "description": "Run accession number",
-                "errorMessage": "Run accession must be provided and cannot contain spaces",
-                "meta": ["run_accession"]
+                "errorMessage": "Run accession must be provided and cannot contain spaces"
             },
             "pair1": {
                 "type": "string",
