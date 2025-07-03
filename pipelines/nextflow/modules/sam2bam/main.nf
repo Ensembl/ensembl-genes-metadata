@@ -23,12 +23,12 @@ process SAM2BAM {
     afterScript "sleep $params.files_latency"  // Needed because of file system latency
 
     input:
-    tuple val(taxon_id), val(genomeDir), val(tissue), val(run_accession), path(sam_file)
+    tuple val(taxon_id), val(genomeDir), val(tissue),val(platform),  val(run_accession), path(sam_file)
 
 
     output:
     //tuple val(taxon_id), val(genomeDir), val(gca), val(platform), val(paired), val(tissue), val(run_accession), path("*.bam")
-    tuple val(taxon_id), val(genomeDir), val(tissue), val(run_accession), path("*.bam")
+    tuple val(taxon_id), val(genomeDir), val(tissue),val(platform),  val(run_accession), path("*.bam")
 
 
 
