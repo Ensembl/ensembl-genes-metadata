@@ -29,28 +29,33 @@ process STAR {
     tuple val(taxon_id), val(genomeDir), val(platform), val(tissue), val(run_accession), val(pair1), val(pair2)
     output:
     //tuple val(taxon_id), val(genomeDir), val(gca), val(platform), val(paired), val(tissue), val(run_accession), path("*_Aligned.sortedByCoord.out.bam")
-    tuple val(taxon_id), val(genomeDir), val(tissue), val(run_accession), path("*.bam")
+    tuple val(taxon_id), val(genomeDir), val(tissue), val(platform), val(run_accession), path("*.bam")
     script:
     def starTmpDir =  "${params.outDir}/${taxon_id}/${run_accession}/alignment/tmp"
     def outFileNamePrefix = "${params.outDir}/${taxon_id}/${run_accession}/alignment/${run_accession}_"
+    
     """
+    if [ ! -s "${params.outDir}/$taxon_id/$run_accession/alignment/${run_accession}_Aligned.sortedByCoord.out.bam" ]; then
     rm -rf ${starTmpDir}
-    STAR 
+    STAR \
     --runThreadN ${task.cpus} \
-    --twopassMode Basic 
-    --runMode alignReads 
+    --twopassMode Basic \
+    --runMode alignReads \
     --genomeDir ${file(genomeDir)} \
-    --readFilesIn ${pair1} ${pair2} 
+    --readFilesIn ${pair1} ${pair2} \
     --outFileNamePrefix ${outFileNamePrefix} \
-    --readFilesCommand zcat 
-    --outSAMattrRGline "ID:${run_accession}" 
-    --outTmpDir ${starTmpDir} 
-    --outSAMtype BAM SortedByCoordinate  
-
+    --readFilesCommand zcat \
+    --outSAMattrRGline "ID:${run_accession}" \
+    --outTmpDir ${starTmpDir} \
+    --outSAMtype BAM SortedByCoordinate  \
     --limitSjdbInsertNsj 2000000 \
     --outFilterIntronMotifs RemoveNoncanonicalUnannotated \
     --outSAMstrandField intronMotif 
-    
+   ln -s ${params.outDir}/${taxon_id}/${run_accession}/alignment/*.bam ./ 
+   else
+    echo "skip file exists"
+    ln -s ${params.outDir}/${taxon_id}/${run_accession}/alignment/*.bam ./
+    fi
     """
     
 }
