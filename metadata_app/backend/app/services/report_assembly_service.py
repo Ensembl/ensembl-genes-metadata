@@ -143,11 +143,11 @@ def get_filtered_assemblies(bioproject_id, candidate, taxon_id,
 
 			# Main query
 			query = f"""
-                SELECT b.bioproject_id, a.asm_level, a.gca_chain, a.gca_version, a.asm_type, a.release_date, a.is_current,
+                SELECT b.bioproject_id, mb.bioproject_name AS associated_project, a.asm_level, a.gca_chain, a.gca_version, a.asm_type, a.release_date, a.is_current,
                        m.metrics_name, m.metrics_value, s.scientific_name, s.common_name, a.asm_name,
-                       a.lowest_taxon_id, g.group_name, a.refseq_accession, o.infra_type, o.infra_name,
-                       IF(gb.assembly_id IS NOT NULL, 'annotated/started', 'not started') AS annotation_status
+                       a.lowest_taxon_id, g.group_name, a.refseq_accession, o.infra_type, o.infra_name
                 FROM bioproject b
+                JOIN main_bioproject mb ON mb.bioproject_id = b.bioproject_id
                 JOIN assembly_metrics m ON b.assembly_id = m.assembly_id
                 JOIN assembly a ON m.assembly_id = a.assembly_id
                 LEFT JOIN species s ON a.lowest_taxon_id = s.lowest_taxon_id
@@ -156,6 +156,7 @@ def get_filtered_assemblies(bioproject_id, candidate, taxon_id,
                 LEFT JOIN genebuild gb ON a.assembly_id = gb.assembly_id
                 {where_clause}
                 AND a.is_current = 'current'
+                AND gb.genebuild_id IS NULL
                 ORDER BY m.metrics_name;
             """
 
@@ -206,17 +207,8 @@ def get_filtered_assemblies(bioproject_id, candidate, taxon_id,
 		df = pd.DataFrame(results)
 		check_dataframe_not_empty(df, "initial query results")
 
-		# Only show non annotated assemblies
-		logging.info("Filtering for non-annotated assemblies")
-		df = df[df['annotation_status'] == 'not started']
-		check_dataframe_not_empty(df, "assemblies after filtering for non-annotated status")
-
-		# Load bioproject_mapping
-		bioproject_mapping = load_bioproject_mapping()
-
 		# Process data
 		df["release_date"] = pd.to_datetime(df["release_date"], errors="coerce")
-		df["associated_project"] = df["bioproject_id"].map(bioproject_mapping)
 		df["gca"] = df["gca_chain"].astype(str) + "." + df["gca_version"].astype(str)
 
 		# Clean genome_coverage
@@ -233,7 +225,7 @@ def get_filtered_assemblies(bioproject_id, candidate, taxon_id,
 		df_wide = df.pivot(
 			index=["bioproject_id", "associated_project", "group_name", "scientific_name", "lowest_taxon_id",
 			       "asm_level", "asm_type", "asm_name", "gca", "release_date", "refseq_accession",
-			       "infra_type", "infra_name", "is_current", "annotation_status"],
+			       "infra_type", "infra_name", "is_current"],
 			columns="metrics_name",
 			values="metrics_value"
 		)
@@ -331,14 +323,6 @@ def get_filtered_assemblies(bioproject_id, candidate, taxon_id,
 		if "transcriptomic_evidence" not in df_wide.columns:
 			df_wide["transcriptomic_evidence"] = "not checked"
 
-		# Create df_main table
-		rep_asm_main = df_wide[['associated_project', 'gca', 'scientific_name', 'release_date',
-		                        'lowest_taxon_id', 'genus_taxon_id', 'transcriptomic_evidence', 'internal_clade',
-		                        'asm_type', 'asm_name', 'refseq_accession', 'asm_level',
-		                        'contig_n50', 'total_sequence_length']]
-		rep_asm_main = rep_asm_main.drop_duplicates(subset=['gca'], keep='first')
-		check_dataframe_not_empty(rep_asm_main, "main results table after deduplication")
-		logging.info("Created main table")
 
 		# Clean final results
 		columns_to_drop = ['contig_l50', 'gc_count', 'number_of_component_sequences', 'scaffold_l50',
@@ -346,8 +330,26 @@ def get_filtered_assemblies(bioproject_id, candidate, taxon_id,
 		                   'gaps_between_scaffolds_count']
 
 		df_wide.drop(columns=columns_to_drop, inplace=True, errors='ignore')
-		rep_asm_wide = df_wide.drop_duplicates(subset=['gca'], keep='first')
+		agg_dict = {
+			'bioproject_id': lambda x: ', '.join(sorted(set(x))),
+			'associated_project': lambda x: ', '.join(sorted(set(x))),
+		}
+
+		# add all other columns except gca, bioproject_id, associated_project with 'first'
+		for col in df_wide.columns:
+			if col not in ['gca', 'bioproject_id', 'associated_project']:
+				agg_dict[col] = 'first'
+
+		rep_asm_wide = df_wide.groupby('gca', as_index=False).agg(agg_dict)
 		check_dataframe_not_empty(rep_asm_wide, "wide results table after deduplication and cleanup")
+
+		# Create df_main table
+		rep_asm_main = df_wide[['associated_project', 'gca', 'scientific_name', 'release_date',
+		                        'lowest_taxon_id', 'genus_taxon_id', 'transcriptomic_evidence', 'internal_clade',
+		                        'asm_type', 'asm_name', 'refseq_accession', 'asm_level',
+		                        'contig_n50', 'total_sequence_length']]
+		check_dataframe_not_empty(rep_asm_main, "main results table after deduplication")
+		logging.info("Created main table")
 
 		return rep_asm_wide, rep_asm_main, taxonomy_dict
 

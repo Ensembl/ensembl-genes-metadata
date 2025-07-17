@@ -21,25 +21,25 @@ def query_meta_registry(annotation_date, taxon_id, bioproject_id, release_type):
         with get_db_connection("meta") as conn:
             cursor = conn.cursor()
 
-            # Validate BioProject IDs if provided
-            if bioproject_id:
-                cursor.execute("SELECT DISTINCT bioproject_id FROM bioproject;")
-                valid_bioprojects = {row['bioproject_id'] for row in cursor.fetchall()}
-                invalid_bioprojects = set(bioproject_id) - valid_bioprojects
-                if invalid_bioprojects:
-                    raise HTTPException(
-                        status_code=400,
-                        detail=f"The following BioProject IDs were not found: {', '.join(invalid_bioprojects)}"
-                    )
-
             # Build dynamic SQL filtering
             conditions = []
             parameters = []
 
             if bioproject_id:
-                conditions.append(f"b.bioproject_id IN ({','.join(['%s'] * len(bioproject_id))})")
-                parameters.extend(bioproject_id)
-                logging.info(f"Filtering by BioProject IDs: {', '.join(bioproject_id)}")
+                cursor.execute("SELECT bioproject_name FROM main_bioproject")
+                known_names = {row["bioproject_name"] for row in cursor.fetchall()}
+
+                bioproject_name = [bp for bp in bioproject_id if bp in known_names]
+                bioproject_ids = [bp for bp in bioproject_id if bp not in known_names]
+
+                if bioproject_name:
+                    conditions.append(f"mb.bioproject_name IN ({','.join(['%s'] * len(bioproject_name))})")
+                    parameters.extend(bioproject_name)
+                    logging.info(f"Filtering by BioProject names: {', '.join(bioproject_name)}")
+                if bioproject_ids:
+                    conditions.append(f"b.bioproject_id IN ({','.join(['%s'] * len(bioproject_ids))})")
+                    parameters.extend(bioproject_ids)
+                    logging.info(f"Filtering by BioProject IDs: {', '.join(bioproject_ids)}")
 
             if release_type:
                 conditions.append(f"gb.release_type IN ({','.join(['%s'] * len(release_type))})")
@@ -77,7 +77,7 @@ def query_meta_registry(annotation_date, taxon_id, bioproject_id, release_type):
             where_clause = " WHERE " + " AND ".join(conditions) if conditions else ""
 
             meta_query = f"""
-                SELECT b.bioproject_id, g.group_name, CONCAT(a.gca_chain, '.', a.gca_version) AS gca, a.lowest_taxon_id, 
+                SELECT b.bioproject_id, mb.bioproject_name AS associated_project, g.group_name, CONCAT(a.gca_chain, '.', a.gca_version) AS gca, a.lowest_taxon_id, 
                         gb.gb_status, gb.genebuilder, gb.annotation_source, gb.annotation_method, gb.release_type, 
                         gb.date_completed_beta, gb.release_date, gb.release_date_beta, gb.release_version_beta, gb.release_version,
                         s.scientific_name, s.common_name
@@ -86,6 +86,7 @@ def query_meta_registry(annotation_date, taxon_id, bioproject_id, release_type):
                 LEFT JOIN bioproject b on a.assembly_id = b.assembly_id
                 LEFT JOIN species s ON a.lowest_taxon_id = s.lowest_taxon_id
                 LEFT JOIN group_assembly g ON a.assembly_id = g.assembly_id
+                JOIN main_bioproject mb ON b.bioproject_id = mb.bioproject_id
                 {where_clause};                
             """
 
@@ -101,13 +102,6 @@ def query_meta_registry(annotation_date, taxon_id, bioproject_id, release_type):
         df_meta_genebuild = pd.DataFrame(results)
         df_meta_genebuild.drop_duplicates(subset=["gca"], inplace=True)
         logging.info(f"Retrieved records metadata table: {df_meta_genebuild.shape}")
-
-
-        # Load bioproject_mapping
-        logging.info(f"Adding BioProject mapping")
-        bioproject_mapping = load_bioproject_mapping()
-        df_meta_genebuild["associated_project"] = df_meta_genebuild["bioproject_id"].map(bioproject_mapping)
-        logging.info(f"Added BioProject mapping")
 
         return df_meta_genebuild
 

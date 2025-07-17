@@ -121,25 +121,25 @@ def get_filtered_assemblies(bioproject_id, metric_thresholds, asm_level, asm_typ
 		with get_db_connection("meta") as conn:
 			cursor = conn.cursor()
 
-			# Validate BioProject IDs if provided
-			if bioproject_id:
-				cursor.execute("SELECT DISTINCT bioproject_id FROM bioproject;")
-				valid_bioprojects = {row['bioproject_id'] for row in cursor.fetchall()}
-				invalid_bioprojects = set(bioproject_id) - valid_bioprojects
-				if invalid_bioprojects:
-					raise HTTPException(
-						status_code=400,
-						detail=f"The following BioProject IDs were not found: {', '.join(invalid_bioprojects)}"
-					)
-
 			# Build query conditions
 			conditions = []
 			params = []
 
 			if bioproject_id:
-				conditions.append(f"b.bioproject_id IN ({','.join(['%s'] * len(bioproject_id))})")
-				params.extend(bioproject_id)
-				logging.info(f"Filtering by BioProject IDs: {', '.join(bioproject_id)}")
+				cursor.execute("SELECT bioproject_name FROM main_bioproject")
+				known_names = {row["bioproject_name"] for row in cursor.fetchall()}
+
+				bioproject_name = [bp for bp in bioproject_id if bp in known_names]
+				bioproject_ids = [bp for bp in bioproject_id if bp not in known_names]
+
+				if bioproject_name:
+					conditions.append(f"mb.bioproject_name IN ({','.join(['%s'] * len(bioproject_name))})")
+					params.extend(bioproject_name)
+					logging.info(f"Filtering by BioProject names: {', '.join(bioproject_name)}")
+				if bioproject_ids:
+					conditions.append(f"b.bioproject_id IN ({','.join(['%s'] * len(bioproject_ids))})")
+					params.extend(bioproject_ids)
+					logging.info(f"Filtering by BioProject IDs: {', '.join(bioproject_ids)}")
 
 			if release_date:
 				if isinstance(release_date, pd.Timestamp):
@@ -174,7 +174,7 @@ def get_filtered_assemblies(bioproject_id, metric_thresholds, asm_level, asm_typ
 
 			# Main query
 			query = f"""
-                SELECT b.bioproject_id, a.asm_level, a.gca_chain, a.gca_version, a.asm_type, a.release_date, a.is_current,
+                SELECT b.bioproject_id, mb.bioproject_name AS associated_project, a.asm_level, a.gca_chain, a.gca_version, a.asm_type, a.release_date, a.is_current,
                        m.metrics_name, m.metrics_value, s.scientific_name, s.common_name, a.asm_name,
                        a.lowest_taxon_id, g.group_name, a.refseq_accession, o.infra_type, o.infra_name,
                        IF(gb.assembly_id IS NOT NULL, 'annotated/started', 'not started') AS annotation_status
@@ -185,6 +185,7 @@ def get_filtered_assemblies(bioproject_id, metric_thresholds, asm_level, asm_typ
                 LEFT JOIN group_assembly g ON a.assembly_id = g.assembly_id
                 LEFT JOIN organism o ON a.assembly_id = o.assembly_id
                 LEFT JOIN genebuild gb ON a.assembly_id = gb.assembly_id
+                JOIN main_bioproject mb ON b.bioproject_id = mb.bioproject_id
                 {where_clause}
                 ORDER BY m.metrics_name;
             """
@@ -237,12 +238,8 @@ def get_filtered_assemblies(bioproject_id, metric_thresholds, asm_level, asm_typ
 			raise HTTPException(status_code=404, detail="No assemblies meet the given criteria.")
 
 
-		#Load bioproject_mapping
-		bioproject_mapping = load_bioproject_mapping()
-
 		# Process data
 		df["release_date"] = pd.to_datetime(df["release_date"], errors="coerce")
-		df["associated_project"] = df["bioproject_id"].map(bioproject_mapping)
 		df["gca"] = df["gca_chain"].astype(str) + "." + df["gca_version"].astype(str)
 
 

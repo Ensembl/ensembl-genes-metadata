@@ -1,6 +1,4 @@
 # app/services/home_page_service.py
-
-import json
 import logging
 from metadata_app.backend.app.core.database import get_db_connection
 import pandas as pd
@@ -8,40 +6,55 @@ import datetime
 from metadata_app.backend.app.services.taxonomy_service import get_descendant_taxa
 
 
-def load_bioproject_mapping():
-    """Hardcoded path for clade settings."""
-    json_file = "data/bioproject_mapping.json"
-    with open(json_file, "r") as f:
-        logging.info("Loading bioproject mapping json file.")
-        return json.load(f)
-
-
 def get_annotation_counts_by_bioproject():
-    """Returns a count of annotations per mapped BioProject, with friendly names."""
+    """Returns a count of annotations per BioProject in main_bioproject, with annotation and assembly info."""
     try:
         with get_db_connection("meta") as conn:
             cursor = conn.cursor()
             query = """
-                SELECT b.bioproject_id, COUNT(g.assembly_id) AS annotation_count
+                SELECT 
+                    b.bioproject_id,
+                    mb.bioproject_name,
+                    COUNT(g.assembly_id) AS annotation_count,
+
+                    (
+                        SELECT COUNT(DISTINCT a.assembly_id)
+                        FROM assembly a
+                        LEFT JOIN bioproject b2 ON a.assembly_id = b2.assembly_id
+                        LEFT JOIN genebuild g2 ON a.assembly_id = g2.assembly_id
+
+                        WHERE b2.bioproject_id = b.bioproject_id
+                          AND g2.assembly_id IS NULL
+                          AND a.asm_name NOT LIKE "%alternate_haplotype%"
+                          AND a.asm_level IN ('Chromosome', 'Complete genome')
+                          AND a.is_current = 'current'
+                    ) AS qualified_assembly_count,
+
+                    (
+                        SELECT COUNT(DISTINCT g2.assembly_id)
+                        FROM genebuild g2
+                        JOIN bioproject b3 ON g2.assembly_id = b3.assembly_id
+                        WHERE g2.gb_status = 'in_progress'
+                          AND b3.bioproject_id = b.bioproject_id
+                    ) AS in_progress
+
                 FROM bioproject b
                 JOIN genebuild g ON b.assembly_id = g.assembly_id
-                WHERE g.gb_status != 'in_progress'
-                GROUP BY b.bioproject_id;
+                JOIN main_bioproject mb ON mb.bioproject_id = b.bioproject_id
+                WHERE g.gb_status = 'live'
+                GROUP BY b.bioproject_id, mb.bioproject_name;
             """
             cursor.execute(query)
             result = cursor.fetchall()
 
-        df = pd.DataFrame(result)
-        if df.empty:
-            return []
-
-        mapping = load_bioproject_mapping()
-
-        # Only keep mapped BioProjects
-        df = df[df["bioproject_id"].isin(mapping.keys())]
-        df["associated_project"] = df["bioproject_id"].map(mapping)
-
-        return df[["bioproject_id", "associated_project", "annotation_count"]].to_dict(orient="records")
+        df = pd.DataFrame(result, columns=[
+            "bioproject_id",
+            "bioproject_name",
+            "annotation_count",
+            "qualified_assembly_count",
+            "in_progress"
+        ])
+        return df.to_dict(orient="records")
 
     except Exception as e:
         logging.error(f"Error fetching annotation counts: {e}")

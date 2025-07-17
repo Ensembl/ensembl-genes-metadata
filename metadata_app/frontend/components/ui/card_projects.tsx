@@ -35,21 +35,16 @@ import {
 
 export type Project = {
   id: string
-  annotations: number
-  number: string
-  name: string
+  bioproject_id: string
+  bioproject_name: string
+  annotation_count: number
+  qualified_assembly_count: number
+  in_progress: number
 }
 
 export const columns: ColumnDef<Project>[] = [
   {
-    accessorKey: "number",
-    header: "Number",
-    cell: ({ row }) => (
-      <div className="capitalize">{row.getValue("number")}</div>
-    ),
-  },
-  {
-    accessorKey: "name",
+    accessorKey: "bioproject_name",
     header: ({ column }) => (
       <Button
         variant="ghost"
@@ -59,13 +54,27 @@ export const columns: ColumnDef<Project>[] = [
         <ArrowUpDown />
       </Button>
     ),
-    cell: ({ row }) => <div>{row.getValue("name")}</div>,
+    cell: ({ row }) => <div>{row.getValue("bioproject_name")}</div>,
   },
   {
-    accessorKey: "annotations",
-    header: "Annotations",
+    accessorKey: "annotation_count",
+    header: "Live annotations",
     cell: ({ row }) => (
-      <div className="capitalize">{row.getValue("annotations")}</div>
+      <div className="capitalize">{row.getValue("annotation_count")}</div>
+    ),
+  },
+    {
+    accessorKey: "in_progress",
+    header: "In-progress",
+    cell: ({ row }) => (
+      <div className="capitalize">{row.getValue("in_progress")}</div>
+    ),
+  },
+  {
+    accessorKey: "qualified_assembly_count",
+    header: "Unannotated",
+    cell: ({ row }) => (
+      <div className="capitalize">{row.getValue("qualified_assembly_count")}</div>
     ),
   },
 ]
@@ -84,11 +93,13 @@ export function CardsDataTable() {
         const res = await fetch("/api/bioprojects")
         const json = await res.json()
         console.log("API response:", json)
-        const formatted = json.map((item: any) => ({
+        const formatted = json.map((item: Project) => ({
           id: item.bioproject_id,
-          annotations: item.annotation_count,
-          number: item.bioproject_id,
-          name: item.associated_project || "Unknown", // default fallback
+          annotation_count: item.annotation_count,
+          bioproject_id: item.bioproject_id,
+          bioproject_name: item.bioproject_name || "Unknown",
+          qualified_assembly_count: item.qualified_assembly_count,
+          in_progress: item.in_progress,
         }))
         setData(formatted)
       } catch (err) {
@@ -130,9 +141,9 @@ export function CardsDataTable() {
         <div className="mb-4 flex items-center gap-4">
           <Input
             placeholder="Type project name"
-            value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
+            value={(table.getColumn("bioproject_name")?.getFilterValue() as string) ?? ""}
             onChange={(event) =>
-              table.getColumn("name")?.setFilterValue(event.target.value)
+              table.getColumn("bioproject_name")?.setFilterValue(event.target.value)
             }
             className="max-w-sm"
           />

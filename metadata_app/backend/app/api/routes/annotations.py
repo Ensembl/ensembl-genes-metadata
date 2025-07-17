@@ -11,7 +11,7 @@ def filter_annotations(filters: AnnotationFilterRequest):
             bioproject_id=filters.bioproject_id,
             annotation_date=filters.annotation_date,
             taxon_id=filters.taxon_id,
-            release_type=filters.release_type
+            release_type=filters.release_type,
         )
 
         return {

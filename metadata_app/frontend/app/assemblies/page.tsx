@@ -17,12 +17,12 @@ import {cn} from "@/lib/utils";
 import {StartAnnotationDialog} from "@/components/start_anno_dialog";
 import {Tooltip, TooltipContent, TooltipTrigger} from "@/components/ui/tooltip";
 import {Alert, AlertDescription, AlertTitle} from "@/components/ui/alert";
+import BioProjectSearch from "@/components/ui/bioproject_search";
 
 
 
 export default function Page() {
   const baseFields = [
-    { label: "BioProject ID", placeholder: "PRJNA123456" },
     { label: "Taxon ID", placeholder: "9606" },
     { label: "Release date", placeholder: "2024-12-31" },
   ];
@@ -44,7 +44,7 @@ export default function Page() {
   } | null>(null);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-
+  const [searchValue, setSearchValue] = useState<string | null>(null);
 
   const isNumeric = (value: string) => /^\d+(\.\d+)?$/.test(value);
 
@@ -67,16 +67,13 @@ export default function Page() {
 
     setLoading(true);
     try {
-      // Format BioProject ID as an array
-      let bioprojectArray = null;
-      const bioprojectId = baseFieldValues["BioProject ID"];
+      let bioprojectArray: string[] | null = null;
+      const bioprojectId = searchValue
 
       if (bioprojectId) {
-        if (bioprojectId.includes(',')) {
-          bioprojectArray = bioprojectId.split(',').map(id => id.trim()).filter(id => id);
-        } else {
-          bioprojectArray = [bioprojectId.trim()];
-        }
+        bioprojectArray = bioprojectId.includes(",")
+          ? bioprojectId.split(",").map((id) => id.trim()).filter((id) => id)
+          : [bioprojectId.trim()];
       }
 
       // Format metric thresholds
@@ -258,6 +255,11 @@ export default function Page() {
           {/* Filter Section */}
           <div className="rounded-t-2xl bg-secondary p-8 gap-10">
             <div className="grid justify-center grid-cols-4 gap-4">
+              <BioProjectSearch
+                value={searchValue}
+                onValueChange={setSearchValue}
+              />
+
               {baseFields.map(({ label, placeholder }, index) => (
                 <div key={index}>
                   <Label htmlFor={label.toLowerCase().replace(" ", "-")}>

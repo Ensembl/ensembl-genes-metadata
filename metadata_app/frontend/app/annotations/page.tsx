@@ -1,14 +1,15 @@
 "use client";
 
 import React, { useState } from "react";
-import {Loader2, Terminal} from "lucide-react";
+import { Loader2, Terminal } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { DataTable } from "@/app/tables/data-table";
 import { Annotations, columns } from "@/app/tables/annotations_columns";
-import {ToggleGroup, ToggleGroupItem} from "@/components/ui/toggle-group";
-import {Alert, AlertDescription, AlertTitle} from "@/components/ui/alert";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import BioProjectSearch from "@/components/ui/bioproject_search";
 
 type Downloadables = {
   anno_main: string;
@@ -17,7 +18,6 @@ type Downloadables = {
 
 export default function Page() {
   const baseFields = [
-    { label: "BioProject ID", placeholder: "PRJNA123456" },
     { label: "Taxon ID", placeholder: "9606" },
     { label: "Annotation date", placeholder: "2024-12-31" },
   ];
@@ -29,15 +29,17 @@ export default function Page() {
   const [releaseSites, setReleaseSites] = useState<string>("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  // State for the searchable BioProject
+  const [searchValue, setSearchValue] = useState<string | null>(null);
 
-  const handleGetAnnotations = async () => {
+  const handleGetAnnotations = async (): Promise<void> => {
     setErrorMessage(null);
     setAnnotations([]);
-
     setLoading(true);
+
     try {
-      let bioprojectArray = null;
-      const bioprojectId = baseFieldValues["BioProject ID"];
+      let bioprojectArray: string[] | null = null;
+      const bioprojectId = searchValue
 
       if (bioprojectId) {
         bioprojectArray = bioprojectId.includes(",")
@@ -45,7 +47,7 @@ export default function Page() {
           : [bioprojectId.trim()];
       }
 
-      let taxonIdArray = null;
+      let taxonIdArray: number[] | null = null;
       const taxonInput = baseFieldValues["Taxon ID"];
 
       if (taxonInput) {
@@ -62,7 +64,7 @@ export default function Page() {
         }
       }
 
-    let release_type: string[] | null = null;
+      let release_type: string[] | null = null;
       if (releaseSites && releaseSites !== "both") {
         release_type = [releaseSites];
       }
@@ -75,7 +77,7 @@ export default function Page() {
       };
 
       const cleanPayload = Object.fromEntries(
-        Object.entries(payload).filter(([_, value]) => value !== null && value !== undefined)
+        Object.entries(payload).filter(([, value]) => value !== null && value !== undefined)
       );
 
       const res = await fetch("http://127.0.0.1:8000/api/annotations/annotations/filter", {
@@ -115,7 +117,7 @@ export default function Page() {
     }
   };
 
-  const handleDownload = (content: string | undefined, filename: string, type = "text/plain") => {
+  const handleDownload = (content: string | undefined, filename: string, type = "text/plain"): void => {
     if (!content) {
       alert(`No ${filename} data available to download.`);
       return;
@@ -143,6 +145,12 @@ export default function Page() {
         <div className="rounded-2xl border-accent">
           <div className="rounded-2xl bg-secondary p-8 gap-10 shadow-lg">
             <div className="grid justify-center grid-cols-4 gap-4">
+              {/* This is the extracted BioProject search component */}
+              <BioProjectSearch
+                value={searchValue}
+                onValueChange={setSearchValue}
+              />
+
               {baseFields.map(({ label, placeholder }, index) => (
                 <div key={index}>
                   <Label htmlFor={label.toLowerCase().replace(" ", "-")}>
@@ -172,21 +180,14 @@ export default function Page() {
                   value={releaseSites}
                   onValueChange={setReleaseSites}
                 >
-                  <ToggleGroupItem value="main" aria-label="main">
-                    Main
-                  </ToggleGroupItem>
-                  <ToggleGroupItem value="beta" aria-label="beta">
-                    Beta
-                  </ToggleGroupItem>
-                  <ToggleGroupItem value="both" aria-label="both">
-                    Both
-                  </ToggleGroupItem>
+                  <ToggleGroupItem value="main">Main</ToggleGroupItem>
+                  <ToggleGroupItem value="beta">Beta</ToggleGroupItem>
+                  <ToggleGroupItem value="both">Both</ToggleGroupItem>
                 </ToggleGroup>
               </div>
             </div>
           </div>
 
-          {/* Get Results Button */}
           <div className="mt-8 flex justify-end">
             <Button size="lg" onClick={handleGetAnnotations} disabled={loading}>
               {loading ? (
@@ -204,17 +205,16 @@ export default function Page() {
             <Alert variant="destructive" className="mt-8">
               <Terminal />
               <AlertTitle>Heads up!</AlertTitle>
-              <AlertDescription>
-                {errorMessage}
-              </AlertDescription>
+              <AlertDescription>{errorMessage}</AlertDescription>
             </Alert>
-        )}
+          )}
 
-          {/* Results */}
           {annotations.length > 0 && (
             <div className="mt-10 shadow-lg border border:border rounded-2xl">
               <div className="flex items-center justify-between px-8 py-6 border-b border:border">
-                <h2 className="text-lg font-semibold">Filtered Annotations ({annotations.length})</h2>
+                <h2 className="text-lg font-semibold">
+                  Filtered Annotations ({annotations.length})
+                </h2>
                 <div className="flex gap-2">
                   <Button
                     variant="outline"
@@ -224,8 +224,9 @@ export default function Page() {
                   </Button>
                   <Button
                     variant="outline"
-                    onClick={() => handleDownload(downloadables?.anno_wide, "full_table_filtered_annotations.csv", "text/csv")}
-                  >
+                    onClick={() =>
+                      handleDownload(downloadables?.anno_wide, "full_table_filtered_annotations.csv", "text/csv")
+                    }>
                     Download Full Table
                   </Button>
                 </div>
