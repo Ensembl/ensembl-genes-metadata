@@ -28,7 +28,6 @@ export default function Page() {
           gca: item.gca,
           lowest_taxon_id: item.lowest_taxon_id,
           scientific_name: item.scientific_name,
-          asm_name: item.asm_name,
           asm_level: item.asm_level,
           gb_status: item.gb_status,
           genebuilder: item.genebuilder,
@@ -61,7 +60,7 @@ export default function Page() {
 
         <div className="flex items-center justify-between px-8 py-6">
           <h1 className="text-2xl font-semibold">
-            Darwin Tree of Life Number of GCAs ({assemblies.length})
+            ERGA pilot number of GCAs: {assemblies.length}
           </h1>
         </div>
 

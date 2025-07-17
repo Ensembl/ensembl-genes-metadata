@@ -8,17 +8,11 @@ export type ProjectGCA = {
   gca: string;
   lowest_taxon_id: number;
   scientific_name: string;
-  asm_name: string;
   asm_level: string;
   gb_status: string;
   genebuilder: string;
 };
 
-declare module "@tanstack/react-table" {
-  interface ColumnMeta<TData, TValue> {
-    filterOptions?: string[];
-  }
-}
 
 function sortableHeader(label: string) {
   return ({ column }: { column: any }) => (
@@ -45,10 +39,6 @@ export const columns: ColumnDef<ProjectGCA>[] = [
   {
     accessorKey: "scientific_name",
     header: sortableHeader("Scientific Name"),
-  },
-  {
-    accessorKey: "asm_name",
-    header: sortableHeader("ASM Name"),
   },
 
   {

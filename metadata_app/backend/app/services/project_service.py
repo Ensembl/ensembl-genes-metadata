@@ -33,6 +33,7 @@ def get_dtol():
         ])
         df["gb_status"] = df["gb_status"].fillna("not_started")
         df = df[~df["asm_name"].str.contains("alternate", case=False, na=False)]
+        df = df.drop(columns=["asm_name"])
         df = df[~df["asm_level"].str.lower().isin(["contig", "scaffold"])]
 
         return df.to_dict(orient="records")
@@ -69,6 +70,10 @@ def get_erga():
             "gb_status",
             "genebuilder"
         ])
+        df["gb_status"] = df["gb_status"].fillna("not_started")
+        df = df[~df["asm_name"].str.contains("alternate", case=False, na=False)]
+        df = df.drop(columns=["asm_name"])
+        df = df[~df["asm_level"].str.lower().isin(["contig", "scaffold"])]
         return df.to_dict(orient="records")
 
     except Exception as e:
@@ -104,6 +109,10 @@ def get_asg():
             "gb_status",
             "genebuilder"
         ])
+        df["gb_status"] = df["gb_status"].fillna("not_started")
+        df = df[~df["asm_name"].str.contains("alternate", case=False, na=False)]
+        df = df.drop(columns=["asm_name"])
+        df = df[~df["asm_level"].str.lower().isin(["contig", "scaffold"])]
         return df.to_dict(orient="records")
 
     except Exception as e:
@@ -139,6 +148,10 @@ def get_erga_pilot():
             "gb_status",
             "genebuilder"
         ])
+        df["gb_status"] = df["gb_status"].fillna("not_started")
+        df = df[~df["asm_name"].str.contains("alternate", case=False, na=False)]
+        df = df.drop(columns=["asm_name"])
+        df = df[~df["asm_level"].str.lower().isin(["contig", "scaffold"])]
         return df.to_dict(orient="records")
 
     except Exception as e:
@@ -173,6 +186,10 @@ def get_erga_bge():
             "gb_status",
             "genebuilder"
         ])
+        df["gb_status"] = df["gb_status"].fillna("not_started")
+        df = df[~df["asm_name"].str.contains("alternate", case=False, na=False)]
+        df = df.drop(columns=["asm_name"])
+        df = df[~df["asm_level"].str.lower().isin(["contig", "scaffold"])]
         return df.to_dict(orient="records")
 
     except Exception as e:
@@ -207,6 +224,10 @@ def get_vgp():
             "gb_status",
             "genebuilder"
         ])
+        df["gb_status"] = df["gb_status"].fillna("not_started")
+        df = df[~df["asm_name"].str.contains("alternate", case=False, na=False)]
+        df = df.drop(columns=["asm_name"])
+        df = df[~df["asm_level"].str.lower().isin(["contig", "scaffold"])]
         return df.to_dict(orient="records")
 
     except Exception as e:
@@ -241,6 +262,10 @@ def get_ebp():
             "gb_status",
             "genebuilder"
         ])
+        df["gb_status"] = df["gb_status"].fillna("not_started")
+        df = df[~df["asm_name"].str.contains("alternate", case=False, na=False)]
+        df = df.drop(columns=["asm_name"])
+        df = df[~df["asm_level"].str.lower().isin(["contig", "scaffold"])]
         return df.to_dict(orient="records")
 
     except Exception as e:
@@ -275,6 +300,10 @@ def get_hprc():
             "gb_status",
             "genebuilder"
         ])
+        df["gb_status"] = df["gb_status"].fillna("not_started")
+        df = df[~df["asm_name"].str.contains("alternate", case=False, na=False)]
+        df = df.drop(columns=["asm_name"])
+        df = df[~df["asm_level"].str.lower().isin(["contig", "scaffold"])]
         return df.to_dict(orient="records")
 
     except Exception as e:
@@ -309,6 +338,10 @@ def get_cbp():
             "gb_status",
             "genebuilder"
         ])
+        df["gb_status"] = df["gb_status"].fillna("not_started")
+        df = df[~df["asm_name"].str.contains("alternate", case=False, na=False)]
+        df = df.drop(columns=["asm_name"])
+        df = df[~df["asm_level"].str.lower().isin(["contig", "scaffold"])]
         return df.to_dict(orient="records")
 
     except Exception as e:
