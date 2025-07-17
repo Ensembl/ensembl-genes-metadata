@@ -29,7 +29,7 @@ export default function ReportSelectorPage() {
               <CardHeader>
                 <CardTitle>ERGA-BGE*</CardTitle>
                 <CardDescription>
-                  The European Reference Genome Atlas Biodiversity Genomics Europe Project
+                  European Reference Genome Atlas Biodiversity Genomics Europe Project
                 </CardDescription>
               </CardHeader>
               <CardContent className="absolute bottom-4 right-4">
@@ -43,7 +43,7 @@ export default function ReportSelectorPage() {
               <CardHeader>
                 <CardTitle>ERGA*</CardTitle>
                 <CardDescription>
-                  The European Reference Genome Atlas Project
+                  European Reference Genome Atlas Project
                 </CardDescription>
               </CardHeader>
               <CardContent className="absolute bottom-4 right-4">
@@ -57,7 +57,7 @@ export default function ReportSelectorPage() {
               <CardHeader>
                 <CardTitle>ERGA-pilot*</CardTitle>
                 <CardDescription>
-                  The European Reference Genome Atlas Pilot Project
+                  European Reference Genome Atlas Pilot Project
                 </CardDescription>
               </CardHeader>
               <CardContent className="absolute bottom-4 right-4">
