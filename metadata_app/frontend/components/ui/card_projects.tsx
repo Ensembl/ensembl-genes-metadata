@@ -135,7 +135,7 @@ export function CardsDataTable() {
     <Card className="dark:bg-secondary">
       <CardHeader className="mb-4">
         <CardTitle className="text-xl -mb-2">Biodiversity projects</CardTitle>
-        <CardDescription>Number of annotations per project</CardDescription>
+        <CardDescription>Number of annotations per project. Unannotated shows the number of chromosome level, primary, current assemblies.</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="mb-4 flex items-center gap-4">
