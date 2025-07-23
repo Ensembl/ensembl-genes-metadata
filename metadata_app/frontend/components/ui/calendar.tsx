@@ -75,10 +75,10 @@ function Calendar({
         table: "w-full border-collapse",
         weekdays: cn("flex", defaultClassNames.weekdays),
         weekday: cn(
-          "text-muted-foreground rounded-md flex-1 font-normal text-[0.8rem] select-none",
+          "text-foreground rounded-md flex-1 font-normal text-[0.8rem] select-none",
           defaultClassNames.weekday
         ),
-        week: cn("flex w-full mt-2", defaultClassNames.week),
+        week: cn("flex w-full mt-1", defaultClassNames.week),
         week_number_header: cn(
           "select-none w-(--cell-size)",
           defaultClassNames.week_number_header
@@ -158,7 +158,7 @@ function CalendarDayCell({
 }: {
   className?: string
   day: { date: Date }
-  modifiers?: { selected?: boolean }
+  modifiers?: { selected?: boolean; outside?: boolean }
   [key: string]: any
 }) {
   const defaultClassNames = getDefaultClassNames()
@@ -167,9 +167,11 @@ function CalendarDayCell({
     <div
       data-day={day.date.toLocaleDateString()}
       className={cn(
-        "flex aspect-square size-auto w-full min-w-(--cell-size) flex-col items-center justify-center gap-1 leading-none font-normal text-foreground/80 text-xs",
-        modifiers?.selected &&
-          "bg-primary text-primary-foreground rounded-md",
+        "flex aspect-10/9 py-0 size-auto w-full min-w-(--cell-size) flex-col items-center justify-center gap-1 leading-none text-foreground text-xs",
+        modifiers?.outside
+          ? "text-muted-foreground font-normal"
+          : "text-foreground font-semibold",
+        modifiers?.selected && "bg-primary text-primary-foreground rounded-md",
         defaultClassNames.day,
         className
       )}
