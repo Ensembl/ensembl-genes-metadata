@@ -163,26 +163,22 @@ CREATE TABLE genebuilder (
 DROP TABLE IF EXISTS genebuild_status
 
 CREATE TABLE genebuild_status (
-  genebuild_id int NOT NULL AUTO_INCREMENT,
+  genebuild_status_id int NOT NULL AUTO_INCREMENT,
   assembly_id int NOT NULL,
   gca_accession VARCHAR(20) NOT NULL, 
-  gb_status ENUM('in_progress', 'completed', 'handed_over'),
+  gb_status ENUM('in_progress', 'insufficient_data', 'check_busco', 'completed', 'pre-released','handed_over', 'archive'),
   last_attempt int(2),
   genebuilder varchar(20) NOT NULL,
   annotation_source ENUM('ensembl', 'external','import_refseq', 'import_community', 'import_wormbase', 'import_flybase', 'import_genbank', 'import_noninsdc'),
-  annotation_method ENUM('pending','full_genebuild', 'anno', 'braker', 'projection_build', 'mixed_strategy_build','import', 'external_annotation_import'),
+  annotation_method ENUM('pending','full_genebuild', 'anno', 'braker', 'helixer','projection_build', 'mixed_strategy_build','import', 'external_annotation_import'),
   date_started date NOT NULL,
   date_completed date NULL,
-  date_completed_beta date NULL,
-  release_type ENUM('main', 'beta', 'not_available'),
+  last_genebuild_update date NULL,
   release_date date NULL,
-  release_date_beta date NULL,
-  release_version int(5) NULL,
-  release_version_beta int(5) NULL,
-  PRIMARY KEY (`genebuild_id`),
+  release_type ENUM('main', 'beta', 'not_available'),
+  PRIMARY KEY (`genebuild_status_id`),
   FOREIGN KEY (`assembly_id`) REFERENCES assembly(`assembly_id`),
   FOREIGN KEY (`genebuilder`) REFERENCES genebuilder(`genebuilder`)
-  CONSTRAINT species_space_assign UNIQUE (lowest_taxon_id, assembly_id, stable_space_id)
 ) ENGINE=MyISAM AUTO_INCREMENT=1 DEFAULT CHARSET=latin1;
 
 
