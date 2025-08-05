@@ -1,16 +1,16 @@
 {
   "prod": {
     "host": "mysql-ens-production-1",
-    "user": "",
+    "user": "ensro",
     "password": "",
     "database": "ensembl_genome_metadata",
-    "port":
+    "port": 4721
   },
 
   "main": {
     "host": "mysql-ens-meta-prod-1",
-    "user": "",
+    "user": "ensro",
     "password": "",
     "database": "ensembl_metadata",
-    "port":  }
+    "port": 4483 }
 }

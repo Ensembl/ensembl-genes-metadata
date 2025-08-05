@@ -15,7 +15,7 @@ def setup_logging():
 		format=log_format,
 		handlers=[
 			logging.StreamHandler(),
-			logging.FileHandler("app.log")
+			logging.FileHandler("logs/app.log")
 		]
 	)
 	return logging.getLogger(__name__)
