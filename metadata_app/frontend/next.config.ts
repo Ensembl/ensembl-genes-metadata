@@ -3,16 +3,16 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   eslint: {
-    ignoreDuringBuilds: true, // ✅ Skip linting errors
+    ignoreDuringBuilds: true, // Skip linting errors
   },
   typescript: {
-    ignoreBuildErrors: true, // ✅ Skip type errors
+    ignoreBuildErrors: true, // Skip type errors
   },
   async rewrites() {
     return [
       {
         source: '/api/:path*',
-        destination: 'http://localhost:8000/api/:path*', //  FastAPI server
+        destination: 'http://127.0.0.1:8000/api/:path*', //  FastAPI server
       },
     ]
   },
