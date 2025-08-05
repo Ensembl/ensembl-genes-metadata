@@ -86,7 +86,7 @@ def query_meta_registry(annotation_date, taxon_id, bioproject_id, release_type):
                 LEFT JOIN bioproject b on a.assembly_id = b.assembly_id
                 LEFT JOIN species s ON a.lowest_taxon_id = s.lowest_taxon_id
                 LEFT JOIN group_assembly g ON a.assembly_id = g.assembly_id
-                JOIN main_bioproject mb ON b.bioproject_id = mb.bioproject_id
+                LEFT JOIN main_bioproject mb ON b.bioproject_id = mb.bioproject_id
                 {where_clause};                
             """
 
