@@ -11,7 +11,7 @@ export default async function handler(
   try {
     const payload = req.body;
 
-    const response = await fetch("http://localhost:8000/api/assemblies/assemblies/filter", {
+    const response = await fetch("/api/assemblies/assemblies/filter", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

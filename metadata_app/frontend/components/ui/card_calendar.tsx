@@ -17,11 +17,11 @@ export function CardsCalendar() {
   const [transcriptomicDates, setTranscriptomicDates] = useState<Date[]>([])
 
   useEffect(() => {
-    fetchUpdateDates("/api/meta_update").then(setMetadataDates)
-    fetchUpdateDates("/api/transc_update").then(setTranscriptomicDates)
+    // ✅ Fetch directly from FastAPI via the rewrite proxy
+    fetchUpdateDates("/api/home_page/home/meta_update").then(setMetadataDates)
+    fetchUpdateDates("/api/home_page/home/transc_update").then(setTranscriptomicDates)
   }, [])
 
-  // Get the most recent date for the default month
   const getLastDate = (dates: Date[]) => {
     if (dates.length > 0) {
       return dates.reduce((latest, current) => (current > latest ? current : latest))

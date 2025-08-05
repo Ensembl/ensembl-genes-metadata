@@ -29,13 +29,13 @@ export function CardsStats() {
 
   React.useEffect(() => {
     const fetchAssemblies = async () => {
-      const res = await fetch("/api/assemblies")
+      const res = await fetch("/api/home_page/home/assemblies")
       const json = await res.json()
       setAssemblyData(json)
     }
 
     const fetchAnnotations = async () => {
-      const res = await fetch("/api/annotations")
+      const res = await fetch("/api/home_page/home/annotations")
       const json = await res.json()
       setAnnotationData(json)
     }

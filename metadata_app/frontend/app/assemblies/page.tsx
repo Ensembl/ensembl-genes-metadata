@@ -121,15 +121,11 @@ export default function Page() {
         non_annotated: nonAnnotated,
       };
 
-      // Remove null fields to keep payload clean
-      const cleanPayload = Object.fromEntries(
-      Object.entries(payload).filter(([_, value]) => value !== null && value !== undefined)
-      );
 
       console.log("Sending payload:", JSON.stringify(payload));
 
       // Update the endpoint URL to match your API
-      const res = await fetch("http://127.0.0.1:8000/api/assemblies/assemblies/filter", {
+      const res = await fetch("/api/assemblies/assemblies/filter", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
