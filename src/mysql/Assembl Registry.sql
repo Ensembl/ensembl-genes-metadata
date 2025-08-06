@@ -140,16 +140,18 @@ CREATE TABLE stable_space (
   PRIMARY KEY (`stable_space_id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
 
-DROP TABLE IF EXISTS species_spaces
+DROP TABLE IF EXISTS stable_space_species_log
 
-CREATE TABLE species_spaces (
+CREATE TABLE stable_space_species_log (
 	lowest_taxon_id int(15) NOT NULL,
 	assembly_id int(11) NOT NULL,
+  gca_accession VARCHAR(20) NOT NULL,
 	stable_space_id int(10) NOT NULl,
 	FOREIGN KEY (`lowest_taxon_id`) REFERENCES assembly(`lowest_taxon_id`),
 	FOREIGN KEY (`assembly_id`) REFERENCES assembly(`assembly_id`),
-	FOREIGN KEY (`stable_space_id`) REFERENCES stable_space(`assembly_id`),
-	CONSTRAINT species_space_assign UNIQUE (lowest_taxon_id, assembly_id, stable_space_id)
+	FOREIGN KEY (`stable_space_id`) REFERENCES stable_space(`stable_space_id`),
+	CONSTRAINT species_space_assign UNIQUE (lowest_taxon_id, stable_space_id),
+	CONSTRAINT species_space_gca UNIQUE (lowest_taxon_id, gca_accession)
 ) ENGINE=MyISAM AUTO_INCREMENT=1 DEFAULT CHARSET=latin1;
 
 DROP TABLE IF EXISTS genebuilder
@@ -166,13 +168,14 @@ CREATE TABLE genebuild_status (
   genebuild_status_id int NOT NULL AUTO_INCREMENT,
   assembly_id int NOT NULL,
   gca_accession VARCHAR(20) NOT NULL, 
-  gb_status ENUM('in_progress', 'insufficient_data', 'check_busco', 'completed', 'pre-released','handed_over', 'archive'),
+  gb_status ENUM('in_progress', 'insufficient_data', 'check_busco', 'completed', 'pre_released','handed_over', 'archive'),
   last_attempt int(2),
   genebuilder varchar(20) NOT NULL,
   annotation_source ENUM('ensembl', 'external','import_refseq', 'import_community', 'import_wormbase', 'import_flybase', 'import_genbank', 'import_noninsdc'),
   annotation_method ENUM('pending','full_genebuild', 'anno', 'braker', 'helixer','projection_build', 'mixed_strategy_build','import', 'external_annotation_import'),
   date_started date NOT NULL,
-  date_completed date NULL,
+  date_status_update date NULL,
+  genebuild_version varchar(10) NOT NULL,
   last_genebuild_update date NULL,
   release_date date NULL,
   release_type ENUM('main', 'beta', 'not_available'),
