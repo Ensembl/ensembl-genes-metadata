@@ -337,8 +337,8 @@
 	    "taxon_id": 7777
     },
 
-    "distant_vertebrate": {
-      "taxon_id":
+    "distant_vertebrate (chordata)": {
+      "taxon_id": 7711
     }
 
 }

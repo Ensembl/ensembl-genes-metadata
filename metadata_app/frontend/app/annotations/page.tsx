@@ -80,7 +80,7 @@ export default function Page() {
         Object.entries(payload).filter(([, value]) => value !== null && value !== undefined)
       );
 
-      const res = await fetch("/api/annotations/annotations/filter", {
+      const res = await fetch("http://127.0.0.1:8000/api/annotations/annotations/filter", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

@@ -138,7 +138,7 @@ export default function Page() {
         Object.entries(payload).filter(([_, value]) => value !== null && value !== undefined)
       );
 
-      const res = await fetch("/api/report/anno/report/anno/filter", {
+      const res = await fetch("http://127.0.0.1:8000/api/report/anno/report/anno/filter", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

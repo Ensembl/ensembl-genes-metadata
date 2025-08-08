@@ -11,13 +11,6 @@ from metadata_app.backend.app.services.transcriptomics_service import add_transc
 from metadata_app.backend.app.services.get_transcriptomic_data_ENA_service import add_data_from_ena
 
 
-def load_bioproject_mapping():
-    """Hardcoded path for clade settings."""
-    json_file = "data/bioproject_mapping.json"
-    with open(json_file, "r") as f:
-        logging.info("Loading bioproject mapping json file.")
-        return json.load(f)
-
 def is_reference_genome(accession):
 	"""
 	Checks if a given accession is a reference genome by querying NCBI's Assembly database.
@@ -185,7 +178,7 @@ def get_filtered_assemblies(bioproject_id, metric_thresholds, asm_level, asm_typ
                 LEFT JOIN group_assembly g ON a.assembly_id = g.assembly_id
                 LEFT JOIN organism o ON a.assembly_id = o.assembly_id
                 LEFT JOIN genebuild gb ON a.assembly_id = gb.assembly_id
-                JOIN main_bioproject mb ON b.bioproject_id = mb.bioproject_id
+                LEFT JOIN main_bioproject mb ON b.bioproject_id = mb.bioproject_id
                 {where_clause}
                 ORDER BY m.metrics_name;
             """

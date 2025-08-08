@@ -90,7 +90,7 @@ export function CardsDataTable() {
   React.useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await fetch("/api/home_page/home/bioproject")
+        const res = await fetch("http://127.0.0.1:8000/api/home_page/home/bioproject")
         const json = await res.json()
         console.log("API response:", json)
         const formatted = json.map((item: Project) => ({

@@ -6,7 +6,7 @@ import requests
 
 def load_clade_data():
     """Hardcoded path for clade settings."""
-    json_file = "data/clade_settings.json"
+    json_file = "metadata_app/backend/data/clade_settings.json"
     with open(json_file, "r") as f:
         logging.info("Loading clade settings json file.")
         return json.load(f)
@@ -83,7 +83,7 @@ def assign_clade_and_species(lowest_taxon_id, clade_data, taxonomy_dict, human_t
                 break
 
     # Check if vertebrate and assign pipeline
-    vert_taxon_id_set = read_ids_as_set("data/vertebrata_taxids.txt")
+    vert_taxon_id_set = read_ids_as_set("metadata_app/backend/data/vertebrata_taxids.txt")
     if lowest_taxon_id == human_taxon_id:
         pipeline = "hprc"
     elif lowest_taxon_id in vert_taxon_id_set:

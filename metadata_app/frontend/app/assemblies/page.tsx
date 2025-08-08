@@ -125,7 +125,7 @@ export default function Page() {
       console.log("Sending payload:", JSON.stringify(payload));
 
       // Update the endpoint URL to match your API
-      const res = await fetch("/api/assemblies/assemblies/filter", {
+      const res = await fetch("http://127.0.0.1:8000/api/assemblies/assemblies/filter", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

@@ -14,7 +14,7 @@ export default function Page() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await fetch("/api/project/project/erga-pilot");
+        const res = await fetch("http://127.0.0.1:8000/api/project/project/erga-pilot");
 
         if (!res.ok) {
           const errorText = await res.text();

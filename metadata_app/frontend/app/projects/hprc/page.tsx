@@ -14,7 +14,7 @@ export default function Page() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await fetch("http://127.0.0.1:8000/api/project/project/erga");
+        const res = await fetch("http://127.0.0.1:8000/api/project/project/hprc");
 
         if (!res.ok) {
           const errorText = await res.text();
@@ -60,7 +60,7 @@ export default function Page() {
 
         <div className="flex items-center justify-between px-8 py-6">
           <h1 className="text-2xl font-semibold">
-            ERGA number of GCAs: {assemblies.length}
+            HPRC number of GCAs: {assemblies.length}
           </h1>
         </div>
 

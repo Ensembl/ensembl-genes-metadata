@@ -2,5 +2,5 @@ src/
 src/**
 requirements.txt
 app.log
-data
 conf
+data

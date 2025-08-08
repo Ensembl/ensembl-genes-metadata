@@ -137,6 +137,20 @@ export default function ReportSelectorPage() {
             </Card>
           </Link>
 
+           <Link href="/projects/hprc" className="group">
+            <Card className="relative hover:shadow-lg transition-shadow cursor-pointer h-full dark:bg-secondary">
+              <CardHeader>
+                <CardTitle>HPRC</CardTitle>
+                <CardDescription>
+                  Human Pangenome Reference Consortium
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="absolute bottom-4 right-4">
+                <ArrowRight className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
+              </CardContent>
+            </Card>
+          </Link>
+
         </div>
       </div>
     </div>
