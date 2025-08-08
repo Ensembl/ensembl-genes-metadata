@@ -56,7 +56,7 @@ export default function BioProjectSearch({ value, onValueChange, className }: Bi
       return;
     }
     try {
-      const res = await fetch(`http://127.0.0.1:8000/api/bioproject_search/bioprojects/search?q=${encodeURIComponent(query)}`);
+      const res = await fetch(`/api/bioproject_search/bioprojects/search?q=${encodeURIComponent(query)}`);
       const data: string[] = await res.json();
       setOptions(data);
     } catch (error) {

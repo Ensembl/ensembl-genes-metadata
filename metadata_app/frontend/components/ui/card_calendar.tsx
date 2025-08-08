@@ -17,8 +17,8 @@ export function CardsCalendar() {
   const [transcriptomicDates, setTranscriptomicDates] = useState<Date[]>([])
 
   useEffect(() => {
-    fetchUpdateDates("http://127.0.0.1:8000/api/home_page/home/meta_update").then(setMetadataDates)
-    fetchUpdateDates("http://127.0.0.1:8000/api/home_page/home/transc_update").then(setTranscriptomicDates)
+    fetchUpdateDates("/api/home_page/home/meta_update").then(setMetadataDates)
+    fetchUpdateDates("/api/home_page/home/transc_update").then(setTranscriptomicDates)
   }, [])
 
   const getLastDate = (dates: Date[]) => {

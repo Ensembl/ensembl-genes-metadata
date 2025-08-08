@@ -73,7 +73,7 @@ const fetchMethodData = async (filtersData: FilterData = {}) => {
       }
 
   try {
-    const res = await fetch("http://127.0.0.1:8000/api/home_page/home/method_summary", {
+    const res = await fetch("/api/home_page/home/method_summary", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(cleanedFilters),

@@ -157,7 +157,7 @@ export default function Page() {
         Object.entries(payload).filter(([_, value]) => value !== null && value !== undefined)
       );
 
-      const res = await fetch("http://127.0.0.1:8000/api/report/asm/report/asm/filter", {
+      const res = await fetch("/api/report/asm/report/asm/filter", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

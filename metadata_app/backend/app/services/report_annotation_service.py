@@ -9,7 +9,7 @@ from metadata_app.backend.app.services.taxonomy_service import get_descendant_ta
 
 def load_bioproject_mapping():
     """Hardcoded path for clade settings."""
-    json_file = "data/bioproject_mapping.json"
+    json_file = "metadata_app/backend/data/bioproject_mapping.json"
     with open(json_file, "r") as f:
         logging.info("Loading bioproject mapping json file.")
         return json.load(f)
