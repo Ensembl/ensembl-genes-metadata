@@ -168,7 +168,7 @@ CREATE TABLE genebuild_status (
   genebuild_status_id int NOT NULL AUTO_INCREMENT,
   assembly_id int NOT NULL,
   gca_accession VARCHAR(20) NOT NULL, 
-  gb_status ENUM('in_progress', 'insufficient_data', 'check_busco', 'completed', 'pre_released','handed_over', 'archive'),
+  gb_status ENUM('in_progress', 'insufficient_data', 'check_busco', 'completed', 'pre_released','handed_over', 'live', 'archive'),
   last_attempt int(2),
   genebuilder varchar(20) NOT NULL,
   annotation_source ENUM('ensembl', 'external','import_refseq', 'import_community', 'import_wormbase', 'import_flybase', 'import_genbank', 'import_noninsdc'),
