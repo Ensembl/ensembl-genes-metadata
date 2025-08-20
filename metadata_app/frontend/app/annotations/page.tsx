@@ -9,7 +9,8 @@ import { DataTable } from "@/app/tables/data-table";
 import { Annotations, columns } from "@/app/tables/annotations_columns";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import BioProjectSearch from "@/components/ui/bioproject_search";
+import MultipleSelector, { Option } from "@/components/ui/multi_select";
+
 
 type Downloadables = {
   anno_main: string;
@@ -18,19 +19,34 @@ type Downloadables = {
 
 export default function Page() {
   const baseFields = [
+      { label: "BioProject ID", placeholder: "PRJNA123456" },
     { label: "Taxon ID", placeholder: "9606" },
     { label: "Annotation date", placeholder: "2024-12-31" },
   ];
 
+  const projectOptions: Option[] = [
+    { value: "PRJEB40665", label: "Darwin Tree of Life" },
+    { value: "PRJEB61747", label: "European Reference Genome Atlas/Biodiversity Genomics Europe" },
+    { value: "PRJEB43510", label: "European Reference Genome Atlas" },
+    { value: "PRJNA533106", label: "Earth BioGenome" },
+    { value: "PRJEB47820", label: "European Reference Genome Atlas pilot" },
+    { value: "PRJEB43743", label: "Aquatic Symbiosis" },
+    { value: "PRJNA489243", label: "Vertebrate Genomes" },
+    { value: "PRJNA813333", label: "Canadian BioGenome" },
+    { value: "LACA", label: "Livestock And Companion Animals" },
+    { value: "AQUA-FAANG", label: "Aqua FAANG" },
+  ];
+
   const [baseFieldValues, setBaseFieldValues] = useState<{ [key: string]: string }>({});
+  const [selectedProjects, setSelectedProjects] = useState<Option[]>([]);
   const [annotations, setAnnotations] = useState<Annotations[]>([]);
   const [downloadables, setDownloadables] = useState<Downloadables | null>(null);
   const [loading, setLoading] = useState(false);
   const [releaseSites, setReleaseSites] = useState<string>("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const groupNameValues = ["LACA", "AQUA-FAANG"];
 
-  // State for the searchable BioProject
-  const [searchValue, setSearchValue] = useState<string | null>(null);
+
 
   const handleGetAnnotations = async (): Promise<void> => {
     setErrorMessage(null);
@@ -38,14 +54,30 @@ export default function Page() {
     setLoading(true);
 
     try {
-      let bioprojectArray: string[] | null = null;
-      const bioprojectId = searchValue
+      const bioprojectArray: string[] = [];
+      const groupNames: string[] = [];
 
-      if (bioprojectId) {
-        bioprojectArray = bioprojectId.includes(",")
-          ? bioprojectId.split(",").map((id) => id.trim()).filter((id) => id)
-          : [bioprojectId.trim()];
+      // Parse selection from dropdown
+      selectedProjects.forEach((item) => {
+        if (groupNameValues.includes(item.value)) {
+          groupNames.push(item.value);
+        } else {
+          bioprojectArray.push(item.value);
+        }
+      });
+
+      // Include manually entered BioProject IDs
+      const manualIdInput = baseFieldValues["BioProject ID"];
+      if (manualIdInput) {
+        const manualIds = manualIdInput
+          .split(",")
+          .map((id) => id.trim())
+          .filter((id) => id);
+        bioprojectArray.push(...manualIds);
       }
+
+      // Remove duplicates
+      const uniqueBioprojects = Array.from(new Set(bioprojectArray));
 
       let taxonIdArray: number[] | null = null;
       const taxonInput = baseFieldValues["Taxon ID"];
@@ -70,7 +102,8 @@ export default function Page() {
       }
 
       const payload = {
-        bioproject_id: bioprojectArray,
+        bioproject_id: uniqueBioprojects.length > 0 ? uniqueBioprojects : null,
+        group_name: groupNames.length > 0 ? groupNames : null,
         annotation_date: baseFieldValues["Annotation date"] || null,
         taxon_id: taxonIdArray,
         release_type: release_type,
@@ -144,12 +177,18 @@ export default function Page() {
       <div className="container m-16 mt-10 max-w-6xl">
         <div className="rounded-2xl border-accent">
           <div className="rounded-2xl bg-secondary p-8 gap-10 shadow-lg">
+            <div className="grid justify-center grid-cols-2 gap-4 mb-4">
+            <div>
+                <Label className="mb-3 block">Select project name</Label>
+                <MultipleSelector
+                  placeholder="Select projects or groups..."
+                  defaultOptions={projectOptions}
+                  onChange={(values) => setSelectedProjects(values)}
+                />
+              </div>
+              </div>
             <div className="grid justify-center grid-cols-4 gap-4">
-              {/* This is the extracted BioProject search component */}
-              <BioProjectSearch
-                value={searchValue}
-                onValueChange={setSearchValue}
-              />
+
 
               {baseFields.map(({ label, placeholder }, index) => (
                 <div key={index}>

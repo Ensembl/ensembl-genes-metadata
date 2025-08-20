@@ -7,6 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { PopoverWithMultiSelect } from "@/components/ui/metrics_select";
+import MultipleSelector, { Option } from "@/components/ui/multi_select";
+
 import {
   ToggleGroup,
   ToggleGroupItem,
@@ -17,16 +19,30 @@ import {cn} from "@/lib/utils";
 import {StartAnnotationDialog} from "@/components/start_anno_dialog";
 import {Tooltip, TooltipContent, TooltipTrigger} from "@/components/ui/tooltip";
 import {Alert, AlertDescription, AlertTitle} from "@/components/ui/alert";
-import BioProjectSearch from "@/components/ui/bioproject_search";
 
 
 
 export default function Page() {
   const baseFields = [
+    { label: "BioProject ID", placeholder: "PRJNA123456"},
     { label: "Taxon ID", placeholder: "9606" },
     { label: "Release date", placeholder: "2024-12-31" },
   ];
 
+  const projectOptions: Option[] = [
+    { value: "PRJEB40665", label: "Darwin Tree of Life" },
+    { value: "PRJEB61747", label: "European Reference Genome Atlas/Biodiversity Genomics Europe" },
+    { value: "PRJEB43510", label: "European Reference Genome Atlas" },
+    { value: "PRJNA533106", label: "Earth BioGenome" },
+    { value: "PRJEB47820", label: "European Reference Genome Atlas pilot" },
+    { value: "PRJEB43743", label: "Aquatic Symbiosis" },
+    { value: "PRJNA489243", label: "Vertebrate Genomes" },
+    { value: "PRJNA813333", label: "Canadian BioGenome" },
+    { value: "LACA", label: "Livestock And Companion Animals" },
+    { value: "AQUA-FAANG", label: "Aqua FAANG" },
+  ];
+
+  const [selectedProjects, setSelectedProjects] = useState<Option[]>([]);
   const [selectedMetrics, setSelectedMetrics] = useState<string[]>([]);
   const [baseFieldValues, setBaseFieldValues] = useState<{ [key: string]: string }>({});
   const [toggleStates, setToggleStates] = useState<{ [key: string]: string[] }>({});
@@ -44,7 +60,8 @@ export default function Page() {
   } | null>(null);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [searchValue, setSearchValue] = useState<string | null>(null);
+
+  const groupNameValues = ["LACA", "AQUA-FAANG"];
 
   const isNumeric = (value: string) => /^\d+(\.\d+)?$/.test(value);
 
@@ -66,15 +83,32 @@ export default function Page() {
     }
 
     setLoading(true);
-    try {
-      let bioprojectArray: string[] | null = null;
-      const bioprojectId = searchValue
 
-      if (bioprojectId) {
-        bioprojectArray = bioprojectId.includes(",")
-          ? bioprojectId.split(",").map((id) => id.trim()).filter((id) => id)
-          : [bioprojectId.trim()];
+    try {
+      const bioprojectArray: string[] = [];
+      const groupNames: string[] = [];
+
+      // Parse selection from dropdown
+      selectedProjects.forEach((item) => {
+        if (groupNameValues.includes(item.value)) {
+          groupNames.push(item.value);
+        } else {
+          bioprojectArray.push(item.value);
+        }
+      });
+
+      // Include manually entered BioProject IDs
+      const manualIdInput = baseFieldValues["BioProject ID"];
+      if (manualIdInput) {
+        const manualIds = manualIdInput
+          .split(",")
+          .map((id) => id.trim())
+          .filter((id) => id);
+        bioprojectArray.push(...manualIds);
       }
+
+      // Remove duplicates
+      const uniqueBioprojects = Array.from(new Set(bioprojectArray));
 
       // Format metric thresholds
       const metric_thresholds: Record<string, number> = {};      Object.entries(metricValues)
@@ -108,7 +142,8 @@ export default function Page() {
 
       // Format the payload according to API expectations
       const payload = {
-        bioproject_id: bioprojectArray,
+        bioproject_id: uniqueBioprojects.length > 0 ? uniqueBioprojects : null,
+        group_name: groupNames.length > 0 ? groupNames : null,
         metric_thresholds: Object.keys(metric_thresholds).length > 0 ? metric_thresholds : null,
         asm_level: asm_level,
         asm_type: asm_type,
@@ -250,11 +285,18 @@ export default function Page() {
         <div className="rounded-2xl border-accent shadow-lg">
           {/* Filter Section */}
           <div className="rounded-t-2xl bg-secondary p-8 gap-10">
+            <div className="grid justify-center grid-cols-2 gap-4 mb-4">
+            <div>
+                <Label className="mb-3 block">Select project name</Label>
+                <MultipleSelector
+                  placeholder="Select projects or groups..."
+                  defaultOptions={projectOptions}
+                  onChange={(values) => setSelectedProjects(values)}
+                />
+              </div>
+              </div>
             <div className="grid justify-center grid-cols-4 gap-4">
-              <BioProjectSearch
-                value={searchValue}
-                onValueChange={setSearchValue}
-              />
+
 
               {baseFields.map(({ label, placeholder }, index) => (
                 <div key={index}>

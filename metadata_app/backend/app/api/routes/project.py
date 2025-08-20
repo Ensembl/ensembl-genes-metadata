@@ -12,6 +12,8 @@ from metadata_app.backend.app.services.project_service import get_cbp
 from metadata_app.backend.app.services.project_service import get_dtol
 from metadata_app.backend.app.services.project_service import get_hprc
 from metadata_app.backend.app.services.project_service import get_erga_pilot
+from metadata_app.backend.app.services.project_service import get_laca
+
 
 
 project_router = APIRouter()
@@ -54,6 +56,10 @@ def get_hprc_project():
 @project_router.get("/project/erga-pilot")
 def get_erga_pilot_project():
     return get_erga_pilot()
+
+@project_router.get("/project/laca")
+def get_laca_project():
+    return get_laca()
 
 
 

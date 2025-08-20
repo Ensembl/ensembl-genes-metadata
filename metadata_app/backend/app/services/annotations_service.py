@@ -6,40 +6,38 @@ from fastapi import HTTPException
 from metadata_app.backend.app.core.database import get_db_connection
 from metadata_app.backend.app.services.taxonomy_service import get_descendant_taxa
 
-def load_bioproject_mapping():
-    """Hardcoded path for clade settings."""
-    json_file = "data/bioproject_mapping.json"
-    with open(json_file, "r") as f:
-        logging.info("Loading bioproject mapping json file.")
-        return json.load(f)
 
-
-def query_meta_registry(annotation_date, taxon_id, bioproject_id, release_type):
+def query_meta_registry(annotation_date, taxon_id, bioproject_id, release_type, group_name):
     """Checks if each annotated assembly is the latest available version."""
     try:
         # Connect to database
         with get_db_connection("meta") as conn:
             cursor = conn.cursor()
 
+            # Validate BioProject IDs if provided
+            if bioproject_id:
+                cursor.execute("SELECT DISTINCT bioproject_id FROM bioproject;")
+                valid_bioprojects = {row['bioproject_id'] for row in cursor.fetchall()}
+                invalid_bioprojects = set(bioproject_id) - valid_bioprojects
+                if invalid_bioprojects:
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"The following BioProject IDs were not found: {', '.join(invalid_bioprojects)}"
+                    )
+
             # Build dynamic SQL filtering
             conditions = []
             parameters = []
 
             if bioproject_id:
-                cursor.execute("SELECT bioproject_name FROM main_bioproject")
-                known_names = {row["bioproject_name"] for row in cursor.fetchall()}
+                conditions.append(f"b.bioproject_id IN ({','.join(['%s'] * len(bioproject_id))})")
+                parameters.extend(bioproject_id)
+                logging.info(f"Filtering by BioProject IDs: {', '.join(bioproject_id)}")
 
-                bioproject_name = [bp for bp in bioproject_id if bp in known_names]
-                bioproject_ids = [bp for bp in bioproject_id if bp not in known_names]
-
-                if bioproject_name:
-                    conditions.append(f"mb.bioproject_name IN ({','.join(['%s'] * len(bioproject_name))})")
-                    parameters.extend(bioproject_name)
-                    logging.info(f"Filtering by BioProject names: {', '.join(bioproject_name)}")
-                if bioproject_ids:
-                    conditions.append(f"b.bioproject_id IN ({','.join(['%s'] * len(bioproject_ids))})")
-                    parameters.extend(bioproject_ids)
-                    logging.info(f"Filtering by BioProject IDs: {', '.join(bioproject_ids)}")
+            if group_name:
+                conditions.append("g.group_name = %s")
+                parameters.append(group_name)
+                logging.info(f"Filtering by group name: {group_name}")
 
             if release_type:
                 conditions.append(f"gb.release_type IN ({','.join(['%s'] * len(release_type))})")
@@ -85,7 +83,12 @@ def query_meta_registry(annotation_date, taxon_id, bioproject_id, release_type):
                 LEFT JOIN assembly a on gb.assembly_id = a.assembly_id
                 LEFT JOIN bioproject b on a.assembly_id = b.assembly_id
                 LEFT JOIN species s ON a.lowest_taxon_id = s.lowest_taxon_id
-                LEFT JOIN group_assembly g ON a.assembly_id = g.assembly_id
+                LEFT JOIN custom_group g
+				  ON (
+				       (g.group_type = 'taxon' AND a.lowest_taxon_id = g.item)
+				       OR
+				       (g.group_type = 'assembly' AND a.gca_chain = g.item)
+				     )
                 LEFT JOIN main_bioproject mb ON b.bioproject_id = mb.bioproject_id
                 {where_clause};                
             """
@@ -271,10 +274,10 @@ def check_if_gca_is_latest_annotated(anno_wide):
         )
 
 
-def generate_tables(annotation_date, taxon_id, bioproject_id, release_type):
+def generate_tables(annotation_date, taxon_id, bioproject_id, release_type, group_name):
     logging.info(f"Generating tables for annotation date: {annotation_date}, taxon_id: {taxon_id}, bioproject_id: {bioproject_id}, release_type: {release_type}")
     try:
-        df_meta_genebuild= query_meta_registry(annotation_date, taxon_id, bioproject_id, release_type)
+        df_meta_genebuild= query_meta_registry(annotation_date, taxon_id, bioproject_id, release_type, group_name)
     except HTTPException:
         logging.error("HTTPException raised during annotation filtering")
         raise

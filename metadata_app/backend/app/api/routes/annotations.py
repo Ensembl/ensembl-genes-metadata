@@ -12,6 +12,7 @@ def filter_annotations(filters: AnnotationFilterRequest):
             annotation_date=filters.annotation_date,
             taxon_id=filters.taxon_id,
             release_type=filters.release_type,
+            group_name= filters.group_name,
         )
 
         return {

@@ -18,7 +18,7 @@
         "busco_group": "endopterygota_odb12"
     },
     "polyneoptera": {
-        "taxon_id": 30263,
+        "taxon_id": 33340,
         "max_intron_length": 100000,
         "protein_file": "/nfs/production/flicek/ensembl/genebuild/genebuild_virtual_user/protein_sets/polyneoptera_uniprot_proteins.fa",
         "busco_protein_file": "/nfs/production/flicek/ensembl/genebuild/genebuild_virtual_user/protein_sets/hexapoda_orthodb11v0_proteins.fa",
@@ -81,7 +81,7 @@
         "busco_group": "mollusca_odb12"
     },
     "hemiptera": {
-        "taxon_id": 6447,
+        "taxon_id": 7524,
         "max_intron_length": 100000,
         "protein_file": "/nfs/production/flicek/ensembl/genebuild/genebuild_virtual_user/protein_sets/hemiptera_uniprot_proteins.fa",
         "busco_protein_file": "/nfs/production/flicek/ensembl/genebuild/genebuild_virtual_user/protein_sets/hemiptera_orthodb_proteins.fa",

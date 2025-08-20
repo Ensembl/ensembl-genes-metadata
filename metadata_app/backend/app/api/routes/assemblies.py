@@ -17,7 +17,8 @@ def filter_assemblies(filters: AssemblyFilterRequest):
         pipeline=filters.pipeline,
         transc=filters.transc,
         transc_ena=filters.transc_ena,
-        non_annotated = filters.non_annotated
+        non_annotated = filters.non_annotated,
+        group_name = filters.group_name,
     )
 
     if isinstance(result[0], str):  # Error string

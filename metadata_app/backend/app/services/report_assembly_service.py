@@ -77,17 +77,6 @@ def get_filtered_assemblies(bioproject_id, candidate, taxon_id,
 		with get_db_connection("meta") as conn:
 			cursor = conn.cursor()
 
-			# Validate BioProject IDs if provided
-			if bioproject_id:
-				cursor.execute("SELECT DISTINCT bioproject_id FROM bioproject;")
-				valid_bioprojects = {row['bioproject_id'] for row in cursor.fetchall()}
-				invalid_bioprojects = set(bioproject_id) - valid_bioprojects
-				if invalid_bioprojects:
-					raise HTTPException(
-						status_code=400,
-						detail=f"The following BioProject IDs were not found: {', '.join(invalid_bioprojects)}"
-					)
-
 			# Build query conditions
 			conditions = []
 			params = []
@@ -151,7 +140,12 @@ def get_filtered_assemblies(bioproject_id, candidate, taxon_id,
                 JOIN assembly_metrics m ON b.assembly_id = m.assembly_id
                 JOIN assembly a ON m.assembly_id = a.assembly_id
                 LEFT JOIN species s ON a.lowest_taxon_id = s.lowest_taxon_id
-                LEFT JOIN group_assembly g ON a.assembly_id = g.assembly_id
+                LEFT JOIN custom_group g
+				  ON (
+				       (g.group_type = 'taxon' AND a.lowest_taxon_id = g.item)
+				       OR
+				       (g.group_type = 'assembly' AND a.gca_chain = g.item)
+				     )
                 LEFT JOIN organism o ON a.assembly_id = o.assembly_id
                 LEFT JOIN genebuild gb ON a.assembly_id = gb.assembly_id
                 {where_clause}

@@ -83,7 +83,7 @@ def is_reference_genome(accession):
 
 
 def get_filtered_assemblies(bioproject_id, metric_thresholds, asm_level, asm_type, release_date, taxon_id,
-                            current, pipeline, transc, transc_ena, non_annotated):
+                            current, pipeline, transc, transc_ena, non_annotated, group_name):
 	"""
 	Fetch all assemblies and their metrics, filter results based on given thresholds,
 	and format the results with metrics as separate columns.
@@ -119,20 +119,14 @@ def get_filtered_assemblies(bioproject_id, metric_thresholds, asm_level, asm_typ
 			params = []
 
 			if bioproject_id:
-				cursor.execute("SELECT bioproject_name FROM main_bioproject")
-				known_names = {row["bioproject_name"] for row in cursor.fetchall()}
+				conditions.append(f"b.bioproject_id IN ({','.join(['%s'] * len(bioproject_id))})")
+				params.extend(bioproject_id)
+				logging.info(f"Filtering by BioProject IDs: {', '.join(bioproject_id)}")
 
-				bioproject_name = [bp for bp in bioproject_id if bp in known_names]
-				bioproject_ids = [bp for bp in bioproject_id if bp not in known_names]
-
-				if bioproject_name:
-					conditions.append(f"mb.bioproject_name IN ({','.join(['%s'] * len(bioproject_name))})")
-					params.extend(bioproject_name)
-					logging.info(f"Filtering by BioProject names: {', '.join(bioproject_name)}")
-				if bioproject_ids:
-					conditions.append(f"b.bioproject_id IN ({','.join(['%s'] * len(bioproject_ids))})")
-					params.extend(bioproject_ids)
-					logging.info(f"Filtering by BioProject IDs: {', '.join(bioproject_ids)}")
+			if group_name:
+				conditions.append("g.group_name = %s")
+				params.append(group_name)
+				logging.info(f"Filtering by group name: {group_name}")
 
 			if release_date:
 				if isinstance(release_date, pd.Timestamp):
@@ -175,7 +169,12 @@ def get_filtered_assemblies(bioproject_id, metric_thresholds, asm_level, asm_typ
                 JOIN assembly_metrics m ON b.assembly_id = m.assembly_id
                 JOIN assembly a ON m.assembly_id = a.assembly_id
                 LEFT JOIN species s ON a.lowest_taxon_id = s.lowest_taxon_id
-                LEFT JOIN group_assembly g ON a.assembly_id = g.assembly_id
+                LEFT JOIN custom_group g
+				  ON (
+				       (g.group_type = 'taxon' AND a.lowest_taxon_id = g.item)
+				       OR
+				       (g.group_type = 'assembly' AND a.gca_chain = g.item)
+				     )
                 LEFT JOIN organism o ON a.assembly_id = o.assembly_id
                 LEFT JOIN genebuild gb ON a.assembly_id = gb.assembly_id
                 LEFT JOIN main_bioproject mb ON b.bioproject_id = mb.bioproject_id

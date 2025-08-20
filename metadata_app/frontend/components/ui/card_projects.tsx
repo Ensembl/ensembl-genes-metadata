@@ -9,7 +9,6 @@ import {
   flexRender,
   getCoreRowModel,
   getFilteredRowModel,
-  getPaginationRowModel,
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table"
@@ -118,7 +117,6 @@ export function CardsDataTable() {
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     onColumnVisibilityChange: setColumnVisibility,
@@ -137,7 +135,7 @@ export function CardsDataTable() {
         <CardTitle className="text-xl -mb-2">Biodiversity projects</CardTitle>
         <CardDescription>Number of annotations per project. Unannotated shows the number of chromosome level, primary, current assemblies.</CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="overflow-visible">
         <div className="mb-4 flex items-center gap-4">
           <Input
             placeholder="Type project name"

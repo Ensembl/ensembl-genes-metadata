@@ -56,7 +56,7 @@ export default function Page() {
     { value: "PRJEB43743", label: "Aquatic Symbiosis" },
     { value: "PRJNA489243", label: "Vertebrate Genomes" },
     { value: "PRJNA813333", label: "Canadian BioGenome" },
-    { value: "farmed_animals_2023", label: "Farmed animals" },
+    { value: "LACA", label: "Livestock And Companion Animals" },
     { value: "AQUA-FAANG", label: "Aqua FAANG" },
   ];
 
@@ -83,7 +83,7 @@ export default function Page() {
   const description =
     "Select a biodiversity project or enter a BioProject ID to generate an overview of assemblies to be annotated by Genebuild. Use the optional filters to further customize your report. Generate a table with annotations and download a PDF report.";
 
-  const groupNameValues = ["farmed_animals_2023", "AQUA-FAANG"];
+  const groupNameValues = ["LACA", "AQUA-FAANG"];
   const hasBioprojectInput =
   selectedProjects.some(item => !groupNameValues.includes(item.value)) ||
   (baseFieldValues["BioProject ID"]?.trim() ?? "") !== "";

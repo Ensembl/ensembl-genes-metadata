@@ -112,7 +112,7 @@ export default function ReportSelectorPage() {
           <Link href="/projects/dtol" className="group">
             <Card className="relative hover:shadow-lg transition-shadow cursor-pointer h-full dark:bg-secondary">
               <CardHeader>
-                <CardTitle>DTol</CardTitle>
+                <CardTitle>DToL</CardTitle>
                 <CardDescription>
                   Darwin Tree of Life Project
                 </CardDescription>
@@ -143,6 +143,20 @@ export default function ReportSelectorPage() {
                 <CardTitle>HPRC</CardTitle>
                 <CardDescription>
                   Human Pangenome Reference Consortium
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="absolute bottom-4 right-4">
+                <ArrowRight className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
+              </CardContent>
+            </Card>
+          </Link>
+
+          <Link href="/projects/laca" className="group">
+            <Card className="relative hover:shadow-lg transition-shadow cursor-pointer h-full dark:bg-secondary">
+              <CardHeader>
+                <CardTitle>LACA</CardTitle>
+                <CardDescription>
+                  Livestock And Companion Animals
                 </CardDescription>
               </CardHeader>
               <CardContent className="absolute bottom-4 right-4">

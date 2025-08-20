@@ -41,6 +41,7 @@ export function CardsCalendar() {
               mode="multiple"
               selected={metadataDates}
               defaultMonth={getLastDate(metadataDates)}
+              onSelect={() => { /* do nothing */ }}
             />
           )}
         </CardContent>
@@ -57,6 +58,7 @@ export function CardsCalendar() {
               mode="multiple"
               selected={transcriptomicDates}
               defaultMonth={getLastDate(transcriptomicDates)}
+              onSelect={() => { /* do nothing */ }}
             />
           )}
         </CardContent>

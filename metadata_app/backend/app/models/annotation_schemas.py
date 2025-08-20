@@ -9,3 +9,4 @@ class AnnotationFilterRequest(BaseModel):
     taxon_id: Optional[List[int]] = None
     release_type: Optional[List[str]] = None
     bioproject_name: Optional[List[str]] = None
+    group_name: Optional[List[str]] = None

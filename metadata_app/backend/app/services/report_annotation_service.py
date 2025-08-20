@@ -119,7 +119,12 @@ def query_meta_registry(start_date, end_date, group_name, taxon_id, bioproject_i
                 LEFT JOIN assembly a on gb.assembly_id = a.assembly_id
                 LEFT JOIN bioproject b on a.assembly_id = b.assembly_id
                 LEFT JOIN species s ON a.lowest_taxon_id = s.lowest_taxon_id
-                LEFT JOIN group_assembly g ON a.assembly_id = g.assembly_id
+                LEFT JOIN custom_group g
+				  ON (
+				       (g.group_type = 'taxon' AND a.lowest_taxon_id = g.item)
+				       OR
+				       (g.group_type = 'assembly' AND a.gca_chain = g.item)
+				     )
                 {where_clause};                
             """
 
