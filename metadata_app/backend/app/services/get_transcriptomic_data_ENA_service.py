@@ -10,7 +10,7 @@ ENA_BASE_URL = "https://www.ebi.ac.uk/ena/portal/api/search?display=report&domai
 MAX_RETRIES = 5  # Maximum number of retries for failed requests
 CONCURRENT_LIMIT = 5  # Maximum concurrent API requests
 
-CACHE_FILE = "metadata_app/backend/data/ena_cache.json"
+CACHE_FILE = "metadata_app/backend/cache/ena_cache.json"
 CACHE_TTL = 90 * 24 * 60 * 60  #3 months in seconds
 
 
