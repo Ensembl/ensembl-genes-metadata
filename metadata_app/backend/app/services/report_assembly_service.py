@@ -231,7 +231,7 @@ def get_filtered_assemblies(bioproject_id, candidate, taxon_id,
 		if candidate:
 			df_wide['contig_n50'] = pd.to_numeric(df_wide['contig_n50'], errors='coerce')  # Convert to numbers
 			df_wide = df_wide[
-				(df_wide['asm_level'] != 'Contig') &
+				(~df_wide['asm_level'].isin(['Contig', 'Scaffold'])) &
 				(df_wide['contig_n50'] >= 100000)
 				]
 			logging.info("Filtered for annotation candidates (n50>=100000 and asm_level!='Contig')")

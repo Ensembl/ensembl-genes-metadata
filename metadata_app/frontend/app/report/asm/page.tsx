@@ -343,7 +343,7 @@ export default function Page() {
               </div>
                     </TooltipTrigger>
                 <TooltipContent>
-                  <p>Contig N50 min. 100.000, scaffold, chromosome and complete genome.</p>
+                  <p>Contig N50 min. 100.000, chromosome and complete genome.</p>
                 </TooltipContent>
                 </Tooltip>
                 </div>
