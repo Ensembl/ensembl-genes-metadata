@@ -97,7 +97,7 @@ def get_filtered_assemblies(bioproject_id, candidate, taxon_id,
 					start_date = start_date.strftime('%Y-%m-%d')
 				elif isinstance(start_date, (datetime.date, datetime.datetime)):
 					start_date = start_date.strftime('%Y-%m-%d')
-				conditions.append("a.release_date >= %s")
+				conditions.append("a.release_date <= %s")
 				params.append(start_date)
 
 			if end_date:
@@ -106,7 +106,7 @@ def get_filtered_assemblies(bioproject_id, candidate, taxon_id,
 					end_date = end_date.strftime('%Y-%m-%d')
 				elif isinstance(end_date, (datetime.date, datetime.datetime)):
 					end_date = end_date.strftime('%Y-%m-%d')
-				conditions.append("a.release_date <= %s")
+				conditions.append("a.release_date >= %s")
 				params.append(end_date)
 
 			if taxon_id:

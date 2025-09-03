@@ -95,7 +95,7 @@ def query_meta_registry(start_date, end_date, group_name, taxon_id, bioproject_i
                     start_date = start_date.strftime('%Y-%m-%d')
                 elif isinstance(start_date, (datetime.date, datetime.datetime)):
                     start_date = start_date.strftime('%Y-%m-%d')
-                conditions.append("gb.date_completed_beta >= %s")
+                conditions.append("gb.date_completed_beta <= %s")
                 parameters.append(start_date)
 
             if end_date:
@@ -104,7 +104,7 @@ def query_meta_registry(start_date, end_date, group_name, taxon_id, bioproject_i
                     end_date = end_date.strftime('%Y-%m-%d')
                 elif isinstance(end_date, (datetime.date, datetime.datetime)):
                     end_date = end_date.strftime('%Y-%m-%d')
-                conditions.append("gb.date_completed_beta <= %s")
+                conditions.append("gb.date_completed_beta >= %s")
                 parameters.append(end_date)
 
             # If there are conditions, join them with AND; otherwise, select all
