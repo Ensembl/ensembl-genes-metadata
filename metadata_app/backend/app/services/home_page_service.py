@@ -46,45 +46,49 @@ def get_annotation_counts_by_bioproject():
                 
                 UNION ALL
                 
-                SELECT cg.group_id AS bioproject_id, cg.group_name AS bioproject_name, COUNT(g.assembly_id) AS annotation_count,
-                
+                SELECT 
+                cg.group_id AS bioproject_id,
+                cg.group_name AS bioproject_name,
+            
+                -- Only count annotations where gb_status = 'live'
+                COUNT(DISTINCT CASE WHEN g.gb_status = 'live' THEN g.assembly_id END) AS annotation_count,
+            
                 (
-                        SELECT COUNT(DISTINCT a2.assembly_id)
-                        FROM assembly a2
-                        LEFT JOIN genebuild g2 ON a2.assembly_id = g2.assembly_id
-                        WHERE (
-                                (cg.group_type = 'taxon' AND a2.lowest_taxon_id = cg.item)
-                                OR
-                                (cg.group_type = 'assembly' AND a2.gca_chain = cg.item)
-                              )
-                          AND g2.assembly_id IS NULL
-                          AND a2.asm_name NOT LIKE "%alternate_haplotype%"
-                          AND a2.asm_level IN ('Chromosome', 'Complete genome')
-                          AND a2.is_current = 'current'
-                    ) AS qualified_assembly_count,
-
-                    (
-                        SELECT COUNT(DISTINCT g2.assembly_id)
-                        FROM genebuild g2
-                        JOIN assembly a2 ON g2.assembly_id = a2.assembly_id
-                        WHERE (
-                                (cg.group_type = 'taxon' AND a2.lowest_taxon_id = cg.item)
-                                OR
-                                (cg.group_type = 'assembly' AND a2.gca_chain = cg.item)
-                              )
-                          AND g2.gb_status = 'in_progress'
-                    ) AS in_progress
-                    
-                FROM assembly a
-                JOIN custom_group cg
-				  ON (
-				       (cg.group_type = 'taxon' AND a.lowest_taxon_id = cg.item)
-				       OR
-				       (cg.group_type = 'assembly' AND a.gca_chain = cg.item)
-				     )
-				JOIN genebuild g ON a.assembly_id = g.assembly_id
-				WHERE g.gb_status = 'live'
-                GROUP BY bioproject_name
+                    SELECT COUNT(DISTINCT a2.assembly_id)
+                    FROM assembly a2
+                    LEFT JOIN genebuild g2 ON a2.assembly_id = g2.assembly_id
+                    WHERE (
+                            (cg.group_type = 'taxon' AND a2.lowest_taxon_id = cg.item)
+                            OR
+                            (cg.group_type = 'assembly' AND a2.gca_chain = cg.item)
+                          )
+                      AND g2.assembly_id IS NULL
+                      AND a2.asm_name NOT LIKE "%alternate_haplotype%"
+                      AND a2.asm_level IN ('Chromosome', 'Complete genome')
+                      AND a2.is_current = 'current'
+                ) AS qualified_assembly_count,
+            
+                (
+                    SELECT COUNT(DISTINCT g2.assembly_id)
+                    FROM genebuild g2
+                    JOIN assembly a2 ON g2.assembly_id = a2.assembly_id
+                    WHERE (
+                            (cg.group_type = 'taxon' AND a2.lowest_taxon_id = cg.item)
+                            OR
+                            (cg.group_type = 'assembly' AND a2.gca_chain = cg.item)
+                          )
+                      AND g2.gb_status = 'in_progress'
+                ) AS in_progress
+            
+            FROM assembly a
+            JOIN custom_group cg
+              ON (
+                   (cg.group_type = 'taxon' AND a.lowest_taxon_id = cg.item)
+                   OR
+                   (cg.group_type = 'assembly' AND a.gca_chain = cg.item)
+                 )
+            LEFT JOIN genebuild g ON a.assembly_id = g.assembly_id  -- ✅ left join, don’t filter here
+            GROUP BY cg.group_name;
             """
             cursor.execute(query)
             result = cursor.fetchall()
