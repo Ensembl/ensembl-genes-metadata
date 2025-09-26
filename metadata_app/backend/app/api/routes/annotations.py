@@ -11,16 +11,30 @@ def filter_annotations(filters: AnnotationFilterRequest):
             bioproject_id=filters.bioproject_id,
             annotation_date=filters.annotation_date,
             taxon_id=filters.taxon_id,
-            release_type=filters.release_type,
             group_name= filters.group_name,
+        )
+        # Build an informative suffix
+        suffix = "_".join(
+            filter(None, [
+                f"bioproject_{'_'.join(filters.bioproject_id)}" if filters.bioproject_id else None,
+                f"taxon_{'_'.join(map(str, filters.taxon_id))}" if filters.taxon_id else None,
+                f"date_{filters.annotation_date}" if filters.annotation_date else None,
+                f"group_{'_'.join(filters.group_name)}" if filters.group_name else None,
+            ])
         )
 
         return {
             "anno_main": anno_main.to_dict(orient="records"),
             "downloadables_anno": {
-                "anno_main": anno_main.to_csv(index=False),
-                "anno_wide": anno_wide.to_csv(index=False)
-            }
+                "anno_main": {
+                    "filename": f"anno_main_{suffix}.csv",
+                    "csv": anno_main.to_csv(index=False),
+                },
+                "anno_wide": {
+                    "filename": f"anno_wide_{suffix}.csv",
+                    "csv": anno_wide.to_csv(index=False),
+                },
+            },
         }
 
     except HTTPException as e:

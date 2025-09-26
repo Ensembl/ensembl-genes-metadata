@@ -7,14 +7,18 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { DataTable } from "@/app/tables/data-table";
 import { Annotations, columns } from "@/app/tables/annotations_columns";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import MultipleSelector, { Option } from "@/components/ui/multi_select";
 
 
+type DownloadableFile = {
+  filename: string;
+  csv: string;
+};
+
 type Downloadables = {
-  anno_main: string;
-  anno_wide: string;
+  anno_main: DownloadableFile;
+  anno_wide: DownloadableFile;
 };
 
 export default function Page() {
@@ -42,7 +46,6 @@ export default function Page() {
   const [annotations, setAnnotations] = useState<Annotations[]>([]);
   const [downloadables, setDownloadables] = useState<Downloadables | null>(null);
   const [loading, setLoading] = useState(false);
-  const [releaseSites, setReleaseSites] = useState<string>("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const groupNameValues = ["LACA", "AQUA-FAANG"];
 
@@ -96,17 +99,12 @@ export default function Page() {
         }
       }
 
-      let release_type: string[] | null = null;
-      if (releaseSites && releaseSites !== "both") {
-        release_type = [releaseSites];
-      }
 
       const payload = {
         bioproject_id: uniqueBioprojects.length > 0 ? uniqueBioprojects : null,
         group_name: groupNames.length > 0 ? groupNames : null,
         annotation_date: baseFieldValues["Annotation date"] || null,
-        taxon_id: taxonIdArray,
-        release_type: release_type,
+        taxon_id: taxonIdArray
       };
 
       const cleanPayload = Object.fromEntries(
@@ -150,27 +148,31 @@ export default function Page() {
     }
   };
 
-  const handleDownload = (content: string | undefined, filename: string, type = "text/plain"): void => {
-    if (!content) {
-      alert(`No ${filename} data available to download.`);
-      return;
-    }
+  const handleDownload = (file: DownloadableFile | undefined, type = "text/plain"): void => {
+  if (!file) {
+    alert("No file available to download.");
+    return;
+  }
 
-    try {
-      const blob = new Blob([content], { type });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error(`Error downloading ${filename}:`, error);
-      alert(`Error downloading ${filename}: ${error instanceof Error ? error.message : String(error)}`);
-    }
-  };
+  try {
+    const blob = new Blob([file.csv], { type });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = file.filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  } catch (error) {
+    console.error(`Error downloading ${file?.filename}:`, error);
+    alert(
+      `Error downloading ${file?.filename}: ${
+        error instanceof Error ? error.message : String(error)
+      }`
+    );
+  }
+};
 
   return (
     <div className="min-h-screen justify-center flex flex-wrap align-items-center">
@@ -211,19 +213,6 @@ export default function Page() {
                 </div>
               ))}
 
-              <div>
-                <Label className="mb-2 block">Release site</Label>
-                <ToggleGroup
-                  type="single"
-                  variant="outline"
-                  value={releaseSites}
-                  onValueChange={setReleaseSites}
-                >
-                  <ToggleGroupItem value="main">Main</ToggleGroupItem>
-                  <ToggleGroupItem value="beta">Beta</ToggleGroupItem>
-                  <ToggleGroupItem value="both">Both</ToggleGroupItem>
-                </ToggleGroup>
-              </div>
             </div>
           </div>
 
@@ -257,15 +246,15 @@ export default function Page() {
                 <div className="flex gap-2">
                   <Button
                     variant="outline"
-                    onClick={() => handleDownload(downloadables?.anno_main, "anno_main.csv", "text/csv")}
+                    onClick={() => handleDownload(downloadables?.anno_main, "text/csv")}
                   >
                     Download CSV
                   </Button>
+
                   <Button
                     variant="outline"
-                    onClick={() =>
-                      handleDownload(downloadables?.anno_wide, "full_table_filtered_annotations.csv", "text/csv")
-                    }>
+                    onClick={() => handleDownload(downloadables?.anno_wide, "text/csv")}
+                  >
                     Download Full Table
                   </Button>
                 </div>

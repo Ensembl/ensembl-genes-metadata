@@ -77,6 +77,17 @@ export function MainNav() {
         >
           Projects
         </Link>
+        <Link
+          href="/handover"
+          className={cn(
+            "transition-colors hover:text-foreground/80",
+            pathname?.startsWith("/handover")
+              ? "text-foreground"
+              : "text-foreground/80"
+          )}
+        >
+          Handover
+        </Link>
       </nav>
 
       <ModeSwitcher />

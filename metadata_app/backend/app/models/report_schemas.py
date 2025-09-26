@@ -9,4 +9,3 @@ class ReportFilterRequest(BaseModel):
     start_date: Optional[date] = None
     end_date: Optional[date] = None
     taxon_id: Optional[List[int]] = None
-    release_type: Optional[List[str]] = None

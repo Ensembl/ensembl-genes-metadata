@@ -145,24 +145,24 @@ def get_annotations_per_year():
         with get_db_connection("meta") as conn:
             cursor = conn.cursor()
             query = """
-                SELECT g.genebuild_id, g.date_completed
-                FROM genebuild g
+                SELECT g.genebuild_status_id, g.last_genebuild_update
+                FROM genebuild_status g
             """
             cursor.execute(query)
             result = cursor.fetchall()
 
-        df = pd.DataFrame(result, columns=["genebuild_id", "date_completed"])
+        df = pd.DataFrame(result, columns=["genebuild_status_id", "last_genebuild_update"])
         if df.empty:
             return []
 
         # Convert date_completed to datetime and extract year
-        df['date_completed'] = pd.to_datetime(df['date_completed'], errors='coerce')
-        df['year'] = df['date_completed'].dt.year
+        df['last_genebuild_update'] = pd.to_datetime(df['last_genebuild_update'], errors='coerce')
+        df['year'] = df['last_genebuild_update'].dt.year
         # Filter to include only 2019 and later
         df = df[df['year'] >= 2019]
 
         # Group by year and count
-        counts_by_year = df.groupby('year')['genebuild_id'].count().reset_index()
+        counts_by_year = df.groupby('year')['genebuild_status_id'].count().reset_index()
         counts_by_year.columns = ['year', 'annotation_count']
 
         return counts_by_year.to_dict(orient='records')
@@ -220,43 +220,8 @@ def get_transcriptomic_registry_update_dates():
         print(f"Error fetching transcriptomic registry update dates: {e}")
         return []
 
-def get_annotations_per_genebuilder():
-    try:
-        with get_db_connection("meta") as conn:
-            cursor = conn.cursor()
-            query = """
-                SELECT g.genebuild_id, g.date_completed, g.genebuilder
-                FROM genebuild g
-            """
-            cursor.execute(query)
-            result = cursor.fetchall()
 
-        df = pd.DataFrame(result, columns=["genebuild_id", "date_completed", "genebuilder"])
-
-        if df.empty:
-            return []
-
-        # Filter to last 30 days
-        logging.info(f"getting timeframe")
-        thirty_days_ago = (datetime.now() - datetime.timedelta(days=30)).date()
-        df["date_completed"] = pd.to_datetime(df["date_completed"]).dt.date
-        recent_df = df[df["date_completed"] >= thirty_days_ago]
-        logging.info(f"filtered last 30 days")
-        logging.debug(print(recent_df))
-
-        # Group by genebuilder and count
-        count_df = recent_df.groupby("genebuilder").size().reset_index(name="annotations")
-
-        return count_df.to_dict(orient='records')
-
-    except Exception as e:
-        # Optionally log or re-raise
-        print(f"Error in get_annotations_per_genebuilder: {e}")
-        return []
-
-
-
-def bin_by_genebuild_method(bioproject_id, release_type, taxon_id, release_date):
+def bin_by_genebuild_method(bioproject_id, taxon_id, release_date):
     """Bins assemblies based on genebuild.method."""
     try:
         with get_db_connection("meta") as conn:
@@ -288,17 +253,12 @@ def bin_by_genebuild_method(bioproject_id, release_type, taxon_id, release_date)
                 params.extend(descendant_taxa)
                 logging.info(f"Filtering by lowest taxon ID: {', '.join(str(id) for id in descendant_taxa)}")
 
-            if release_type:
-                conditions.append(f"g.release_type IN ({','.join(['%s'] * len(release_type))})")
-                params.extend(release_type)
-                logging.info(f"Filtering by Release Type: {', '.join(release_type)}")
-
             # If there are conditions, join them with AND; otherwise, select all
             where_clause = " WHERE " + " AND ".join(conditions) if conditions else ""
 
             query = f"""
-                    SELECT g.annotation_method, g.release_type, g.release_date_beta, b.bioproject_id, a.lowest_taxon_id, g.genebuild_id
-                    FROM genebuild g
+                    SELECT g.annotation_method, g.release_date, b.bioproject_id, a.lowest_taxon_id, g.genebuild_status_id
+                    FROM genebuild_status g
                     JOIN assembly a ON g.assembly_id = a.assembly_id
                     JOIN bioproject b on g.assembly_id = b.assembly_id
                     {where_clause};
@@ -306,9 +266,9 @@ def bin_by_genebuild_method(bioproject_id, release_type, taxon_id, release_date)
             cursor.execute(query, params)
             result = cursor.fetchall()
 
-        df = pd.DataFrame(result, columns=["genebuild_id","annotation_method", "release_type", "release_date_beta", "bioproject_id", "lowest_taxon_id"])
+        df = pd.DataFrame(result, columns=["genebuild_status_id","annotation_method", "release_date", "bioproject_id", "lowest_taxon_id"])
 
-        df = df.drop_duplicates(subset='genebuild_id', keep='first')
+        df = df.drop_duplicates(subset='genebuild_status_id', keep='first')
 
         if df.empty:
             return []

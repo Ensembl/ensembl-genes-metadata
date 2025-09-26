@@ -61,7 +61,6 @@ export default function Page() {
   const [taxaData, setTaxa] = useState<NumTaxaItem | null>(null);
   const [topTaxaData, setTopTaxa] = useState<TaxaItem[]>([])
   const [projectData, setProject] = useState<ProjectItem[]>([])
-  const [releaseSites, setReleaseSites] = useState<string>("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
 
@@ -120,18 +119,12 @@ export default function Page() {
       }
 
 
-      let release_type: string[] | null = null;
-      if (releaseSites && releaseSites !== "both") {
-        release_type = [releaseSites];
-      }
-
       const payload = {
         bioproject_id: uniqueBioprojects.length > 0 ? uniqueBioprojects : null,
         group_name: groupNames.length > 0 ? groupNames : null,
         taxon_id: taxonIdArray,
         start_date: baseFieldValues["Report start date"] || null,
-        end_date: baseFieldValues["Report end date"] || null,
-        release_type: release_type,
+        end_date: baseFieldValues["Report end date"] || null
       };
 
       const cleanPayload = Object.fromEntries(
@@ -241,26 +234,6 @@ export default function Page() {
                 />
               </div>
 
-              <div>
-                <Label className="mb-2 block">Release site</Label>
-                <ToggleGroup
-                  type="single"
-                  size="lg"
-                  variant="outline"
-                  value={releaseSites}
-                  onValueChange={setReleaseSites}
-                >
-                  <ToggleGroupItem value="main" aria-label="main">
-                    Main
-                  </ToggleGroupItem>
-                  <ToggleGroupItem value="beta" aria-label="beta">
-                    Beta
-                  </ToggleGroupItem>
-                  <ToggleGroupItem value="both" aria-label="both">
-                    Both
-                  </ToggleGroupItem>
-                </ToggleGroup>
-              </div>
 
               {baseFields.map(({ label, placeholder }, index) => (
                 <div key={index}>

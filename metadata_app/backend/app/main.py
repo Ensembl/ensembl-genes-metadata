@@ -7,7 +7,7 @@ import logging
 from pathlib import Path
 
 from metadata_app.backend.app.api.routes import assemblies, taxonomy, transcriptomics, home_page, annotations, \
-	report_annotations, report_assemblies, bioproject_search, taxonomy_search, project
+	report_annotations, report_assemblies, bioproject_search, taxonomy_search, project, handover
 from metadata_app.backend.app.core.database import setup_logging
 
 # Initialize FastAPI app
@@ -40,6 +40,7 @@ app.include_router(report_assemblies.report, prefix="/api/report/asm", tags=["re
 app.include_router(bioproject_search.router, prefix="/api/bioproject_search", tags=["bioproject_search"])
 app.include_router(taxonomy_search.router, prefix="/api/taxonomy_search", tags=["taxonomy_search"])
 app.include_router(project.project_router, prefix="/api/project", tags=["project"])
+app.include_router(handover.handover_router, prefix="/api/handover", tags=["handover"])
 
 
 # API health check endpoints

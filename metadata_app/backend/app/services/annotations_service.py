@@ -7,7 +7,7 @@ from metadata_app.backend.app.core.database import get_db_connection
 from metadata_app.backend.app.services.taxonomy_service import get_descendant_taxa
 
 
-def query_meta_registry(annotation_date, taxon_id, bioproject_id, release_type, group_name):
+def query_meta_registry(annotation_date, taxon_id, bioproject_id, group_name):
     """Checks if each annotated assembly is the latest available version."""
     try:
         # Connect to database
@@ -38,11 +38,6 @@ def query_meta_registry(annotation_date, taxon_id, bioproject_id, release_type, 
                 conditions.append("g.group_name = %s")
                 parameters.append(group_name)
                 logging.info(f"Filtering by group name: {group_name}")
-
-            if release_type:
-                conditions.append(f"gb.release_type IN ({','.join(['%s'] * len(release_type))})")
-                parameters.extend(release_type)
-                logging.info(f"Filtering by Release Type: {', '.join(release_type)}")
 
             if taxon_id:
                 all_descendant_taxa = set()
@@ -76,10 +71,11 @@ def query_meta_registry(annotation_date, taxon_id, bioproject_id, release_type, 
 
             meta_query = f"""
                 SELECT b.bioproject_id, mb.bioproject_name AS associated_project, g.group_name, CONCAT(a.gca_chain, '.', a.gca_version) AS gca, a.lowest_taxon_id, 
-                        gb.gb_status, gb.genebuilder, gb.annotation_source, gb.annotation_method, gb.release_type, 
-                        gb.date_completed_beta, gb.release_date, gb.release_date_beta, gb.release_version_beta, gb.release_version,
-                        s.scientific_name, s.common_name
-                FROM genebuild gb
+                        gb.gb_status, gb.genebuilder, gb.annotation_source, gb.annotation_method, 
+                        gb.date_started, gb.release_date,
+                        s.scientific_name, s.common_name,
+                        am.metrics_name, am.metrics_value
+                FROM genebuild_status gb
                 LEFT JOIN assembly a on gb.assembly_id = a.assembly_id
                 LEFT JOIN bioproject b on a.assembly_id = b.assembly_id
                 LEFT JOIN species s ON a.lowest_taxon_id = s.lowest_taxon_id
@@ -90,7 +86,9 @@ def query_meta_registry(annotation_date, taxon_id, bioproject_id, release_type, 
 				       (g.group_type = 'assembly' AND a.gca_chain = g.item)
 				     )
                 LEFT JOIN main_bioproject mb ON b.bioproject_id = mb.bioproject_id
-                {where_clause};                
+                LEFT JOIN annotation_metrics am ON gb.genebuild_status_id = am.genebuild_status_id
+                {where_clause}
+                AND gb.last_attempt = 1;                
             """
 
             cursor.execute(meta_query, parameters)
@@ -104,9 +102,17 @@ def query_meta_registry(annotation_date, taxon_id, bioproject_id, release_type, 
 
         df_meta_genebuild = pd.DataFrame(results)
         df_meta_genebuild.drop_duplicates(subset=["gca"], inplace=True)
-        logging.info(f"Retrieved records metadata table: {df_meta_genebuild.shape}")
+        # Pivot to wide format without losing records
+        df_pivoted = df_meta_genebuild.pivot_table(
+            index=["bioproject_id", "gca", "associated_project", "group_name", "gb_status", "genebuilder", "annotation_source", "annotation_method", "date_started","release_date", "scientific_name", "common_name", "lowest_taxon_id"],
+            columns="metrics_name",
+            values="metrics_value",
+            aggfunc="first"
+        ).reset_index()
 
-        return df_meta_genebuild
+        logging.info(f"Retrieved records metadata table: {df_pivoted.shape}")
+
+        return df_pivoted
 
 
     except Exception as e:
@@ -116,102 +122,6 @@ def query_meta_registry(annotation_date, taxon_id, bioproject_id, release_type, 
             detail=f"Internal server error occurred while processing annotations: {str(e)}"
         )
 
-def get_annotation_info_beta(df_meta_genebuild):
-    """
-        Fetch all annotations and their metrics, filter results based on given criteria.
-        Args:
-            df_meta_genebuild: Annotations table
-
-        Returns:
-            anno_wide: DataFrame with additional information
-        """
-    # Extract GCA accession before the version suffix
-
-    gca_list = df_meta_genebuild['gca'].unique().tolist()
-    placeholders = ', '.join(['%s'] * len(gca_list))
-    logging.info(f"Retrieving annotations for GCAs: {', '.join(gca_list)}")
-
-
-
-    try:
-        # Connect to database
-        with get_db_connection("prod") as conn:
-            cursor = conn.cursor()
-
-            logging.info(f"Connected to database.")
-
-            query = f"""
-                    SELECT da.value, da.attribute_id, a.accession AS gca, r.release_date AS ensembl_release_date
-                    FROM dataset_attribute da
-                    JOIN dataset d ON da.dataset_id = d.dataset_id
-                    JOIN genome_dataset gd ON d.dataset_id = gd.dataset_id
-                    JOIN genome g ON gd.genome_id = g.genome_id
-                    JOIN assembly a ON g.assembly_id = a.assembly_id
-                    LEFT JOIN ensembl_release r ON r.release_id = gd.release_id
-                    WHERE da.attribute_id IN (34, 37, 25, 183, 31, 40, 42, 44, 48, 170, 56, 212)
-                    AND a.accession IN ({placeholders})
-                """
-
-            cursor.execute(query, gca_list)
-            results = cursor.fetchall()
-            # Check if we have any results from the main query
-            if not results:
-                raise HTTPException(
-                    status_code=404,
-                    detail="No annotations found in production DB."
-                )
-            logging.info(f"Query returned {len(results)} records.")
-
-        df_prod = pd.DataFrame(results)
-        logging.info(f"Total records fetched from production db: {len(df_prod)}")
-
-        # Directly rename attribute_id column values
-        df_prod['attribute_id'] = df_prod['attribute_id'].replace({
-            34: "last_geneset_update",
-            37: "genebuild_method",
-            212: "busco_protein",
-            25: "average_exon_length",
-            183: "average_sequence_length",
-            31: "coding_transcripts_per_gene",
-            40: "nc_average_exon_length",
-            42: "nc_average_sequence_length",
-            44: "nc_long_non_coding_genes",
-            48: "nc_small_non_coding_genes",
-            170: "nc_total_exons",
-            56: "ps_average_sequence_length",
-        })
-
-        # Fill missing 'ensembl_release_date' with a placeholder value
-        df_prod['ensembl_release_date'] = df_prod['ensembl_release_date'].fillna('Not yet released')
-
-        # Pivot to wide format without losing records
-        df_pivoted = df_prod.pivot_table(
-            index=["ensembl_release_date", "gca"],
-            columns="attribute_id",
-            values="value",
-            aggfunc="first"
-        ).reset_index()
-
-        logging.info(f"Pivoted DataFrame shape before filtering: {df_pivoted.shape}")
-
-        anno_wide = pd.merge(df_meta_genebuild, df_pivoted, on='gca', how='left')
-
-        return anno_wide
-
-
-
-    except HTTPException:
-
-        # Re-raise HTTPExceptions as they are already properly formatted
-
-        raise
-
-    except Exception as e:
-        logging.error(f"Unexpected error in get_annotation_info_beta: {e}", exc_info=True)
-        raise HTTPException(
-            status_code=500,
-            detail=f"Internal server error occurred while processing assemblies: {str(e)}"
-        )
 
 
 def check_if_gca_is_latest_annotated(anno_wide):
@@ -274,10 +184,10 @@ def check_if_gca_is_latest_annotated(anno_wide):
         )
 
 
-def generate_tables(annotation_date, taxon_id, bioproject_id, release_type, group_name):
-    logging.info(f"Generating tables for annotation date: {annotation_date}, taxon_id: {taxon_id}, bioproject_id: {bioproject_id}, release_type: {release_type}")
+def generate_tables(annotation_date, taxon_id, bioproject_id, group_name):
+    logging.info(f"Generating tables for annotation date: {annotation_date}, taxon_id: {taxon_id}, bioproject_id: {bioproject_id}")
     try:
-        df_meta_genebuild= query_meta_registry(annotation_date, taxon_id, bioproject_id, release_type, group_name)
+        df_meta_genebuild= query_meta_registry(annotation_date, taxon_id, bioproject_id, group_name)
     except HTTPException:
         logging.error("HTTPException raised during annotation filtering")
         raise
@@ -288,32 +198,9 @@ def generate_tables(annotation_date, taxon_id, bioproject_id, release_type, grou
     logging.info(f"Adding additional info from beta prod server")
     logging.info(f"Original df_meta_genebuild: {df_meta_genebuild.shape}")
 
-    # Split the dataframe into beta and non-beta
-    df_meta_genebuild_beta = df_meta_genebuild[df_meta_genebuild["release_type"] == "beta"].copy()
-    logging.info(f"Beta subset: {df_meta_genebuild_beta.shape}")
-
-    df_meta_genebuild_other = df_meta_genebuild[df_meta_genebuild["release_type"] != "beta"].copy()
-    logging.info(f"Other subset: {df_meta_genebuild_other.shape}")
-
-    if not df_meta_genebuild_beta.empty:
-        df_meta_genebuild_beta_updated = get_annotation_info_beta(df_meta_genebuild_beta)
-
-        # If the function fails and returns None, fallback to original beta with "Error"
-        if df_meta_genebuild_beta_updated is None:
-            df_meta_genebuild_beta["latest_annotated"] = "Error"
-            df_meta_genebuild_beta_updated = df_meta_genebuild_beta
-    else:
-        df_meta_genebuild_beta_updated = pd.DataFrame(columns=df_meta_genebuild.columns.tolist() + ["latest_annotated"])
-    logging.info(f"Updated beta: {df_meta_genebuild_beta_updated.shape}")
-
-    # Concatenate the updated beta subset with the rest
-    anno_wide_pre_check = pd.concat([df_meta_genebuild_beta_updated, df_meta_genebuild_other], ignore_index=True)
-    logging.info(f"Final combined: {anno_wide_pre_check.shape}")
-    logging.info(f"After beta info check: {anno_wide_pre_check.shape}")
-
 
     logging.info(f"Checking if annotation is the latest GCA version")
-    anno_wide = check_if_gca_is_latest_annotated(anno_wide_pre_check)
+    anno_wide = check_if_gca_is_latest_annotated(df_meta_genebuild)
     logging.info(f"After latest annotated check: {anno_wide.shape}")
 
     # Create the FTP URL using the scientific_name, replacing spaces with underscores
@@ -331,8 +218,8 @@ def generate_tables(annotation_date, taxon_id, bioproject_id, release_type, grou
     anno_wide = anno_wide.drop_duplicates(subset='gca', keep='first')
     # Create main display table
     anno_main = anno_wide[
-        ['bioproject_id', 'associated_project', 'gca', 'scientific_name', 'date_completed_beta',
-         'release_date_beta', 'lowest_taxon_id', 'gb_status', 'release_type', 'latest_annotated']
+        ['bioproject_id', 'associated_project', 'gca', 'scientific_name', 'last_genebuild_update',
+         'release_date', 'lowest_taxon_id', 'gb_status', 'latest_annotated']
     ]
 
     # Transforming out of range float values that are not JSON compliant: nan

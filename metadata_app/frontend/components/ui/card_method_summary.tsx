@@ -10,7 +10,6 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import {
-  ChartConfig,
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
@@ -45,7 +44,6 @@ interface TransformedItem extends MethodItem {
 
 interface FilterData {
   bioproject_id?: string[]
-  release_type?: string[]
   release_date?: string
   taxon_id?: number
 }
@@ -57,7 +55,6 @@ export function AnoMethodSummaryChart() {
     bioproject_id: [""],
     release_date: "",
     taxon_id: 0,
-    release_type: [""],
   })
 
 const fetchMethodData = async (filtersData: FilterData = {}) => {
@@ -67,7 +64,6 @@ const fetchMethodData = async (filtersData: FilterData = {}) => {
     ? {}
     : {
         bioproject_id: filtersData.bioproject_id?.filter((id: string) => id.trim() !== "") ?? [],
-        release_type: filtersData.release_type?.filter((r: string) => r.trim() !== "") ?? [],
         release_date: filtersData.release_date || undefined,
         taxon_id: filtersData.taxon_id || 0,
       }
@@ -119,7 +115,7 @@ const fetchMethodData = async (filtersData: FilterData = {}) => {
   const handleChange = (field: string, value: string) => {
     setFilters((prev) => ({
       ...prev,
-      [field]: field === "taxon_id" ? Number(value) : field === "bioproject_id" || field === "release_type" ? [value] : value,
+      [field]: field === "taxon_id" ? Number(value) : field === "bioproject_id" ? [value] : value,
     }))
   }
 
@@ -129,7 +125,7 @@ const fetchMethodData = async (filtersData: FilterData = {}) => {
         <CardTitle>Annotation method summary</CardTitle>
         <CardDescription>Use the filters below to refine the data</CardDescription>
 
-        <div className="grid grid-cols-3 gap-4 mt-4">
+        <div className="grid grid-cols-2 gap-4 mt-4">
 
           <div>
             <FormLabel htmlFor="release_date" className="mb-2 block">Release Date</FormLabel>
@@ -152,15 +148,6 @@ const fetchMethodData = async (filtersData: FilterData = {}) => {
             />
           </div>
 
-          <div>
-            <FormLabel htmlFor="release_type" className="mb-2 block">Release Site</FormLabel>
-            <Input
-              id="release_type"
-              placeholder="main or beta"
-              value={filters.release_type[0]}
-              onChange={(e) => handleChange("release_type", e.target.value)}
-            />
-          </div>
         </div>
         <Button className="mt-2" onClick={() => fetchMethodData(filters)}>
           Apply Filters

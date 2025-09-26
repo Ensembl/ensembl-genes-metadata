@@ -13,7 +13,6 @@ def filter_annotations(filters: ReportFilterRequest):
             start_date=filters.start_date,
             group_name=filters.group_name,
             taxon_id=filters.taxon_id,
-            release_type=filters.release_type
         )
 
         return {

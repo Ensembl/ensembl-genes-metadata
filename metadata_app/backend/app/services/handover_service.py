@@ -1,0 +1,66 @@
+# app/services/home_page_service.py
+import logging
+import pandas as pd
+from metadata_app.backend.app.core.database import get_db_connection
+import pymysql.cursors
+
+
+def get_ready_to_ho():
+    try:
+        with get_db_connection("meta") as conn:
+            cursor = conn.cursor(pymysql.cursors.DictCursor)  # fetch rows as dicts
+            query = """
+                SELECT 
+                    g.genebuild_status_id,
+                    g.gb_status,
+                    g.last_genebuild_update,
+                    g.genebuilder,
+                    CONCAT(a.gca_chain, ".", a.gca_version) AS gca
+                FROM genebuild_status g
+                JOIN assembly a ON a.assembly_id = g.assembly_id
+                WHERE g.gb_status IN ('completed', 'pre_released')
+            """
+            cursor.execute(query)
+            result = cursor.fetchall()
+
+        if not result:
+            return {}
+
+        df = pd.DataFrame(result)
+        df['last_genebuild_update'] = pd.to_datetime(
+            df['last_genebuild_update'], errors='coerce'
+        ).dt.strftime("%Y-%m-%d")
+
+        current_genebuilders = ["lazar", "leanne", "jackt", "vianey", "swati", "ereboperezsilva", "ftricomi"]
+
+        df_filtered = df[df["genebuilder"].isin(current_genebuilders)]
+
+        # Group rows by genebuilder
+        grouped = {
+            genebuilder: rows.drop(columns=['genebuilder']).to_dict(orient="records")
+            for genebuilder, rows in df_filtered.groupby("genebuilder")
+        }
+
+        # Mapping of original genebuilder names to display names
+        rename_map = {
+            "lazar": "Anna",
+            "leanne": "Leanne",
+            "jackt": "Jack",
+            "vianey": "Vianey",
+            "swati": "Swati",
+            "ereboperezsilva": "Jose",
+            "ftricomi": "Francesca",
+        }
+
+        # Group and rename genebuilders
+        grouped = {
+            rename_map.get(genebuilder, genebuilder): rows.drop(columns=['genebuilder']).to_dict(orient="records")
+            for genebuilder, rows in df_filtered.groupby("genebuilder")
+        }
+
+
+        return grouped
+
+    except Exception as e:
+        logging.error(f"Error in get_ready_to_ho: {e}", exc_info=True)
+        return {}

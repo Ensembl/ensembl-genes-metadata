@@ -10,7 +10,6 @@ from metadata_app.backend.app.services.home_page_service import get_assemblies_p
 from metadata_app.backend.app.services.home_page_service import get_annotations_per_year
 from metadata_app.backend.app.services.home_page_service import get_metadata_registry_update_dates
 from metadata_app.backend.app.services.home_page_service import get_transcriptomic_registry_update_dates
-from metadata_app.backend.app.services.home_page_service import get_annotations_per_genebuilder
 from metadata_app.backend.app.services.home_page_service import bin_by_genebuild_method
 
 
@@ -23,7 +22,6 @@ class FilterInput(BaseModel):
     bioproject_id: Optional[List[str]] = None
     release_date: Optional[date] = None
     taxon_id: Optional[int] = None
-    release_type: Optional[List[str]] = None
 
 
 @home_page.get("/home/bioproject")
@@ -61,12 +59,6 @@ def transcriptomic_registry_update_dates():
     """
     return get_transcriptomic_registry_update_dates()
 
-@home_page.get("/home/genebuilder")
-def annotations_per_genebuilder():
-    """
-    Get counts of assemblies per year.
-    """
-    return get_annotations_per_genebuilder()
 
 @home_page.post("/home/method_summary")
 def filter_genebuild_summary(filters: FilterInput):
@@ -75,7 +67,6 @@ def filter_genebuild_summary(filters: FilterInput):
             bioproject_id=filters.bioproject_id,
             release_date=filters.release_date,
             taxon_id=filters.taxon_id,
-            release_type=filters.release_type
         )
         return summary_df
 
