@@ -21,7 +21,7 @@ def get_annotation_counts_by_bioproject():
                         SELECT COUNT(DISTINCT a.assembly_id)
                         FROM assembly a
                         LEFT JOIN bioproject b2 ON a.assembly_id = b2.assembly_id
-                        LEFT JOIN genebuild g2 ON a.assembly_id = g2.assembly_id
+                        LEFT JOIN genebuild_status g2 ON a.assembly_id = g2.assembly_id
 
                         WHERE b2.bioproject_id = b.bioproject_id
                           AND g2.assembly_id IS NULL
@@ -32,14 +32,14 @@ def get_annotation_counts_by_bioproject():
 
                     (
                         SELECT COUNT(DISTINCT g2.assembly_id)
-                        FROM genebuild g2
+                        FROM genebuild_status g2
                         JOIN bioproject b3 ON g2.assembly_id = b3.assembly_id
                         WHERE g2.gb_status = 'in_progress'
                           AND b3.bioproject_id = b.bioproject_id
                     ) AS in_progress
 
                 FROM bioproject b
-                JOIN genebuild g ON b.assembly_id = g.assembly_id
+                JOIN genebuild_status g ON b.assembly_id = g.assembly_id
                 JOIN main_bioproject mb ON mb.bioproject_id = b.bioproject_id
                 WHERE g.gb_status = 'live'
                 GROUP BY b.bioproject_id, mb.bioproject_name
@@ -56,7 +56,7 @@ def get_annotation_counts_by_bioproject():
                 (
                     SELECT COUNT(DISTINCT a2.assembly_id)
                     FROM assembly a2
-                    LEFT JOIN genebuild g2 ON a2.assembly_id = g2.assembly_id
+                    LEFT JOIN genebuild_status g2 ON a2.assembly_id = g2.assembly_id
                     WHERE (
                             (cg.group_type = 'taxon' AND a2.lowest_taxon_id = cg.item)
                             OR
@@ -70,7 +70,7 @@ def get_annotation_counts_by_bioproject():
             
                 (
                     SELECT COUNT(DISTINCT g2.assembly_id)
-                    FROM genebuild g2
+                    FROM genebuild_status g2
                     JOIN assembly a2 ON g2.assembly_id = a2.assembly_id
                     WHERE (
                             (cg.group_type = 'taxon' AND a2.lowest_taxon_id = cg.item)
@@ -87,7 +87,7 @@ def get_annotation_counts_by_bioproject():
                    OR
                    (cg.group_type = 'assembly' AND a.gca_chain = cg.item)
                  )
-            LEFT JOIN genebuild g ON a.assembly_id = g.assembly_id  -- ✅ left join, don’t filter here
+            LEFT JOIN genebuild_status g ON a.assembly_id = g.assembly_id  -- left join, don’t filter here
             GROUP BY cg.group_name;
             """
             cursor.execute(query)
