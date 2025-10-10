@@ -1,5 +1,7 @@
 # app/services/home_page_service.py
 import logging
+
+import numpy as np
 import pandas as pd
 from metadata_app.backend.app.core.database import get_db_connection
 import pymysql.cursors
@@ -26,22 +28,17 @@ def get_ready_to_ho():
         if not result:
             return {}
 
+        # Replace NaN/Inf with the string "None" so JSON serialization is safe
+        # After building df
         df = pd.DataFrame(result)
-        df['last_genebuild_update'] = pd.to_datetime(
-            df['last_genebuild_update'], errors='coerce'
-        ).dt.strftime("%Y-%m-%d")
+
+        # Replace NaN/inf with Unknown
+        df = df.replace([np.nan, np.inf, -np.inf], "Unknown")
 
         current_genebuilders = ["lazar", "leanne", "jackt", "vianey", "swati", "ereboperezsilva", "ftricomi"]
 
         df_filtered = df[df["genebuilder"].isin(current_genebuilders)]
 
-        # Group rows by genebuilder
-        grouped = {
-            genebuilder: rows.drop(columns=['genebuilder']).to_dict(orient="records")
-            for genebuilder, rows in df_filtered.groupby("genebuilder")
-        }
-
-        # Mapping of original genebuilder names to display names
         rename_map = {
             "lazar": "Anna",
             "leanne": "Leanne",
@@ -52,12 +49,12 @@ def get_ready_to_ho():
             "ftricomi": "Francesca",
         }
 
-        # Group and rename genebuilders
         grouped = {
             rename_map.get(genebuilder, genebuilder): rows.drop(columns=['genebuilder']).to_dict(orient="records")
             for genebuilder, rows in df_filtered.groupby("genebuilder")
         }
 
+        print(grouped)
 
         return grouped
 

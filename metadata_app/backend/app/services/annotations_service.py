@@ -1,5 +1,5 @@
-import json
 import logging
+import numpy as np
 import pandas as pd
 import datetime
 from fastapi import HTTPException
@@ -70,25 +70,61 @@ def query_meta_registry(annotation_date, taxon_id, bioproject_id, group_name):
             where_clause = " WHERE " + " AND ".join(conditions) if conditions else ""
 
             meta_query = f"""
-                SELECT b.bioproject_id, mb.bioproject_name AS associated_project, g.group_name, CONCAT(a.gca_chain, '.', a.gca_version) AS gca, a.lowest_taxon_id, 
-                        gb.gb_status, gb.genebuilder, gb.annotation_source, gb.annotation_method, 
-                        gb.date_started, gb.release_date,
-                        s.scientific_name, s.common_name,
-                        am.metrics_name, am.metrics_value
+                SELECT 
+                    b.bioproject_id,
+                    mb.bioproject_name AS associated_project,
+                    g.group_name,
+                    CONCAT(a.gca_chain, '.', a.gca_version) AS gca,
+                    a.lowest_taxon_id,
+                    gb.gb_status,
+                    gb.genebuilder,
+                    gb.annotation_source,
+                    gb.annotation_method,
+                    gb.date_started,
+                    gb.release_date,
+                    gb.last_genebuild_update,
+                    s.scientific_name,
+                    s.common_name,
+                    am.protein_busco,
+                    am.protein_busco_lineage,
+                    am.protein_busco_version  -- add if you included it in the subquery
                 FROM genebuild_status gb
-                LEFT JOIN assembly a on gb.assembly_id = a.assembly_id
-                LEFT JOIN bioproject b on a.assembly_id = b.assembly_id
+                LEFT JOIN assembly a ON gb.assembly_id = a.assembly_id
+                LEFT JOIN bioproject b ON a.assembly_id = b.assembly_id
                 LEFT JOIN species s ON a.lowest_taxon_id = s.lowest_taxon_id
                 LEFT JOIN custom_group g
-				  ON (
-				       (g.group_type = 'taxon' AND a.lowest_taxon_id = g.item)
-				       OR
-				       (g.group_type = 'assembly' AND a.gca_chain = g.item)
-				     )
+                    ON (
+                         (g.group_type = 'taxon' AND a.lowest_taxon_id = g.item)
+                         OR
+                         (g.group_type = 'assembly' AND a.gca_chain = g.item)
+                       )
                 LEFT JOIN main_bioproject mb ON b.bioproject_id = mb.bioproject_id
-                LEFT JOIN annotation_metrics am ON gb.genebuild_status_id = am.genebuild_status_id
+                LEFT JOIN (
+                      SELECT genebuild_status_id,
+                             MAX(CASE WHEN metrics_name='genebuild_busco' THEN metrics_value END) AS protein_busco,
+                             MAX(CASE WHEN metrics_name='genebuild_busco_dataset' THEN metrics_value END) AS protein_busco_lineage,
+                             MAX(CASE WHEN metrics_name='genebuild_busco_version' THEN metrics_value END) AS protein_busco_version
+                      FROM annotation_metrics
+                      GROUP BY genebuild_status_id
+                ) am ON gb.genebuild_status_id = am.genebuild_status_id
                 {where_clause}
-                AND gb.last_attempt = 1;                
+                AND gb.last_attempt = 1
+                GROUP BY
+                    b.bioproject_id,
+                    mb.bioproject_name,
+                    g.group_name,
+                    a.gca_chain,
+                    a.gca_version,
+                    a.lowest_taxon_id,
+                    gb.gb_status,
+                    gb.genebuilder,
+                    gb.annotation_source,
+                    gb.annotation_method,
+                    gb.date_started,
+                    gb.release_date,
+                    gb.last_genebuild_update,
+                    s.scientific_name,
+                    s.common_name;                
             """
 
             cursor.execute(meta_query, parameters)
@@ -98,21 +134,13 @@ def query_meta_registry(annotation_date, taxon_id, bioproject_id, group_name):
                     status_code=404,
                     detail="No annotations found matching the specified criteria."
                 )
-            logging.info(f"Query returned {len(results)} annotations.")
+            logging.info(f"Query returned {len(results)} lines.")
 
         df_meta_genebuild = pd.DataFrame(results)
-        df_meta_genebuild.drop_duplicates(subset=["gca"], inplace=True)
-        # Pivot to wide format without losing records
-        df_pivoted = df_meta_genebuild.pivot_table(
-            index=["bioproject_id", "gca", "associated_project", "group_name", "gb_status", "genebuilder", "annotation_source", "annotation_method", "date_started","release_date", "scientific_name", "common_name", "lowest_taxon_id"],
-            columns="metrics_name",
-            values="metrics_value",
-            aggfunc="first"
-        ).reset_index()
 
-        logging.info(f"Retrieved records metadata table: {df_pivoted.shape}")
-
-        return df_pivoted
+        logging.info(f"Retrieved records from genebuild_status table: {df_meta_genebuild.shape}")
+        print(df_meta_genebuild)
+        return df_meta_genebuild
 
 
     except Exception as e:
@@ -195,8 +223,6 @@ def generate_tables(annotation_date, taxon_id, bioproject_id, group_name):
         logging.error("Unexpected error occurred during annotations filtering", exc_info=True)
         raise HTTPException(status_code=500, detail="An unexpected error occurred.")
 
-    logging.info(f"Adding additional info from beta prod server")
-    logging.info(f"Original df_meta_genebuild: {df_meta_genebuild.shape}")
 
 
     logging.info(f"Checking if annotation is the latest GCA version")
@@ -209,7 +235,7 @@ def generate_tables(annotation_date, taxon_id, bioproject_id, group_name):
         lambda
             row: f"https://ftp.ebi.ac.uk/pub/ensemblorganisms/{row['scientific_name'].replace(' ', '_')}/{row['gca']}/"
         if pd.notnull(row['scientific_name']) and pd.notnull(row['gca']) and pd.notnull(
-            row.get('ensembl_release_date')) else None,
+            row.get('release_date')) else None,
         axis=1)
 
 

@@ -14,7 +14,6 @@ def filter_assemblies(filters: AssemblyFilterRequest):
         release_date=filters.release_date,
         taxon_id=filters.taxon_id,
         current=filters.current,
-        pipeline=filters.pipeline,
         transc=filters.transc,
         transc_ena=filters.transc_ena,
         non_annotated = filters.non_annotated,

@@ -12,11 +12,11 @@ export type Annotations = {
   associated_project: string
   gca: string
   scientific_name: string
-  annotation_date: string
   lowest_taxon_id: number
   gb_status: string
-  release_site: string
   latest_annotated: string
+  last_genebuild_update: string
+  release_date: string
 }
 
 function sortableHeader(label: string, accessor: string) {
@@ -50,23 +50,23 @@ export const columns: ColumnDef<Annotations>[] = [
     header: sortableHeader("Scientific Name", "scientific_name"),
   },
   {
-  accessorKey: "date_completed_beta",
-  header: sortableHeader("Annotation Date", "date_completed_beta"),
-    cell: ({ row }) => {
-      const fullDate = row.getValue("date_completed_beta") as string;
-      const dateOnly = fullDate.split("T")[0]; // or use new Date(fullDate).toISOString().split("T")[0]
-      return dateOnly;
-    },
-  },
-  {
     accessorKey: "gb_status",
     header: sortableHeader("Annotation status", "gb_status"),
   },
   {
-  accessorKey: "release_date_beta",
-  header: sortableHeader("Release Date Beta", "release_date_beta"),
+  accessorKey: "release_date",
+  header: sortableHeader("Release Date", "release_date"),
     cell: ({ row }) => {
-      const fullDate = row.getValue("release_date_beta") as string;
+      const fullDate = row.getValue("release_date") as string;
+      const dateOnly = fullDate.split("T")[0]; // or use new Date(fullDate).toISOString().split("T")[0]
+      return dateOnly;
+    },
+  },
+    {
+  accessorKey: "last_genebuild_update",
+  header: sortableHeader("Last Genebuild Update", "last_genebuild_update"),
+    cell: ({ row }) => {
+      const fullDate = row.getValue("last_genebuild_update") as string;
       const dateOnly = fullDate.split("T")[0]; // or use new Date(fullDate).toISOString().split("T")[0]
       return dateOnly;
     },
@@ -74,10 +74,6 @@ export const columns: ColumnDef<Annotations>[] = [
   {
     accessorKey: "lowest_taxon_id",
     header: sortableHeader("Lowest Taxon ID", "lowest_taxon_id"),
-  },
-  {
-    accessorKey: "release_type",
-    header: sortableHeader("Release site", "release_type"),
   },
 {
   accessorKey: "latest_annotated",

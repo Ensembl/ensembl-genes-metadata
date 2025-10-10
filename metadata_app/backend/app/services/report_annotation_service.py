@@ -55,10 +55,10 @@ def generate_report(end_date, start_date, group_name, taxon_id, bioproject_id):
         .size()
         .reset_index(name='count'))
 
-    if 'genebuild_busco' in anno_wide.columns:
+    if 'protein_busco' in anno_wide.columns:
         # Extract C: value
         busco_complete_series = (
-            anno_wide['genebuild_busco']
+            anno_wide['protein_busco']
             .str.extract(r'C:(\d+\.\d+)%')[0]
             .astype(float)
         )
@@ -66,12 +66,12 @@ def generate_report(end_date, start_date, group_name, taxon_id, bioproject_id):
         # Compute the average
         average_busco = busco_complete_series.mean()
     else:
-        anno_wide['genebuild_busco'] = "Not available"
+        anno_wide['protein_busco'] = "Not available"
         average_busco = "Not available"
 
 
 
-    main_report = anno_wide[['associated_project', 'gca', 'genebuilder', 'gb_status', 'release_type', 'ftp', 'latest_annotated', 'busco_protein', 'date_completed_beta', 'release_date_beta']]
+    main_report = anno_wide[['associated_project', 'gca', 'genebuilder', 'gb_status', 'ftp', 'latest_annotated', 'protein_busco', 'last_genebuild_update', 'release_date']]
 
 
     # Transforming out of range float values that are not JSON compliant: nan

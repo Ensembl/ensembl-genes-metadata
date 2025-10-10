@@ -56,6 +56,7 @@ export default function Page() {
     { value: "PRJEB43743", label: "Aquatic Symbiosis" },
     { value: "PRJNA489243", label: "Vertebrate Genomes" },
     { value: "PRJNA813333", label: "Canadian BioGenome" },
+    { value: "PRJEB80366", label: "Ancient Environmental Genomics Initiative for Sustainability" },
     { value: "LACA", label: "Livestock And Companion Animals" },
     { value: "AQUA-FAANG", label: "Aqua FAANG" },
   ];

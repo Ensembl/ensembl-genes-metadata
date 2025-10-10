@@ -11,91 +11,40 @@ def load_clade_data():
         logging.info("Loading clade settings json file.")
         return json.load(f)
 
-def read_ids_as_set(file_path: str) -> set:
-    """
-    Reads a text file with one ID per line and returns a set of integers.
-
-    :param file_path: Path to the text file
-    :return: A set of unique IDs as integers
-    """
-    with open(file_path, "r") as f:
-        return {int(line.strip()) for line in f if line.strip()}
-
 
 def assign_clade_and_species(lowest_taxon_id, clade_data, taxonomy_dict, human_taxon_id=9606):
-    """Assign internal clade and species taxon ID based on taxonomy using the provided clade data,
-       and check if the taxon ID is a descendant of the vertebrata taxon ID (7742)."""
+    """
+    Assign clade, species_id, genus_id, and pipeline based on taxonomy efficiently.
+    vert_taxon_id_set should be preloaded once for all records.
+    """
 
-    # Convert IDs to integers to ensure consistent comparison
     lowest_taxon_id = int(lowest_taxon_id)
     human_taxon_id = int(human_taxon_id)
 
-    # Add debug logging to see what's being passed
-    logging.debug(f"Processing taxon ID: {lowest_taxon_id}")
-    logging.debug(f"Taxonomy dict keys available: {list(taxonomy_dict.keys())}")
-
-    # Retrieve the taxonomy hierarchy from the passed dictionary
     taxonomy_hierarchy = taxonomy_dict.get(str(lowest_taxon_id)) or taxonomy_dict.get(lowest_taxon_id, [])
 
-    logging.debug(f"Taxonomy hierarchy for {lowest_taxon_id}: {taxonomy_hierarchy}")
-
     if not taxonomy_hierarchy:
-        logging.warning(f"Taxonomy hierarchy not found for taxon ID {lowest_taxon_id}")
         return "Unassigned", None, None, None
 
-    species_taxon_id = None
-    genus_taxon_id = None
-    pipeline = None
-    internal_clade = "Unassigned"  # Default value if no clade is found
+    # Build a quick mapping taxon_class -> taxon_class_id
+    taxon_class_map = {t['taxon_class']: t['taxon_class_id'] for t in taxonomy_hierarchy}
 
-    # Define the taxon classes in hierarchical order
-    taxon_classes_order = ['species', 'genus', 'family', 'order', 'class', 'phylum', 'kingdom']
+    species_taxon_id = taxon_class_map.get('species')
+    genus_taxon_id = taxon_class_map.get('genus')
 
-    # First pass: Set species and genus taxon IDs if available
-    for taxon in taxonomy_hierarchy:
-        if taxon['taxon_class'] == 'species':
-            species_taxon_id = taxon['taxon_class_id']
-        elif taxon['taxon_class'] == 'genus':
-            genus_taxon_id = taxon['taxon_class_id']
+    # Precompute taxon_id → clade_name mapping
+    clade_lookup = {int(details['taxon_id']): clade_name for clade_name, details in clade_data.items() if details.get('taxon_id')}
 
-    # Second pass: Try to assign clade
-    for taxon_class in taxon_classes_order:
-        matching_taxon = next((t for t in taxonomy_hierarchy if t['taxon_class'] == taxon_class), None)
+    # Assign internal clade
+    internal_clade = "Unassigned"
+    for taxon_class in ['species', 'genus', 'family', 'order', 'class', 'phylum', 'kingdom']:
+        taxon_id = taxon_class_map.get(taxon_class)
+        if taxon_id is not None and int(taxon_id) in clade_lookup:
+            internal_clade = clade_lookup[int(taxon_id)]
+            break
 
-        if matching_taxon:
-            taxon_class_id = matching_taxon['taxon_class_id']
 
-            # Log clade data for debugging
-            logging.debug(f"Checking taxon class: {taxon_class}, id: {taxon_class_id}")
-            logging.debug(f"Available clades: {list(clade_data.keys())}")
-
-            # Check for matching taxon_id in clade settings
-            for clade_name, details in clade_data.items():
-                clade_taxon_id = details.get("taxon_id")
-                logging.debug(f"Comparing with clade {clade_name}, taxon_id: {clade_taxon_id}")
-
-                if clade_taxon_id and int(clade_taxon_id) == int(taxon_class_id):
-                    internal_clade = clade_name
-                    logging.info(f"Assigned clade {clade_name} for taxon {lowest_taxon_id}")
-                    break
-
-            if internal_clade != "Unassigned":
-                break
-
-    # Check if vertebrate and assign pipeline
-    vert_taxon_id_set = read_ids_as_set("metadata_app/backend/data/vertebrata_taxids.txt")
-    if lowest_taxon_id == human_taxon_id:
-        pipeline = "hprc"
-    elif lowest_taxon_id in vert_taxon_id_set:
-        pipeline = "main"
-    else:
-        pipeline = "anno"
-
-    # Log the assignment results for debugging
-    logging.info(
-        f"Taxon {lowest_taxon_id}: clade={internal_clade}, species_id={species_taxon_id}, genus_id={genus_taxon_id}, pipeline={pipeline}")
-
-    return internal_clade, species_taxon_id, genus_taxon_id, pipeline
+    return internal_clade, species_taxon_id, genus_taxon_id
 
 def get_descendant_taxa(taxon_id):
     """

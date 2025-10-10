@@ -83,7 +83,7 @@ def is_reference_genome(accession):
 
 
 def get_filtered_assemblies(bioproject_id, metric_thresholds, asm_level, asm_type, release_date, taxon_id,
-                            current, pipeline, transc, transc_ena, non_annotated, group_name):
+                            current, transc, transc_ena, non_annotated, group_name):
 	"""
 	Fetch all assemblies and their metrics, filter results based on given thresholds,
 	and format the results with metrics as separate columns.
@@ -97,7 +97,6 @@ def get_filtered_assemblies(bioproject_id, metric_thresholds, asm_level, asm_typ
 		release_date: Filter assemblies released after this date
 		taxon_id: NCBI Taxon ID to filter by
 		current: Whether to filter for current assemblies only
-		pipeline: Which pipeline(s) to filter by
 		transc: Whether to check transcriptomic data from registry
 		transc_ena: Whether to check transcriptomic data from ena
 		non_annotated: Only show non-annotated assemblies
@@ -176,7 +175,7 @@ def get_filtered_assemblies(bioproject_id, metric_thresholds, asm_level, asm_typ
 				       (g.group_type = 'assembly' AND a.gca_chain = g.item)
 				     )
                 LEFT JOIN organism o ON a.assembly_id = o.assembly_id
-                LEFT JOIN genebuild gb ON a.assembly_id = gb.assembly_id
+                LEFT JOIN genebuild_status gb ON a.assembly_id = gb.assembly_id
                 LEFT JOIN main_bioproject mb ON b.bioproject_id = mb.bioproject_id
                 {where_clause}
                 ORDER BY m.metrics_name;
@@ -285,7 +284,7 @@ def get_filtered_assemblies(bioproject_id, metric_thresholds, asm_level, asm_typ
 		# Add clade, species, and genus information
 		clade_data = load_clade_data()
 
-		df_wide[['internal_clade', 'species_taxon_id', 'genus_taxon_id', 'pipeline']] = df_wide[
+		df_wide[['internal_clade', 'species_taxon_id', 'genus_taxon_id']] = df_wide[
 			'lowest_taxon_id'].apply(
 			lambda x: pd.Series(assign_clade_and_species(x, clade_data, taxonomy_dict))
 		)
@@ -335,16 +334,7 @@ def get_filtered_assemblies(bioproject_id, metric_thresholds, asm_level, asm_typ
 			# Drop redundant 'Taxon ID' columns (both for lowest and genus)
 			df_wide.drop(columns=["Taxon ID_lowest", "Taxon ID_species", "Taxon ID"], inplace=True)
 
-		# Filter by pipeline if requested
-		if pipeline:
-			logging.info(f"Filtering results by pipeline(s): {pipeline}")
-			df_wide = df_wide[df_wide['pipeline'].isin(pipeline)]
 
-			if df_wide.empty:
-				raise HTTPException(
-					status_code=400,
-					detail=f"No assemblies matching pipeline filter: {pipeline}"
-				)
 
 		# Filter non annoteted assemblies only
 
@@ -356,7 +346,7 @@ def get_filtered_assemblies(bioproject_id, metric_thresholds, asm_level, asm_typ
 			if df_wide.empty:
 				raise HTTPException(
 					status_code=400,
-					detail=f"No assemblies matching pipeline filter: {non_annotated}"
+					detail=f"No assemblies matching non_annotated filter: {non_annotated}"
 				)
 
 

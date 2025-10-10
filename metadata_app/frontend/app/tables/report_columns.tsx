@@ -12,12 +12,11 @@ export type Report = {
   gca: string
   genebuilder: string
   gb_status: string
-  release_type: string
   ftp: string
   latest_annotated: string
-  busco_protein: string
-  date_completed_beta: string
-  release_date_beta: string
+  protein_busco: string
+  release_date: string
+  last_genebuild_update: string
 }
 
 function sortableHeader(label: string, accessor: string) {
@@ -50,35 +49,32 @@ export const columns: ColumnDef<Report>[] = [
     accessorKey: "gb_status",
     header: sortableHeader("Staus", "gb_status"),
   },
-  {
-    accessorKey: "release_type",
-    header: sortableHeader("Site", "release_type"),
-  },
+
   {
     accessorKey: "ftp",
     header: sortableHeader("FTP", "ftp"),
   },
   {
-  accessorKey: "date_completed_beta",
-  header: sortableHeader("Annotation Date", "date_completed_beta"),
+  accessorKey: "last_genebuild_update",
+  header: sortableHeader("Annotation Date", "last_genebuild_update"),
     cell: ({ row }) => {
-      const fullDate = row.getValue("date_completed_beta") as string;
+      const fullDate = row.getValue("last_genebuild_update") as string;
       const dateOnly = fullDate.split("T")[0]; // or use new Date(fullDate).toISOString().split("T")[0]
       return dateOnly;
     },
   },
   {
-  accessorKey: "release_date_beta",
-  header: sortableHeader("Release Date Beta", "release_date_beta"),
+  accessorKey: "release_date",
+  header: sortableHeader("Release Date Beta", "release_date"),
     cell: ({ row }) => {
-      const fullDate = row.getValue("release_date_beta") as string;
+      const fullDate = row.getValue("release_date") as string;
       const dateOnly = fullDate.split("T")[0]; // or use new Date(fullDate).toISOString().split("T")[0]
       return dateOnly;
     },
   },
   {
-    accessorKey: "busco_protein",
-    header: sortableHeader("BUSCO", "busco_protein"),
+    accessorKey: "protein_busco",
+    header: sortableHeader("BUSCO", "protein_busco"),
   },
 {
   accessorKey: "latest_annotated",

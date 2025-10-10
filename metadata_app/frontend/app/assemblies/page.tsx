@@ -37,6 +37,7 @@ export default function Page() {
     { value: "PRJEB47820", label: "European Reference Genome Atlas pilot" },
     { value: "PRJEB43743", label: "Aquatic Symbiosis" },
     { value: "PRJNA489243", label: "Vertebrate Genomes" },
+    { value: "PRJEB80366", label: "Ancient Environmental Genomics Initiative for Sustainability" },
     { value: "PRJNA813333", label: "Canadian BioGenome" },
     { value: "LACA", label: "Livestock And Companion Animals" },
     { value: "AQUA-FAANG", label: "Aqua FAANG" },
@@ -50,9 +51,9 @@ export default function Page() {
   const [autoFillRequested, setAutoFillRequested] = useState(false);
   const [assemblies, setAssemblies] = useState<Assemblies[]>([]);
   const [checkENA, setCheckENA] = useState(false);
-  const [nonAnnotated, setNonAnnotated] = useState(false);
+  const [nonAnnotated, setNonAnnotated] = useState(true);
   const [checkTranscript, setCheckTranscript] = useState(false);
-  const [checkCurrent, setCheckCurrent] = useState(false);
+  const [checkCurrent, setCheckCurrent] = useState(true);
   const [downloadables, setDownloadables] = useState<{
     gca_list: string;
     df_main: string;
@@ -120,7 +121,6 @@ export default function Page() {
       // Get Assembly Level and Assembly Type values from toggleStates
       const asm_level = toggleStates["Assembly level"] || null;
       const asm_type = toggleStates["Assembly type"] || null;
-      const pipeline = toggleStates["Pipeline"] || null;
 
       // Format taxon_id as number
       let taxonIdArray = null;
@@ -150,7 +150,6 @@ export default function Page() {
         release_date: baseFieldValues["Release date"] || null,
         taxon_id: taxonIdArray,
         current: checkCurrent,
-        pipeline: pipeline,
         transc: checkTranscript,
         transc_ena: checkENA,
         non_annotated: nonAnnotated,
@@ -254,10 +253,6 @@ export default function Page() {
     {
       label: "Assembly level",
       options: ["Contig", "Scaffold", "Chromosome", "Complete genome"],
-    },
-      {
-      label: "Pipeline",
-      options: ["anno", "main", "hprc"],
     },
     {
       label: "Assembly type",
