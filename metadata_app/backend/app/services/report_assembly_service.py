@@ -50,7 +50,7 @@ def check_dataframe_not_empty(df, description, raise_404=True):
 
 
 def get_filtered_assemblies(bioproject_id, candidate, taxon_id,
-                            pipeline, transc, transc_ena, start_date, end_date, group_name):
+                             transc, transc_ena, start_date, end_date, group_name):
 	"""
     Fetch all assemblies and their metrics.
 
@@ -60,7 +60,6 @@ def get_filtered_assemblies(bioproject_id, candidate, taxon_id,
         start_date: Filter assemblies released after this date
         end_date: Filter assemblies released before this date
         taxon_id: NCBI Taxon ID to filter by
-        pipeline: Which pipeline(s) to filter by
         transc: Whether to check transcriptomic data from registry
         transc_ena: Whether to check transcriptomic data from ena
         group_name: Filter assemblies by group name
@@ -315,11 +314,6 @@ def get_filtered_assemblies(bioproject_id, candidate, taxon_id,
 			else:
 				logging.warning("No transcriptomic data retrieved from ENA")
 
-		# Filter by pipeline if requested
-		if pipeline:
-			logging.info(f"Filtering results by pipeline(s): {pipeline}")
-			df_wide = df_wide[df_wide['pipeline'].isin(pipeline)]
-			check_dataframe_not_empty(df_wide, f"assemblies matching pipeline filter: {pipeline}")
 
 		# Add missing column if transc is not checked from ena
 		if "transcriptomic_evidence" not in df_wide.columns:
@@ -367,13 +361,13 @@ def get_filtered_assemblies(bioproject_id, candidate, taxon_id,
 
 
 def generate_tables(bioproject_id, candidate, taxon_id,
-                    pipeline, transc, transc_ena, start_date, end_date, group_name):
+                    transc, transc_ena, start_date, end_date, group_name):
 	logging.info(
-		f"Generating tables for end date: {end_date}, start date: {start_date}, group name: {group_name}, taxon id: {taxon_id}, bioproject id: {bioproject_id}, pipeline type: {pipeline}")
+		f"Generating tables for end date: {end_date}, start date: {start_date}, group name: {group_name}, taxon id: {taxon_id}, bioproject id: {bioproject_id}")
 
 	try:
 		rep_asm_wide, rep_asm_main, taxonomy_dict = get_filtered_assemblies(bioproject_id, candidate, taxon_id,
-		                                                                    pipeline, transc, transc_ena, start_date,
+		                                                                    transc, transc_ena, start_date,
 		                                                                    end_date, group_name)
 	except HTTPException:
 		logging.error("HTTPException raised during assembly filtering")

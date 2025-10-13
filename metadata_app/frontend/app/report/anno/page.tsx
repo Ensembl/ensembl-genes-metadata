@@ -226,7 +226,7 @@ export default function Page() {
               <p className="text-muted-foreground">{description}</p>
             </div>
             <div className="grid justify-center grid-cols-2 gap-4">
-              <div>
+              <div className="col-span-2">
                 <Label className="mb-3 block">Main projects</Label>
                 <MultipleSelector
                   placeholder="Select projects or groups..."
@@ -256,8 +256,8 @@ export default function Page() {
               ))}
             </div>
             <div className="mt-6 flex justify-end">
-              <Button onClick={handleGetAnnotations} disabled={loading}>
-                {loading ? <Loader2 className="animate-spin h-4 w-4 mr-2" /> : "Generate Report"}
+              <Button className="cursor-pointer" onClick={handleGetAnnotations} disabled={loading}>
+                {loading ? <Loader2 className="animate-spin h-4 w-4 mr-2" /> : "Generate annotation report"}
               </Button>
             </div>
           </div>

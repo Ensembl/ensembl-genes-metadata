@@ -344,7 +344,7 @@ export default function Page() {
               </div>
               <div className="flex items-center space-x-2">
                 <Switch id="current_check" checked={checkCurrent} onCheckedChange={setCheckCurrent} />
-                <Label htmlFor="current_check">Only show current records</Label>
+                <Label htmlFor="current_check">Only show current assemblies</Label>
               </div>
               <div className="flex items-center space-x-2">
                 <Switch id="non_annotated" checked={nonAnnotated} onCheckedChange={setNonAnnotated} />
@@ -449,14 +449,14 @@ export default function Page() {
 
         {/* Get Results Button */}
         <div className="mt-8 flex justify-end">
-          <Button size="lg" onClick={handleGetResults} disabled={loading}>
+          <Button className="cursor-pointer" size="lg" onClick={handleGetResults} disabled={loading}>
             {loading ? (
               <>
                 <Loader2 className="animate-spin mr-2" />
                 Loading...
               </>
             ) : (
-              "Get Results"
+              "Get Assemblies"
             )}
           </Button>
         </div>

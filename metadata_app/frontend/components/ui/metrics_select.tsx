@@ -62,19 +62,19 @@ export function PopoverWithMultiSelect({
 
 
   const group1 = ["Assembly level", "Assembly type", "Contig N50", "Sequence length"];
-  const group2 = ["GC%", "Genome coverage", "Number of contigs", "Number of scaffolds", "Scaffold N50", "Pipeline"];
+  const group2 = ["GC%", "Genome coverage", "Number of contigs", "Number of scaffolds", "Scaffold N50"];
 
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button variant="outline" className="w-full dark:bg-foreground dark:text-background">
+        <Button variant="outline" className="w-full dark:bg-foreground dark:text-background cursor-pointer">
           <ListFilterPlus className="shrink-0" />
           <span className="hidden lg:inline">Assembly Metrics</span>
         </Button>
       </PopoverTrigger>
 
       <PopoverContent className="w-full">
-        <Button variant="ghost" className="w-full justify-start" onClick={onAutoFillHighQuality}>
+        <Button variant="secondary" className="w-full justify-start cursor-pointer" onClick={onAutoFillHighQuality}>
           <SlidersHorizontal className="" />
           Get annotation candidates
         </Button>

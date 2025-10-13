@@ -27,9 +27,9 @@ export default function ReportSelectorPage() {
           <Link href="/report/asm" className="group">
             <Card className="relative hover:shadow-lg transition-shadow cursor-pointer h-full dark:bg-secondary">
               <CardHeader>
-                <CardTitle>Assemblies</CardTitle>
+                <CardTitle>Non-annotated assemblies</CardTitle>
                 <CardDescription>
-                  Create a report on available assemblies and find out what needs to be annotated
+                  Create a report on available non-annotated assemblies
                 </CardDescription>
               </CardHeader>
               <CardContent className="absolute bottom-4 right-4">

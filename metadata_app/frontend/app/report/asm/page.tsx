@@ -27,7 +27,6 @@ import {AsmTypeItem, RepAsmType} from "@/components/ui/repo_asm_type";
 import {TranscItem, TranscCard} from "@/components/ui/rep_asm_transc";
 import {LengthItem, LengthChart} from "@/components/ui/rep_asm_length";
 import {RepTranscENA, TranscENAItem} from "@/components/ui/repo_asm_transc_ena";
-import {ToggleGroup, ToggleGroupItem} from "@/components/ui/toggle-group";
 import {Tooltip, TooltipContent, TooltipTrigger} from "@/components/ui/tooltip";
 import {Alert, AlertDescription, AlertTitle} from "@/components/ui/alert";
 
@@ -77,12 +76,11 @@ export default function Page() {
   const [lengthData, setLength] = useState<LengthItem[]>([]);
   const [transc_ena, setENA] = useState<boolean>(false);
   const [transc, setTransc_check_reg] = useState<boolean>(false);
-  const [pipeline_var, setPipeline] = useState<string>("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const title = "Generate assembly report";
+  const title = "Generate non-annotated assembly report";
   const description =
-    "Select a biodiversity project or enter a BioProject ID to generate an overview of assemblies to be annotated by Genebuild. Use the optional filters to further customize your report. Generate a table with annotations and download a PDF report.";
+    "Select a biodiversity project or enter a BioProject ID to generate an overview of non-annotated assemblies. Use the optional filters to further customize your report. Generate a table with assemblies and download a PDF report.";
 
   const groupNameValues = ["LACA", "AQUA-FAANG"];
   const hasBioprojectInput =
@@ -137,10 +135,6 @@ export default function Page() {
         }
       }
 
-      let pipeline: string[] | null = null;
-      if (pipeline_var && pipeline_var !== "both") {
-        pipeline = [pipeline_var];
-      }
 
       const payload = {
         bioproject_id: uniqueBioprojects.length > 0 ? uniqueBioprojects : null,
@@ -151,7 +145,6 @@ export default function Page() {
         candidate: candidate,
         transc_ena: transc_ena,
         transc: transc,
-        pipeline: pipeline,
       };
 
       const cleanPayload = Object.fromEntries(
@@ -254,33 +247,13 @@ export default function Page() {
               <p className="text-muted-foreground">{description}</p>
             </div>
             <div className="grid justify-center grid-cols-2 gap-4">
-              <div>
+              <div className="col-span-2">
                 <Label className="mb-3 block">Main projects</Label>
                 <MultipleSelector
                   placeholder="Select projects or groups..."
                   defaultOptions={projectOptions}
                   onChange={(values) => setSelectedProjects(values)}
                 />
-              </div>
-              <div>
-                <Label className="mb-2 block">Pipeline</Label>
-                <ToggleGroup
-                  type="single"
-                  size="lg"
-                  variant="outline"
-                  value={pipeline_var}
-                  onValueChange={setPipeline}
-                >
-                  <ToggleGroupItem value="main" aria-label="main">
-                    Main
-                  </ToggleGroupItem>
-                  <ToggleGroupItem value="anno" aria-label="anno">
-                    Anno
-                  </ToggleGroupItem>
-                  <ToggleGroupItem value="both" aria-label="both">
-                    Both
-                  </ToggleGroupItem>
-                </ToggleGroup>
               </div>
 
 
@@ -352,8 +325,8 @@ export default function Page() {
 
             </div>
             <div className="mt-6 flex justify-end">
-              <Button onClick={handleGetAnnotations} disabled={loading}>
-                {loading ? <Loader2 className="animate-spin h-4 w-4 mr-2" /> : "Generate Report"}
+              <Button className="cursor-pointer" onClick={handleGetAnnotations} disabled={loading}>
+                {loading ? <Loader2 className="animate-spin h-4 w-4 mr-2" /> : "Generate non-annotated assembly report"}
               </Button>
             </div>
           </div>

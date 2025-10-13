@@ -226,7 +226,7 @@ export default function Page() {
                   Loading...
                 </>
               ) : (
-                "Get Results"
+                "Get Annotations"
               )}
             </Button>
           </div>

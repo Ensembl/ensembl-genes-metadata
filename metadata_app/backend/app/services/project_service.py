@@ -12,7 +12,7 @@ def get_dtol():
                 SELECT CONCAT(a.gca_chain, '.', a.gca_version) AS gca, a.lowest_taxon_id, s.scientific_name, a.asm_name,
                         a.asm_level, gb.gb_status, gb.genebuilder
                 FROM assembly a
-                LEFT JOIN genebuild gb on gb.assembly_id = a.assembly_id
+                LEFT JOIN genebuild_status gb on gb.assembly_id = a.assembly_id
                 LEFT JOIN bioproject b on a.assembly_id = b.assembly_id
                 LEFT JOIN species s ON a.lowest_taxon_id = s.lowest_taxon_id
                LEFT JOIN custom_group g
@@ -55,8 +55,8 @@ def get_erga():
             query = """
                 SELECT CONCAT(a.gca_chain, '.', a.gca_version) AS gca, a.lowest_taxon_id, s.scientific_name, a.asm_name,
                         a.asm_level, gb.gb_status, gb.genebuilder
-                FROM genebuild gb
-                LEFT JOIN assembly a on gb.assembly_id = a.assembly_id
+                FROM assembly a
+                LEFT JOIN genebuild_status gb on gb.assembly_id = a.assembly_id
                 LEFT JOIN bioproject b on a.assembly_id = b.assembly_id
                 LEFT JOIN species s ON a.lowest_taxon_id = s.lowest_taxon_id
                 LEFT JOIN custom_group g
@@ -99,8 +99,8 @@ def get_asg():
             query = """
                 SELECT CONCAT(a.gca_chain, '.', a.gca_version) AS gca, a.lowest_taxon_id, s.scientific_name, a.asm_name,
                         a.asm_level, gb.gb_status, gb.genebuilder
-                FROM genebuild gb
-                LEFT JOIN assembly a on gb.assembly_id = a.assembly_id
+                FROM assembly a
+                LEFT JOIN genebuild_status gb on gb.assembly_id = a.assembly_id
                 LEFT JOIN bioproject b on a.assembly_id = b.assembly_id
                 LEFT JOIN species s ON a.lowest_taxon_id = s.lowest_taxon_id
                 LEFT JOIN custom_group g
@@ -143,8 +143,8 @@ def get_erga_pilot():
             query = """
                 SELECT CONCAT(a.gca_chain, '.', a.gca_version) AS gca, a.lowest_taxon_id, s.scientific_name, a.asm_name,
                         a.asm_level, gb.gb_status, gb.genebuilder
-                FROM genebuild gb
-                LEFT JOIN assembly a on gb.assembly_id = a.assembly_id
+                FROM assembly a
+                LEFT JOIN genebuild_status gb on gb.assembly_id = a.assembly_id
                 LEFT JOIN bioproject b on a.assembly_id = b.assembly_id
                 LEFT JOIN species s ON a.lowest_taxon_id = s.lowest_taxon_id
                 LEFT JOIN custom_group g
@@ -186,8 +186,8 @@ def get_erga_bge():
             query = """
                 SELECT CONCAT(a.gca_chain, '.', a.gca_version) AS gca, a.lowest_taxon_id, s.scientific_name, a.asm_name,
                         a.asm_level, gb.gb_status, gb.genebuilder
-                FROM genebuild gb
-                LEFT JOIN assembly a on gb.assembly_id = a.assembly_id
+                FROM assembly a
+                LEFT JOIN genebuild_status gb on gb.assembly_id = a.assembly_id
                 LEFT JOIN bioproject b on a.assembly_id = b.assembly_id
                 LEFT JOIN species s ON a.lowest_taxon_id = s.lowest_taxon_id
                 LEFT JOIN custom_group g
@@ -229,8 +229,8 @@ def get_vgp():
             query = """
                 SELECT CONCAT(a.gca_chain, '.', a.gca_version) AS gca, a.lowest_taxon_id, s.scientific_name, a.asm_name,
                         a.asm_level, gb.gb_status, gb.genebuilder
-                FROM genebuild gb
-                LEFT JOIN assembly a on gb.assembly_id = a.assembly_id
+                FROM assembly a
+                LEFT JOIN genebuild_status gb on gb.assembly_id = a.assembly_id
                 LEFT JOIN bioproject b on a.assembly_id = b.assembly_id
                 LEFT JOIN species s ON a.lowest_taxon_id = s.lowest_taxon_id
                 LEFT JOIN custom_group g
@@ -272,8 +272,8 @@ def get_ebp():
             query = """
                 SELECT CONCAT(a.gca_chain, '.', a.gca_version) AS gca, a.lowest_taxon_id, s.scientific_name, a.asm_name,
                         a.asm_level, gb.gb_status, gb.genebuilder
-                FROM genebuild gb
-                LEFT JOIN assembly a on gb.assembly_id = a.assembly_id
+                FROM assembly a
+                LEFT JOIN genebuild_status gb on gb.assembly_id = a.assembly_id
                 LEFT JOIN bioproject b on a.assembly_id = b.assembly_id
                 LEFT JOIN species s ON a.lowest_taxon_id = s.lowest_taxon_id
                 LEFT JOIN custom_group g
@@ -315,8 +315,8 @@ def get_hprc():
             query = """
                 SELECT CONCAT(a.gca_chain, '.', a.gca_version) AS gca, a.lowest_taxon_id, s.scientific_name, a.asm_name,
                         a.asm_level, gb.gb_status, gb.genebuilder
-                FROM genebuild gb
-                LEFT JOIN assembly a on gb.assembly_id = a.assembly_id
+                FROM assembly a
+                LEFT JOIN genebuild_status gb on gb.assembly_id = a.assembly_id
                 LEFT JOIN bioproject b on a.assembly_id = b.assembly_id
                 LEFT JOIN species s ON a.lowest_taxon_id = s.lowest_taxon_id
                 LEFT JOIN custom_group g
@@ -358,8 +358,8 @@ def get_cbp():
             query = """
                 SELECT CONCAT(a.gca_chain, '.', a.gca_version) AS gca, a.lowest_taxon_id, s.scientific_name, a.asm_name,
                         a.asm_level, gb.gb_status, gb.genebuilder
-                FROM genebuild gb
-                LEFT JOIN assembly a on gb.assembly_id = a.assembly_id
+                FROM assembly a
+                LEFT JOIN genebuild_status gb on gb.assembly_id = a.assembly_id
                 LEFT JOIN bioproject b on a.assembly_id = b.assembly_id
                 LEFT JOIN species s ON a.lowest_taxon_id = s.lowest_taxon_id
                 LEFT JOIN custom_group g
@@ -402,7 +402,7 @@ def get_hprc():
                 SELECT CONCAT(a.gca_chain, '.', a.gca_version) AS gca, a.lowest_taxon_id, s.scientific_name, a.asm_name,
                         a.asm_level, gb.gb_status, gb.genebuilder
                 FROM assembly a
-                LEFT JOIN genebuild gb on gb.assembly_id = a.assembly_id
+                LEFT JOIN genebuild_status gb on gb.assembly_id = a.assembly_id
                 LEFT JOIN bioproject b on a.assembly_id = b.assembly_id
                 LEFT JOIN species s ON a.lowest_taxon_id = s.lowest_taxon_id
                 LEFT JOIN custom_group g
@@ -446,7 +446,7 @@ def get_laca():
                 SELECT CONCAT(a.gca_chain, '.', a.gca_version) AS gca, a.lowest_taxon_id, s.scientific_name, a.asm_name,
                         a.asm_level, gb.gb_status, gb.genebuilder
                 FROM assembly a
-                LEFT JOIN genebuild gb on gb.assembly_id = a.assembly_id
+                LEFT JOIN genebuild_status gb on gb.assembly_id = a.assembly_id
                 LEFT JOIN bioproject b on a.assembly_id = b.assembly_id
                 LEFT JOIN species s ON a.lowest_taxon_id = s.lowest_taxon_id
                 LEFT JOIN custom_group g

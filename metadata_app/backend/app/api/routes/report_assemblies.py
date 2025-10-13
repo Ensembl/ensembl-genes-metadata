@@ -14,7 +14,6 @@ def filter_assemblies(filters: ReportFilterRequest):
         end_date=filters.end_date,
         group_name=filters.group_name,
         taxon_id=filters.taxon_id,
-        pipeline=filters.pipeline,
         candidate = filters.candidate,
         transc=filters.transc,
         transc_ena=filters.transc_ena,
