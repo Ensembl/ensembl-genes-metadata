@@ -4,7 +4,8 @@ import pandas as pd
 import datetime
 from fastapi import HTTPException
 from metadata_app.backend.app.core.database import get_db_connection
-from metadata_app.backend.app.services.taxonomy_service import get_descendant_taxa
+from metadata_app.backend.app.services.taxonomy_service import get_descendant_taxa, load_clade_data, \
+    assign_clade_and_species
 
 
 def query_meta_registry(annotation_date, taxon_id, bioproject_id, group_name):
@@ -136,7 +137,57 @@ def query_meta_registry(annotation_date, taxon_id, bioproject_id, group_name):
                 )
             logging.info(f"Query returned {len(results)} lines.")
 
+            # Get taxonomy data
+            lowest_taxon_ids = {row['lowest_taxon_id'] for row in results if
+                                'lowest_taxon_id' in row and row['lowest_taxon_id'] is not None}
+            logging.debug(f"Collected lowest taxon IDs {print(lowest_taxon_ids)}")
+
+            if not lowest_taxon_ids:
+                # No results or no taxon IDs found
+                raise HTTPException(status_code=404, detail="No valid taxon IDs found in the results.")
+
+            # Fetch all taxonomy data for the collected lowest_taxon_ids
+            taxonomy_query = """
+                            SELECT lowest_taxon_id, taxon_class_id, taxon_class
+                            FROM taxonomy
+                            WHERE lowest_taxon_id IN ({})
+                            ORDER BY FIELD(taxon_class, 'species', 'genus', 'family', 'order', 'class', 'phylum', 'kingdom');
+                        """.format(','.join(['%s'] * len(lowest_taxon_ids)))
+
+            cursor.execute(taxonomy_query, tuple(lowest_taxon_ids))
+            taxonomy_results = cursor.fetchall()
+            logging.info(f"Taxonomy Query executed successfully, retrieved {len(taxonomy_results)} results.")
+
+            # Process taxonomy results
+            taxonomy_dict = {}
+            for row in taxonomy_results:
+                lowest_taxon_id = row['lowest_taxon_id']
+                if lowest_taxon_id not in taxonomy_dict:
+                    taxonomy_dict[lowest_taxon_id] = []
+                taxonomy_dict[lowest_taxon_id].append({
+                    'taxon_class_id': row['taxon_class_id'],
+                    'taxon_class': row['taxon_class']
+                })
+
+
+
         df_meta_genebuild = pd.DataFrame(results)
+
+        # Add clade, species, and genus information
+        clade_data = load_clade_data()
+
+        df_meta_genebuild[['internal_clade', 'species_taxon_id', 'genus_taxon_id']] = df_meta_genebuild[
+            'lowest_taxon_id'].apply(
+            lambda x: pd.Series(assign_clade_and_species(x, clade_data, taxonomy_dict))
+        )
+
+        logging.info(f"Added clade data")
+        logging.info(f"Changing genus id format")
+        df_meta_genebuild['genus_taxon_id'] = (
+            pd.to_numeric(df_meta_genebuild['genus_taxon_id'].replace('', pd.NA), errors='coerce')
+            .astype('Int64')
+        )
+        logging.info(f"Changed genus id format")
 
         logging.info(f"Retrieved records from genebuild_status table: {df_meta_genebuild.shape}")
         print(df_meta_genebuild)
@@ -199,6 +250,7 @@ def check_if_gca_is_latest_annotated(anno_wide):
         merged['annotated_version'] = merged['version']
         merged['assembly_version'] = merged['latest_version']
         merged['latest_annotated'] = merged.apply(check_latest_annotated, axis=1)
+
 
         return merged
 

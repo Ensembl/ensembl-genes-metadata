@@ -155,10 +155,10 @@ def get_filtered_assemblies(bioproject_id, candidate, taxon_id,
 				       (g.group_type = 'assembly' AND a.gca_chain = g.item)
 				     )
                 LEFT JOIN organism o ON a.assembly_id = o.assembly_id
-                LEFT JOIN genebuild gb ON a.assembly_id = gb.assembly_id
+                LEFT JOIN genebuild_status gb ON a.assembly_id = gb.assembly_id
                 {where_clause}
                 AND a.is_current = 'current'
-                AND gb.genebuild_id IS NULL
+                AND gb.genebuild_status_id IS NULL
                 ORDER BY m.metrics_name;
             """
 
@@ -248,7 +248,7 @@ def get_filtered_assemblies(bioproject_id, candidate, taxon_id,
 		# Add clade, species, and genus information
 		clade_data = load_clade_data()
 
-		df_wide[['internal_clade', 'species_taxon_id', 'genus_taxon_id', 'pipeline']] = df_wide[
+		df_wide[['internal_clade', 'species_taxon_id', 'genus_taxon_id']] = df_wide[
 			'lowest_taxon_id'].apply(
 			lambda x: pd.Series(assign_clade_and_species(x, clade_data, taxonomy_dict))
 		)
