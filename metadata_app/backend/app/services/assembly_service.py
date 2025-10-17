@@ -2,8 +2,6 @@
 import datetime
 from fastapi import HTTPException
 import pandas as pd
-import json
-import requests
 import logging
 from metadata_app.backend.app.core.database import get_db_connection
 from metadata_app.backend.app.services.taxonomy_service import get_descendant_taxa, assign_clade_and_species, load_clade_data
@@ -11,79 +9,9 @@ from metadata_app.backend.app.services.transcriptomics_service import add_transc
 from metadata_app.backend.app.services.get_transcriptomic_data_ENA_service import add_data_from_ena
 
 
-def is_reference_genome(accession):
-	"""
-	Checks if a given accession is a reference genome by querying NCBI's Assembly database.
-
-	Args:
-		accession: Genome accession ID (e.g., GCF_000001405.39)
-
-	Returns:
-		True if it is a reference genome, False otherwise
-	"""
-	base_url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi"
-	params = {
-		"db": "assembly",
-		"term": f"{accession}[Assembly Accession]",
-		"retmode": "json"
-	}
-	logging.info(f"Checking if {accession} is a reference genome.")
-
-	try:
-		response = requests.get(base_url, params=params, timeout=10)
-		if response.status_code != 200:
-			logging.error(f"Error querying NCBI API: {response.status_code}")
-			return False
-
-		result = response.json()
-		if not result["esearchresult"]["idlist"]:
-			logging.warning(f"Accession {accession} not found in NCBI Assembly database.")
-			return False
-
-		# Fetch detailed assembly information
-		assembly_id = result["esearchresult"]["idlist"][0]
-		summary_url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi"
-		summary_params = {
-			"db": "assembly",
-			"id": assembly_id,
-			"retmode": "json"
-		}
-
-		summary_response = requests.get(summary_url, params=summary_params, timeout=10)
-		if summary_response.status_code != 200:
-			logging.error(f"Error retrieving assembly summary: {summary_response.status_code}")
-			raise HTTPException(
-				status_code=400,
-				detail=f"Error retrieving assembly summary: {summary_response.status_code}"
-			)
-
-		summary_data = summary_response.json()
-
-		# Check if the assembly is labeled as a reference genome
-		try:
-			assembly_info = summary_data["result"][assembly_id]
-			return assembly_info.get("refseq_category", "") == "reference genome"
-		except Exception as e:
-			logging.error(f"Unexpected error in is_reference: {e}", exc_info=True)
-			raise HTTPException(
-				status_code=500,
-				detail=f"Internal server error occurred while processing assemblies: {str(e)}"
-			)
-
-
-	except HTTPException:
-		# Re-raise HTTPExceptions as they are already properly formatted
-		raise
-	except Exception as e:
-		logging.error(f"Unexpected error when checking reference genome: {e}", exc_info=True)
-		raise HTTPException(
-			status_code=500,
-			detail=f"Internal server error occurred while processing assemblies: {str(e)}"
-		)
-
 
 def get_filtered_assemblies(bioproject_id, metric_thresholds, asm_level, asm_type, release_date, taxon_id,
-                            current, transc, transc_ena, non_annotated, group_name):
+                            current, transc, transc_ena, non_annotated, group_name, gca):
 	"""
 	Fetch all assemblies and their metrics, filter results based on given thresholds,
 	and format the results with metrics as separate columns.
@@ -91,7 +19,6 @@ def get_filtered_assemblies(bioproject_id, metric_thresholds, asm_level, asm_typ
 	Args:
 		bioproject_id: List of BioProject IDs
 		metric_thresholds: Dictionary of metric names and their threshold values
-		all_metrics: List of all metrics to include in the results
 		asm_level: List of assembly levels to filter by
 		asm_type: List of assembly types to filter by
 		release_date: Filter assemblies released after this date
@@ -100,6 +27,8 @@ def get_filtered_assemblies(bioproject_id, metric_thresholds, asm_level, asm_typ
 		transc: Whether to check transcriptomic data from registry
 		transc_ena: Whether to check transcriptomic data from ena
 		non_annotated: Only show non-annotated assemblies
+		group_name: Filter assemblies by group name
+		gca: Filter assemblies by GCA(s)
 
 	Returns:
 		df_main: DataFrame of filtered assembly metrics
@@ -140,6 +69,14 @@ def get_filtered_assemblies(bioproject_id, metric_thresholds, asm_level, asm_typ
 				conditions.append("a.is_current = 'current'")
 				logging.info("Filtering for current assemblies")
 
+			if gca:
+				if isinstance(gca, str):
+					gca = [gca]
+				gca_list_filter = ",".join(["%s"] * len(gca))
+				conditions.append(f"CONCAT(a.gca_chain, '.', a.gca_version) IN ({gca_list_filter})")
+				params.extend(gca)
+				logging.info(f"Filtering by GCA: {', '.join(gca)}")
+
 			if taxon_id:
 				all_descendant_taxa = set()
 				for tax_id in taxon_id:
@@ -152,7 +89,7 @@ def get_filtered_assemblies(bioproject_id, metric_thresholds, asm_level, asm_typ
 					return f"No descendant taxa found for any of the provided Taxon IDs: {', '.join(map(str, taxon_id))}", None, None, None, None
 
 				conditions.append(f"s.lowest_taxon_id IN ({','.join(['%s'] * len(all_descendant_taxa))})")
-				params.extend(all_descendant_taxa)
+				params.extend(list(all_descendant_taxa))
 				logging.info(f"Filtering by lowest taxon IDs: {', '.join(str(id) for id in all_descendant_taxa)}")
 
 			# Create WHERE clause

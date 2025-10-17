@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import {XCircle, Loader2, Terminal} from "lucide-react";
+import {XCircle, Loader2, Terminal, InfoIcon} from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,7 @@ import {cn} from "@/lib/utils";
 import {StartAnnotationDialog} from "@/components/start_anno_dialog";
 import {Tooltip, TooltipContent, TooltipTrigger} from "@/components/ui/tooltip";
 import {Alert, AlertDescription, AlertTitle} from "@/components/ui/alert";
+import {InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput} from "@/components/ui/input-group";
 
 
 
@@ -54,6 +55,7 @@ export default function Page() {
   const [nonAnnotated, setNonAnnotated] = useState(true);
   const [checkTranscript, setCheckTranscript] = useState(false);
   const [checkCurrent, setCheckCurrent] = useState(true);
+  const [gcaInput, setGcaInput] = useState<string>("");
   const [downloadables, setDownloadables] = useState<{
     gca_list: string;
     df_main: string;
@@ -140,6 +142,15 @@ export default function Page() {
         }
       }
 
+      // Parse GCA(s)
+      let uniqueGCA: string[] = [];
+      if (gcaInput) {
+        uniqueGCA = gcaInput
+          .split(",")
+          .map((id) => id.trim())
+          .filter((id) => id);
+      }
+
       // Format the payload according to API expectations
       const payload = {
         bioproject_id: uniqueBioprojects.length > 0 ? uniqueBioprojects : null,
@@ -153,12 +164,13 @@ export default function Page() {
         transc: checkTranscript,
         transc_ena: checkENA,
         non_annotated: nonAnnotated,
+        gca: uniqueGCA.length > 0 ? uniqueGCA : null,
       };
 
 
       console.log("Sending payload:", JSON.stringify(payload));
 
-      // Update the endpoint URL to match your API
+      // Call API
       const res = await fetch("/api/assemblies/assemblies/filter", {
         method: "POST",
         headers: {
@@ -288,6 +300,33 @@ export default function Page() {
                   defaultOptions={projectOptions}
                   onChange={(values) => setSelectedProjects(values)}
                 />
+              </div>
+
+              <div>
+                <Label className="mb-3 block">GCA(s)</Label>
+                <InputGroup className="mt-3 gap-2 bg-filter-input-bg dark:bg-transparent">
+                <InputGroupInput
+                    placeholder="GCA_12345333.1, GCA_23456782.2"
+                    value={gcaInput}
+                    onChange={(e) => setGcaInput(e.target.value)}/>
+                <InputGroupAddon align="inline-end">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <InputGroupButton
+                        variant="ghost"
+                        aria-label="Info"
+                        size="icon-xs"
+                      >
+                        <InfoIcon />
+                      </InputGroupButton>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>GCAs must be comma seperated</p>
+                  </TooltipContent>
+                </Tooltip>
+              </InputGroupAddon>
+            </InputGroup>
+
               </div>
               </div>
             <div className="grid justify-center grid-cols-4 gap-4">

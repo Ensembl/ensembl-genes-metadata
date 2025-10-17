@@ -15,3 +15,4 @@ class AssemblyFilterRequest(BaseModel):
     transc_ena: Optional[bool] = False
     non_annotated: Optional[bool] = False
     group_name: Optional[List[str]] = None
+    gca: Optional[List[str]] = None

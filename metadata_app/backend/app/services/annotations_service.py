@@ -64,7 +64,7 @@ def query_meta_registry(annotation_date, taxon_id, bioproject_id, group_name):
                     annotation_date = annotation_date.strftime('%Y-%m-%d')
                 elif isinstance(annotation_date, (datetime.date, datetime.datetime)):
                     annotation_date = annotation_date.strftime('%Y-%m-%d')
-                conditions.append("gb.date_completed_beta >= %s")
+                conditions.append("gb.last_genebuild_update >= %s")
                 parameters.append(annotation_date)
 
             # If there are conditions, join them with AND; otherwise, select all
