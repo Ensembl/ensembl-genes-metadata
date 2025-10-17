@@ -34,7 +34,7 @@ def get_annotation_counts_by_bioproject():
                         SELECT COUNT(DISTINCT g2.assembly_id)
                         FROM genebuild_status g2
                         JOIN bioproject b3 ON g2.assembly_id = b3.assembly_id
-                        WHERE g2.gb_status = 'in_progress'
+                        WHERE g2.gb_status IN ('in_progress', 'complete', 'pre_released')
                           AND b3.bioproject_id = b.bioproject_id
                     ) AS in_progress
 
@@ -77,7 +77,7 @@ def get_annotation_counts_by_bioproject():
                             OR
                             (cg.group_type = 'assembly' AND a2.gca_chain = cg.item)
                           )
-                      AND g2.gb_status = 'in_progress'
+                      AND g2.gb_status IN ('in_progress', 'complete', 'pre_released')
                 ) AS in_progress
             
             FROM assembly a

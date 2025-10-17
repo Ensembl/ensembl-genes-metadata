@@ -2,7 +2,7 @@ import logging
 
 from fastapi import APIRouter, HTTPException
 from metadata_app.backend.app.models.report_asm_schemas import ReportFilterRequest
-from metadata_app.backend.app.services.report_assembly_service import generate_tables
+from metadata_app.backend.app.services.report_assembly_service import generate_tables, generate_overview, project_per_year
 
 report = APIRouter()
 
@@ -41,4 +41,17 @@ def filter_assemblies(filters: ReportFilterRequest):
             "rep_asm_wide": rep_asm_wide.to_csv(index=False),
             "gca_list": df_gca_list.to_csv(index=False)
         }
+    }
+
+
+@report.get("/report/asm/main")
+def generate_main():
+    return generate_overview()
+
+@report.get("/report/asm/bar")
+def generate_bar():
+    df_assembly, df_annotations = project_per_year()
+    return {
+        "df_assembly": df_assembly,
+        "df_annotations": df_annotations
     }

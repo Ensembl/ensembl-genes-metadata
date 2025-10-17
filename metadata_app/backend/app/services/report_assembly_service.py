@@ -12,14 +12,6 @@ from metadata_app.backend.app.services.transcriptomics_service import add_transc
 from metadata_app.backend.app.services.get_transcriptomic_data_ENA_service import add_data_from_ena
 
 
-def load_bioproject_mapping():
-	"""Hardcoded path for clade settings."""
-	json_file = "metadata_app/backend/data/bioproject_mapping.json"
-	with open(json_file, "r") as f:
-		logging.info("Loading bioproject mapping json file.")
-		return json.load(f)
-
-
 def check_dataframe_not_empty(df, description, raise_404=True):
 	"""
     Check if a DataFrame is empty and raise appropriate error.
@@ -477,3 +469,235 @@ def generate_tables(bioproject_id, candidate, taxon_id,
 	logging.info("All tables generated successfully")
 
 	return project_report, num_unique_taxa, transc_reg_count, top_3_taxa, asm_type_group, clade_group, asm_length, transc_data, df_gca_list, rep_asm_wide, rep_asm_main
+
+def generate_overview():
+    try:
+        with get_db_connection("meta") as conn:
+            cursor = conn.cursor()
+
+            # === 1. MAIN QUERY ===
+            query = """
+                SELECT 
+                    COALESCE(g.group_name, mb.bioproject_name) AS project_name,
+                    a.assembly_id,
+                    a.asm_level,
+                    m.metrics_name,
+                    m.metrics_value,
+                    a.lowest_taxon_id,
+                    s.species_taxon_id,
+                    a.is_current,
+                    t.taxon_class_id AS genus_taxon_id,
+                    gb.gb_status AS genebuild_status
+                FROM assembly a
+                LEFT JOIN bioproject b ON a.assembly_id = b.assembly_id
+                LEFT JOIN main_bioproject mb ON mb.bioproject_id = b.bioproject_id
+                LEFT JOIN assembly_metrics m ON b.assembly_id = m.assembly_id
+                JOIN taxonomy t ON a.lowest_taxon_id = t.lowest_taxon_id
+                JOIN species s ON a.lowest_taxon_id = s.lowest_taxon_id
+                LEFT JOIN custom_group g
+                    ON (
+                        (g.group_type = 'taxon' AND a.lowest_taxon_id = g.item)
+                        OR
+                        (g.group_type = 'assembly' AND a.gca_chain = g.item)
+                    )
+                LEFT JOIN genebuild_status gb ON a.assembly_id = gb.assembly_id
+                WHERE (mb.bioproject_id IS NOT NULL OR g.group_name IS NOT NULL)
+                  AND t.taxon_class = "genus"
+                  AND m.metrics_name IN ('contig_n50');
+            """
+
+            cursor.execute(query)
+            results = cursor.fetchall()
+
+        if not results:
+            raise HTTPException(status_code=404, detail="No assemblies found matching criteria.")
+
+        df = pd.DataFrame(results)
+        logging.info(f"Fetched {len(df)} rows from database")
+        print(f"Projects before pivot: {df['project_name'].nunique()}")
+
+        df["genebuild_status"] = df["genebuild_status"].fillna("not_annotated")
+        df = df.drop_duplicates(
+	        subset=["project_name", "assembly_id", "lowest_taxon_id"],
+	        keep="first"
+        )
+
+        # === 2. Pivot metrics wide ===
+        df_wide = df.pivot_table(
+            index=["project_name", "assembly_id", "asm_level", "is_current",
+                   "lowest_taxon_id", "species_taxon_id", "genus_taxon_id", "genebuild_status"],
+            columns="metrics_name",
+            values="metrics_value",
+            aggfunc="first",
+	        fill_value=np.nan
+        ).reset_index()
+
+        print(f"Projects after pivot: {df_wide['project_name'].nunique()}")
+
+        # === 3. Add ENA transcriptomic data ===
+        transcriptomic_df = add_data_from_ena(df_wide)
+        if transcriptomic_df is not None and not transcriptomic_df.empty:
+            df_wide = df_wide.merge(
+                transcriptomic_df[["Taxon ID", "Short-read paired-end illumina"]],
+                left_on="genus_taxon_id", right_on="Taxon ID", how="left"
+            )
+            df_wide["transcriptomic_evidence"] = np.where(
+                df_wide["Short-read paired-end illumina"].fillna(0) > 0, "yes", "no"
+            )
+        else:
+            df_wide["transcriptomic_evidence"] = "no"
+
+        # === 4. Compute per-project summary ===
+        df_wide["is_annotation_candidate"] = (
+            df_wide["asm_level"].isin(["Complete genome", "Chromosome"]) &
+            (df_wide["contig_n50"].astype(float) > 100000) &
+            (df_wide["transcriptomic_evidence"] == "yes") &
+            (df_wide["is_current"] == "current")
+        )
+
+        df_wide["unannotated"] = (
+		        df_wide["asm_level"].isin(["Complete genome", "Chromosome"]) &
+		        (df_wide["contig_n50"].astype(float) > 100000) &
+		        (df_wide["transcriptomic_evidence"] == "yes") &
+		        (df_wide["is_current"] == "current") &
+		        (df_wide["genebuild_status"] == "not_annotated")
+        )
+
+
+        # Count totals per project
+        summary = (
+            df_wide.groupby("project_name", as_index=False)
+            .agg(
+                total_assemblies=("assembly_id", "nunique"),
+                annotation_candidates=("is_annotation_candidate", "sum"),
+	            unannotated=("unannotated", "sum"),
+                in_progress=("genebuild_status", lambda x: x.isin(["in_progress", "complete", "pre_released"]).sum()),
+                live=("genebuild_status", lambda x: (x == "live").sum()),
+            )
+        )
+
+        logging.info(f"Generated overview summary for {len(summary)} projects")
+        summary = summary.to_dict(orient="records")
+        return summary
+
+    except Exception as e:
+        logging.exception("Error generating overview table")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+def project_per_year():
+	try:
+		with get_db_connection("meta") as conn:
+			cursor = conn.cursor()
+
+			query = """
+                SELECT 
+                    COALESCE(g.group_name, mb.bioproject_name) AS project_name,
+                    a.assembly_id,
+                    a.release_date,
+                    gb.release_date AS release_date_anno,
+                    gb.gb_status, 
+                    a.is_current
+                FROM assembly a
+                LEFT JOIN bioproject b ON b.assembly_id = a.assembly_id
+                LEFT JOIN main_bioproject mb ON mb.bioproject_id = b.bioproject_id
+                LEFT JOIN custom_group g
+                    ON (
+                        (g.group_type = 'taxon' AND a.lowest_taxon_id = g.item)
+                        OR
+                        (g.group_type = 'assembly' AND a.gca_chain = g.item)
+                    )
+                LEFT JOIN genebuild_status gb ON a.assembly_id = gb.assembly_id
+                WHERE (mb.bioproject_id IS NOT NULL OR g.group_name IS NOT NULL)
+            """
+
+			cursor.execute(query)
+			results = cursor.fetchall()
+
+		if not results:
+			raise HTTPException(status_code=404, detail="No assemblies found matching criteria.")
+
+		df = pd.DataFrame(results)
+		logging.info(f"Fetched {len(df)} rows from database")
+		print(f"Projects per year before: {df['project_name'].nunique()}")
+
+
+		df["gb_status"] = df["gb_status"].fillna("not_annotated")
+		df = df.drop_duplicates(
+			subset=["project_name", "assembly_id"],
+			keep="first"
+		)
+		print(f"Projects per year after drop duplicates: {df['project_name'].nunique()}")
+
+		# Ensure release_date columns are datetime
+		df['release_date'] = pd.to_datetime(df['release_date'], errors='coerce')
+		df['release_date_anno'] = pd.to_datetime(df['release_date_anno'], errors='coerce')
+		print(f"Projects per year after datetime: {df['project_name'].nunique()}")
+
+		# Extract year
+		df_assembly=df
+		df_assembly['release_year'] = df_assembly['release_date'].dt.year
+		df_assembly = df_assembly[df_assembly["release_year"] >= 2019]
+
+		df_live=df
+		# Extract annotation release year, keep NaT as a placeholder
+		df_live['release_year_anno'] = df_live['release_date_anno'].dt.year
+
+		print(f"Projects per year after extract year: {df_live['project_name'].nunique()}")
+		print(df_live)
+		# --- 1. Total assemblies per project per year ---
+		df_assembly = df_assembly[df_assembly["is_current"] == "current"]
+		df_assembly = (
+			df_assembly.groupby(['project_name', 'release_year'], as_index=False)
+			.agg(total_assemblies=('assembly_id', 'nunique'))
+		)
+
+		# --- 2. Live annotations per project per year ---
+		df_live = df_live[df_live['gb_status'] == 'live'].copy()
+		print(f"Projects per year after live filter by annotations: {df_live['project_name'].nunique()}")
+
+		df_annotations = (
+			df_live.groupby(['project_name', 'release_year_anno'], as_index=False)
+			.agg(live_annotations=('assembly_id', 'nunique'))
+			.rename(columns={'release_year_anno': 'release_year'})
+		)
+		print(f"Projects per year after group by annotations: {df_annotations['project_name'].nunique()}")
+
+
+		# Pivot assemblies for grouped bar chart
+		df_assembly = df_assembly.pivot_table(
+			index='release_year',
+			columns='project_name',
+			values='total_assemblies',
+			fill_value=0
+		).reset_index()
+		df_assembly.columns.name = None  # remove columns name
+
+		# Pivot annotations for grouped bar chart
+		df_annotations = df_annotations.pivot_table(
+			index='release_year',
+			columns='project_name',
+			values='live_annotations',
+			fill_value=0
+		).reset_index()
+		df_annotations.columns.name = None
+
+		df_assembly['release_year'] = df_assembly['release_year'].astype(int)
+		df_annotations['release_year'] = df_annotations['release_year'].astype(int)
+
+		df_assembly = df_assembly.to_dict(orient="records")
+		df_annotations = df_annotations.to_dict(orient="records")
+		print("Assemblies bar")
+		print(df_assembly)
+		print("Annotations bar")
+		print(df_annotations)
+
+
+		return df_assembly, df_annotations
+
+	except Exception as e:
+		logging.exception("Error generating project per year tables")
+		raise HTTPException(status_code=500, detail=str(e))
+
+
+

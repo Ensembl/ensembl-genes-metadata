@@ -6,10 +6,6 @@ import { useReactToPrint } from 'react-to-print';
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import {
-  ToggleGroup,
-  ToggleGroupItem,
-} from "@/components/ui/toggle-group";
 import { DataTable } from "@/app/tables/data-table";
 import { Report, columns } from "@/app/tables/report_columns";
 import MultipleSelector, { Option } from "@/components/ui/multi_select";

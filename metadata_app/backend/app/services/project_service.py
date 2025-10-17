@@ -40,6 +40,10 @@ def get_dtol():
         df = df[~df["asm_name"].str.contains("alternate", case=False, na=False)]
         df = df.drop(columns=["asm_name"])
         df = df[~df["asm_level"].str.lower().isin(["contig", "scaffold"])]
+        df = df.drop_duplicates(
+            subset=["gca", "gb_status"],
+            keep="first"
+        )
 
         return df.to_dict(orient="records")
 
@@ -84,6 +88,10 @@ def get_erga():
         df = df[~df["asm_name"].str.contains("alternate", case=False, na=False)]
         df = df.drop(columns=["asm_name"])
         df = df[~df["asm_level"].str.lower().isin(["contig", "scaffold"])]
+        df = df.drop_duplicates(
+            subset=["gca", "gb_status"],
+            keep="first"
+        )
         return df.to_dict(orient="records")
 
     except Exception as e:
@@ -128,6 +136,10 @@ def get_asg():
         df = df[~df["asm_name"].str.contains("alternate", case=False, na=False)]
         df = df.drop(columns=["asm_name"])
         df = df[~df["asm_level"].str.lower().isin(["contig", "scaffold"])]
+        df = df.drop_duplicates(
+            subset=["gca", "gb_status"],
+            keep="first"
+        )
         return df.to_dict(orient="records")
 
     except Exception as e:
@@ -172,6 +184,10 @@ def get_erga_pilot():
         df = df[~df["asm_name"].str.contains("alternate", case=False, na=False)]
         df = df.drop(columns=["asm_name"])
         df = df[~df["asm_level"].str.lower().isin(["contig", "scaffold"])]
+        df = df.drop_duplicates(
+            subset=["gca", "gb_status"],
+            keep="first"
+        )
         return df.to_dict(orient="records")
 
     except Exception as e:
@@ -215,6 +231,10 @@ def get_erga_bge():
         df = df[~df["asm_name"].str.contains("alternate", case=False, na=False)]
         df = df.drop(columns=["asm_name"])
         df = df[~df["asm_level"].str.lower().isin(["contig", "scaffold"])]
+        df = df.drop_duplicates(
+            subset=["gca", "gb_status"],
+            keep="first"
+        )
         return df.to_dict(orient="records")
 
     except Exception as e:
@@ -258,6 +278,10 @@ def get_vgp():
         df = df[~df["asm_name"].str.contains("alternate", case=False, na=False)]
         df = df.drop(columns=["asm_name"])
         df = df[~df["asm_level"].str.lower().isin(["contig", "scaffold"])]
+        df = df.drop_duplicates(
+            subset=["gca", "gb_status"],
+            keep="first"
+        )
         return df.to_dict(orient="records")
 
     except Exception as e:
@@ -301,6 +325,10 @@ def get_ebp():
         df = df[~df["asm_name"].str.contains("alternate", case=False, na=False)]
         df = df.drop(columns=["asm_name"])
         df = df[~df["asm_level"].str.lower().isin(["contig", "scaffold"])]
+        df = df.drop_duplicates(
+            subset=["gca", "gb_status"],
+            keep="first"
+        )
         return df.to_dict(orient="records")
 
     except Exception as e:
@@ -344,6 +372,10 @@ def get_hprc():
         df = df[~df["asm_name"].str.contains("alternate", case=False, na=False)]
         df = df.drop(columns=["asm_name"])
         df = df[~df["asm_level"].str.lower().isin(["contig", "scaffold"])]
+        df = df.drop_duplicates(
+            subset=["gca", "gb_status"],
+            keep="first"
+        )
         return df.to_dict(orient="records")
 
     except Exception as e:
@@ -387,6 +419,10 @@ def get_cbp():
         df = df[~df["asm_name"].str.contains("alternate", case=False, na=False)]
         df = df.drop(columns=["asm_name"])
         df = df[~df["asm_level"].str.lower().isin(["contig", "scaffold"])]
+        df = df.drop_duplicates(
+            subset=["gca", "gb_status"],
+            keep="first"
+        )
         return df.to_dict(orient="records")
 
     except Exception as e:
@@ -430,7 +466,10 @@ def get_hprc():
         df = df[~df["asm_name"].str.contains("alternate", case=False, na=False)]
         df = df.drop(columns=["asm_name"])
         df = df[~df["asm_level"].str.lower().isin(["contig", "scaffold"])]
-
+        df = df.drop_duplicates(
+            subset=["gca", "gb_status"],
+            keep="first"
+        )
         return df.to_dict(orient="records")
 
     except Exception as e:
@@ -473,7 +512,10 @@ def get_laca():
         df = df[~df["asm_name"].str.contains("alternate", case=False, na=False)]
         df = df.drop(columns=["asm_name"])
         df = df[~df["asm_level"].str.lower().isin(["contig", "scaffold"])]
-
+        df = df.drop_duplicates(
+            subset=["gca", "gb_status"],
+            keep="first"
+        )
         return df.to_dict(orient="records")
 
     except Exception as e:

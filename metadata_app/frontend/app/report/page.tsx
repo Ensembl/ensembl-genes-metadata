@@ -11,6 +11,9 @@ import {
 } from "@/components/ui/card";
 import { ArrowRight } from "lucide-react";
 
+import {CardsReportTable} from "@/components/ui/report_card_table"
+import {ProjectsBar} from "@/components/ui/report_per_year"
+
 export default function ReportSelectorPage() {
   const title = "Generate reports";
   const description =
@@ -20,10 +23,10 @@ export default function ReportSelectorPage() {
 
   return (
     <div className="flex items-center justify-center mt-15">
-      <div className="container m-16 max-w-6xl">
+      <div className="grid max-w-6xl gap-8">
         <h1 className="scroll-m-20 text-4xl font-extrabold tracking-tight text-balance">{title}</h1>
         <p className="leading-7 [&:not(:first-child)]:mt-6">{description}</p>
-        <div className="grid grid-cols-2 gap-4 justify-center mt-8">
+        <div className="grid grid-cols-2 gap-4 justify-center">
           <Link href="/report/asm" className="group">
             <Card className="relative hover:shadow-lg transition-shadow cursor-pointer h-full dark:bg-secondary">
               <CardHeader>
@@ -52,6 +55,20 @@ export default function ReportSelectorPage() {
             </Card>
           </Link>
         </div>
+
+        <h2 className="scroll-m-20 text-2xl font-semibold tracking-tight">
+          Quick overview
+        </h2>
+
+        <div>
+          <ProjectsBar></ProjectsBar>
+        </div>
+
+        <div className="mb-8">
+          <CardsReportTable></CardsReportTable>
+        </div>
+
+
       </div>
     </div>
   );
