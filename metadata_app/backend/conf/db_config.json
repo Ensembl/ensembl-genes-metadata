@@ -1,16 +1,31 @@
 {
     "meta": {
         "host": "mysql-ens-genebuild-prod-1",
-        "user": "",
+        "user": "ensro",
         "password": "",
         "database": "gb_assembly_metadata",
-        "port": },
+        "port": 4527},
 
     "transcriptomic": {
         "host": "mysql-ens-genebuild-prod-1",
-        "user": "",
+        "user": "ensro",
         "password": "",
         "database": "gb_transcriptomic_registry",
-        "port":
-    }
+        "port": 4527
+    },
+
+    "prod": {
+    "host": "mysql-ens-production-1",
+    "user": "ensro",
+    "password": "",
+    "database": "ensembl_genome_metadata",
+    "port": 4721
+  },
+
+  "main": {
+    "host": "mysql-ens-meta-prod-1",
+    "user": "ensro",
+    "password": "",
+    "database": "ensembl_metadata",
+    "port": 4483 }
 }

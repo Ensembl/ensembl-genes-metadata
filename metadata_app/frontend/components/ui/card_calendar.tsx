@@ -32,7 +32,7 @@ export function CardsCalendar() {
     <div className="grid grid-cols-2 gap-4">
       <Card className="dark:bg-secondary">
         <CardHeader>
-          <CardTitle className="text-lg font-bold">Metadata registry updates</CardTitle>
+          <CardTitle className="text-lg">Metadata updates</CardTitle>
         </CardHeader>
         <CardContent className="w-full justify-items-center">
           {metadataDates.length > 0 && (
@@ -49,7 +49,7 @@ export function CardsCalendar() {
 
       <Card className="dark:bg-secondary">
         <CardHeader>
-          <CardTitle className="text-lg font-bold">Transcriptomic registry updates</CardTitle>
+          <CardTitle className="text-lg">Transcriptomic updates</CardTitle>
         </CardHeader>
         <CardContent className="w-full justify-items-center">
           {transcriptomicDates.length > 0 && (

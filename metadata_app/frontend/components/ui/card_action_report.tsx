@@ -14,12 +14,12 @@ export function ReportCard() {
   return (
     <Card className="bg-primary text-primary-foreground">
       <CardHeader>
-        <CardTitle className="text-primary-foreground">
+        <CardTitle className="text-primary-foreground text-lg">
           Generate reports
         </CardTitle>
       </CardHeader>
 
-      <CardContent className="text-muted-foreground text-sm">
+      <CardContent className="text-sidebar-ring text-sm">
         Generate reports on available annotations by Genebuild or identify assemblies ready for annotation. Create and download publication-ready tables and visualizations.
       </CardContent>
 

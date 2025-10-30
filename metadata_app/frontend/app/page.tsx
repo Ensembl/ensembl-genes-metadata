@@ -4,8 +4,8 @@ import { CardsStats } from "@/components/ui/cards_stats"
 import { CardsCalendar } from "@/components/ui/card_calendar"
 import  { CardsDataTable } from "@/components/ui/card_projects"
 import { WelcomeCard } from "@/components/ui/card_welcome"
-import  { AnoMethodSummaryChart } from "@/components/ui/card_method_summary"
 import {ReportCard} from "@/components/ui/card_action_report";
+import {DatabaseCleanup} from "@/components/ui/card_clean_up"
 
 export default function Page() {
   return (
@@ -20,9 +20,9 @@ export default function Page() {
                     <CardsCalendar></CardsCalendar>
                   </div>
                   <div className="w-full mb-4 break-inside-avoid">
-                    <AnoMethodSummaryChart></AnoMethodSummaryChart>
+                    <DatabaseCleanup></DatabaseCleanup>
                   </div>
-                  <div className="w-full mb-4 break-inside-avoid">
+                  <div className="w-full mb-4 break-inside-avoid break-before-column">
                     <CardsStats></CardsStats>
                   </div>
                  <div className="w-full mb-4 break-inside-avoid">

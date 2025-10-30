@@ -5,3 +5,4 @@ pandas
 pydantic
 PyMySQL
 Requests
+python-multipart
