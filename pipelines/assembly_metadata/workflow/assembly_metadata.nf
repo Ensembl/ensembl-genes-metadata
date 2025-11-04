@@ -32,12 +32,8 @@ include { SPECIES_CHECKER } from '../modules/species_checker.nf'
 include { WRITE2DB_SPECIES } from '../modules/write2db_species.nf'
 include { GET_TOLID } from '../modules/get_tolid.nf'
 include { WRITE2DB_TOLID } from '../modules/write2db_tolid.nf'
-include { CUSTOM_GROUP } from '../modules/custom_groups.nf'
-include { WRITE2DB_GROUP } from '../modules/write2db_group.nf'
 include { REPORT } from '../modules/report.nf'
 
-
-includeConfig '../nextflow.config'
 
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -95,13 +91,9 @@ workflow ASSEMBLY_METADATA {
 
     def get_tolid_out = GET_TOLID(write2db_species_out)
 
-    def write2db_tolid_out = WRITE2DB_TOLID(get_tolid_out)
+    WRITE2DB_TOLID(get_tolid_out)
 
-    def custom_group_out = CUSTOM_GROUP(write2db_tolid_out)
-
-    WRITE2DB_GROUP(custom_group_out)
-
-    gca_list = WRITE2DB_GROUP.out.gca.map { it -> it.trim() }.collectFile(name: 'gca_list_to_report.txt', newLine: true).view()
+    gca_list = WRITE2DB_TOLID.out.gca.map { it -> it.trim() }.collectFile(name: 'gca_list_to_report.txt', newLine: true).view()
 
     REPORT(gca_list, last_update)
 
