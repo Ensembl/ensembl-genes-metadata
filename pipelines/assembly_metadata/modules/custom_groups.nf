@@ -28,8 +28,8 @@ process CUSTOM_GROUP {
 
     script:
     """
-    chmod +x $projectDir/../src/python/ensembl/genes/metadata/custom_groups.py
-    python $projectDir/../src/python/ensembl/genes/metadata/custom_groups.py \
+    chmod +x ../bin/python/custom_groups.py
+    python ../bin/python/custom_groups.py \
     --accession $gca --metadata ${params.metadata_params}
     """
 }

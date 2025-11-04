@@ -28,8 +28,8 @@ process SPECIES_CHECKER {
 
     script:
     """
-    chmod +x $projectDir/../src/python/ensembl/genes/metadata/species_checker.py
-    python $projectDir/../src/python/ensembl/genes/metadata/species_checker.py \
+    chmod +x ../bin/python/species_checker.py
+    python ../bin/python/species_checker.py \
     --json-path $species_tmp --ncbi_url ${params.ncbi_url} --enscode ${params.enscode}
     """
 }

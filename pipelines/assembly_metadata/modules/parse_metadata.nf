@@ -28,8 +28,8 @@ process PARSE_METADATA {
 
     script:
     """
-    chmod +x $projectDir/../src/python/ensembl/genes/metadata/retrieving_metadata.py
-    python $projectDir/../src/python/ensembl/genes/metadata/retrieving_metadata.py \
+    chmod +x ../bin/python/retrieving_metadata.py
+    python ../bin/python/retrieving_metadata.py \
     --accession $gca --ncbi_url ${params.ncbi_url}
     """
 }

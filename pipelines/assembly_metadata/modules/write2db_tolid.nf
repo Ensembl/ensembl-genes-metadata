@@ -28,8 +28,8 @@ process WRITE2DB_TOLID {
 
     script:
     """
-    chmod +x $projectDir/../src/python/ensembl/genes/metadata/write2db.py
-    python $projectDir/../src/python/ensembl/genes/metadata/write2db.py \
+    chmod +x ../bin/python/write2db.py
+    python ../bin/python/write2db.py \
     --file-path $tolid --update --metadata ${params.metadata_params} --config ${params.db_table_conf}
     """
 }

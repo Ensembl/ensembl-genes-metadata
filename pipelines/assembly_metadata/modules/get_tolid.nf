@@ -28,8 +28,8 @@ process GET_TOLID {
 
     script:
     """
-    chmod +x $projectDir/../src/python/ensembl/genes/metadata/get_tolid.py
-    python $projectDir/../src/python/ensembl/genes/metadata/get_tolid.py \
+    chmod +x ../bin/python/get_tolid.py
+    python ../bin/python/get_tolid.py \
     --accession $gca --metadata ${params.metadata_params}
     """
 

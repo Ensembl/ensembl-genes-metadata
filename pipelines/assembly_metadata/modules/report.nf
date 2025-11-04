@@ -29,8 +29,8 @@ process REPORT {
 
     script:
     """
-    chmod +x $projectDir/../src/python/ensembl/genes/metadata/create_report.py
-    python $projectDir/../src/python/ensembl/genes/metadata/create_report.py \
+    chmod +x ../bin/python/create_report.py
+    python ../bin/python/create_report.py \
     --file-list $gca_list --metadata ${params.metadata_params} --update-date $last_update
     """
 }
