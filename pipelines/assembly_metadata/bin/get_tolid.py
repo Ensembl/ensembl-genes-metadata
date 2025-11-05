@@ -15,9 +15,9 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-import requests
+import requests # type: ignore
 import argparse
-import pymysql
+import pymysql # type: ignore
 import json
 from tenacity import retry, stop_after_attempt, wait_random
 import logging

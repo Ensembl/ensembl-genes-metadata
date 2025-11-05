@@ -17,7 +17,7 @@
 
 import logging
 import argparse
-import pymysql
+import pymysql # type: ignore
 import json
 import os
 from datetime import date 

@@ -28,14 +28,14 @@ Returns:
     stdout: prints to the standard output a list of GCA accession
 """
 
-import requests
+import requests # type: ignore
 import os
 import json
 from datetime import datetime
-import pymysql
+import pymysql # type: ignore
 import argparse
 import logging
-from tenacity import retry, stop_after_attempt, wait_random
+from tenacity import retry, stop_after_attempt, wait_random # type: ignore
 from typing import Dict, List, Any, Tuple
 
 def set_date(taxon:int, ncbi_params: Dict[str, Any], date_update:str) -> Tuple[Dict[str, str], str]:
@@ -71,7 +71,7 @@ def connection_ncbi(uri: str, params: Dict[str, str]) -> requests.Response:
     response.raise_for_status()
     return response
 
-def fetch_gca_list(taxon: int, ncbi_params: Dict[str, str], ncbi_url ) -> List[str]:
+def fetch_gca_list(taxon: int, ncbi_params: Dict[str, str], ncbi_url ) -> set[str]:
     """
     Fetch a list of GCA accession from NCBI API based on the taxon ID
     
@@ -82,7 +82,7 @@ def fetch_gca_list(taxon: int, ncbi_params: Dict[str, str], ncbi_url ) -> List[s
     Returns:
         list: list of GCA accessions
     """
-    gca_list = [] 
+    gca_list: list[str] = []
     page_token=None
     uri = f"{ncbi_url}/genome/taxon/{str(taxon)}/dataset_report"
     next_page = True
@@ -112,7 +112,7 @@ def fetch_gca_list(taxon: int, ncbi_params: Dict[str, str], ncbi_url ) -> List[s
 
     return set(gca_list)
 
-def build_db_query(release_date: str) -> Dict[str, str]:
+def build_db_query(release_date: str) -> Dict[str, Dict[str, str]]:
     """ Build mysql the query to retrieve data from the db
     
     Args:
@@ -189,7 +189,7 @@ def get_gca_register(db: str, db_query: Dict[str, Any], gca_list: List[str], met
         records_registry = fetch_records_db(registry_params, query=db_query['asm_registry']['query'] )
         
     accessions_records = records_metadata + records_registry
-    accessions_to_register = gca_list - set(accessions_records)
+    accessions_to_register = list(set(gca_list) - set(accessions_records))
     
     return accessions_to_register
 

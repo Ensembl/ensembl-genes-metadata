@@ -17,10 +17,10 @@
 
 import argparse
 import os
-import pymysql
+import pymysql # type: ignore
 import json
 import logging
-from typing import Tuple
+from typing import Tuple, Dict
 
 def connect_db(query:str, metadata_params) -> Tuple:
     logging.info(f"Querying metadata database with: {query}")
@@ -78,7 +78,7 @@ def get_group(asm_id:int, gca_chain:str, lowest_taxon:str, species_taxon:str, me
     
     return group_asm   
 
-def update_db(group_df: Tuple, metadata_params ) -> None:
+def update_db(group_df: Tuple, metadata_params ) -> Dict:
     
     
     list_group_asm = []
