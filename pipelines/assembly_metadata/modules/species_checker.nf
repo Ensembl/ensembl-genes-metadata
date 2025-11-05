@@ -17,6 +17,8 @@ limitations under the License.
 */
 
 process SPECIES_CHECKER {
+
+    label 'python'
     tag "$gca"
     publishDir "${params.output_dir}/nextflow_output/$gca", mode: 'copy'
 
@@ -28,8 +30,6 @@ process SPECIES_CHECKER {
 
     script:
     """
-    chmod +x ../bin/python/species_checker.py
-    python ../bin/python/species_checker.py \
-    --json-path $species_tmp --ncbi_url ${params.ncbi_url} --enscode ${params.enscode}
+    species_checker.py --json-path $species_tmp --ncbi_url ${params.ncbi_url} --enscode ${params.enscode}
     """
 }

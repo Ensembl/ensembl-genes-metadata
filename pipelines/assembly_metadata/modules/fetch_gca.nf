@@ -17,6 +17,8 @@ limitations under the License.
 */
 
 process FETCH_GCA {
+
+    label 'python'
     tag "taxon:$taxon"
 
     input:
@@ -34,8 +36,7 @@ process FETCH_GCA {
     }
     else {
     """
-    chmod +x ../bin/python/fetch_new_assemblies.py
-    python ../bin/python/fetch_new_assemblies.py \
+    fetch_new_assemblies.py \
     --taxon $taxon --date_update $last_update --db asm_metadata \
     --registry ${params.registry_params} --metadata ${params.metadata_params} \
     --ncbi ${params.ncbi_params} --ncbi_url ${params.ncbi_url}

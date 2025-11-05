@@ -17,6 +17,8 @@ limitations under the License.
 */
 
 process CUSTOM_GROUP {
+
+    label 'python'
     tag "$gca"
     publishDir "${params.output_dir}/nextflow_output/$gca", mode: 'copy'
 
@@ -28,8 +30,6 @@ process CUSTOM_GROUP {
 
     script:
     """
-    chmod +x ../bin/python/custom_groups.py
-    python ../bin/python/custom_groups.py \
-    --accession $gca --metadata ${params.metadata_params}
+    custom_groups.py --accession $gca --metadata ${params.metadata_params}
     """
 }

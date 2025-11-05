@@ -17,6 +17,8 @@ limitations under the License.
 */
 
 process WRITE2DB_ASSEMBLY {
+
+    label 'python'
     tag "$gca"
     publishDir "${params.output_dir}/nextflow_output/$gca", mode: 'copy'
 
@@ -28,8 +30,6 @@ process WRITE2DB_ASSEMBLY {
 
     script:
     """
-    chmod +x ../bin/python/write2db.py
-    python ../bin/python/write2db.py \
-    --file-path $assembly --metadata ${params.metadata_params} --config ${params.db_table_conf}
+    write2db.py --file-path $assembly --metadata ${params.metadata_params} --config ${params.db_table_conf}
     """
 }

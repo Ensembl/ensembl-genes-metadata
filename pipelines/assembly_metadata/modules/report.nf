@@ -17,6 +17,8 @@ limitations under the License.
 */
 
 process REPORT {
+
+    label 'python'
     publishDir "${params.output_dir}/nextflow_output/", mode: 'copy'
 
     input:
@@ -29,8 +31,6 @@ process REPORT {
 
     script:
     """
-    chmod +x ../bin/python/create_report.py
-    python ../bin/python/create_report.py \
-    --file-list $gca_list --metadata ${params.metadata_params} --update-date $last_update
+    create_report.py --file-list $gca_list --metadata ${params.metadata_params} --update-date $last_update
     """
 }

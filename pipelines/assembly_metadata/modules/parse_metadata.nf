@@ -17,6 +17,8 @@ limitations under the License.
 */
 
 process PARSE_METADATA {
+    
+    label 'python'    
     tag "$gca"
     publishDir "${params.output_dir}/nextflow_output/$gca", mode: 'copy'
 
@@ -28,8 +30,6 @@ process PARSE_METADATA {
 
     script:
     """
-    chmod +x ../bin/python/retrieving_metadata.py
-    python ../bin/python/retrieving_metadata.py \
-    --accession $gca --ncbi_url ${params.ncbi_url}
+    retrieving_metadata.py --accession $gca --ncbi_url ${params.ncbi_url}
     """
 }

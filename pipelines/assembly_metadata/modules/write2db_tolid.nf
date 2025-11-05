@@ -17,6 +17,8 @@ limitations under the License.
 */
 
 process WRITE2DB_TOLID {
+
+    label 'python'
     tag "$gca"
     publishDir "${params.output_dir}/nextflow_output/$gca", mode: 'copy'
 
@@ -24,12 +26,11 @@ process WRITE2DB_TOLID {
     tuple val(gca), path(tolid)
 
     output:
-    tuple val(gca), path("${tolid.baseName}.last_id")
+    val gca, emit: gca 
+    path "${tolid.baseName}.last_id", emit:last_id
 
     script:
     """
-    chmod +x ../bin/python/write2db.py
-    python ../bin/python/write2db.py \
-    --file-path $tolid --update --metadata ${params.metadata_params} --config ${params.db_table_conf}
+    write2db.py --file-path $tolid --update --metadata ${params.metadata_params} --config ${params.db_table_conf}
     """
 }

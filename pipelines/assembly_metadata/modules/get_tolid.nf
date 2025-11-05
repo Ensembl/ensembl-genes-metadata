@@ -17,6 +17,8 @@ limitations under the License.
 */
 
 process GET_TOLID {
+
+    label 'python'
     tag "$gca"
     publishDir "${params.output_dir}/nextflow_output/$gca", mode: 'copy'
 
@@ -28,9 +30,7 @@ process GET_TOLID {
 
     script:
     """
-    chmod +x ../bin/python/get_tolid.py
-    python ../bin/python/get_tolid.py \
-    --accession $gca --metadata ${params.metadata_params}
+    get_tolid.py --accession $gca --metadata ${params.metadata_params}
     """
 
 

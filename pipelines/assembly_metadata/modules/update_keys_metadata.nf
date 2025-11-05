@@ -17,6 +17,8 @@ limitations under the License.
 */
 
 process UPDATE_KEYS_METADATA {
+
+    label 'python'
     tag "$gca"
     publishDir "${params.output_dir}/nextflow_output/$gca", mode: 'copy'
     
@@ -28,9 +30,6 @@ process UPDATE_KEYS_METADATA {
     
     script:
     """
-    chmod +x ../bin/python/update_keys.py
-    python ../bin/python/update_keys.py \
-    --json-path $metadata_tmp --file-id-path $last_id \
-    --config ${params.db_table_conf}
+    update_keys.py --json-path $metadata_tmp --file-id-path $last_id --config ${params.db_table_conf}
     """
 }
