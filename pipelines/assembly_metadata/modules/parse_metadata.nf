@@ -18,7 +18,7 @@ limitations under the License.
 
 process PARSE_METADATA {
     
-    label 'python'    
+    label 'python'
     tag "$gca"
     publishDir "${params.output_dir}/nextflow_output/$gca", mode: 'copy'
 
