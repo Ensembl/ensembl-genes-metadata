@@ -221,9 +221,12 @@ def get_filtered_assemblies(bioproject_id, metric_thresholds, asm_level, asm_typ
 		# Add clade, species, and genus information
 		clade_data = load_clade_data()
 
-		df_wide[['internal_clade', 'species_taxon_id', 'genus_taxon_id']] = df_wide[
-			'lowest_taxon_id'].apply(
-			lambda x: pd.Series(assign_clade_and_species(x, clade_data, taxonomy_dict))
+		df_wide[['internal_clade', 'species_taxon_id', 'genus_taxon_id']] = pd.DataFrame(
+			df_wide.apply(
+				lambda r: assign_clade_and_species(r['lowest_taxon_id'], clade_data, taxonomy_dict),
+				axis=1
+			).tolist(),
+			index=df_wide.index
 		)
 
 		logging.info(f"Added clade data")

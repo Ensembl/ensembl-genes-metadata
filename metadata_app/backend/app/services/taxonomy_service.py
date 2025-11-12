@@ -24,7 +24,8 @@ def assign_clade_and_species(lowest_taxon_id, clade_data, taxonomy_dict, human_t
     taxonomy_hierarchy = taxonomy_dict.get(str(lowest_taxon_id)) or taxonomy_dict.get(lowest_taxon_id, [])
 
     if not taxonomy_hierarchy:
-        return "Unassigned", None, None, None
+        logging.warning(f"No taxonomy hierarchy found for taxon_id {lowest_taxon_id}")
+        return "Unassigned", None, None
 
     # Build a quick mapping taxon_class -> taxon_class_id
     taxon_class_map = {t['taxon_class']: t['taxon_class_id'] for t in taxonomy_hierarchy}
