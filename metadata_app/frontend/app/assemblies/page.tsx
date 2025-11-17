@@ -527,7 +527,7 @@ export default function Page() {
                 {/* Download main Table (CSV, from backend) */}
                 <Button
                   variant="outline"
-                  onClick={() => handleDownload(downloadables?.df_main, "df_main.csv", "text/csv;charset=utf-8;")}
+                  onClick={() => handleDownload(downloadables?.df_main, "filtered_assemblies.csv", "text/csv;charset=utf-8;")}
                 >
                   Download CSV
                 </Button>

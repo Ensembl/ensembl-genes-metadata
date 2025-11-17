@@ -13,6 +13,8 @@ from metadata_app.backend.app.services.project_service import get_dtol
 from metadata_app.backend.app.services.project_service import get_hprc
 from metadata_app.backend.app.services.project_service import get_erga_pilot
 from metadata_app.backend.app.services.project_service import get_laca
+from metadata_app.backend.app.services.project_service import get_aegis
+
 
 
 
@@ -60,6 +62,10 @@ def get_erga_pilot_project():
 @project_router.get("/project/laca")
 def get_laca_project():
     return get_laca()
+
+@project_router.get("/project/aegis")
+def get_aegis_project():
+    return get_aegis()
 
 
 

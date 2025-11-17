@@ -80,6 +80,20 @@ export default function ReportSelectorPage() {
             </Card>
           </Link>
 
+          <Link href="/projects/aegis" className="group">
+            <Card className="relative hover:shadow-lg transition-shadow cursor-pointer h-full dark:bg-secondary">
+              <CardHeader>
+                <CardTitle>AEGIS*</CardTitle>
+                <CardDescription>
+                  Ancient Environmental Genomics Initiative for Sustainability
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="absolute bottom-4 right-4">
+                <ArrowRight className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
+              </CardContent>
+            </Card>
+          </Link>
+
           <Link href="/projects/ebp" className="group">
             <Card className="relative hover:shadow-lg transition-shadow cursor-pointer h-full dark:bg-secondary">
               <CardHeader>

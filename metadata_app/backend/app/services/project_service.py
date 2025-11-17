@@ -521,3 +521,49 @@ def get_laca():
     except Exception as e:
         logging.error(f"Error fetching annotation counts: {e}")
         return []
+
+def get_aegis():
+    """Returns GCA info"""
+    try:
+        with get_db_connection("meta") as conn:
+            cursor = conn.cursor()
+            query = """
+                SELECT CONCAT(a.gca_chain, '.', a.gca_version) AS gca, a.lowest_taxon_id, s.scientific_name, a.asm_name,
+                        a.asm_level, gb.gb_status, gb.genebuilder
+                FROM assembly a
+                LEFT JOIN genebuild_status gb on gb.assembly_id = a.assembly_id
+                LEFT JOIN bioproject b on a.assembly_id = b.assembly_id
+                LEFT JOIN species s ON a.lowest_taxon_id = s.lowest_taxon_id
+                LEFT JOIN custom_group g
+				  ON (
+				       (g.group_type = 'taxon' AND a.lowest_taxon_id = g.item)
+				       OR
+				       (g.group_type = 'assembly' AND a.gca_chain = g.item)
+				     )
+                WHERE g.group_name = 'AEGIS'
+            """
+            cursor.execute(query)
+            result = cursor.fetchall()
+
+        df = pd.DataFrame(result, columns=[
+            "gca",
+            "lowest_taxon_id",
+            "scientific_name",
+            "asm_name",
+            "asm_level",
+            "gb_status",
+            "genebuilder"
+        ])
+        df["gb_status"] = df["gb_status"].fillna("not_started")
+        df = df[~df["asm_name"].str.contains("alternate", case=False, na=False)]
+        df = df.drop(columns=["asm_name"])
+        df = df[~df["asm_level"].str.lower().isin(["contig", "scaffold"])]
+        df = df.drop_duplicates(
+            subset=["gca", "gb_status"],
+            keep="first"
+        )
+        return df.to_dict(orient="records")
+
+    except Exception as e:
+        logging.error(f"Error fetching annotation counts: {e}")
+        return []
