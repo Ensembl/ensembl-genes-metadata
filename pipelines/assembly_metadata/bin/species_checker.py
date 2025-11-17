@@ -99,7 +99,7 @@ def species_taxon(taxon_data, taxon_id) -> tuple[int, bool]:
     taxon_exists = True
     try:
         taxonomy = taxon_data['reports'][0]['taxonomy']['rank']
-        if taxonomy in ['SUBSPECIES', 'STRAIN', 'VARIETAS', 'GENOTYPE', 'ISOLATE', 'FORMA', 'FORMA_SPECIALIS']:
+        if taxonomy in ['SUBSPECIES', 'STRAIN', 'VARIETAS', 'GENOTYPE', 'ISOLATE', 'FORMA', 'FORMA_SPECIALIS', 'CLADE']:
             species_taxon_id = taxon_data['reports'][0]['taxonomy']['classification']['species']['id']
             logging.info("The assembly is a infraspecific taxon %s", taxonomy)
         elif taxonomy == 'SPECIES':
