@@ -1,3 +1,23 @@
+"""
+production_check.py
+
+This module provides functionality to fetch the genebuild status of genome assemblies
+from the Ensembl production database. It queries multiple tables to retrieve the
+current genebuild status, release date, and genebuild version for a list of assemblies.
+
+Functions:
+----------
+check_status_production_db(gca_tuple)
+    Retrieves production genebuild status information for the specified GCAs.
+
+Dependencies:
+-------------
+- pandas
+- pymysql
+- helper (module providing mysql_fetch_data function)
+- logger_settings (module providing get_logger function)
+"""
+
 import pymysql
 from helper import mysql_fetch_data
 import pandas as pd
@@ -6,6 +26,27 @@ from logger_settings import get_logger
 logger = get_logger(__name__)
 
 def check_status_production_db(gca_tuple):
+    """
+    Fetch genebuild status, release date, and genebuild version for given assemblies
+    from the Ensembl production database.
+
+    Args:
+        gca_tuple (tuple): Tuple of GCA accession strings to query.
+
+    Returns:
+        pd.DataFrame: DataFrame containing the following columns:
+            - gca_accession: Assembly accession (GCA).
+            - status: Genebuild status in production (e.g., Released, Processed).
+            - release_date: Ensembl release date for the genebuild.
+            - genebuild_version: Version of the genebuild dataset.
+
+    Notes:
+        - Only includes datasets with dataset.name = "genebuild".
+        - Only considers current genome datasets (genome_dataset.is_current = 1).
+        - Drops duplicate GCA entries, keeping the first occurrence.
+        - Logs the number of entries found.
+        - Returns an empty DataFrame in case of MySQL errors.
+    """
     try:
         production_query = f"""
             SELECT 

@@ -1,7 +1,57 @@
+"""
+update_annotation_status.py
+
+This script synchronizes the genebuild status of genome assemblies between the
+Ensembl production database and the genebuild registry. It compares the registry
+entries against the current production status, identifies discrepancies in status
+or release date, and updates the registry accordingly.
+
+Key Features:
+- Optionally copies entries from the old registry.
+- Fetches current genebuild statuses from the registry.
+- Compares against production database statuses.
+- Updates registry entries where the status or release date has changed.
+- Supports a test mode to preview changes without applying them.
+
+Modules:
+- get_genebuild_status: Retrieves genebuild status entries from the registry.
+- get_status_updates: Determines which entries require updates.
+- update_genebuild_status: Applies updates to the registry.
+- main: Orchestrates the workflow with optional old registry checks and test mode.
+
+Usage:
+    python update_genebuild_status.py -p <MYSQL_PASSWORD> [options]
+
+Arguments:
+    -p, --password        MySQL password for the write user.
+    -t, --test            Run in test mode (no database updates applied).
+    -or, --old_registry   Boolean flag to check and copy entries from the old registry.
+    -sa, --stop_apply     Boolean flag; if True, do not apply updates from old registry (default: True).
+
+Example:
+    # Run in test mode
+    python update_genebuild_status.py -p mypassword -t
+
+    # Apply updates from production to registry
+    python update_genebuild_status.py -p mypassword
+
+Dependencies:
+    - pandas
+    - pymysql
+    - copy_status_old_registry (module)
+    - helper (module with mysql_fetch_data function)
+    - production_check (module with check_status_production_db function)
+    - logger_settings (module with get_logger function)
+
+Notes:
+- Requires network access to the Ensembl MySQL production servers.
+- Outputs a 'faulty_status.csv' file for assemblies with faulty production status.
+- Release dates are normalized and updated only when discrepancies are detected.
+"""
+
 import argparse
 import pandas as pd
 import pymysql
-import logging
 from copy_status_old_registry import insert_entries_from_old_registry
 from helper import mysql_fetch_data
 from production_check import check_status_production_db
@@ -174,10 +224,10 @@ def update_genebuild_status(updated_df, password):
                     """
                     cursor.execute(sql, (status, genebuild_status_id))
 
-        logging.info(f"Updated {len(updated_df)} genebuild_status rows.")
+        logger.info(f"Updated {len(updated_df)} genebuild_status rows.")
 
     except pymysql.Error as e:
-        logging.error("MySQL error: %s", e)
+        logger.error("MySQL error: %s", e)
         raise
 
     finally:

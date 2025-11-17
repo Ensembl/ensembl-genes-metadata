@@ -1,3 +1,28 @@
+"""
+copy_status_old_registry.py
+
+This module provides functionality to migrate and synchronize genebuild status entries
+from the old genebuild registry to the new registry. It handles fetching, filtering,
+mapping, and inserting old entries, ensuring only valid and current datasets are applied.
+
+Key Features:
+--------------
+- Fetch the latest genebuild status entries from the old registry.
+- Filter out entries that do not exist in the production database.
+- Map old registry statuses to the new registry format.
+- Retrieve corresponding assembly IDs from the new registry.
+- Insert missing entries into the new genebuild_status table.
+- Supports a test mode to preview changes without applying them.
+
+Dependencies:
+-------------
+- numpy
+- pandas
+- pymysql
+- helper (module providing mysql_fetch_data)
+- production_check (module providing check_status_production_db)
+- logger_settings (module providing get_logger)
+"""
 import numpy as np
 import pandas as pd
 import pymysql
