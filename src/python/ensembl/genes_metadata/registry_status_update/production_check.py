@@ -47,13 +47,16 @@ def check_status_production_db(gca_tuple):
         - Logs the number of entries found.
         - Returns an empty DataFrame in case of MySQL errors.
     """
+    logger.info(f"Looking for {len(gca_tuple)} accessions in production DB")
+
     try:
         production_query = f"""
             SELECT 
                 assembly.accession AS gca_accession,
                 dataset.status,
                 ensembl_release.release_date,
-                dataset_attribute.value AS genebuild_version
+                dataset_attribute.value,
+                dataset_attribute.attribute_id
             FROM assembly
             LEFT JOIN genome
                 ON assembly.assembly_id = genome.assembly_id
@@ -69,7 +72,7 @@ def check_status_production_db(gca_tuple):
             WHERE dataset.name = "genebuild"
                 AND assembly.accession IN {gca_tuple}
                 AND genome_dataset.is_current = 1
-                AND dataset_attribute.attribute_id = 71
+                AND dataset_attribute.attribute_id IN (71, 169, 37, 34)
         """
 
         production_status = mysql_fetch_data(
@@ -81,10 +84,38 @@ def check_status_production_db(gca_tuple):
             password=""
         )
         production_status = pd.DataFrame(production_status)
-        production_status = production_status.drop_duplicates(subset='gca_accession', keep='first')
+        # If the DataFrame is empty, return an empty standardized DataFrame
+        if production_status.empty:
+            logger.info("No production entries found, returning empty DataFrame.")
+            return pd.DataFrame(columns=[
+                "gca_accession", "status", "release_date", "genebuild_version", "annotation_source", "annotation_method", "last_genebuild_update"
+            ])
 
-        logger.info(f"Found {len(production_status)} entries in production table.")
-        return production_status
+        pivoted = (
+            production_status.pivot_table(
+                index=["gca_accession", "status", "release_date"],
+                columns="attribute_id",
+                values="value",
+                aggfunc="first"
+            )
+            .reset_index()
+        )
+
+        # Optional: rename columns for clarity
+        pivoted = pivoted.rename(columns={
+            71: "genebuild_version",
+            169: "annotation_source",
+            37: "annotation_method",
+            34: "last_genebuild_update"
+        })
+
+        # Keep only entries where annotation_source is 'ensembl'
+        pivoted = pivoted[pivoted["annotation_source"] == "ensembl"]
+
+        pivoted = pivoted.drop_duplicates(subset='gca_accession', keep='first')
+
+        logger.info(f"Found {len(pivoted)} entries in production table.")
+        return pivoted
 
     except pymysql.Error as err:
         logger.error("MySQL error: %s", err)

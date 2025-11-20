@@ -82,11 +82,14 @@ def delete_entries_not_production_db(filtered_old):
     production_found = check_status_production_db(gca_tuple)
 
     # Accessions present in production
-    existing_accessions_prod = set(production_found['gca_accession'])
+    if production_found is None or len(production_found) == 0:
+        logger.warning("No accessions found in production DB. Treating all as missing.")
+        existing_accessions_prod = set()
+    else:
+        existing_accessions_prod = set(production_found['gca_accession'])
 
     # Log counts
     logger.info(f"Before filtering: {len(filtered_old)} rows in old registry")
-    logger.info(f"Found {len(existing_accessions_prod)} accessions in production DB")
 
     # Remove rows that are 'live' or 'handed_over' and not found in production
     not_in_prod = (
@@ -103,12 +106,82 @@ def delete_entries_not_production_db(filtered_old):
     return filtered_final
 
 
+def check_status_update_old_registry(gb_status, old_reg_df_latest):
+    """Detect cases where the old registry progressed but the new registry is still in progress."""
+
+    status_map = {
+        "handed over": "live",
+        "completed": "completed",
+        "Completed": "completed",
+        "Check BUSCO": "check_busco",
+        "BUSCO Check": "check_busco",
+        "in progress": "in_progress",
+        "Pre-Released": "pre_released",
+        "Insufficient Data": "insufficient_data"
+    }
+
+    # New registry "in-progress" statuses
+    in_progress_set = {
+        "in_progress",
+        "pre_released",
+        "insufficient_data",
+    }
+
+    # Old registry "progressed" statuses
+    progressed_set = {
+        "completed",
+        "check_busco",
+        "insufficient_data",
+        "pre_released",
+    }
+
+    # --- 1. Map old statuses ---
+    old_reg_df_latest["mapped_status"] = (
+        old_reg_df_latest["gb_status"]
+        .map(status_map)
+        .fillna(old_reg_df_latest["gb_status"])
+    )
+
+    # --- 2. Merge with new registry ---
+    merged = old_reg_df_latest.merge(
+        gb_status[["gca_accession", "gb_status"]],
+        on="gca_accession",
+        how="left",
+        suffixes=("_old", "_new")
+    )
+
+    # Map new registry statuses too
+    merged["gb_status_new_mapped"] = (
+        merged["gb_status_new"]
+        .map(status_map)
+        .fillna(merged["gb_status_new"])
+    )
+
+    # --- 3. Apply final filtering ---
+    filtered = merged[
+        merged["mapped_status"].isin(progressed_set) &  # old registry progressed
+        merged["gb_status_new_mapped"].isin(in_progress_set) &  # new registry still in progress
+        (merged["mapped_status"] != merged["gb_status_new_mapped"])  # statuses must differ
+        ].copy()
+
+    # --- Logging ---
+    for _, row in filtered.iterrows():
+        logger.info(
+            f"Old registry progressed but new registry did not for {row['gca_accession']}: "
+            f"old={row['mapped_status']} new={row['gb_status_new_mapped']}"
+        )
+
+    return filtered
+
 
 def add_entries_from_old_registry(gb_status):
     """Add annotation statuses from old registry to df (filtered and mapped)."""
     old_reg_df_latest = fetch_status_old_registry()
     old_reg_df_latest['gca_accession'] = old_reg_df_latest['gca_accession'].str.strip()
     gb_status['gca_accession'] = gb_status['gca_accession'].str.strip()
+
+    # Check if old registry status changed since copy
+    changed = check_status_update_old_registry(gb_status, old_reg_df_latest)
 
     # Accessions already in gb_status
     existing_accessions = set(gb_status['gca_accession'])
@@ -197,6 +270,7 @@ def find_assembly_id(gb_status):
     return assembly_id_merged
 
 
+
 def insert_entries_from_old_registry(password, gb_status, stop_apply):
     assembly_id_merged = find_assembly_id(gb_status)
 
@@ -241,5 +315,5 @@ def insert_entries_from_old_registry(password, gb_status, stop_apply):
 
     logger.info(f"Inserted {len(insert_merged_df)} rows from old registry to new registry.")
 
-    return assembly_id_merged
+    return assembly_id_merged, update_from_old_registry
 
