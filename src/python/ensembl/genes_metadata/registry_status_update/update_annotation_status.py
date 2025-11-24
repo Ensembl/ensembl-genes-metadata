@@ -76,7 +76,8 @@ def get_genebuild_status():
                 genebuild_version,
                 annotation_method,
                 last_genebuild_update,
-                date_status_update
+                date_status_update,
+                release_type
             FROM genebuild_status
         """
 
@@ -105,7 +106,7 @@ def get_status_updates(merged_df):
     df = merged_df.copy()
     logger.info(f"Starting status update check on {len(df)} rows.")
 
-    # ---- Normalisation ----
+    # Normalisation
     logger.info("Normalising status strings and dates.")
     df['gb_status'] = df['gb_status'].astype(str).str.strip().str.lower()
     df['status'] = df['status'].astype(str).str.strip().str.capitalize()
@@ -119,10 +120,11 @@ def get_status_updates(merged_df):
     df['gb_status_new'] = df['gb_status']
     df['release_date_new'] = df['release_date']
     df['last_genebuild_update_new'] = df['last_genebuild_update_registry']
-    df['genebuild_version_new'] = df['genebuild_version']
+    df['genebuild_version_new'] = df['genebuild_version_registry']
     df['date_status_update_new'] = df['date_status_update']
+    df['release_type_new'] = df['release_type']
 
-    # ---- 1. Faulty entries ----
+    # 1. Faulty entries → skip
     condition_faulty = df['status'] == 'Faulty'
     faulty_count = condition_faulty.sum()
     logger.info(f"Production 'Faulty' entries: {faulty_count}")
@@ -134,14 +136,15 @@ def get_status_updates(merged_df):
         df = df[~condition_faulty].copy()
         logger.info(f"{len(df)} rows remain after filtering out faulty entries.")
 
-    # ---- 2. Production Released → make registry Live ----
+    # 2. Production Released → make registry Live
     condition_released = (df['status'] == 'Released') & (df['gb_status'] != 'live')
     logger.info(f"Released→Live updates: {condition_released.sum()}")
     df.loc[condition_released, 'gb_status_new'] = 'live'
     df.loc[condition_released, 'release_date_new'] = df.loc[condition_released, 'release_date_production']
     df.loc[condition_released, 'date_status_update_new'] = pd.Timestamp.today().normalize()
+    df.loc[condition_released, 'release_site_new'] = 'beta'
 
-    # ---- 3. Live but missing release_date ----
+    # 3. Live but missing release_date
     condition_missing_date = (
         (df['gb_status'] == 'live')
         & df['release_date'].isna()
@@ -150,7 +153,7 @@ def get_status_updates(merged_df):
     logger.info(f"Missing release_date to fill: {condition_missing_date.sum()}")
     df.loc[condition_missing_date, 'release_date_new'] = df.loc[condition_missing_date, 'release_date_production']
 
-    # ---- 4. Live but release_date mismatch ----
+    # 4. Live but release_date mismatch
     condition_mismatch_date = (
         (df['gb_status'] == 'live')
         & df['release_date'].notna()
@@ -160,7 +163,7 @@ def get_status_updates(merged_df):
     logger.info(f"Release_date mismatches: {condition_mismatch_date.sum()}")
     df.loc[condition_mismatch_date, 'release_date_new'] = df.loc[condition_mismatch_date, 'release_date_production']
 
-    # ---- 5–6. last_genebuild_update corrections ----
+    # 5–6. last_genebuild_update corrections
     condition_missing_update = (
         (df['gb_status'] == 'live')
         & df['last_genebuild_update_registry'].isna()
@@ -178,16 +181,16 @@ def get_status_updates(merged_df):
     logger.info(f"last_genebuild_update mismatches: {condition_mismatch_update.sum()}")
     df.loc[condition_mismatch_update, 'last_genebuild_update_new'] = df.loc[condition_mismatch_update, 'last_genebuild_update_production']
 
-    # ---- 7. Live but missing genebuild_version ----
+    # 7. Live but missing genebuild_version
     condition_missing_genebuild_version = (
             (df['gb_status'] == 'live')
-            & df['genebuild_version'].isna()
+            & df['genebuild_version_registry'].isna()
             & df['gb_v_production'].notna())
     logger.info(
         f"Missing genebuild_version to fill: {condition_missing_genebuild_version.sum()}")
-    #df.loc[condition_missing_genebuild_version, 'genebuild_version_new'] =  df.loc[condition_missing_genebuild_version, 'gb_v_production']
+    df.loc[condition_missing_genebuild_version, 'genebuild_version_new'] =  df.loc[condition_missing_genebuild_version, 'gb_v_production']
 
-    # ---- 8. Processing/Submitted → handed_over ----
+    # 8. Processing/Submitted → handed_over
     condition_handed_over = df['status'].isin(['Processed', 'Processing', 'Submitted']) & (df['gb_status'] != 'handed_over')
     logger.info(f"Handed_over updates: {condition_handed_over.sum()}")
     df.loc[condition_handed_over, 'gb_status_new'] = 'handed_over'
@@ -200,18 +203,18 @@ def get_status_updates(merged_df):
                         (df['release_date_new'] == df['release_date']))
     update_changed = ~((df['last_genebuild_update_new'].isna() & df['last_genebuild_update_registry'].isna()) |
                        (df['last_genebuild_update_new'] == df['last_genebuild_update_registry']))
-    version_changed = ~((df['genebuild_version_new'].isna() & df['genebuild_version'].isna()) |
-                       (df['genebuild_version_new'] == df['genebuild_version']))
+    update_version = ~((df['genebuild_version_new'].isna() & df['genebuild_version_registry'].isna()) |
+                       (df['genebuild_version_new'] == df['genebuild_version_registry']))
 
 
-    updated_df = df[status_changed | release_changed | update_changed | version_changed].copy()
+    updated_df = df[status_changed | release_changed | update_changed | update_version].copy()
     logger.info(f"Total rows requiring updates: {len(updated_df)}")
 
     updated_df = updated_df[
         [
             'genebuild_status_id', 'gb_status_new', 'release_date_new',
-            'last_genebuild_update_new', 'genebuild_version_new',
-            'annotation_method', 'annotation_source', 'date_status_update_new', 'gb_v_production'
+            'last_genebuild_update_new',
+            'annotation_method', 'annotation_source', 'date_status_update_new', 'genebuild_version_new', 'release_site_new'
         ]
     ]
 
@@ -220,7 +223,7 @@ def get_status_updates(merged_df):
 
 def update_genebuild_status(updated_df, password):
     """
-    Update the genebuild_status table with new statuses, dates, and version info.
+    Update the genebuild_status table with new statuses, dates info.
     Logs a summary of which columns were updated.
 
     Args:
@@ -230,7 +233,6 @@ def update_genebuild_status(updated_df, password):
             - release_date_new (optional)
             - date_status_update_new (optional)
             - last_genebuild_update_new (optional)
-            - genebuild_version_new (optional)
         password: MySQL connection info
     """
     connection = pymysql.connect(
@@ -248,7 +250,7 @@ def update_genebuild_status(updated_df, password):
         'release_date': 0,
         'date_status_update': 0,
         'last_genebuild_update': 0,
-        'genebuild_version': 0
+        'genebuild_version': 0,
     }
 
     try:
@@ -268,7 +270,8 @@ def update_genebuild_status(updated_df, password):
                     ('release_date_new', 'release_date'),
                     ('date_status_update_new', 'date_status_update'),
                     ('last_genebuild_update_new', 'last_genebuild_update'),
-                    ('genebuild_version_new', 'genebuild_version')
+                    ('release_site_new', 'release_site'),
+                    ('genebuild_version_new', 'genebuild_version'),
                 ]
 
                 updated_cols = ['gb_status']
@@ -310,12 +313,12 @@ def update_genebuild_status(updated_df, password):
         connection.close()
 
 
-def main(password, test, old_registry, stop_appy):
+def main(password, test, old_registry, apply_old):
 
     if old_registry:
         logger.info("Checking status in old registry.")
         gb_status = get_genebuild_status()
-        copy_from_old_registry = insert_entries_from_old_registry(password, gb_status, stop_appy)
+        copy_from_old_registry = insert_entries_from_old_registry(password, gb_status, apply_old)
 
 
     logger.info("Only using the new registry.")
@@ -332,6 +335,7 @@ def main(password, test, old_registry, stop_appy):
     if len(gca_tuple) == 1:
         gca_tuple = (gca_tuple[0],)
 
+
     logger.info(f"Getting GCA status from production DB.")
     logger.info(f"Looking for {len(gca_tuple)} accessions in production DB")
     production_status = check_status_production_db(gca_tuple)
@@ -344,14 +348,14 @@ def main(password, test, old_registry, stop_appy):
 
     if production_status.empty:
         logger.warning("No production status found. Skipping merge and updates.")
-        merged_df = gb_status.copy()  # or set merged_df = pd.DataFrame() if you want it empty
+        merged_df = gb_status.copy()
     else:
         logger.info("Merging dataframes.")
-
+        production_status["gb_v_production"] = production_status["genebuild_version"]
         merge_keys = [
             "gca_accession",
             "annotation_method",
-            "genebuild_version"
+
         ]
         dups = gb_status.groupby(merge_keys).size()
         if (dups > 1).any():
@@ -363,9 +367,6 @@ def main(password, test, old_registry, stop_appy):
             logger.error("Duplicate production records detected: %s", prod_dups[prod_dups > 1])
             raise ValueError("Production DB contains ambiguous records.")
 
-        production_status['gb_v_production'] =  production_status['genebuild_version']
-        logger.info("Saving production genebuild version to compare.")
-
         logger.info("Merging registry and production dataframes.")
 
         merged_df = pd.merge(
@@ -375,10 +376,6 @@ def main(password, test, old_registry, stop_appy):
             how='left',
             suffixes=('_registry', '_production')
         )
-
-    logger.info(f"gb_status columns: {gb_status.columns.tolist()}")
-    logger.info(f"production_status columns: {production_status.columns.tolist()}")
-    logger.info(f"merged_df columns: {merged_df.columns.tolist()}")
 
     updates = get_status_updates(merged_df)
 
@@ -392,13 +389,12 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Update genebuild_status table from production DB.")
     parser.add_argument("-p", "--password", required=True, help="MySQL password for write user")
     parser.add_argument("-t", "--test", action="store_true", help="Run in test mode (no DB updates)")
-    parser.add_argument("-or", "--old_registry", type=bool,default=False, help="Check old registry status.")
-    parser.add_argument("-sa", "--stop_apply", type=bool, default=True, help="If true don't apply updates from old registry.")
-
+    parser.add_argument("-or", "--old_registry", action="store_true", help="Check old registry status")
+    parser.add_argument("-ao", "--apply_old", action="store_false", help="Apply updates from old registry (default is stop).")
 
     args = parser.parse_args()
 
-    main(args.password, args.test, args.old_registry, args.stop_apply)
+    main(args.password, args.test, args.old_registry, args.apply_old)
 
 
 

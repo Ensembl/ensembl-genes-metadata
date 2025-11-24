@@ -96,7 +96,8 @@ def check_status_production_db(gca_tuple):
                 index=["gca_accession", "status", "release_date"],
                 columns="attribute_id",
                 values="value",
-                aggfunc="first"
+                aggfunc="first",
+                dropna=False
             )
             .reset_index()
         )
@@ -111,8 +112,9 @@ def check_status_production_db(gca_tuple):
 
         # Keep only entries where annotation_source is 'ensembl'
         pivoted = pivoted[pivoted["annotation_source"] == "ensembl"]
-
-        pivoted = pivoted.drop_duplicates(subset='gca_accession', keep='first')
+        pivoted['last_genebuild_update'] = pd.to_datetime(pivoted['last_genebuild_update'], errors='coerce')
+        pivoted = pivoted.sort_values(['gca_accession', 'last_genebuild_update'])
+        pivoted = pivoted.drop_duplicates(subset='gca_accession', keep='last')
 
         logger.info(f"Found {len(pivoted)} entries in production table.")
         return pivoted

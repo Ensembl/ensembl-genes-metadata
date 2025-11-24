@@ -135,14 +135,14 @@ def check_status_update_old_registry(gb_status, old_reg_df_latest):
         "pre_released",
     }
 
-    # --- 1. Map old statuses ---
+    # 1. Map old statuses
     old_reg_df_latest["mapped_status"] = (
         old_reg_df_latest["gb_status"]
         .map(status_map)
         .fillna(old_reg_df_latest["gb_status"])
     )
 
-    # --- 2. Merge with new registry ---
+    # 2. Merge with new registry
     merged = old_reg_df_latest.merge(
         gb_status[["gca_accession", "gb_status"]],
         on="gca_accession",
@@ -157,14 +157,14 @@ def check_status_update_old_registry(gb_status, old_reg_df_latest):
         .fillna(merged["gb_status_new"])
     )
 
-    # --- 3. Apply final filtering ---
+    # 3. Apply final filtering
     filtered = merged[
         merged["mapped_status"].isin(progressed_set) &  # old registry progressed
         merged["gb_status_new_mapped"].isin(in_progress_set) &  # new registry still in progress
         (merged["mapped_status"] != merged["gb_status_new_mapped"])  # statuses must differ
         ].copy()
 
-    # --- Logging ---
+    # Logging
     for _, row in filtered.iterrows():
         logger.info(
             f"Old registry progressed but new registry did not for {row['gca_accession']}: "
@@ -180,8 +180,6 @@ def add_entries_from_old_registry(gb_status):
     old_reg_df_latest['gca_accession'] = old_reg_df_latest['gca_accession'].str.strip()
     gb_status['gca_accession'] = gb_status['gca_accession'].str.strip()
 
-    # Check if old registry status changed since copy
-    changed = check_status_update_old_registry(gb_status, old_reg_df_latest)
 
     # Accessions already in gb_status
     existing_accessions = set(gb_status['gca_accession'])
@@ -213,6 +211,10 @@ def add_entries_from_old_registry(gb_status):
     filtered_old["last_genebuild_update"] = filtered_old["date_status_update"]
 
     filtered_old = delete_entries_not_production_db(filtered_old)
+
+
+    # Check if old registry status changed since copy
+    changed = check_status_update_old_registry(gb_status, old_reg_df_latest)
 
     return filtered_old
 
@@ -267,11 +269,12 @@ def find_assembly_id(gb_status):
     for col in new_columns:
         assembly_id_merged[col] = None
 
+    logger.info(f"Columns in assembly_id_merged: {list(assembly_id_merged.columns)}")
     return assembly_id_merged
 
 
 
-def insert_entries_from_old_registry(password, gb_status, stop_apply):
+def insert_entries_from_old_registry(password, gb_status, apply_old):
     assembly_id_merged = find_assembly_id(gb_status)
 
     # Keep only rows with missing assembly_id
@@ -286,7 +289,7 @@ def insert_entries_from_old_registry(password, gb_status, stop_apply):
     assembly_id_merged = assembly_id_merged[assembly_id_merged['assembly_id'].notnull()].copy()
     logger.info(f"{len(assembly_id_merged)} rows remain after removing entries with missing assembly_id.")
 
-    if stop_apply:
+    if apply_old:
         logger.info("Test mode: no updates applied from old registry.")
         logger.info("Annotations that would be inserted to new registry from old:\n%s", assembly_id_merged.to_string(index=False))
         return assembly_id_merged
@@ -315,5 +318,5 @@ def insert_entries_from_old_registry(password, gb_status, stop_apply):
 
     logger.info(f"Inserted {len(insert_merged_df)} rows from old registry to new registry.")
 
-    return assembly_id_merged, update_from_old_registry
+    return assembly_id_merged
 
