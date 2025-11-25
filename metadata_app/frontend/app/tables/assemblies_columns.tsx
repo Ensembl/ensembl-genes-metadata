@@ -13,13 +13,11 @@ export type Assemblies = {
   release_date: string
   lowest_taxon_id: number
   internal_clade: string
-  asm_level: string
-  asm_type: string
-  asm_name: string
-  refseq_accession: string
-  is_current: string
-  contig_n50: number
-  total_sequence_length: number
+  is_current: string,
+  short_read_paired_end_illumina_lowest: number,
+  short_read_paired_end_illumina:number,
+  lowest_transc_status: string,
+  species_transc_status: string,
 }
 
 function sortableHeader(label: string, accessor: string) {
@@ -70,31 +68,23 @@ export const columns: ColumnDef<Assemblies>[] = [
     header: sortableHeader("Internal Clade", "internal_clade"),
   },
   {
-    accessorKey: "asm_level",
-    header: sortableHeader("Assembly Level", "asm_level"),
-  },
-  {
-    accessorKey: "asm_type",
-    header: sortableHeader("Assembly Type", "asm_type"),
-  },
-  {
-    accessorKey: "asm_name",
-    header: sortableHeader("Assembly Name", "asm_name"),
-  },
-  {
-    accessorKey: "refseq_accession",
-    header: sortableHeader("RefSeq Accession", "refseq_accession"),
-  },
-  {
     accessorKey: "is_current",
-    header: sortableHeader("Current", "is_current"),
+    header: sortableHeader("Latest GCA", "is_current"),
   },
-  {
-    accessorKey: "contig_n50",
-    header: sortableHeader("Contig N50", "contig_n50"),
+    {
+    accessorKey: "lowest_transc_status",
+    header: sortableHeader("Transcr. reg. lowest", "lowest_transc_status"),
   },
-  {
-    accessorKey: "total_sequence_length",
-    header: sortableHeader("Sequence Length", "total_sequence_length"),
+    {
+    accessorKey: "species_transc_status",
+    header: sortableHeader("Transcr. reg. species", "species_transc_status"),
+  },
+    {
+    accessorKey: "short_read_paired_end_illumina_lowest",
+    header: sortableHeader("RNA lowest", "short_read_paired_end_illumina_lowest"),
+  },
+    {
+    accessorKey: "short_read_paired_end_illumina",
+    header: sortableHeader("RNA genus", "short_read_paired_end_illumina"),
   },
 ]

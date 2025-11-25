@@ -58,7 +58,6 @@ export default function Page() {
   const [gcaInput, setGcaInput] = useState<string>("");
   const [downloadables, setDownloadables] = useState<{
     gca_list: string;
-    df_main: string;
     df_wide: string
   } | null>(null);
   const [loading, setLoading] = useState(false);
@@ -190,8 +189,8 @@ export default function Page() {
       const result = await res.json();
       console.log("API response:", result);
 
-      if (result.df_main) {
-        setAssemblies(result.df_main);
+      if (result.df_wide) {
+        setAssemblies(result.df_wide);
       } else {
         console.error("No assemblies data in response");
         alert("No assemblies data found in response");
@@ -524,13 +523,6 @@ export default function Page() {
                   Download GCA List
                 </Button>
 
-                {/* Download main Table (CSV, from backend) */}
-                <Button
-                  variant="outline"
-                  onClick={() => handleDownload(downloadables?.df_main, "filtered_assemblies.csv", "text/csv;charset=utf-8;")}
-                >
-                  Download CSV
-                </Button>
 
                 {/* Download Full Table from Backend */}
                 <Button

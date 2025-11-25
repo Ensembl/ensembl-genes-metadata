@@ -25,6 +25,17 @@ def load_cache():
 
 
 def save_cache(cache):
+    # Normalize keys in cache before saving
+    for key in cache:
+        data = cache[key]["data"]
+        normalized_data = {}
+        for k, v in data.items():
+            if k != "Taxon ID":  # keep Taxon ID as is
+                normalized_key = k.title().replace("_", " ").replace("-", " ")
+            else:
+                normalized_key = k
+            normalized_data[normalized_key] = v
+        cache[key]["data"] = normalized_data
     with open(CACHE_FILE, "w") as f:
         json.dump(cache, f)
 
@@ -85,40 +96,39 @@ def add_data_from_ena(df):
     """Check transcriptomic data for each taxon_id in the dataset (cached)."""
     logging.info("Transcriptomic data check from ENA requested")
 
-    taxon_ids = [tid for tid in df["lowest_taxon_id"].unique() if pd.notna(tid)]
-    species_taxon_ids = [tid for tid in df["species_taxon_id"].unique() if pd.notna(tid)]
-    genus_taxon_ids = [gtid for gtid in df["genus_taxon_id"].unique() if pd.notna(gtid)]
+    # Collect unique taxon IDs
+    taxon_ids = {int(tid) for tid in pd.concat([
+        df["lowest_taxon_id"], df["species_taxon_id"], df["genus_taxon_id"]
+    ]).dropna().unique()}
 
-    nan_lowest_count = df["lowest_taxon_id"].isna().sum()
-    nan_species_count = df["species_taxon_id"].isna().sum()
-    nan_genus_count = df["genus_taxon_id"].isna().sum()
-
-    if nan_lowest_count > 0:
-        logging.warning(f"Found {nan_lowest_count} NA values in lowest_taxon_id column")
-    if nan_species_count > 0:
-        logging.warning(f"Found {nan_species_count} NA values in species_taxon_id column")
-    if nan_genus_count > 0:
-        logging.warning(f"Found {nan_genus_count} NA values in genus_taxon_id column")
-
-    all_taxon_ids = {int(tid) for tid in set(taxon_ids) | set(species_taxon_ids) | set(genus_taxon_ids) if
-                     pd.notna(tid)}
-    logging.info(f"Found {len(all_taxon_ids)} valid taxon IDs for transcriptomic data check")
+    logging.info(f"Found {len(taxon_ids)} valid taxon IDs for transcriptomic data check")
 
     cache = load_cache()
     now = time.time()
     semaphore = asyncio.Semaphore(CONCURRENT_LIMIT)
 
     async def fetch_transcriptomic_data():
-        return await asyncio.gather(
-            *[check_data_from_ena(taxon_id, tree=True, semaphore=semaphore, cache=cache, now=now)
-              for taxon_id in all_taxon_ids]
-        )
+        tasks = [
+            check_data_from_ena(taxon_id, tree=True, semaphore=semaphore, cache=cache, now=now)
+            for taxon_id in taxon_ids
+        ]
+        return await asyncio.gather(*tasks)
 
     transcriptomic_results = asyncio.run(fetch_transcriptomic_data())
 
-    # ✅ Save cache only once after all requests
+    # Save cache once after all requests
     save_cache(cache)
 
+    # Create DataFrame and keep only lowercase underscore columns
     transcriptomic_df = pd.DataFrame(transcriptomic_results)
+    # Print all columns before filtering
+    print("Columns before transformation:")
+    print(transcriptomic_df.columns.tolist())
+    transcriptomic_df.columns = [
+        c.lower().replace(" ", "_").replace("-", "_") for c in transcriptomic_df.columns
+    ]    # Print columns after filtering
+    print("Columns after transformation:")
+    print(transcriptomic_df.columns.tolist())
+
     logging.info("ENA check for transcriptomic data finished")
     return transcriptomic_df

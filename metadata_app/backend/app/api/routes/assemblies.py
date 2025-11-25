@@ -24,12 +24,11 @@ def filter_assemblies(filters: AssemblyFilterRequest):
     if isinstance(result[0], str):  # Error string
         raise HTTPException(status_code=400, detail=result[0])
 
-    df_wide, df_main, df_gca_list, taxonomy_dict = result
+    df_wide, df_gca_list, taxonomy_dict = result
 
     return {
-        "df_main": df_main.to_dict(orient="records"),
+        "df_wide": df_wide.to_dict(orient="records"),
         "downloadables": {
-            "df_main": df_main.to_csv(index=False),
             "df_wide": df_wide.to_csv(index=False),
             "gca_list": df_gca_list.to_csv(index=False)
         }

@@ -23,7 +23,7 @@ export function StartAnnotationDialog() {
         <DialogHeader>
           <DialogTitle>Start annotation</DialogTitle>
           <DialogDescription>
-            Generate config file to start annotation.
+           Placeholder! Not yet functional.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">

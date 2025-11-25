@@ -247,7 +247,7 @@ def get_filtered_assemblies(bioproject_id, metric_thresholds, asm_level, asm_typ
 			# Merge for the lowest taxon ID
 			logging.info(f"Merging transcriptomic data lowest taxon id")
 			df_wide = df_wide.merge(
-				transcriptomic_df, left_on="lowest_taxon_id", right_on="Taxon ID", how="left", suffixes=('', '_lowest')
+				transcriptomic_df, left_on="lowest_taxon_id", right_on="taxon_id", how="left", suffixes=('', '_lowest')
 			)
 			logging.info(f"After lowest_taxon_id merge: {df_wide.shape}")
 			logging.info(f"Columns: {df_wide.columns.tolist()}")
@@ -256,7 +256,7 @@ def get_filtered_assemblies(bioproject_id, metric_thresholds, asm_level, asm_typ
 			logging.info(f"Merging transcriptomic data species taxon id")
 
 			df_wide = df_wide.merge(
-				transcriptomic_df, left_on="species_taxon_id", right_on="Taxon ID", how="left",
+				transcriptomic_df, left_on="species_taxon_id", right_on="taxon_id", how="left",
 				suffixes=('_lowest', '_species')
 			)
 			logging.info(f"After species_taxon_id merge: {df_wide.shape}")
@@ -265,14 +265,14 @@ def get_filtered_assemblies(bioproject_id, metric_thresholds, asm_level, asm_typ
 			# Merge for the genus taxon ID (separate column)
 			logging.info(f"Meging transcriptomic data genus taxon id")
 			df_wide = df_wide.merge(
-				transcriptomic_df, left_on="genus_taxon_id", right_on="Taxon ID", how="left",
+				transcriptomic_df, left_on="genus_taxon_id", right_on="taxon_id", how="left",
 				suffixes=('_lowest', '_genus')
 			)
 			logging.info(f"After genus_taxon_id merge: {df_wide.shape}")
 			logging.info(f"Columns: {df_wide.columns.tolist()}")
 
-			# Drop redundant 'Taxon ID' columns (both for lowest and genus)
-			df_wide.drop(columns=["Taxon ID_lowest", "Taxon ID_species", "Taxon ID"], inplace=True)
+			# Drop redundant 'taxon_id' columns (both for lowest and genus)
+			df_wide.drop(columns=["taxon_id_lowest", "taxon_id_species", "taxon_id"], inplace=True)
 
 
 
@@ -292,13 +292,7 @@ def get_filtered_assemblies(bioproject_id, metric_thresholds, asm_level, asm_typ
 
 		df_wide = df_wide.drop_duplicates(subset='gca', keep='first')
 
-		# Create df_main table
-		df_main = df_wide[['bioproject_id', 'associated_project', 'gca', 'scientific_name', 'release_date',
-		                     'lowest_taxon_id', 'genus_taxon_id', 'internal_clade', 'asm_type', 'asm_name', 'refseq_accession', 'is_current', 'asm_level',
-		              'contig_n50', 'total_sequence_length']]
-		df_main = df_main.drop_duplicates(subset=['gca'], keep='first')
-		logging.info(f"Created main table")
-		# Clean final results
+
 		columns_to_drop = ['contig_l50', 'gc_count', 'number_of_component_sequences', 'scaffold_l50',
 		                   'total_ungapped_length', 'number_of_organelles', 'total_number_of_chromosomes',
 		                   'gaps_between_scaffolds_count']
@@ -311,11 +305,9 @@ def get_filtered_assemblies(bioproject_id, metric_thresholds, asm_level, asm_typ
 		df_gca_list = df_wide[["gca"]]
 		logging.info(f"Created gca_list")
 
-		df_main = df_main.apply(lambda col: col.fillna("") if col.dtype == "object" else col)
-		df_wide = df_wide.apply(lambda col: col.fillna("") if col.dtype == "object" else col)
-
-
-		return df_wide, df_main, df_gca_list, taxonomy_dict
+		df_wide = df_wide.where(pd.notna(df_wide), None)
+		print(df_wide)
+		return df_wide, df_gca_list, taxonomy_dict
 
 
 	except HTTPException:
