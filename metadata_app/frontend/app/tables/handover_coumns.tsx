@@ -33,6 +33,10 @@ export const columns: ColumnDef<Handover>[] = [
     accessorKey: "last_genebuild_update",
     header: sortableHeader("Last Genebuild Update"),
   },
+    {
+    accessorKey: "bioproject_name",
+    header: sortableHeader("Bioproject"),
+  },
   {
     accessorKey: "gb_status",
     header: sortableHeader("GB Status"),
