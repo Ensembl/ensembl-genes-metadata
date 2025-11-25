@@ -25,17 +25,6 @@ def load_cache():
 
 
 def save_cache(cache):
-    # Normalize keys in cache before saving
-    for key in cache:
-        data = cache[key]["data"]
-        normalized_data = {}
-        for k, v in data.items():
-            if k != "Taxon ID":  # keep Taxon ID as is
-                normalized_key = k.title().replace("_", " ").replace("-", " ")
-            else:
-                normalized_key = k
-            normalized_data[normalized_key] = v
-        cache[key]["data"] = normalized_data
     with open(CACHE_FILE, "w") as f:
         json.dump(cache, f)
 
@@ -77,16 +66,16 @@ async def check_data_from_ena(taxon_id, tree, semaphore, cache, now):
 
     query_base = f"tax_tree({taxon_id})" if tree else f"tax_eq({taxon_id})"
     queries = {
-        "Short-read paired-end illumina": f"{query_base} AND instrument_platform=ILLUMINA AND library_layout=PAIRED AND library_source=TRANSCRIPTOMIC",
-        "Long-read PacBio": f"{query_base} AND instrument_platform=PACBIO_SMRT AND library_source=TRANSCRIPTOMIC",
-        "Long-read ONP": f"{query_base} AND instrument_platform=OXFORD_NANOPORE AND library_source=TRANSCRIPTOMIC"
+        "short_read_paired_end_illumina": f"{query_base} AND instrument_platform=ILLUMINA AND library_layout=PAIRED AND library_source=TRANSCRIPTOMIC",
+        "long_read_pacbio": f"{query_base} AND instrument_platform=PACBIO_SMRT AND library_source=TRANSCRIPTOMIC",
+        "long_read_onp": f"{query_base} AND instrument_platform=OXFORD_NANOPORE AND library_source=TRANSCRIPTOMIC"
     }
 
     async with aiohttp.ClientSession() as session:
         tasks = {key: ena_rest_api(session, query, semaphore) for key, query in queries.items()}
         results = await asyncio.gather(*tasks.values())
 
-    data = {"Taxon ID": taxon_id, **dict(zip(queries.keys(), results))}
+    data = {"taxon_id": taxon_id, **dict(zip(queries.keys(), results))}
     cache[cache_key] = {"data": data, "timestamp": now}
 
     return data
@@ -122,13 +111,6 @@ def add_data_from_ena(df):
     # Create DataFrame and keep only lowercase underscore columns
     transcriptomic_df = pd.DataFrame(transcriptomic_results)
     # Print all columns before filtering
-    print("Columns before transformation:")
-    print(transcriptomic_df.columns.tolist())
-    transcriptomic_df.columns = [
-        c.lower().replace(" ", "_").replace("-", "_") for c in transcriptomic_df.columns
-    ]    # Print columns after filtering
-    print("Columns after transformation:")
-    print(transcriptomic_df.columns.tolist())
 
     logging.info("ENA check for transcriptomic data finished")
     return transcriptomic_df

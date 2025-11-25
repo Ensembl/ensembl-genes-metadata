@@ -305,7 +305,7 @@ def get_filtered_assemblies(bioproject_id, metric_thresholds, asm_level, asm_typ
 		df_gca_list = df_wide[["gca"]]
 		logging.info(f"Created gca_list")
 
-		df_wide = df_wide.where(pd.notna(df_wide), None)
+		df_wide = df_wide.astype(object).where(pd.notna(df_wide), None)
 		print(df_wide)
 		return df_wide, df_gca_list, taxonomy_dict
 
