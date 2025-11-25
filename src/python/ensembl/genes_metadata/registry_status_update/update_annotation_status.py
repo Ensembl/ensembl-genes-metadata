@@ -77,7 +77,8 @@ def get_genebuild_status():
                 annotation_method,
                 last_genebuild_update,
                 date_status_update,
-                release_type
+                release_type,
+                release_date
             FROM genebuild_status
         """
 
@@ -111,14 +112,14 @@ def get_status_updates(merged_df):
     df['gb_status'] = df['gb_status'].astype(str).str.strip().str.lower()
     df['status'] = df['status'].astype(str).str.strip().str.capitalize()
 
-    df['release_date'] = pd.to_datetime(df.get('release_date', pd.NaT), errors='coerce')
+    df['release_date_registry'] = pd.to_datetime(df.get('release_date', pd.NaT), errors='coerce')
     df['release_date_production'] = pd.to_datetime(df.get('release_date_production', pd.NaT), errors='coerce')
     df['last_genebuild_update_registry'] = pd.to_datetime(df.get('last_genebuild_update_registry', pd.NaT), errors='coerce')
     df['last_genebuild_update_production'] = pd.to_datetime(df.get('last_genebuild_update_production', pd.NaT), errors='coerce')
     df['date_status_update'] = pd.to_datetime(df.get('date_status_update', pd.NaT), errors='coerce')
 
     df['gb_status_new'] = df['gb_status']
-    df['release_date_new'] = df['release_date']
+    df['release_date_new'] = df['release_date_registry']
     df['last_genebuild_update_new'] = df['last_genebuild_update_registry']
     df['genebuild_version_new'] = df['genebuild_version_registry']
     df['date_status_update_new'] = df['date_status_update']
@@ -138,7 +139,7 @@ def get_status_updates(merged_df):
 
     # 2. Production Released → make registry Live
     condition_released = (df['status'] == 'Released') & (df['gb_status'] != 'live')
-    logger.info(f"Released→Live updates: {condition_released.sum()}")
+    logger.info(f"Handed over→Live updates: {condition_released.sum()}")
     df.loc[condition_released, 'gb_status_new'] = 'live'
     df.loc[condition_released, 'release_date_new'] = df.loc[condition_released, 'release_date_production']
     df.loc[condition_released, 'date_status_update_new'] = pd.Timestamp.today().normalize()
@@ -147,18 +148,18 @@ def get_status_updates(merged_df):
     # 3. Live but missing release_date
     condition_missing_date = (
         (df['gb_status'] == 'live')
-        & df['release_date'].isna()
+        & df['release_date_registry'].isna()
         & df['release_date_production'].notna()
     )
     logger.info(f"Missing release_date to fill: {condition_missing_date.sum()}")
     df.loc[condition_missing_date, 'release_date_new'] = df.loc[condition_missing_date, 'release_date_production']
-
+    df.loc[condition_missing_date, 'release_site_new'] = 'beta'
     # 4. Live but release_date mismatch
     condition_mismatch_date = (
         (df['gb_status'] == 'live')
-        & df['release_date'].notna()
+        & df['release_date_registry'].notna()
         & df['release_date_production'].notna()
-        & (df['release_date'] != df['release_date_production'])
+        & (df['release_date_registry'] != df['release_date_production'])
     )
     logger.info(f"Release_date mismatches: {condition_mismatch_date.sum()}")
     df.loc[condition_mismatch_date, 'release_date_new'] = df.loc[condition_mismatch_date, 'release_date_production']
@@ -199,8 +200,8 @@ def get_status_updates(merged_df):
 
     # ---- Determine changes ----
     status_changed = df['gb_status'] != df['gb_status_new']
-    release_changed = ~((df['release_date_new'].isna() & df['release_date'].isna()) |
-                        (df['release_date_new'] == df['release_date']))
+    release_changed = ~((df['release_date_new'].isna() & df['release_date_registry'].isna()) |
+                        (df['release_date_new'] == df['release_date_registry']))
     update_changed = ~((df['last_genebuild_update_new'].isna() & df['last_genebuild_update_registry'].isna()) |
                        (df['last_genebuild_update_new'] == df['last_genebuild_update_registry']))
     update_version = ~((df['genebuild_version_new'].isna() & df['genebuild_version_registry'].isna()) |
@@ -251,6 +252,7 @@ def update_genebuild_status(updated_df, password):
         'date_status_update': 0,
         'last_genebuild_update': 0,
         'genebuild_version': 0,
+        'release_type': 0,
     }
 
     try:
@@ -270,7 +272,7 @@ def update_genebuild_status(updated_df, password):
                     ('release_date_new', 'release_date'),
                     ('date_status_update_new', 'date_status_update'),
                     ('last_genebuild_update_new', 'last_genebuild_update'),
-                    ('release_site_new', 'release_site'),
+                    ('release_site_new', 'release_type'),
                     ('genebuild_version_new', 'genebuild_version'),
                 ]
 
@@ -376,6 +378,7 @@ def main(password, test, old_registry, apply_old):
             how='left',
             suffixes=('_registry', '_production')
         )
+
 
     updates = get_status_updates(merged_df)
 
