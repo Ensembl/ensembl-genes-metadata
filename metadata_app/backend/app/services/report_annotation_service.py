@@ -1,12 +1,7 @@
-
-import json
-import logging
 import pandas as pd
-import datetime
-from fastapi import HTTPException
-from metadata_app.backend.app.core.database import get_db_connection
-from metadata_app.backend.app.services.taxonomy_service import get_descendant_taxa
+import logging
 from metadata_app.backend.app.services.annotations_service import generate_tables
+
 
 def generate_report(end_date, start_date, group_name, taxon_id, bioproject_id):
     anno_wide, anno_main = generate_tables(group_name=group_name, taxon_id=taxon_id, bioproject_id=bioproject_id, annotation_date=None)
@@ -55,24 +50,23 @@ def generate_report(end_date, start_date, group_name, taxon_id, bioproject_id):
         .size()
         .reset_index(name='count'))
 
-    if 'protein_busco' in anno_wide.columns:
-        # Extract C: value
-        busco_complete_series = (
-            anno_wide['protein_busco']
-            .str.extract(r'C:(\d+\.\d+)%')[0]
-            .astype(float)
-        )
+    if "protein_busco" in anno_wide.columns:
+        extracted = anno_wide["protein_busco"].str.extract(r"C:(\d+\.\d+)%")[0]
 
-        # Compute the average
-        average_busco = busco_complete_series.mean()
+        # Convert to float, but invalid values → None instead of NaN
+        extracted = pd.to_numeric(extracted, errors="coerce")
+        # Store cleaned series back in the DataFrame (optional)
+        anno_wide["busco_complete"] = extracted
+        # Compute average only on valid numbers
+        valid = extracted.dropna()
+
+        average_busco = valid.mean() if not valid.empty else "Not available"
     else:
-        anno_wide['protein_busco'] = "Not available"
+        anno_wide["protein_busco"] = "Not available"
         average_busco = "Not available"
 
-
-
     main_report = anno_wide[['associated_project', 'gca', 'genebuilder', 'gb_status', 'ftp', 'latest_annotated', 'protein_busco', 'last_genebuild_update', 'release_date']]
-
+    logging.info(f"BUSCo {average_busco}")
 
     # Transforming out of range float values that are not JSON compliant: nan
     logging.info(f"Transfroming Out of range float values that are not JSON compliant")
@@ -82,6 +76,5 @@ def generate_report(end_date, start_date, group_name, taxon_id, bioproject_id):
     project_report = project_report.apply(lambda col: col.fillna("") if col.dtype == "object" else col)
     main_report = main_report.apply(lambda col: col.fillna("") if col.dtype == "object" else col)
 
-    logging.info(f"Run successfully")
 
     return anno_wide, number_of_annotations, method_report, num_unique_taxa, top_3_taxa, project_report, average_busco, main_report
