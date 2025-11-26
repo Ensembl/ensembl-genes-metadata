@@ -268,7 +268,7 @@ def get_filtered_assemblies(bioproject_id, candidate, taxon_id,
 				# Merge for the lowest taxon ID
 				logging.info("Merging transcriptomic data lowest taxon id")
 				df_wide = df_wide.merge(
-					transcriptomic_df, left_on="lowest_taxon_id", right_on="Taxon ID", how="left",
+					transcriptomic_df, left_on="lowest_taxon_id", right_on="taxon_id", how="left",
 					suffixes=('', '_lowest')
 				)
 				logging.info(f"After lowest_taxon_id merge: {df_wide.shape}")
@@ -277,7 +277,7 @@ def get_filtered_assemblies(bioproject_id, candidate, taxon_id,
 				# Merge for the species taxon ID
 				logging.info("Merging transcriptomic data species taxon id")
 				df_wide = df_wide.merge(
-					transcriptomic_df, left_on="species_taxon_id", right_on="Taxon ID", how="left",
+					transcriptomic_df, left_on="species_taxon_id", right_on="taxon_id", how="left",
 					suffixes=('_lowest', '_species')
 				)
 				logging.info(f"After species_taxon_id merge: {df_wide.shape}")
@@ -286,20 +286,20 @@ def get_filtered_assemblies(bioproject_id, candidate, taxon_id,
 				# Merge for the genus taxon ID (separate column)
 				logging.info("Merging transcriptomic data genus taxon id")
 				df_wide = df_wide.merge(
-					transcriptomic_df, left_on="genus_taxon_id", right_on="Taxon ID", how="left",
+					transcriptomic_df, left_on="genus_taxon_id", right_on="taxon_id", how="left",
 					suffixes=('_lowest', '_genus')
 				)
 				logging.info(f"After genus_taxon_id merge: {df_wide.shape}")
 				check_dataframe_not_empty(df_wide, "data after merging ENA transcriptomic data (genus taxon)")
 
 				# Drop redundant 'Taxon ID' columns (both for lowest and genus)
-				df_wide.drop(columns=["Taxon ID_lowest", "Taxon ID_species", "Taxon ID"], inplace=True)
+				df_wide.drop(columns=["taxon_id_lowest", "taxon_id_species", "taxon_id"], inplace=True)
 
 				# Add new summary column
 				df_wide["transcriptomic_evidence"] = np.where(
-					(df_wide["Short-read paired-end illumina_lowest"] != 0) |
-					((df_wide["Short-read paired-end illumina_lowest"] == 0) & (
-								df_wide["Short-read paired-end illumina"] >= 1)),
+					(df_wide["short_read_paired_end_illumina_lowest"] != 0) |
+					((df_wide["short_read_paired_end_illumina_lowest"] == 0) & (
+								df_wide["short_read_paired_end_illumina"] >= 1)),
 					"yes",
 					"no"
 				)
@@ -538,11 +538,11 @@ def generate_overview():
         transcriptomic_df = add_data_from_ena(df_wide)
         if transcriptomic_df is not None and not transcriptomic_df.empty:
             df_wide = df_wide.merge(
-                transcriptomic_df[["Taxon ID", "Short-read paired-end illumina"]],
-                left_on="genus_taxon_id", right_on="Taxon ID", how="left"
+                transcriptomic_df[["taxon_id", "short_read_paired_end_illumina"]],
+                left_on="genus_taxon_id", right_on="taxon_id", how="left"
             )
             df_wide["transcriptomic_evidence"] = np.where(
-                df_wide["Short-read paired-end illumina"].fillna(0) > 0, "yes", "no"
+                df_wide["short_read_paired_end_illumina"].fillna(0) > 0, "yes", "no"
             )
         else:
             df_wide["transcriptomic_evidence"] = "no"

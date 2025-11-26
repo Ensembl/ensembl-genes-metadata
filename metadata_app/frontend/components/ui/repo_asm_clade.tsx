@@ -51,18 +51,21 @@ const transformedData = React.useMemo(() => {
         <CardDescription>Number of assemblies per clade</CardDescription>
       </CardHeader>
       <CardContent>
-          <div style={{ height: 300 }}>
+          <div style={{ height: 350 }}>
         <ChartContainer config={chartConfig}>
-            <div style={{ height: 300 }}>
-                <ResponsiveContainer width="100%" height={300}>
+            <div style={{ height: 350 }}>
+                <ResponsiveContainer width="100%" height={350}>
         <BarChart accessibilityLayer data={transformedData} margin={{
               top: 30,
+              bottom: 65,
             }} >
           <CartesianGrid vertical={false} />
           <XAxis
               dataKey="internal_clade"
               tickLine={false}
               axisLine={false}
+              angle={-90}
+              textAnchor="end"
           />
           <ChartTooltip
               cursor={false}
