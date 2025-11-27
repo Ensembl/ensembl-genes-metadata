@@ -73,6 +73,7 @@ def check_status_production_db(gca_tuple):
                 AND assembly.accession IN {gca_tuple}
                 AND genome_dataset.is_current = 1
                 AND dataset_attribute.attribute_id IN (71, 169, 37, 34)
+                AND ensembl_release.release_type = "partial"
         """
 
         production_status = mysql_fetch_data(
@@ -112,8 +113,12 @@ def check_status_production_db(gca_tuple):
 
         # Keep only entries where annotation_source is 'ensembl'
         pivoted = pivoted[pivoted["annotation_source"] == "ensembl"]
+        pivoted["annotation_method"] = pivoted["annotation_method"].apply(
+            lambda x: "external_annotation_import" if x == "import" else x
+        )
         pivoted['last_genebuild_update'] = pd.to_datetime(pivoted['last_genebuild_update'], errors='coerce')
         pivoted = pivoted.sort_values(['gca_accession', 'last_genebuild_update'])
+        pivoted = pivoted[pivoted["genebuild_version"].str.startswith(("ENS", "HLX", "EXT", "BRK"), na=False)]
         pivoted = pivoted.drop_duplicates(subset='gca_accession', keep='last')
 
         logger.info(f"Found {len(pivoted)} entries in production table.")

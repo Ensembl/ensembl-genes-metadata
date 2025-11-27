@@ -55,6 +55,7 @@ import pymysql
 from copy_status_old_registry import insert_entries_from_old_registry
 from helper import mysql_fetch_data
 from production_check import check_status_production_db
+from missing_method import add_missing_methods
 from logger_settings import get_logger
 
 logger = get_logger(__name__)
@@ -112,7 +113,7 @@ def get_status_updates(merged_df):
     df['gb_status'] = df['gb_status'].astype(str).str.strip().str.lower()
     df['status'] = df['status'].astype(str).str.strip().str.capitalize()
 
-    df['release_date_registry'] = pd.to_datetime(df.get('release_date', pd.NaT), errors='coerce')
+    df['release_date_registry'] = pd.to_datetime(df.get('release_date_registry', pd.NaT), errors='coerce')
     df['release_date_production'] = pd.to_datetime(df.get('release_date_production', pd.NaT), errors='coerce')
     df['last_genebuild_update_registry'] = pd.to_datetime(df.get('last_genebuild_update_registry', pd.NaT), errors='coerce')
     df['last_genebuild_update_production'] = pd.to_datetime(df.get('last_genebuild_update_production', pd.NaT), errors='coerce')
@@ -154,6 +155,7 @@ def get_status_updates(merged_df):
     logger.info(f"Missing release_date to fill: {condition_missing_date.sum()}")
     df.loc[condition_missing_date, 'release_date_new'] = df.loc[condition_missing_date, 'release_date_production']
     df.loc[condition_missing_date, 'release_site_new'] = 'beta'
+
     # 4. Live but release_date mismatch
     condition_mismatch_date = (
         (df['gb_status'] == 'live')
@@ -315,6 +317,8 @@ def update_genebuild_status(updated_df, password):
         connection.close()
 
 
+
+
 def main(password, test, old_registry, apply_old):
 
     if old_registry:
@@ -346,6 +350,8 @@ def main(password, test, old_registry, apply_old):
     if 'gca_accession' not in production_status.columns:
         logger.error("Expected columns missing from production DB query.")
         return
+
+    missing_method = add_missing_methods(gb_status, production_status, test, password)
 
 
     if production_status.empty:
