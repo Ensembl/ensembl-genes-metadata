@@ -16,8 +16,7 @@ export type Assemblies = {
   is_current: string,
   short_read_paired_end_illumina_lowest: number,
   short_read_paired_end_illumina:number,
-  lowest_transc_status: string,
-  species_transc_status: string,
+  lowest_aligned_count: number,
 }
 
 function sortableHeader(label: string, accessor: string) {
@@ -72,12 +71,8 @@ export const columns: ColumnDef<Assemblies>[] = [
     header: sortableHeader("Latest GCA", "is_current"),
   },
     {
-    accessorKey: "lowest_transc_status",
-    header: sortableHeader("Transcr. reg. lowest", "lowest_transc_status"),
-  },
-    {
-    accessorKey: "species_transc_status",
-    header: sortableHeader("Transcr. reg. species", "species_transc_status"),
+    accessorKey: "lowest_aligned_count",
+    header: sortableHeader("Transcr. reg. lowest", "lowest_aligned_count"),
   },
     {
     accessorKey: "short_read_paired_end_illumina_lowest",

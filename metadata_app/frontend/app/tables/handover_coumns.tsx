@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 
 export type Handover = {
   gb_status: string;
-  last_genebuild_update: number;
+  date_status_update: string;
   gca: string;
 };
 
@@ -30,8 +30,8 @@ export const columns: ColumnDef<Handover>[] = [
     header: sortableHeader("GCA"),
   },
   {
-    accessorKey: "last_genebuild_update",
-    header: sortableHeader("Last Genebuild Update"),
+    accessorKey: "date_status_update",
+    header: sortableHeader("Date Status Update"),
   },
     {
     accessorKey: "bioproject_name",

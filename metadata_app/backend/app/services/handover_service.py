@@ -15,7 +15,7 @@ def get_ready_to_ho():
                 SELECT 
                     g.genebuild_status_id,
                     g.gb_status,
-                    g.last_genebuild_update,
+                    g.date_status_update,
                     g.genebuilder, 
                     m.bioproject_name,
                     CONCAT(a.gca_chain, ".", a.gca_version) AS gca
@@ -46,7 +46,7 @@ def get_ready_to_ho():
                 # for all other columns, take any value (they are identical)
                 # replace these with your actual column names
                 "genebuild_status_id": "first",
-                "last_genebuild_update": "first",
+                "date_status_update": "first",
                 "genebuilder": "first",
                 "gb_status": "first",
             })

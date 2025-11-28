@@ -5,7 +5,7 @@ import pandas as pd
 from typing import Dict
 from fastapi import APIRouter, HTTPException
 
-from metadata_app.backend.app.services.transcriptomics_service import get_trancriptomic_assessment, \
+from metadata_app.backend.app.services.transcriptomics_service import get_transcriptomic_assessment_for_ids, \
 	add_transc_data_to_df
 
 # Create router for transcriptomics endpoints

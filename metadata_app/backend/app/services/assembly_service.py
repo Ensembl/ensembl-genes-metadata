@@ -239,7 +239,7 @@ def get_filtered_assemblies(bioproject_id, metric_thresholds, asm_level, asm_typ
 
 		# Add transcriptomic data if needed
 		if transc:
-			df_wide = add_transc_data_to_df(df_wide, taxonomy_dict)
+			df_wide = add_transc_data_to_df(df_wide)
 
 		if transc_ena:
 			transcriptomic_df = add_data_from_ena(df_wide)
