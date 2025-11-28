@@ -43,7 +43,7 @@ def get_trancriptomic_assessment(taxonomy_dict):
 			where_clause = f"WHERE m.taxon_id IN ({trans_placeholders})"
 
 			query = f"""
-                SELECT m.taxon_id, m.last_check AS transc_assess_date, r.qc_status AS transc_status
+                SELECT m.taxon_id, m.last_check AS transc_assess_date, COUNT(r.qc_status) AS aligned_count
                 FROM meta m
                 JOIN run r ON m.taxon_id = r.taxon_id
                 {where_clause};
