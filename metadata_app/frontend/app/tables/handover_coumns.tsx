@@ -8,6 +8,7 @@ export type Handover = {
   gb_status: string;
   date_status_update: string;
   gca: string;
+  production_name: string
 };
 
 
@@ -28,6 +29,10 @@ export const columns: ColumnDef<Handover>[] = [
   {
     accessorKey: "gca",
     header: sortableHeader("GCA"),
+  },
+    {
+    accessorKey: "production_name",
+    header: sortableHeader("Production Name"),
   },
   {
     accessorKey: "date_status_update",
