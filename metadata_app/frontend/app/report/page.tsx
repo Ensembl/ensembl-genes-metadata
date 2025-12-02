@@ -10,6 +10,8 @@ import {
   CardContent,
 } from "@/components/ui/card";
 import { ArrowRight } from "lucide-react";
+import { BackgroundGradient } from "@/components/ui/backround-gradient"
+
 
 import {CardsReportTable} from "@/components/ui/report_card_table"
 import {ProjectsBar} from "@/components/ui/report_per_year"
@@ -27,9 +29,10 @@ export default function ReportSelectorPage() {
         <h1 className="scroll-m-20 text-4xl font-extrabold tracking-tight text-balance">{title}</h1>
         <p className="leading-7 [&:not(:first-child)]:mt-6">{description}</p>
         <div className="grid grid-cols-2 gap-4 justify-center">
-          <Link href="/report/asm" className="group">
+         <BackgroundGradient>
+            <Link href="/report/asm" className="group">
             <Card className="relative hover:shadow-lg transition-shadow cursor-pointer h-full dark:bg-secondary">
-              <CardHeader>
+                <CardHeader>
                 <CardTitle>Non-annotated assemblies</CardTitle>
                 <CardDescription>
                   Create a report on available non-annotated assemblies
@@ -40,7 +43,8 @@ export default function ReportSelectorPage() {
               </CardContent>
             </Card>
           </Link>
-
+             </BackgroundGradient>
+        <BackgroundGradient>
           <Link href="/report/anno" className="group">
             <Card className="relative hover:shadow-lg transition-shadow cursor-pointer h-full dark:bg-secondary">
               <CardHeader>
@@ -54,6 +58,7 @@ export default function ReportSelectorPage() {
               </CardContent>
             </Card>
           </Link>
+        </BackgroundGradient>
         </div>
 
         <h2 className="scroll-m-20 text-2xl font-semibold tracking-tight">

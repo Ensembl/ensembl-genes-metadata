@@ -12,7 +12,7 @@ export default function Page() {
       <div className="min-h-screen justify-center flex flex-wrap align-items-center">
           <div className="container m-16 mt-10 max-w-6xl">
             <div className="pt-8 pb-10 py-16">
-                <div className="w-full mb-4 break-inside-avoid">
+                <div className="w-full mb-8 break-inside-avoid">
                     <WelcomeCard></WelcomeCard>
                   </div>
               <div className="columns-2 space-y-4">

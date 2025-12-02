@@ -66,6 +66,7 @@ const transformedData = React.useMemo(() => {
               axisLine={false}
               angle={-90}
               textAnchor="end"
+              alignmentBaseline="middle"
           />
           <ChartTooltip
               cursor={false}
