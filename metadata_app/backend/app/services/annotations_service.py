@@ -83,12 +83,13 @@ def query_meta_registry(annotation_date, taxon_id, bioproject_id, group_name):
                     gb.annotation_method,
                     gb.date_started,
                     gb.release_date,
+                    gb.date_status_update,
                     gb.last_genebuild_update,
                     s.scientific_name,
                     s.common_name,
                     am.protein_busco,
                     am.protein_busco_lineage,
-                    am.protein_busco_version  -- add if you included it in the subquery
+                    am.protein_busco_version
                 FROM genebuild_status gb
                 LEFT JOIN assembly a ON gb.assembly_id = a.assembly_id
                 LEFT JOIN bioproject b ON a.assembly_id = b.assembly_id
@@ -123,6 +124,7 @@ def query_meta_registry(annotation_date, taxon_id, bioproject_id, group_name):
                     gb.annotation_method,
                     gb.date_started,
                     gb.release_date,
+                    gb.date_status_update,
                     gb.last_genebuild_update,
                     s.scientific_name,
                     s.common_name;                
