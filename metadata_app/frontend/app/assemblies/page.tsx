@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { PopoverWithMultiSelect } from "@/components/ui/metrics_select";
 import MultipleSelector, { Option } from "@/components/ui/multi_select";
-
 import {
   ToggleGroup,
   ToggleGroupItem,
@@ -411,7 +410,7 @@ export default function Page() {
                       >
                         {metric}
                         <XCircle
-                          className="h-5 w-5 cursor-pointer text-muted-foreground hover:text-foreground"
+                          className="h-5 w-5 cursor-pointer text-muted-foreground hover:text-primary"
                           strokeWidth={2.5}
                           fill="currentColor"
                           color="background"
@@ -454,7 +453,7 @@ export default function Page() {
                       >
                         {metric}
                         <XCircle
-                          className="h-5 w-5 cursor-pointer text-muted-foreground hover:text-foreground"
+                          className="h-5 w-5 cursor-pointer text-muted-foreground hover:text-primary"
                           strokeWidth={2.5}
                           fill="currentColor"
                           color="background"

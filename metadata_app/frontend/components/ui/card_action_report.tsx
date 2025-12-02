@@ -9,10 +9,14 @@ import {
   CardFooter,
 } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { BackgroundGradient } from "@/components/ui/backround-gradient"
+
+
 
 export function ReportCard() {
   return (
-    <Card className="bg-primary text-primary-foreground">
+      <BackgroundGradient>
+    <Card className="bg-primary border-none">
       <CardHeader>
         <CardTitle className="text-primary-foreground text-lg">
           Generate reports
@@ -38,5 +42,6 @@ export function ReportCard() {
             </div>
       </CardFooter>
     </Card>
+    </BackgroundGradient>
   )
 }

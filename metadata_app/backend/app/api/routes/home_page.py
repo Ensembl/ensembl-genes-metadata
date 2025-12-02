@@ -11,7 +11,7 @@ from metadata_app.backend.app.services.home_page_service import get_annotations_
 from metadata_app.backend.app.services.home_page_service import get_metadata_registry_update_dates
 from metadata_app.backend.app.services.home_page_service import get_transcriptomic_registry_update_dates
 from metadata_app.backend.app.services.home_page_service import bin_by_genebuild_method
-
+from metadata_app.backend.app.services.home_page_service import get_annotation_counts_by_group
 
 
 
@@ -30,7 +30,12 @@ def get_annotation_counts():
     Get counts of annotations per BioProject, with friendly project names.
     """
     return get_annotation_counts_by_bioproject()
-
+@home_page.get("/home/group")
+def get_annotation_counts_by_groups():
+    """
+    Get counts of annotations per group, with friendly project names.
+    """
+    return get_annotation_counts_by_group()
 @home_page.get("/home/assemblies")
 def get_assemblies_year():
     """

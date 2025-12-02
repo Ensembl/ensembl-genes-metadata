@@ -15,7 +15,7 @@ export type Annotations = {
   lowest_taxon_id: number
   gb_status: string
   latest_annotated: string
-  last_genebuild_update: string
+  status_update_date: string
   release_date: string
 }
 
@@ -63,10 +63,10 @@ export const columns: ColumnDef<Annotations>[] = [
     },
   },
     {
-  accessorKey: "last_genebuild_update",
-  header: sortableHeader("Last Genebuild Update", "last_genebuild_update"),
+  accessorKey: "status_update_date",
+  header: sortableHeader("Status Update", "status_update_date"),
     cell: ({ row }) => {
-      const fullDate = row.getValue("last_genebuild_update") as string;
+      const fullDate = row.getValue("status_update_date") as string;
       const dateOnly = fullDate.split("T")[0]; // or use new Date(fullDate).toISOString().split("T")[0]
       return dateOnly;
     },

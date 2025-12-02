@@ -24,6 +24,8 @@ const chartConfig: Record<string, { label: string; color?: string }> = {
   import: { label: "Import", color: "var(--chart-5)" },
   mixed_strategy_build: { label: "Mixed Strategy Build", color: "var(--chart-6)" },
   projection_build: { label: "Projection Build", color: "var(--chart-7)" },
+      helixer: { label: "Helixer", color: "var(--chart-2)" },
+
 } satisfies ChartConfig
 
 export type MethodItem = {

@@ -44,51 +44,6 @@ def get_annotation_counts_by_bioproject():
                 WHERE g.gb_status = 'live'
                 GROUP BY b.bioproject_id, mb.bioproject_name
                 
-                UNION ALL
-                
-                SELECT 
-                cg.group_id AS bioproject_id,
-                cg.group_name AS bioproject_name,
-            
-                -- Only count annotations where gb_status = 'live'
-                COUNT(DISTINCT CASE WHEN g.gb_status = 'live' THEN g.assembly_id END) AS annotation_count,
-            
-                (
-                    SELECT COUNT(DISTINCT a2.assembly_id)
-                    FROM assembly a2
-                    LEFT JOIN genebuild_status g2 ON a2.assembly_id = g2.assembly_id
-                    WHERE (
-                            (cg.group_type = 'taxon' AND a2.lowest_taxon_id = cg.item)
-                            OR
-                            (cg.group_type = 'assembly' AND a2.gca_chain = cg.item)
-                          )
-                      AND g2.assembly_id IS NULL
-                      AND a2.asm_name NOT LIKE "%alternate_haplotype%"
-                      AND a2.asm_level IN ('Chromosome', 'Complete genome')
-                      AND a2.is_current = 'current'
-                ) AS qualified_assembly_count,
-            
-                (
-                    SELECT COUNT(DISTINCT g2.assembly_id)
-                    FROM genebuild_status g2
-                    JOIN assembly a2 ON g2.assembly_id = a2.assembly_id
-                    WHERE (
-                            (cg.group_type = 'taxon' AND a2.lowest_taxon_id = cg.item)
-                            OR
-                            (cg.group_type = 'assembly' AND a2.gca_chain = cg.item)
-                          )
-                      AND g2.gb_status IN ('in_progress', 'complete', 'pre_released')
-                ) AS in_progress
-            
-            FROM assembly a
-            JOIN custom_group cg
-              ON (
-                   (cg.group_type = 'taxon' AND a.lowest_taxon_id = cg.item)
-                   OR
-                   (cg.group_type = 'assembly' AND a.gca_chain = cg.item)
-                 )
-            LEFT JOIN genebuild_status g ON a.assembly_id = g.assembly_id  -- left join, don’t filter here
-            GROUP BY cg.group_name;
             """
             cursor.execute(query)
             result = cursor.fetchall()
@@ -105,6 +60,51 @@ def get_annotation_counts_by_bioproject():
     except Exception as e:
         logging.error(f"Error fetching annotation counts: {e}")
         return []
+
+
+def get_annotation_counts_by_group():
+	"""Returns a count of annotations per BioProject in main_bioproject, with annotation and assembly info."""
+	try:
+		with get_db_connection("meta") as conn:
+			cursor = conn.cursor()
+			query = """
+                   SELECT
+					    cg.group_id,
+					    cg.group_name,
+					    COUNT(DISTINCT CASE WHEN g.gb_status = 'live' THEN a.assembly_id END) AS annotation_count,
+					    COUNT(DISTINCT CASE
+					        WHEN g.assembly_id IS NULL
+					             AND a.asm_name NOT LIKE "%alternate_haplotype%"
+					             AND a.asm_level IN ('Chromosome', 'Complete genome')
+					             AND a.is_current = 'current'
+					        THEN a.assembly_id
+					    END) AS qualified_assembly_count,
+					    COUNT(DISTINCT CASE
+					        WHEN g.gb_status IN ('in_progress', 'complete', 'pre_released')
+					        THEN a.assembly_id
+					    END) AS in_progress
+					FROM assembly a
+					JOIN custom_group cg
+					    ON (cg.group_type = 'taxon' AND a.lowest_taxon_id = cg.item)
+					    OR (cg.group_type = 'assembly' AND a.gca_chain = cg.item)
+					LEFT JOIN genebuild_status g ON a.assembly_id = g.assembly_id
+					GROUP BY cg.group_name;
+			        """
+			cursor.execute(query)
+			result = cursor.fetchall()
+
+		df = pd.DataFrame(result, columns=[
+			"group_id",
+			"group_name",
+			"annotation_count",
+			"qualified_assembly_count",
+			"in_progress"
+		])
+		return df.to_dict(orient="records")
+
+	except Exception as e:
+		logging.error(f"Error fetching annotation counts: {e}")
+		return []
 
 
 def get_assemblies_per_year():
