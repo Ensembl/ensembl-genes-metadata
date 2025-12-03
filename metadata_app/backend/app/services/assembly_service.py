@@ -101,9 +101,9 @@ def get_filtered_assemblies(bioproject_id, metric_thresholds, asm_level, asm_typ
                        m.metrics_name, m.metrics_value, s.scientific_name, s.common_name, a.asm_name,
                        a.lowest_taxon_id, g.group_name, a.refseq_accession, o.infra_type, o.infra_name,
                        IF(gb.assembly_id IS NOT NULL, 'annotated/started', 'not started') AS annotation_status
-                FROM bioproject b
-                JOIN assembly_metrics m ON b.assembly_id = m.assembly_id
-                JOIN assembly a ON m.assembly_id = a.assembly_id
+                FROM assembly a
+                JOIN assembly_metrics m ON a.assembly_id = m.assembly_id
+                JOIN bioproject b ON b.assembly_id = a.assembly_id
                 LEFT JOIN species s ON a.lowest_taxon_id = s.lowest_taxon_id
                 LEFT JOIN custom_group g
 				  ON (
@@ -181,14 +181,41 @@ def get_filtered_assemblies(bioproject_id, metric_thresholds, asm_level, asm_typ
 		)
 
 		# Pivot data for metrics
+		# Aggregate project info per assembly (gca)
+		df_projects = (
+			df.groupby("gca")["associated_project"]
+			.apply(lambda x: ", ".join(sorted(set(filter(None, x)))))
+			.reset_index()
+		)
+
+		# Merge back aggregated projects into main df
+		df = df.drop(columns="associated_project").merge(df_projects, on="gca", how="left")
+
 		df["GCA"] = df["gca_chain"].astype(str) + "." + df["gca_version"].astype(str)
+
+		index_cols = [
+			"bioproject_id", "associated_project", "group_name", "scientific_name",
+			"lowest_taxon_id", "asm_level", "asm_type", "asm_name", "gca",
+			"release_date", "refseq_accession", "infra_type", "infra_name",
+			"is_current", "annotation_status", "metrics_name"
+		]
+
+		duplicates = df[df.duplicated(subset=index_cols, keep=False)]
+		if not duplicates.empty:
+			logging.info(f"Found {len(duplicates)} duplicates:")
+			logging.info("\n" + duplicates.head(20).to_string())
+
+		df = df.drop_duplicates(subset=index_cols, keep="first")
+		print("duplicte drop")
+		print(df.head(20))
 		df_wide = df.pivot(
 			index=["bioproject_id", "associated_project", "group_name", "scientific_name", "lowest_taxon_id", "asm_level", "asm_type", "asm_name", "gca", "release_date", "refseq_accession",
 			       "infra_type", "infra_name", "is_current", "annotation_status"],
 			columns="metrics_name",
 			values="metrics_value"
 		)
-		logging.debug(f"Wide results: {print(df_wide)}")
+		print("Anna")
+		print(df_wide.head(20))
 
 		# Convert specified metric columns to numeric
 		for metric, _ in metric_thresholds.items():
