@@ -122,7 +122,7 @@ def get_status_updates(merged_df):
     df['gb_status_new'] = df['gb_status']
     df['release_date_new'] = df['release_date_registry']
     df['last_genebuild_update_new'] = df['last_genebuild_update_registry']
-    df['genebuild_version_new'] = df['genebuild_version_registry']
+    df['genebuild_version_new'] = df['genebuild_version']
     df['date_status_update_new'] = df['date_status_update']
     df['release_type_new'] = df['release_type']
 
@@ -187,7 +187,7 @@ def get_status_updates(merged_df):
     # 7. Live but missing genebuild_version
     condition_missing_genebuild_version = (
             (df['gb_status'] == 'live')
-            & df['genebuild_version_registry'].isna()
+            & df['genebuild_version'].isna()
             & df['gb_v_production'].notna())
     logger.info(
         f"Missing genebuild_version to fill: {condition_missing_genebuild_version.sum()}")
@@ -206,8 +206,8 @@ def get_status_updates(merged_df):
                         (df['release_date_new'] == df['release_date_registry']))
     update_changed = ~((df['last_genebuild_update_new'].isna() & df['last_genebuild_update_registry'].isna()) |
                        (df['last_genebuild_update_new'] == df['last_genebuild_update_registry']))
-    update_version = ~((df['genebuild_version_new'].isna() & df['genebuild_version_registry'].isna()) |
-                       (df['genebuild_version_new'] == df['genebuild_version_registry']))
+    update_version = ~((df['genebuild_version_new'].isna() & df['genebuild_version'].isna()) |
+                       (df['genebuild_version_new'] == df['genebuild_version']))
 
 
     updated_df = df[status_changed | release_changed | update_changed | update_version].copy()
@@ -363,6 +363,7 @@ def main(password, test, old_registry, apply_old):
         merge_keys = [
             "gca_accession",
             "annotation_method",
+	        "genebuild_version",
 
         ]
         dups = gb_status.groupby(merge_keys).size()
