@@ -57,20 +57,21 @@ export const columns: ColumnDef<Annotations>[] = [
   accessorKey: "release_date",
   header: sortableHeader("Release Date", "release_date"),
     cell: ({ row }) => {
-      const fullDate = row.getValue("release_date") as string;
-      const dateOnly = fullDate.split("T")[0]; // or use new Date(fullDate).toISOString().split("T")[0]
-      return dateOnly;
-    },
+  const fullDate = row.getValue("release_date");
+  return typeof fullDate === "string"
+    ? fullDate.split("T")[0]
+    : "";
+},
   },
     {
   accessorKey: "status_update_date",
   header: sortableHeader("Status Update", "status_update_date"),
     cell: ({ row }) => {
-      const fullDate = row.getValue("status_update_date") as string;
-      const dateOnly = fullDate.split("T")[0]; // or use new Date(fullDate).toISOString().split("T")[0]
-      return dateOnly;
-    },
-  },
+  const fullDate = row.getValue("status_update_date");
+  return typeof fullDate === "string"
+    ? fullDate.split("T")[0]
+    : "";
+}, },
   {
     accessorKey: "lowest_taxon_id",
     header: sortableHeader("Lowest Taxon ID", "lowest_taxon_id"),
