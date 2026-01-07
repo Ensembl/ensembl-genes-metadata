@@ -111,8 +111,8 @@ def check_status_production_db(gca_tuple):
             34: "last_genebuild_update"
         })
 
-        # Keep only entries where annotation_source is 'ensembl'
-        pivoted = pivoted[pivoted["annotation_source"] == "ensembl"]
+        # Keep only entries where annotation_source is 'ensembl', 'helixer'
+        pivoted = pivoted[pivoted["annotation_source"].isin(["helixer", "ensembl"])]
         pivoted["annotation_method"] = pivoted["annotation_method"].apply(
             lambda x: "external_annotation_import" if x == "import" else x
         )
@@ -122,6 +122,7 @@ def check_status_production_db(gca_tuple):
         pivoted = pivoted.drop_duplicates(subset='gca_accession', keep='last')
 
         logger.info(f"Found {len(pivoted)} entries in production table.")
+
         return pivoted
 
     except pymysql.Error as err:

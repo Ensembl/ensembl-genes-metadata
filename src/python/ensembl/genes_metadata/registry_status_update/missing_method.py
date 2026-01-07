@@ -4,18 +4,17 @@ import pymysql
 
 logger = get_logger(__name__)
 
-def add_missing_methods(gb_status: pd.DataFrame, production_status: pd.DataFrame, test: bool, password: str) -> pd.DataFrame:
+def add_missing_methods(gb_status: pd.DataFrame, production_status: pd.DataFrame, apply_method: bool, password: str) -> pd.DataFrame:
     """
     Fill missing annotation_method in live or handed_over rows using production data,
     and optionally update the database. Returns only the rows that were filled.
     """
-    merge_keys = ["gca_accession", "release_date"]
 
     # Merge registry and production data
     df = pd.merge(
         gb_status,
         production_status,
-        on=merge_keys,
+        on="gca_accession",
         how='left',
         suffixes=('_registry', '_production')
     )
@@ -33,7 +32,7 @@ def add_missing_methods(gb_status: pd.DataFrame, production_status: pd.DataFrame
     updated_df = df[condition_missing].copy()
     logger.info(f"Filled missing annotation_method for {len(updated_df)} rows")
 
-    if not test and not updated_df.empty:
+    if apply_method and not updated_df.empty:
         try:
             connection = pymysql.connect(
                 host="mysql-ens-genebuild-prod-1",

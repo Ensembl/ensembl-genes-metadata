@@ -319,7 +319,7 @@ def update_genebuild_status(updated_df, password):
 
 
 
-def main(password, test, old_registry, apply_old):
+def main(password, test, apply_method, old_registry, apply_old):
 
     if old_registry:
         logger.info("Checking status in old registry.")
@@ -351,8 +351,9 @@ def main(password, test, old_registry, apply_old):
         logger.error("Expected columns missing from production DB query.")
         return
 
-    missing_method = add_missing_methods(gb_status, production_status, test, password)
-
+    #Add missing method for live and handed over records
+    logger.info(f"Looking for missing methods")
+    missing_method = add_missing_methods(gb_status, production_status, apply_method, password)
 
     if production_status.empty:
         logger.warning("No production status found. Skipping merge and updates.")
@@ -369,7 +370,7 @@ def main(password, test, old_registry, apply_old):
         dups = gb_status.groupby(merge_keys).size()
         if (dups > 1).any():
             logger.error("Duplicate registry records detected: %s", dups[dups > 1])
-            raise ValueError("Registry contains non-unique keys for GCA/method.")
+            raise ValueError("Registry contains non-unique keys for GCA/method/version.")
 
         prod_dups = production_status.groupby(merge_keys).size()
         if (prod_dups > 1).any():
@@ -399,12 +400,13 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Update genebuild_status table from production DB.")
     parser.add_argument("-p", "--password", required=True, help="MySQL password for write user")
     parser.add_argument("-t", "--test", action="store_true", help="Run in test mode (no DB updates)")
+    parser.add_argument("-am", "--apply_method", action="store_false", help="Apply method updates (default is stop)")
     parser.add_argument("-or", "--old_registry", action="store_true", help="Check old registry status")
     parser.add_argument("-ao", "--apply_old", action="store_false", help="Apply updates from old registry (default is stop).")
 
     args = parser.parse_args()
 
-    main(args.password, args.test, args.old_registry, args.apply_old)
+    main(args.password, args.test, args.apply_method, args.old_registry, args.apply_old)
 
 
 
