@@ -68,16 +68,17 @@ Ensures uniform formatting of info, warning, and error messages during registry 
 
 The script accepts the following command-line arguments:
 
-| Argument                | Type                  | Description                                                                                                                                    |
-| ----------------------- | --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| `-p`, `--password`      | required              | MySQL password for the write user on the genebuild registry.                                                                         |
-| `-t`, `--test`          | flag                  | Runs in test mode. No updates are written to the registry; all intended updates are printed.                                                   |
-| `-or`, `--old_registry` | flag                  | When supplied, entries from the old registry are checked and optionally copied into the new registry.                                          |
-| `-ao`, `--apply_old`    | flag (default: False) | Controls copying from the old registry. If supplied, copying **is applied**; without it, the script performs checks but does not apply changes. |
+| Argument                | Type                  | Description                                                                                                                                                                                                 |
+|-------------------------| --------------------- |-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `-p`, `--password`      | required              | MySQL password for the write user on the genebuild registry.                                                                                                                                                |
+| `-t`, `--test`          | flag                  | Runs in test mode. No updates are written to the registry; all intended updates are printed.                                                                                                                |
+| `-am`, `--apply_method` | flag (default: False)       | Controls copying method for live and handed over assemblies from the prodiction DB to the registru. If supplied, copying **is applied**; without it, the script performs checks but does not apply changes. |
+| `-or`, `--old_registry` | flag                  | When supplied, entries from the old registry are checked and optionally copied into the new registry.                                                                                                       |
+| `-ao`, `--apply_old`    | flag (default: False) | Controls copying from the old registry. If supplied, copying **is applied**; without it, the script performs checks but does not apply changes.                                                             |
 
 Notes:
 
-* `--apply_old` behaves inversely because it uses `action="store_false"`; the default is to **not** apply old-registry copying.
+* `--apply_old` and `--apply_method` behave inversely because they use `action="store_false"`; the default is to **not** apply copying to the registry.
 * No hostnames, ports, or database names are user inputs; these are hard-coded in the script.
 
 ---
@@ -114,5 +115,14 @@ python update_annotation_status.py \
   --password mypassword \
   --old_registry \
   --apply_old
+```
+
+### Apply method copy production → registry, but don't apply status changes (recommended usage of apply_method)
+
+```bash
+python update_annotation_status.py \
+  --password mypassword \
+  --apply_method \
+  --test
 ```
 
