@@ -199,7 +199,18 @@ def get_status_updates(merged_df):
     df.loc[condition_handed_over, 'gb_status_new'] = 'handed_over'
     df.loc[condition_handed_over, 'date_status_update_new'] = pd.Timestamp.today().normalize()
 
+    # 9. Handed over but version missmatch
+    condition_handed_over_both = (
+		    df['status'].isin(['Processed', 'Processing', 'Submitted']) &
+		    (df['gb_status_new'] == 'handed_over') &
+		    ~((df['genebuild_version_registry'].isna() &
+				df['gb_v_production'].isna()) |
+				(df['genebuild_version_registry'] == df['gb_v_production'])))
 
+    logger.info(
+	    f"Mismatched genebuild_version to fill: {condition_handed_over_both.sum()}")
+
+    df.loc[condition_handed_over_both, 'genebuild_version_new'] = (df.loc[condition_handed_over_both, 'gb_v_production'])
     # ---- Determine changes ----
     status_changed = df['gb_status'] != df['gb_status_new']
     release_changed = ~((df['release_date_new'].isna() & df['release_date_registry'].isna()) |

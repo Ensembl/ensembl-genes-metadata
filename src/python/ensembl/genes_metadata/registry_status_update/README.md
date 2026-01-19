@@ -2,6 +2,12 @@
 
 This directory contains a collection of Python utilities used to synchronise genebuild status information between the **old annotation registry**, the **new registry**, and the **production database**. The scripts support identifying assemblies that require status updates, transferring missing records, and validating status changes across systems.
 
+Recommended workflow (temporary):
+1. Run `no_version.py` in test mode to check for version miss matches.
+2. Apply `no_version.py` if happy with updates.
+3. Run `update_annotation_status.py` in test mode.
+4. Apply `update_annotation_status.py` if happy.
+
 The main user entry point is:
 
 ## `update_annotation_status.py`

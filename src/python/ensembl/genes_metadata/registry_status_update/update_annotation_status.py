@@ -193,12 +193,12 @@ def get_status_updates(merged_df):
         f"Missing genebuild_version to fill: {condition_missing_genebuild_version.sum()}")
     df.loc[condition_missing_genebuild_version, 'genebuild_version_new'] =  df.loc[condition_missing_genebuild_version, 'gb_v_production']
 
+
     # 8. Processing/Submitted → handed_over
     condition_handed_over = df['status'].isin(['Processed', 'Processing', 'Submitted']) & (df['gb_status'] != 'handed_over')
     logger.info(f"Handed_over updates: {condition_handed_over.sum()}")
     df.loc[condition_handed_over, 'gb_status_new'] = 'handed_over'
     df.loc[condition_handed_over, 'date_status_update_new'] = pd.Timestamp.today().normalize()
-
 
     # ---- Determine changes ----
     status_changed = df['gb_status'] != df['gb_status_new']
@@ -208,6 +208,7 @@ def get_status_updates(merged_df):
                        (df['last_genebuild_update_new'] == df['last_genebuild_update_registry']))
     update_version = ~((df['genebuild_version_new'].isna() & df['genebuild_version'].isna()) |
                        (df['genebuild_version_new'] == df['genebuild_version']))
+
 
 
     updated_df = df[status_changed | release_changed | update_changed | update_version].copy()
