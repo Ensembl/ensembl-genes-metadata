@@ -401,9 +401,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Update genebuild_status table from production DB.")
     parser.add_argument("-p", "--password", required=True, help="MySQL password for write user")
     parser.add_argument("-t", "--test", action="store_true", help="Run in test mode (no DB updates)")
-    parser.add_argument("-am", "--apply_method", action="store_false", help="Apply method updates (default is stop)")
+    parser.add_argument("-am", "--apply_method", action="store_true", help="Apply method updates (default is stop)")
     parser.add_argument("-or", "--old_registry", action="store_true", help="Check old registry status")
-    parser.add_argument("-ao", "--apply_old", action="store_false", help="Apply updates from old registry (default is stop).")
+    parser.add_argument("-ao", "--apply_old", action="store_true", help="Apply updates from old registry (default is stop).")
 
     args = parser.parse_args()
 

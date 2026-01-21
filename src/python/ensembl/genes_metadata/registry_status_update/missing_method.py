@@ -21,7 +21,7 @@ def add_missing_methods(gb_status: pd.DataFrame, production_status: pd.DataFrame
 
     # Fill missing annotation_method for live/handed_over rows
     condition_missing = (
-        df['gb_status'].isin(['live', 'handed_over']) &
+        df['gb_status'].isin(['live', 'handed_over', 'completed']) &
         df['annotation_method_registry'].isna() &
         df['annotation_method_production'].notna()
     )

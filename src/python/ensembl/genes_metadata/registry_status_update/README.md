@@ -84,7 +84,7 @@ The script accepts the following command-line arguments:
 
 Notes:
 
-* `--apply_old` and `--apply_method` behave inversely because they use `action="store_false"`; the default is to **not** apply copying to the registry.
+* `--apply_old` and `--apply_method` behave as tests because they; the default is to **not** apply copying to the registry.
 * No hostnames, ports, or database names are user inputs; these are hard-coded in the script.
 
 ---
