@@ -137,6 +137,20 @@ export default function ReportSelectorPage() {
             </Card>
           </Link>
 
+            <Link href="/projects/tol" className="group">
+            <Card className="relative hover:shadow-lg transition-shadow cursor-pointer h-full dark:bg-secondary">
+              <CardHeader>
+                <CardTitle>ToL</CardTitle>
+                <CardDescription>
+                  Tree of Life Project
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="absolute bottom-4 right-4">
+                <ArrowRight className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
+              </CardContent>
+            </Card>
+          </Link>
+
           <Link href="/projects/asg" className="group">
             <Card className="relative hover:shadow-lg transition-shadow cursor-pointer h-full dark:bg-secondary">
               <CardHeader>

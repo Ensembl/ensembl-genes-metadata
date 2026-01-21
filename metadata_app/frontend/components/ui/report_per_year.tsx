@@ -52,6 +52,9 @@ const chartConfig = {
   VGP: {
     label: "VGP",
   },
+    ToL: {
+    label: "ToL",
+  },
 }
 
 export function ProjectsBar() {
@@ -101,6 +104,7 @@ export function ProjectsBar() {
                   <Bar dataKey="ERGA/BGE" fill="var(--chart-7)" radius={4} />
                   <Bar dataKey="ERGA_pilot" fill="var(--chart-7)" radius={4} />
                   <Bar dataKey="VGP" fill="var(--chart-7)" radius={4} />
+                    <Bar dataKey="ToL" fill="var(--chart-7)" radius={4} />
                 </BarChart>
               </ChartContainer>
           </CardContent>
@@ -157,6 +161,7 @@ export function ProjectsBar() {
                   <Bar dataKey="ERGA/BGE" fill="var(--chart-7)" radius={4} />
                   <Bar dataKey="ERGA_pilot" fill="var(--chart-7)" radius={4} />
                   <Bar dataKey="VGP" fill="var(--chart-7)" radius={4} />
+                    <Bar dataKey="ToL" fill="var(--chart-7)" radius={4} />
                 </BarChart>
               </ChartContainer>
           </CardContent>

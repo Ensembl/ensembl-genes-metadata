@@ -45,6 +45,7 @@ export default function Page() {
     { value: "PRJEB80366", label: "Ancient Environmental Genomics Initiative for Sustainability" },
     { value: "LACA", label: "Livestock And Companion Animals" },
     { value: "AQUA-FAANG", label: "Aqua FAANG" },
+      { value: "PRJEB43745", label: "Tree of Life" },
   ];
 
   const [selectedProjects, setSelectedProjects] = useState<Option[]>([]);

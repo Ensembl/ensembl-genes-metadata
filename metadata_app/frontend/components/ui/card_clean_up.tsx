@@ -78,7 +78,7 @@ const fetchCleanupData = async () => {
         <CardTitle className="text-lg">Database cleanup</CardTitle>
         <CardDescription>
           Select a genebuilder to list databases eligible for cleanup and
-          download SQL script.
+          download SQL script. Anno pipe DBs need to be checked manually as they are not listed here.
         </CardDescription>
       </CardHeader>
 

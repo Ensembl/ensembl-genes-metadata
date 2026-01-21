@@ -41,6 +41,8 @@ export default function Page() {
     { value: "PRJNA813333", label: "Canadian BioGenome" },
     { value: "LACA", label: "Livestock And Companion Animals" },
     { value: "AQUA-FAANG", label: "Aqua FAANG" },
+      { value: "PRJEB43745", label: "Tree of Life" },
+
   ];
 
   const [selectedProjects, setSelectedProjects] = useState<Option[]>([]);

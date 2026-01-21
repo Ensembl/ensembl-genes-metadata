@@ -76,7 +76,6 @@ def find_genebuilder_databases(df):
         gca_clean = row["gca"].lower().replace("gca_", "gca").replace(".", "v")
         gb = row["genebuilder"]
         pattern_map.append((rf"{gb}_{gca_clean}.*", gb))
-        pattern_map.append((rf"{gb}_.*_pipe.*", gb))
 
     for server in servers:
         try:
