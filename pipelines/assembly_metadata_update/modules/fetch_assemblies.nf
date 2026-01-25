@@ -29,9 +29,7 @@ process FETCH_ASSEMBLIES {
 
     script:
     """
-    fetch_assemblies.py \
-    --metadata ${params.metadata_params} \
-    --full_screen ${params.full_screen} --screen_date $screen_date
+    fetch_assemblies.py --metadata ${params.metadata_params} --screen_date $screen_date
     """
 
 }
