@@ -23,6 +23,7 @@ nextflow.enable.dsl=2
 */
 
 include { FETCH_ASSEMBLIES } from '../modules/fetch_assemblies.nf'
+include { FETCH_METADATA } from '../modules/fetch_metadata.nf'
 
 
 /*
@@ -63,7 +64,11 @@ workflow ASSEMBLY_METADATA_UPDATE {
 
 
     FETCH_ASSEMBLIES(params.screen_date)
-    def gca = FETCH_ASSEMBLIES.out.splitText().map{it -> it.trim()}.view()
+    def gca = FETCH_ASSEMBLIES.out.splitText().map{it -> it.trim()}
+
+    def fetch_metadata_out = FETCH_METADATA(gca)
+
+    fetch_metadata_out.view()
 
 
 }
