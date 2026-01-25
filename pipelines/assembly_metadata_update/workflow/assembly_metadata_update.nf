@@ -25,7 +25,6 @@ nextflow.enable.dsl=2
 include { FETCH_ASSEMBLIES } from '../modules/fetch_assemblies.nf'
 
 
-
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 WORKFLOW: REGISTER NEW ASSEMBLIES IN DB
@@ -34,7 +33,7 @@ WORKFLOW: REGISTER NEW ASSEMBLIES IN DB
 
 
 
-workflow ASSEMBLY_METADATA {
+workflow ASSEMBLY_METADATA_UPDATE {
     // help
     if (params.help) {
     log.info"""
@@ -51,7 +50,7 @@ workflow ASSEMBLY_METADATA {
     --output_dir STR            Output directory path
 
     Optional arguments:
-    --screen date STR           Custom date to retrieve assemblies and attempt update 
+    --screen_date STR           Custom date to retrieve assemblies and attempt update 
     --full_screen BOOLEAN       Run full screen mode, it will retrieve assemblies since 2019
     --gca_list STR              GCA list file path. Requires --add_gca to be used as input
     --help BOOLEAN              Help option
