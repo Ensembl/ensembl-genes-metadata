@@ -28,8 +28,15 @@ process FETCH_ASSEMBLIES {
     stdout
 
     script:
+    if (params.gca_input){
+    """
+        grep '^GCA_' ${params.gca_list} 
+    """
+    }
+    else {
     """
     fetch_assemblies.py --metadata ${params.metadata_params} --screen_date $screen_date
     """
+    }
 
 }
