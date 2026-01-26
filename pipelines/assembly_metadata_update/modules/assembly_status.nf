@@ -20,7 +20,7 @@ process ASSEMBLY_STATUS {
     
     label 'python'
     tag "$gca"
-    s
+    
     when:
     attempt_update.trim() == 'true'
 
