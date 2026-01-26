@@ -26,8 +26,7 @@ process FETCH_METADATA {
     val gca
 
     output:
-    stdout emit: attempt_update
-    path("${gca}_metadata.json"), emit: metadata_json
+    tuple val(gca), stdout, path("${gca}_metadata.json"), emit: metadata_json
 
     script:
     """
