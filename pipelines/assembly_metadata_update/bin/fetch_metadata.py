@@ -37,7 +37,7 @@ def connection_ncbi(uri: str) -> requests.Response:
     return response
 
 
-def get_ncbi_json(accession, ncbi_url, stop_update):
+def get_ncbi_json(accession, ncbi_url, attempt_update):
     uri = f"{ncbi_url}/genome/accession/{accession}/dataset_report?filters.exclude_atypical=false&filters.assembly_version=all_assemblies"
     response = connection_ncbi(uri)
     data = response.json()
@@ -46,9 +46,9 @@ def get_ncbi_json(accession, ncbi_url, stop_update):
         logging.info(f"Assembly {accession} is deleted from NCBI")
         query_update_status = f"UPDATE assembly a SET is_current = 'suppressed' WHERE CONCAT(a.gca_chain, '.', a.gca_version) = '{accession}';"
         print(query_update_status)
-        stop_update = True
+        attempt_update = False
     
-    return data, stop_update
+    return data, attempt_update
 
 
 
@@ -75,14 +75,17 @@ def main():
     accession = args.accession.strip()
     ncbi_url = args.ncbi_url
 
-    stop_update = False
-    data, stop_update = get_ncbi_json(accession, ncbi_url, stop_update)
+    attempt_update = True
+    data, attempt_update = get_ncbi_json(accession, ncbi_url, attempt_update)
 
     with open(f"{accession}_metadata.json", "w") as json_file:
         json.dump(data, json_file, indent=4)
     logging.info(f"Metadata for assembly {accession} saved to {accession}_metadata.json")
 
-    print(stop_update)
+    if attempt_update==True:
+        print('true')
+    elif attempt_update==False:
+        print('false')
 
 
 if __name__ == '__main__':

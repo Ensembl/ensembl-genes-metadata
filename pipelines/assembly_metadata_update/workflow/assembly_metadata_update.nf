@@ -66,10 +66,13 @@ workflow ASSEMBLY_METADATA_UPDATE {
     FETCH_ASSEMBLIES(params.screen_date)
     def gca = FETCH_ASSEMBLIES.out.splitText().map{it -> it.trim()}
 
-    def fetch_metadata_out = FETCH_METADATA(gca)
+    FETCH_METADATA(gca)
 
-    fetch_metadata_out.view()
+    def attempt_update = FETCH_METADATA.out.attempt_update.map{it -> it.trim()}
 
+    if (attempt_update) {
+        def metadata_file = FETCH_METADATA.out.metadata_json..map{it -> it.trim()} //view { it -> println "json file: ${it}"}
+    }
 
 }
 
