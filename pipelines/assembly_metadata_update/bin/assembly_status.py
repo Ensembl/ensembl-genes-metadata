@@ -52,17 +52,17 @@ def comparing_status(data, accession, metadata_params):
     # Comparing and generating update queries
     if assembly_status == is_current and warning == "NA":
         logging.info(f"No update needed for assembly {accession}. Current status in Registry and NCBI is {is_current}")
-        output_line = f"{accession}, false, NA, NA"
+        output_line = f"{accession}, asm_status, false, NA, NA"
     elif warning != "NA":
         logging.info(f"Assembly {accession} has warnings: {warning}. Update status based on warning.")
         query_update_status = f"UPDATE assembly a SET is_current = '{warning[0]}' WHERE CONCAT(a.gca_chain, '.', a.gca_version) = '{accession}';"
         logging.info(query_update_status)
-        output_line = f"{accession}, true, {is_current}, {warning}"
+        output_line = f"{accession}, asm_status, true, {is_current}, {warning}"
     else:
         logging.info(f"Update needed for assembly {accession}: current status in Registry is {is_current}, status from NCBI is {assembly_status}")
         query_update_status = f"UPDATE assembly a SET is_current = '{assembly_status}' WHERE CONCAT(a.gca_chain, '.', a.gca_version) = '{accession}';"
         logging.info(query_update_status)
-        output_line = f"{accession}, true, {is_current}, {assembly_status}"
+        output_line = f"{accession}, asm_status, true, {is_current}, {assembly_status}"
 
     return output_line
 
