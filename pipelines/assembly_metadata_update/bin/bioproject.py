@@ -99,10 +99,10 @@ def main():
     """ Module's entry point
     """
 
-    logging.basicConfig(filename="update_assembly_bioproject.log", level=logging.DEBUG, filemode='w',
+    logging.basicConfig(filename="update_bioproject.log", level=logging.DEBUG, filemode='w',
                     format="%(asctime)s:%(levelname)s:%(message)s")
 
-    parser = argparse.ArgumentParser(prog='update_assembly_bioproject.py',
+    parser = argparse.ArgumentParser(prog='bioproject.py',
                                     description="Checks if the GCA has been added to other bioproject.")
     parser.add_argument('--accession_json',
                         type=str,
