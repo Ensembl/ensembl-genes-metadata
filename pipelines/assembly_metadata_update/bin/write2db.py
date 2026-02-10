@@ -1,0 +1,1 @@
+../../assembly_metadata/bin/write2db.py
