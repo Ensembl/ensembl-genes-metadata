@@ -31,6 +31,37 @@ def execute_query(query, db_params):
     conn.close()
     return result
 
+def check_taxon_id(data, accession, metadata_params):
+
+    # Taxon ID in NCBI
+    taxon_id_ncbi = data['reports'][0].get('organism', '').get('tax_id')
+
+    # Taxon ID in Registry
+    query_taxon_id = f"SELECT lowest_taxon_id from assembly WHERE CONCAT(gca_chain, '.', gca_version) = '{accession}'"
+    taxon_id = execute_query(query_taxon_id, metadata_params)[0][0]
+
+    if taxon_id_ncbi == taxon_id:
+        logging.info(f"No update needed for taxon ID of assembly {accession}")
+        taxon_id_check = "pass"
+    else:
+        logging.info(f"Update needed for taxon ID of assembly {accession}: current taxon ID in Registry is {taxon_id}, taxon ID from NCBI is {taxon_id_ncbi}")
+
+        # Is the new taxon available in the species table 
+        query_new_taxon = f"SELECT COUNT(*) from species where lowest_taxon_id = {taxon_id_ncbi}"
+        taxon_count = execute_query(query_new_taxon, metadata_params)[0][0]
+
+        if taxon_count==1:
+            logging.info(f"New species taxon id exists in registry: {taxon_id_ncbi}")
+            taxon_id_check = "pass"
+
+        elif taxon_count==0:
+            logging.info(f"New species taxon id not found in registry: {taxon_id_ncbi} --> Registry species and taxonomy hierarchy!")
+            taxon_id_check = "fail"
+        else:
+            raise ValueError(f"Species with taxon id {taxon_id_ncbi} detected multiple times: {taxon_count}")
+
+    return ','.join([str(taxon_id), str(taxon_id_ncbi), taxon_id_check])
+
 def comparing_basic_taxon_data(data, accession, metadata_params):
 
     output_line_list = []
@@ -107,6 +138,12 @@ def main():
                         type=str,
                         required=True,
                         help='Database connection parameters for metadata database in JSON format')
+    parser.add_argument('--taxonomy_check',
+                        action='store_true',
+                        help='When added the module will check if the taxon id of the assembly is recorded in the registry.')
+    parser.add_argument('--taxonomy_update',
+                        action='store_true',
+                        help='When added the module will attempt to update the basic taxonomy information.')                        
     
 
     args = parser.parse_args()
@@ -120,10 +157,19 @@ def main():
     with open(args.metadata_params, 'r') as params_file:
         metadata_params = json.load(params_file)
 
-    output_line_list = comparing_basic_taxon_data(data, accession, metadata_params)
+    if not (args.taxonomy_check or args.taxonomy_update):
+        raise ValueError("Select at least one mode: --taxonomy_check and/or --taxonomy_update.")
 
-    for output_line in output_line_list:
+    # Taxonomy check
+    if args.taxonomy_check:
+        output_line = check_taxon_id(data, accession, metadata_params)
         print(output_line)
+
+    if args.taxonomy_update:    
+        output_line_list = comparing_basic_taxon_data(data, accession, metadata_params)
+        for output_line in output_line_list:
+            print(output_line)
+
 
 if __name__ == '__main__':
     main()
