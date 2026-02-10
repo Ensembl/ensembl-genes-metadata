@@ -47,14 +47,18 @@ def comparing_refseq(data, accession, metadata_params):
     # Getting info from NCBI
     paired_accession =  data['reports'][0].get('paired_accession',"")
 
+    # Comparison
     if refseq_accession == paired_accession:
         logging.info(f"No update needed for RefSeq accession of assembly {accession}")
         output_line = f"{accession}, refseq_check, false, NA, NA"
-    elif not refseq_accession and paired_accession:
+    elif not refseq_accession and paired_accession != "":
         logging.info(f"No RefSeq accession found for assembly {accession} in Registry, setting to {paired_accession}")
         query_update_refseq = f"UPDATE assembly a SET refseq_accession = '{paired_accession}' WHERE CONCAT(a.gca_chain, '.', a.gca_version) = '{accession}';"
         logging.info(query_update_refseq)
         output_line = f"{accession}, refseq_check, true, no_refseq, {paired_accession}"
+    elif not refseq_accession and paired_accession == "":
+        logging.info(f"No update needed for RefSeq accession of assembly {accession}")
+        output_line = f"{accession}, refseq_check, false, NA, NA"
     else:   
         logging.info(f"Update needed for RefSeq accession of assembly {accession}: current RefSeq in Registry is {refseq_accession}, RefSeq from NCBI is {paired_accession}")
         query_update_refseq = f"UPDATE assembly a SET refseq_accession = '{paired_accession}' WHERE CONCAT(a.gca_chain, '.', a.gca_version) = '{accession}';"
