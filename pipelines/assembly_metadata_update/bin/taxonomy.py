@@ -83,7 +83,7 @@ def comparing_basic_taxon_data(data, accession, metadata_params):
     # Getting info from NCBI report
     taxon_id_ncbi = data['reports'][0].get('organism', '').get('tax_id')
     organism_name_ncbi = data['reports'][0].get('organism', '').get('organism_name')
-    common_name_ncbi = data['reports'][0].get('organism', '').get('common_name')
+    common_name_ncbi = data['reports'][0].get('organism', '').get('common_name').replace("'", "''")
     
 
     # Taxon ID check
