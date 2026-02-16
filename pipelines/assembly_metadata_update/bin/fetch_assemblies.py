@@ -31,7 +31,6 @@ def execute_query(query, db_params):
     conn.close()
     return result
 
-
 def fetch_gca_list(metadata_params, full_screen, screen_date):
     """ Get a list of GCAs to check their status and metadata
     Args:
@@ -74,8 +73,6 @@ def fetch_gca_list(metadata_params, full_screen, screen_date):
     logging.info(f"Total number of assemblies to check: {len(gca_list)}")
     
     return gca_list
-
-
 
 def main():
     """module's entry-point

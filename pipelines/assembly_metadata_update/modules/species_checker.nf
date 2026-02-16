@@ -20,7 +20,7 @@ process SPECIES_CHECKER {
     
     label 'python'
     tag "$gca"
-    publishDir "${params.output_dir}/nextflow_output/$gca", mode: 'copy'
+    publishDir "${params.output_dir}/nextflow_output/$gca", mode: 'copy'    
     
     when:
     attempt_update.trim() == 'true'
