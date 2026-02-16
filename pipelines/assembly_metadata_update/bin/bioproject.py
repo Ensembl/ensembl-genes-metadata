@@ -18,7 +18,7 @@
 import argparse
 import json
 import logging
-from typing import Dict
+from typing import Dict, Any
 import pymysql # type: ignore
 
 def execute_query(query, db_params):

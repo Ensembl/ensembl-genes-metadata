@@ -108,7 +108,9 @@ def generate_metric_upserts(
     ncbi: Dict[str, Any],
     registry: Dict[str, Any],
     assembly_id: int,
-    metadata_params: Dict[str, Any], ) -> List[str]: output_line_list: List[str] = []
+    metadata_params: Dict[str, Any],
+) -> List[str]:
+    output_line_list: List[str] = []
 
     ncbi_keys = set(ncbi.keys())
     reg_keys = set(registry.keys())
@@ -123,7 +125,7 @@ def generate_metric_upserts(
         )
         logging.info(insert_query)
         affected = execute_write(insert_query, metadata_params)
-        output_line =f"{accession}, asm_metrics, false, NA, {metric_name}:{new_value}"
+        output_line = f"{accession}, asm_metrics, false, NA, {metric_name}:{new_value}"
         output_line_list.append(output_line)
 
     for metric_name in sorted(ncbi_keys & reg_keys):
@@ -141,7 +143,7 @@ def generate_metric_upserts(
             )
             logging.info(update_query)
             affected = execute_write(update_query, metadata_params)
-            output_line =f"{accession}, asm_metrics, false, {metric_name}:{old_raw}, {metric_name}:{new_raw}"
+            output_line = f"{accession}, asm_metrics, false, {metric_name}:{old_raw}, {metric_name}:{new_raw}"
             output_line_list.append(output_line)
 
     return output_line_list
