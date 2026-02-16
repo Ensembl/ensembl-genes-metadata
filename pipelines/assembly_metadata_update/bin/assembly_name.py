@@ -31,6 +31,20 @@ def execute_query(query, db_params):
     conn.close()
     return result
 
+def execute_write(query: str, db_params: Dict[str, Any]) -> int:
+    """
+    Execute INSERT/UPDATE/DELETE and commit.
+    Returns number of affected rows.
+    """
+    conn = pymysql.connect(**db_params)
+    try:
+        with conn.cursor() as cursor:
+            affected = cursor.execute(query)
+        conn.commit()
+        return affected
+    finally:
+        conn.close()
+
 def comparing_name(data, accession, metadata_params):
     """Compare assembly status from NCBI and Registry and generate update queries if needed.
     Args:
@@ -56,6 +70,7 @@ def comparing_name(data, accession, metadata_params):
         logging.info(f"Update needed for assembly {accession}: current name in Registry is {asm_name_registry}, name from NCBI is {asm_name_ncbi}")
         query_update_name = f"UPDATE assembly SET asm_name = '{asm_name_ncbi}' WHERE CONCAT(gca_chain, '.', gca_version) = '{accession}';"
         logging.info(query_update_name)
+        affected = execute_write(query_update_name, metadata_params)
         output_line = f"{accession}, asm_name_check, true, {asm_name_registry}, {asm_name_ncbi}"
 
     return output_line

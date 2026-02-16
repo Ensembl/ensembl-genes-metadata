@@ -30,6 +30,20 @@ def execute_query(query, db_params):
     conn.close()
     return result
 
+def execute_write(query: str, db_params: Dict[str, Any]) -> int:
+    """
+    Execute INSERT/UPDATE/DELETE and commit.
+    Returns number of affected rows.
+    """
+    conn = pymysql.connect(**db_params)
+    try:
+        with conn.cursor() as cursor:
+            affected = cursor.execute(query)
+        conn.commit()
+        return affected
+    finally:
+        conn.close()
+
 def comparing_bioproject(data, accession, metadata_params):
     """Compare bioprojects from NCBI and Registry and generate insert queries if needed.
     Args:
@@ -83,8 +97,7 @@ def comparing_bioproject(data, accession, metadata_params):
             query_insert_bioproject = f"""INSERT INTO bioproject (assembly_id, bioproject_id) 
             VALUES ('{assembly_id}', '{bioproject}');"""     
             logging.info(query_insert_bioproject)
-        else:
-            logging.info(f"No bioproject insert needed for assembly {accession}")
+            affected = execute_write(query_insert_bioproject, metadata_params)
 
         bioproject_line = '-'.join(missing_bioprojects)        
         output_line = f"{accession}, bioproject_check, false, NA, {bioproject_line}"

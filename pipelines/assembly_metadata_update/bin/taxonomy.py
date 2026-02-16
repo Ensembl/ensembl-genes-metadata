@@ -31,6 +31,20 @@ def execute_query(query, db_params):
     conn.close()
     return result
 
+def execute_write(query: str, db_params: Dict[str, Any]) -> int:
+    """
+    Execute INSERT/UPDATE/DELETE and commit.
+    Returns number of affected rows.
+    """
+    conn = pymysql.connect(**db_params)
+    try:
+        with conn.cursor() as cursor:
+            affected = cursor.execute(query)
+        conn.commit()
+        return affected
+    finally:
+        conn.close()
+
 def check_taxon_id(data, accession, metadata_params):
 
     # Taxon ID in NCBI
@@ -84,6 +98,7 @@ def comparing_basic_taxon_data(data, accession, metadata_params):
         SET lowest_taxon_id = '{taxon_id_ncbi}' 
         WHERE CONCAT(gca_chain, '.', gca_version) = '{accession}';"""
         logging.info(query_update_taxon_id)
+        affected = execute_write(query_update_taxon_id, metadata_params)
         output_line = f"{accession}, taxon_id_check, true, {taxon_id}, {taxon_id_ncbi}"
         output_line_list.append(output_line)
 
@@ -98,6 +113,7 @@ def comparing_basic_taxon_data(data, accession, metadata_params):
         SET scientific_name = '{organism_name_ncbi}' 
         WHERE lowest_taxon_id = '{taxon_id_ncbi}';"""
         logging.info(query_update_scientific_name)
+        affected = execute_write(query_update_scientific_name, metadata_params)
         output_line = f"{accession}, scientific_name_check, true, {scientific_name}, {organism_name_ncbi}"
         output_line_list.append(output_line)
     else:
@@ -109,6 +125,7 @@ def comparing_basic_taxon_data(data, accession, metadata_params):
         SET common_name = '{common_name_ncbi}' 
         WHERE lowest_taxon_id = '{taxon_id_ncbi}';"""
         logging.info(query_update_common_name)
+        affected = execute_write(query_update_common_name, metadata_params)
         output_line = f"{accession}, common_name_check, true, {common_name}, {common_name_ncbi}"
         output_line_list.append(output_line)
     else:

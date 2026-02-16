@@ -30,6 +30,20 @@ def execute_query(query, db_params):
     conn.close()
     return result
 
+def execute_write(query: str, db_params: Dict[str, Any]) -> int:
+    """
+    Execute INSERT/UPDATE/DELETE and commit.
+    Returns number of affected rows.
+    """
+    conn = pymysql.connect(**db_params)
+    try:
+        with conn.cursor() as cursor:
+            affected = cursor.execute(query)
+        conn.commit()
+        return affected
+    finally:
+        conn.close()
+
 def comparing_refseq(data, accession, metadata_params):
     """Compare available paired REFSEQ from NCBI and Registry and generate update queries if needed.
     Args:
@@ -55,6 +69,7 @@ def comparing_refseq(data, accession, metadata_params):
         logging.info(f"No RefSeq accession found for assembly {accession} in Registry, setting to {paired_accession}")
         query_update_refseq = f"UPDATE assembly a SET refseq_accession = '{paired_accession}' WHERE CONCAT(a.gca_chain, '.', a.gca_version) = '{accession}';"
         logging.info(query_update_refseq)
+        affected = execute_write(query_update_refseq, metadata_params)
         output_line = f"{accession}, refseq_check, true, no_refseq, {paired_accession}"
     elif not refseq_accession and paired_accession == "":
         logging.info(f"No update needed for RefSeq accession of assembly {accession}")
@@ -63,6 +78,7 @@ def comparing_refseq(data, accession, metadata_params):
         logging.info(f"Update needed for RefSeq accession of assembly {accession}: current RefSeq in Registry is {refseq_accession}, RefSeq from NCBI is {paired_accession}")
         query_update_refseq = f"UPDATE assembly a SET refseq_accession = '{paired_accession}' WHERE CONCAT(a.gca_chain, '.', a.gca_version) = '{accession}';"
         logging.info(query_update_refseq)
+        affected = execute_write(query_update_refseq, metadata_params)
         output_line = f"{accession}, refseq_check, true, {refseq_accession}, {paired_accession}"
 
     return output_line

@@ -31,6 +31,20 @@ def execute_query(query, db_params):
     conn.close()
     return result
 
+def execute_write(query: str, db_params: Dict[str, Any]) -> int:
+    """
+    Execute INSERT/UPDATE/DELETE and commit.
+    Returns number of affected rows.
+    """
+    conn = pymysql.connect(**db_params)
+    try:
+        with conn.cursor() as cursor:
+            affected = cursor.execute(query)
+        conn.commit()
+        return affected
+    finally:
+        conn.close()
+
 def getting_metrics_registry(assembly_id, metadata_params):
 
     query_asm_metrics = f"SELECT metrics_name, metrics_value FROM assembly_metrics WHERE assembly_id = '{assembly_id}';"
@@ -93,24 +107,12 @@ def generate_metric_upserts(
     accession: str,
     ncbi: Dict[str, Any],
     registry: Dict[str, Any],
-    assembly_id: int) -> List[str]:
-    """
-    Generate SQL queries to insert or update assembly metrics based on
-    comparison between NCBI data and registry data.
-        Args:
-        - accession: GCA accession string
-        - ncbi: Dictionary of metrics from NCBI
-        - registry: Dictionary of metrics from Registry
-        - assembly_id: Assembly ID in the Registry database
-        Returns:
-        - List of output lines summarising the changes made
-    """
-    output_line_list: List[str] = []
+    assembly_id: int,
+    metadata_params: Dict[str, Any], ) -> List[str]: output_line_list: List[str] = []
 
     ncbi_keys = set(ncbi.keys())
     reg_keys = set(registry.keys())
 
-    # Inserts: keys present in NCBI but missing in registry
     for metric_name in sorted(ncbi_keys - reg_keys):
         new_raw_value = ncbi[metric_name]
         new_value = normalise_value(metric_name, new_raw_value)
@@ -120,10 +122,10 @@ def generate_metric_upserts(
             f"VALUES ({assembly_id}, '{sql_escape(metric_name)}', '{sql_escape(new_value)}');"
         )
         logging.info(insert_query)
+        affected = execute_write(insert_query, metadata_params)
         output_line =f"{accession}, asm_metrics, false, NA, {metric_name}:{new_value}"
         output_line_list.append(output_line)
 
-    #  Updates: keys in both, but values differ after normalisation
     for metric_name in sorted(ncbi_keys & reg_keys):
         new_raw = ncbi[metric_name]
         old_raw = registry[metric_name]
@@ -138,11 +140,11 @@ def generate_metric_upserts(
                 f"WHERE assembly_id = {assembly_id} AND metrics_name = '{sql_escape(metric_name)}';"
             )
             logging.info(update_query)
+            affected = execute_write(update_query, metadata_params)
             output_line =f"{accession}, asm_metrics, false, {metric_name}:{old_raw}, {metric_name}:{new_raw}"
             output_line_list.append(output_line)
 
     return output_line_list
-
 
 def main():
     """ Module's entry point
@@ -194,7 +196,8 @@ def main():
     accession=accession,
     ncbi=assembly_metrics_ncbi,
     registry=asm_metrics_registry,
-    assembly_id=assembly_id)
+    assembly_id=assembly_id,
+    metadata_params=metadata_params)
 
     for output_line in output_line_list:
         print(output_line)
