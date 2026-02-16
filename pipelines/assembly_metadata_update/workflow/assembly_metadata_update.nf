@@ -23,6 +23,9 @@ nextflow.enable.dsl=2
 */
 
 include { FETCH_ASSEMBLIES } from '../modules/fetch_assemblies.nf'
+include { INTEGRITY_CHECKER } from '../modules/integrity_checker.nf'
+include { INTEGRITY_TAXONOMY } from '../modules/integrity_taxonomy.nf'
+include { INTEGRITY_WRITE2DB } from '../modules/integrity_write2db.nf'
 include { FETCH_METADATA } from '../modules/fetch_metadata.nf'
 include { ASSEMBLY_STATUS } from '../modules/assembly_status.nf'
 include { ASSEMBLY_REFSEQ } from '../modules/assembly_refseq.nf'
@@ -74,7 +77,34 @@ workflow ASSEMBLY_METADATA_UPDATE {
     FETCH_ASSEMBLIES(params.screen_date)
     def gca = FETCH_ASSEMBLIES.out.splitText().map { it -> it.trim() }
 
-    def fetch_metadata_out = FETCH_METADATA(gca)
+    INTEGRITY_CHECKER(gca)
+
+    INTEGRITY_CHECKER.out
+    .map { gca_value, stdout ->
+        def line = stdout.trim()
+        def parts = line.split(',')
+        def status = parts[0].trim()
+        def accession = parts[1].trim()
+        return [gca_value, status, accession] }
+    .branch { tuple ->
+        def (gca_value, status, accession) = tuple
+        correct: status == 'correct'
+            return gca_value     
+        taxonomy_update: status == 'taxonomy_update'
+            return [gca_value, accession] 
+        deleted: status == 'delete'
+            return gca_value
+        check: status == 'check'
+            return gca_value
+    }
+    .set { integrity_check_results }
+
+    INTEGRITY_TAXONOMY(integrity_check_results.taxonomy_update)
+    INTEGRITY_WRITE2DB(INTEGRITY_TAXONOMY.out)
+
+    def gca_accession = integrity_check_results.correct.mix(INTEGRITY_WRITE2DB.out.gca_to_update)
+
+    def fetch_metadata_out = FETCH_METADATA(gca_accession)
 
     ASSEMBLY_STATUS(fetch_metadata_out)
     ASSEMBLY_REFSEQ(fetch_metadata_out)
@@ -112,6 +142,17 @@ workflow ASSEMBLY_METADATA_UPDATE {
     if (params.slack_report) {
     REPORT_UPDATE(all_output.report)
     }
+
+    integrity_check_results.deleted
+        .collectFile(
+            name: "${params.output_dir}/deleted_GCAS_to_add.csv"
+        ) { gca_value -> "${gca_value}\n" }
+
+    integrity_check_results.check
+        .collectFile(
+            name: "${params.output_dir}/to_manually_check_GCAS.csv"
+        ) { gca_value -> "${gca_value}\n" }
+
 
     all_output.tracking
     .collectFile(
