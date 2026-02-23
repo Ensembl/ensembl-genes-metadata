@@ -87,9 +87,13 @@ def query_meta_registry(annotation_date, taxon_id, bioproject_id, group_name):
                     gb.last_genebuild_update,
                     s.scientific_name,
                     s.common_name,
+                    asm.assembly_busco,
+                    asm.assembly_busco_lineage,
+                    asm.assembly_busco_version,
                     am.protein_busco,
                     am.protein_busco_lineage,
-                    am.protein_busco_version
+                    am.protein_busco_version,
+                    am.coding_genes
                 FROM genebuild_status gb
                 LEFT JOIN assembly a ON gb.assembly_id = a.assembly_id
                 LEFT JOIN bioproject b ON a.assembly_id = b.assembly_id
@@ -103,12 +107,21 @@ def query_meta_registry(annotation_date, taxon_id, bioproject_id, group_name):
                 LEFT JOIN main_bioproject mb ON b.bioproject_id = mb.bioproject_id
                 LEFT JOIN (
                       SELECT genebuild_status_id,
-                             MAX(CASE WHEN metrics_name='genebuild_busco' THEN metrics_value END) AS protein_busco,
-                             MAX(CASE WHEN metrics_name='genebuild_busco_dataset' THEN metrics_value END) AS protein_busco_lineage,
-                             MAX(CASE WHEN metrics_name='genebuild_busco_version' THEN metrics_value END) AS protein_busco_version
+                             MAX(CASE WHEN metrics_name='genebuild.busco' THEN metrics_value END) AS protein_busco,
+                             MAX(CASE WHEN metrics_name='genebuild.busco_dataset' THEN metrics_value END) AS protein_busco_lineage,
+                             MAX(CASE WHEN metrics_name='genebuild.busco_version' THEN metrics_value END) AS protein_busco_version,
+                             MAX(CASE WHEN metrics_name='genebuild.stats.coding_genes' THEN metrics_value END) AS coding_genes
                       FROM annotation_metrics
                       GROUP BY genebuild_status_id
                 ) am ON gb.genebuild_status_id = am.genebuild_status_id
+                LEFT JOIN (
+                      SELECT assembly_id,
+                             MAX(CASE WHEN metrics_name='assembly.busco' THEN metrics_value END) AS assembly_busco,
+                             MAX(CASE WHEN metrics_name='assembly.busco_dataset' THEN metrics_value END) AS assembly_busco_lineage,
+                             MAX(CASE WHEN metrics_name='assembly.busco_version' THEN metrics_value END) AS assembly_busco_version
+                      FROM assembly_metrics
+                      GROUP BY assembly_id
+                ) asm ON a.assembly_id = asm.assembly_id
                 {where_clause}
                 AND gb.last_attempt = 1
                 GROUP BY
