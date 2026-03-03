@@ -35,7 +35,8 @@ def execute_query(query, db_params):
 def fetching_user(accession, metadata_params, slack_users):
 
     query_gb_user = f"""SELECT genebuilder, gb_status FROM genebuild_status
-                            WHERE gca_accession = '{accession}' """
+                            WHERE gca_accession = '{accession}' and 
+                            gb_status in ('in_progress', 'check_busco', 'completed', 'pre_released')"""
     try:
         genebuilder, gb_status = execute_query(query_gb_user, metadata_params)[0]
         slack_id = slack_users[genebuilder]
@@ -52,6 +53,7 @@ def slack_message(accession, gb_status, check_type, previous_value, current_valu
     custom_message = f"""Accession {accession} with status: {gb_status} has been updated.
     {check_type}: {previous_value} -> {current_value}
     """
+    logging.info(f"Slack message: {custom_message}")
 
     return custom_message
 
