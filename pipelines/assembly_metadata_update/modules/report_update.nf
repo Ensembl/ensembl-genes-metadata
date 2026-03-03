@@ -20,21 +20,24 @@ process REPORT_UPDATE {
     
     label 'python'
     tag "$gca"
+    publishDir "${params.output_dir}/nextflow_output/$gca", mode: 'copy'
     
     when:
     reporting.trim() == 'true'
 
     input:
     tuple val(gca), val(check), val(reporting), val(old_value), val(new_value)
- 
-
+    
+    output:
+    path "slack_reporting.log", emit: asm_file
+    
     script:
     """
     report_update.py \
     --accession $gca \
     --check_type $check \
-    --previous_value $old_value \
-    --current_value $new_value \
+    --previous_value "$old_value" \
+    --current_value "$new_value" \
     --slack_users $params.slack_user \
     --metadata_params '$params.metadata_params_string' \
     --slack_params '$params.slack_params'
