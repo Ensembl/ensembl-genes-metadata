@@ -273,22 +273,27 @@ def main():
     
     ncbi_params, release_date = set_date(taxon, ncbi_params, args.date_update)
     gca_list = fetch_gca_list(taxon, ncbi_params, ncbi_url)
-    
-    if len(gca_list) > 0:
-    
-        db_query = build_db_query(release_date)
-        accessions_to_register = get_gca_register(args.db, db_query, gca_list, metadata_params, registy_params)
-        
-        with open("assemblies_to_register.txt", 'w') as file:
+
+    out_path = "assemblies_to_register.txt"
+
+    with open(out_path, "w") as f:
+        if len(gca_list) > 0:
+            db_query = build_db_query(release_date)
+            accessions_to_register = get_gca_register(
+                args.db, db_query, gca_list, metadata_params, registy_params
+            )
+
             for accession in accessions_to_register:
                 print(accession)
-                file.write(accession + '\n')
-        file.close()
-            
-        logging.info(f'Accessions to register: {len(accessions_to_register)}. Please note that some assemblies might belong to unspecified species')
+                f.write(f"{accession}\n")
+
+            logging.info(
+                f"Accessions to register: {len(accessions_to_register)}. "
+                "Please note that some assemblies might belong to unspecified species"
+            )
+        else:
+            logging.info(f"No assemblies found since {release_date}")
     
-    else:
-        logging.info(f'No assemblies found since {release_date}')
 
 if __name__ == '__main__':
     main()
