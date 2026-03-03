@@ -83,7 +83,7 @@ def comparing_basic_taxon_data(data, accession, metadata_params):
     # Getting info from NCBI report
     taxon_id_ncbi = data['reports'][0].get('organism', '').get('tax_id')
     organism_name_ncbi = data['reports'][0].get('organism', '').get('organism_name')
-    common_name_ncbi = data['reports'][0].get('organism', '').get('common_name', '').replace("'", "''")
+    common_name_ncbi = data['reports'][0].get('organism', '').get('common_name', '')
     
 
     # Taxon ID check
@@ -122,7 +122,7 @@ def comparing_basic_taxon_data(data, accession, metadata_params):
     if common_name != common_name_ncbi:
         logging.info(f"Update required for common name of taxon ID {taxon_id_ncbi}: current common name in Registry is {common_name}, common name from NCBI is {common_name_ncbi}")
         query_update_common_name = f"""UPDATE species 
-        SET common_name = '{common_name_ncbi}' 
+        SET common_name = '{common_name_ncbi.replace("'", "''")}' 
         WHERE lowest_taxon_id = '{taxon_id_ncbi}';"""
         logging.info(query_update_common_name)
         affected = execute_write(query_update_common_name, metadata_params)
