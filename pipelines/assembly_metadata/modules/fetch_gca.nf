@@ -20,18 +20,20 @@ process FETCH_GCA {
 
     label 'python'
     tag "taxon:$taxon"
+    publishDir "${params.output_dir}/nextflow_output/", mode: 'copy'
 
     input:
     val taxon
     val last_update
 
     output:
-    stdout
+    path "assemblies_to_register.txt", emit: asm_file
+    stdout emit: gca
 
     script:
     if (params.add_gca) {
     """
-        grep '^GCA_' ${params.gca_list}
+        grep '^GCA_' ${params.gca_list} | tee assemblies_to_register.txt || touch assemblies_to_register.txt
     """
     }
     else {
