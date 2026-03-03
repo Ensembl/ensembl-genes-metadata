@@ -75,7 +75,7 @@ workflow ASSEMBLY_METADATA {
     def last_update = SET_DATE.out.splitText() {it -> it.trim()}
 
     FETCH_GCA(params.taxon, last_update)
-    def gca = FETCH_GCA.out.splitText().map{it -> it.trim()}
+    def gca = FETCH_GCA.out.gca.splitText().map{it -> it.trim()}
 
     def parse_metadata_out = PARSE_METADATA(gca)
 
