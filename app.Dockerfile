@@ -21,8 +21,8 @@ RUN pip install -r requirements.txt
 # Copy backend code
 COPY metadata_app/backend ./metadata_app/backend/
 
-# Copy logging
-COPY logs/ ./logs
+# Create logging directory (fixes missing local logs folder issue)
+RUN mkdir -p logs
 
 # Copy frontend code and build it
 COPY metadata_app/frontend/ ./metadata_app/frontend/
