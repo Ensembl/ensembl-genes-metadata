@@ -60,7 +60,7 @@ export default function Page() {
 
         <div className="flex items-center justify-between px-8 py-6">
           <h1 className="text-2xl font-semibold">
-            VGP number of GCAs: {assemblies.length}
+            LACA number of GCAs: {assemblies.length}
           </h1>
         </div>
 
