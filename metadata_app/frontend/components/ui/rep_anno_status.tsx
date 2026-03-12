@@ -29,12 +29,14 @@ type Props = {
 const chartConfig: Record<string, { label: string; color?: string }> = {
   count: { label: "Annotations" },
   pre_released: { label: "Pre-released", color: "var(--chart-1)" },
+    archive: { label: "Archived", color: "var(--chart-1)" },
   live: { label: "Live", color: "var(--chart-2)" },
   handed_over: { label: "Handed over", color: "var(--chart-3)" },
   in_progress: { label: "In progress", color: "var(--chart-4)" },
   completed: { label: "Completed", color: "var(--chart-5)" },
-    check_busco: { label: "Low BUSCO", color: "var(--chart-6)"},
-  insufficient_data: { label: "Low evidence", color: "var(--chart-7)" }
+    check_busco: { label: "Low pBUSCO", color: "var(--chart-6)"},
+  insufficient_data: { label: "Low evidence", color: "var(--chart-7)" },
+    poor_genome_busco: { label: "Low gBUSCO", color: "var(--chart-7)" }
 } satisfies ChartConfig
 
 
@@ -63,7 +65,7 @@ export function RepStatus({ data }: Props) {
         <ChartContainer config={chartConfig}>
         <BarChart accessibilityLayer data={transformedData} margin={{
               top: 20,
-            bottom: 60,
+            bottom: 80,
             }}>
           <CartesianGrid vertical={false} />
           <XAxis

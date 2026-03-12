@@ -311,7 +311,7 @@ def generate_tables(annotation_date, taxon_id, bioproject_id, group_name):
     anno_wide = anno_wide.drop_duplicates(subset='gca', keep='first')
     # Create main display table
     anno_main = anno_wide[
-        ['bioproject_id', 'associated_project', 'gca', 'scientific_name', 'last_genebuild_update',
+        ['bioproject_id', 'associated_project', 'gca', 'scientific_name', 'last_genebuild_update', 'date_status_update',
          'release_date', 'lowest_taxon_id', 'gb_status', 'latest_annotated']
     ]
 

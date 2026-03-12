@@ -255,7 +255,7 @@ def get_filtered_assemblies(bioproject_id, candidate, taxon_id,
 		# Add transcriptomic data if needed
 		if transc:
 			logging.info("Adding transcriptomic data from registry")
-			df_wide = add_transc_data_to_df(df_wide, taxonomy_dict)
+			df_wide = add_transc_data_to_df(df_wide)
 			check_dataframe_not_empty(df_wide, "data after adding transcriptomic data from registry")
 
 		if transc_ena:
