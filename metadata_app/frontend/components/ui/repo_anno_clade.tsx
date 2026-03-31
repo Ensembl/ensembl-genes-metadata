@@ -27,7 +27,7 @@ type Props = {
 }
 
 const chartConfig: Record<string, { label: string; color?: string }> = {
-  count: { label: "Assemblies" },
+  count: { label: "Annotations" },
 } satisfies ChartConfig
 
 
@@ -48,7 +48,7 @@ const transformedData = React.useMemo(() => {
     <Card>
       <CardHeader>
         <CardTitle>Associated internal clades</CardTitle>
-        <CardDescription>Number of assemblies per clade</CardDescription>
+        <CardDescription>Number of annotations per clade</CardDescription>
       </CardHeader>
       <CardContent>
           <div style={{ height: 350 }}>

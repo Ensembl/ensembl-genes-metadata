@@ -28,8 +28,8 @@ type Props = {
 
 const chartConfig: Record<string, { label: string; color?: string }> = {
   count: { label: "Assemblies" },
-  yes: { label: "Yes", color: "var(--chart-1)" },
-  no: { label: "No", color: "var(--chart-2)" },
+  yes: { label: "Yes", color: "var(--chart-3)" },
+  no: { label: "No", color: "var(--chart-3)" },
   "not checked": { label: "Not checked", color: "var(--chart-3)" },
 } satisfies ChartConfig
 

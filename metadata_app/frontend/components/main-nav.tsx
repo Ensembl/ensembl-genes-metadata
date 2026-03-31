@@ -27,7 +27,7 @@ export function MainNav() {
           className={cn(
             "transition-colors hover:text-foreground/80",
             pathname === "/"
-              ? "text-foreground"
+              ? "text-foreground font-bold"
               : "text-foreground/80"
           )}
         >
@@ -37,8 +37,8 @@ export function MainNav() {
           href="/assemblies"
           className={cn(
             "transition-colors hover:text-foreground/80",
-            pathname === "/assemblies"
-              ? "text-foreground"
+            pathname?.startsWith("/assemblies")
+              ? "text-foreground font-bold"
               : "text-foreground/80"
           )}
         >
@@ -49,7 +49,7 @@ export function MainNav() {
           className={cn(
             "transition-colors hover:text-foreground/80",
             pathname?.startsWith("/annotations")
-              ? "text-foreground"
+              ? "text-foreground font-bold"
               : "text-foreground/80"
           )}
         >
@@ -60,7 +60,7 @@ export function MainNav() {
           className={cn(
             "transition-colors hover:text-foreground/80",
             pathname?.startsWith("/report")
-              ? "text-foreground"
+              ? "text-foreground font-bold"
               : "text-foreground/80"
           )}
         >
@@ -71,7 +71,7 @@ export function MainNav() {
           className={cn(
             "transition-colors hover:text-foreground/80",
             pathname?.startsWith("/projects")
-              ? "text-foreground"
+              ? "text-foreground font-bold"
               : "text-foreground/80"
           )}
         >
@@ -82,7 +82,7 @@ export function MainNav() {
           className={cn(
             "transition-colors hover:text-foreground/80",
             pathname?.startsWith("/handover")
-              ? "text-foreground"
+              ? "text-foreground font-bold"
               : "text-foreground/80"
           )}
         >

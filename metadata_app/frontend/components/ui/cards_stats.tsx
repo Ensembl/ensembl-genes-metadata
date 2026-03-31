@@ -15,11 +15,11 @@ import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "
 const chartConfig = {
   assembly_count: {
     label: "Assemblies",
-    color: "var(--chart-7))",
+    color: "var(--chart-3))",
   },
   annotation_count: {
     label: "Annotations",
-    color: "var(--chart-7))",
+    color: "var(--chart-3))",
   },
 } satisfies ChartConfig
 
@@ -70,10 +70,11 @@ export function CardsStats() {
               }
             />
               <Line
-                type="natural"
+                type="monotone"
                 strokeWidth={2}
                 dataKey="assembly_count"
-                stroke="var(--chart-7)"
+                stroke="var(--chart-3)"
+                dot={{ r: 4, fill: "var(--chart-3)", stroke: "none" }}
                 activeDot={{ r: 6 }}
               />
             </LineChart>
@@ -108,7 +109,8 @@ export function CardsStats() {
                 type="monotone"
                 strokeWidth={2}
                 dataKey="annotation_count"
-                stroke="var(--chart-7)"
+                stroke="var(--chart-3)"
+                dot={{ r: 4, fill: "var(--chart-3)", stroke: "none" }}
                 activeDot={{ r: 6 }}
               />
             </LineChart>

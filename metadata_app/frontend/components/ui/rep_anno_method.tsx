@@ -20,10 +20,10 @@ const chartConfig: Record<string, { label: string; color?: string }> = {
   anno: { label: "Anno", color: "var(--chart-1)" },
   braker: { label: "Braker", color: "var(--chart-2)" },
   external_annotation_import: { label: "External Annotation Import", color: "var(--chart-3)" },
-  full_genebuild: { label: "Full Genebuild", color: "var(--chart-4)" },
-  import: { label: "Import", color: "var(--chart-5)" },
-  mixed_strategy_build: { label: "Mixed Strategy Build", color: "var(--chart-6)" },
-  projection_build: { label: "Projection Build", color: "var(--chart-7)" },
+  full_genebuild: { label: "Full Genebuild", color: "var(--chart-5)" },
+  import: { label: "Import", color: "var(--chart-3)" },
+  mixed_strategy_build: { label: "Mixed Strategy Build", color: "var(--chart-4)" },
+  projection_build: { label: "Projection Build", color: "var(--chart-4)" },
       helixer: { label: "Helixer", color: "var(--chart-2)" },
 
 } satisfies ChartConfig

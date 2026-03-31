@@ -62,7 +62,7 @@ export function RepTopTaxa({ data }: Props) {
               cursor={false}
               content={<ChartTooltipContent hideLabel />}
             />
-          <Bar dataKey="count" fill="var(--chart-1)" radius={8} >
+          <Bar dataKey="count" fill="var(--chart-3)" radius={8} >
               <LabelList
                 position="top"
                 offset={12}

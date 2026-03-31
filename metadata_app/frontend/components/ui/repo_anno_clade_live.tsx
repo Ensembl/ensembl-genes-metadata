@@ -18,21 +18,21 @@ import {
 import {MethodItem} from "@/components/ui/rep_anno_method";
 import * as React from "react";
 
-export type CladeItem = {
+export type CladeLiveItem = {
   internal_clade: string
   count: number
 }
 type Props = {
-  data: CladeItem[]
+  data: CladeLiveItem[]
 }
 
 const chartConfig: Record<string, { label: string; color?: string }> = {
-  count: { label: "Assemblies" },
+  count: { label: "Annotations" },
 } satisfies ChartConfig
 
 
 
-export function RepClade({ data }: Props) {
+export function RepCladeLive({ data }: Props) {
 const transformedData = React.useMemo(() => {
     return data.map((item) => ({
       ...item,
@@ -48,7 +48,7 @@ const transformedData = React.useMemo(() => {
     <Card>
       <CardHeader>
         <CardTitle>Associated internal clades</CardTitle>
-        <CardDescription>Number of assemblies per clade</CardDescription>
+        <CardDescription>Number of live annotations per clade</CardDescription>
       </CardHeader>
       <CardContent>
           <div style={{ height: 350 }}>
@@ -72,7 +72,7 @@ const transformedData = React.useMemo(() => {
               cursor={false}
               content={<ChartTooltipContent />}
             />
-          <Bar dataKey="count" fill="var(--color-chart-3)" radius={8}>
+          <Bar dataKey="count" fill="var(--color-chart-5)" radius={8}>
               <LabelList
                 position="top"
                 offset={12}

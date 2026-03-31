@@ -18,6 +18,9 @@ import {ProjectItem, RepProject} from "@/components/ui/repo_anno_project"
 import {Card, CardContent} from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import {DropdownMenu, DropdownMenuContent, DropdownMenuLabel, DropdownMenuItem, DropdownMenuTrigger} from "@/components/ui/dropdown-menu";
+import {CladeItem, RepClade} from "@/components/ui/repo_anno_clade";
+import {CladeLiveItem, RepCladeLive} from "@/components/ui/repo_anno_clade_live";
+
 
 
 type Downloadables = {
@@ -60,6 +63,9 @@ export default function Page() {
   const [topTaxaData, setTopTaxa] = useState<TaxaItem[]>([])
   const [projectData, setProject] = useState<ProjectItem[]>([])
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [cladeData, setClade] = useState<CladeItem[]>([]);
+  const [cladeDataLive, setCladeLive] = useState<CladeLiveItem[]>([]);
+
 
 
   const title = "Generate annotation report";
@@ -156,6 +162,8 @@ export default function Page() {
         setTaxa(result.num_unique_taxa);
         setTopTaxa(result.top_3_taxa);
         setProject(result.project_report);
+        setClade(result.clade_group);
+        setCladeLive(result.clade_group_live);
       } else {
         alert("No data found.");
       }
@@ -298,7 +306,15 @@ export default function Page() {
 
                 <RepTopTaxa data={topTaxaData} />
                 <AnnotatedTaxaCard data={taxaData} />
+
+                  <div className="col-span-2">
+                <RepClade data={cladeData} />
+                </div>
+                  <div className="col-span-2">
+                <RepCladeLive data={cladeDataLive} />
+                </div>
               </div>
+
 
               {/* Full-width annotations table */}
               <div>

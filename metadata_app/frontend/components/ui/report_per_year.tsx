@@ -95,16 +95,16 @@ export function ProjectsBar() {
                     tickFormatter={(value) => value.toString()}
                   />
                   <ChartTooltip cursor={false} content={<ChartTooltipContent indicator="dashed" />} />
-                  <Bar dataKey="AEGIS" fill="var(--chart-7)" radius={4} />
-                  <Bar dataKey="ASG" fill="var(--chart-7)" radius={4} />
-                  <Bar dataKey="CBP" fill="var(--chart-7)" radius={4} />
-                  <Bar dataKey="DToL" fill="var(--chart-7)" radius={4} />
-                  <Bar dataKey="EBP" fill="var(--chart-7)" radius={4} />
-                  <Bar dataKey="ERGA" fill="var(--chart-7)" radius={4} />
-                  <Bar dataKey="ERGA/BGE" fill="var(--chart-7)" radius={4} />
-                  <Bar dataKey="ERGA_pilot" fill="var(--chart-7)" radius={4} />
-                  <Bar dataKey="VGP" fill="var(--chart-7)" radius={4} />
-                    <Bar dataKey="ToL" fill="var(--chart-7)" radius={4} />
+                  <Bar dataKey="AEGIS" fill="var(--chart-3)" radius={4} />
+                  <Bar dataKey="ASG" fill="var(--chart-3)" radius={4} />
+                  <Bar dataKey="CBP" fill="var(--chart-3)" radius={4} />
+                  <Bar dataKey="DToL" fill="var(--chart-3)" radius={4} />
+                  <Bar dataKey="EBP" fill="var(--chart-3)" radius={4} />
+                  <Bar dataKey="ERGA" fill="var(--chart-3)" radius={4} />
+                  <Bar dataKey="ERGA/BGE" fill="var(--chart-3)" radius={4} />
+                  <Bar dataKey="ERGA_pilot" fill="var(--chart-3)" radius={4} />
+                  <Bar dataKey="VGP" fill="var(--chart-3)" radius={4} />
+                    <Bar dataKey="ToL" fill="var(--chart-3)" radius={4} />
                 </BarChart>
               </ChartContainer>
           </CardContent>
@@ -127,9 +127,9 @@ export function ProjectsBar() {
                     tickFormatter={(value) => value.toString()}
                   />
                   <ChartTooltip cursor={false} content={<ChartTooltipContent indicator="dashed" />} />
-                  <Bar dataKey="AQUA-FAANG" fill="var(--chart-7)" radius={4} />
-                  <Bar dataKey="HPRC" fill="var(--chart-7)" radius={4} />
-                  <Bar dataKey="LACA" fill="var(--chart-7)" radius={4} />
+                  <Bar dataKey="AQUA-FAANG" fill="var(--chart-3)" radius={4} />
+                  <Bar dataKey="HPRC" fill="var(--chart-3)" radius={4} />
+                  <Bar dataKey="LACA" fill="var(--chart-3)" radius={4} />
                 </BarChart>
               </ChartContainer>
           </CardContent>
@@ -152,16 +152,16 @@ export function ProjectsBar() {
                     tickFormatter={(value) => value.toString()}
                   />
                   <ChartTooltip cursor={false} content={<ChartTooltipContent indicator="dashed" />} />
-                  <Bar dataKey="AEGIS" fill="var(--chart-7)" radius={4} />
-                  <Bar dataKey="ASG" fill="var(--chart-7)" radius={4} />
-                  <Bar dataKey="CBP" fill="var(--chart-7)" radius={4} />
-                  <Bar dataKey="DToL" fill="var(--chart-7)" radius={4} />
-                  <Bar dataKey="EBP" fill="var(--chart-7)" radius={4} />
-                  <Bar dataKey="ERGA" fill="var(--chart-7)" radius={4} />
-                  <Bar dataKey="ERGA/BGE" fill="var(--chart-7)" radius={4} />
-                  <Bar dataKey="ERGA_pilot" fill="var(--chart-7)" radius={4} />
-                  <Bar dataKey="VGP" fill="var(--chart-7)" radius={4} />
-                    <Bar dataKey="ToL" fill="var(--chart-7)" radius={4} />
+                  <Bar dataKey="AEGIS" fill="var(--chart-3)" radius={4} />
+                  <Bar dataKey="ASG" fill="var(--chart-3)" radius={4} />
+                  <Bar dataKey="CBP" fill="var(--chart-3)" radius={4} />
+                  <Bar dataKey="DToL" fill="var(--chart-3)" radius={4} />
+                  <Bar dataKey="EBP" fill="var(--chart-3)" radius={4} />
+                  <Bar dataKey="ERGA" fill="var(--chart-3)" radius={4} />
+                  <Bar dataKey="ERGA/BGE" fill="var(--chart-3)" radius={4} />
+                  <Bar dataKey="ERGA_pilot" fill="var(--chart-3)" radius={4} />
+                  <Bar dataKey="VGP" fill="var(--chart-3)" radius={4} />
+                    <Bar dataKey="ToL" fill="var(--chart-3)" radius={4} />
                 </BarChart>
               </ChartContainer>
           </CardContent>
@@ -184,9 +184,9 @@ export function ProjectsBar() {
                     tickFormatter={(value) => value.toString()}
                   />
                   <ChartTooltip cursor={false} content={<ChartTooltipContent indicator="dashed" />} />
-                  <Bar dataKey="AQUA-FAANG" fill="var(--chart-7)" radius={4} />
-                  <Bar dataKey="HPRC" fill="var(--chart-7)" radius={4} />
-                  <Bar dataKey="LACA" fill="var(--chart-7)" radius={4} />
+                  <Bar dataKey="AQUA-FAANG" fill="var(--chart-3)" radius={4} />
+                  <Bar dataKey="HPRC" fill="var(--chart-3)" radius={4} />
+                  <Bar dataKey="LACA" fill="var(--chart-3)" radius={4} />
                 </BarChart>
               </ChartContainer>
           </CardContent>

@@ -4,10 +4,22 @@ from metadata_app.backend.app.services.report_annotation_service import generate
 
 report = APIRouter()
 
+
 @report.post("/report/anno/filter")
 def filter_annotations(filters: ReportFilterRequest):
     try:
-        anno_wide, number_of_annotations, method_report, num_unique_taxa, top_3_taxa, project_report, average_busco, main_report = generate_report(
+        (
+            anno_wide,
+            number_of_annotations,
+            method_report,
+            num_unique_taxa,
+            top_3_taxa,
+            project_report,
+            average_busco,
+            main_report,
+            clade_group,
+            clade_group_live,
+        ) = generate_report(
             bioproject_id=filters.bioproject_id,
             end_date=filters.end_date,
             start_date=filters.start_date,
@@ -23,11 +35,12 @@ def filter_annotations(filters: ReportFilterRequest):
             "top_3_taxa": top_3_taxa.to_dict(orient="records"),
             "project_report": project_report.to_dict(orient="records"),
             "average_busco": {"value": average_busco},
-
-        "downloadables_report": {
+            "clade_group": clade_group.to_dict(orient="records"),
+            "clade_group_live": clade_group_live.to_dict(orient="records"),
+            "downloadables_report": {
                 "anno_main": main_report.to_csv(index=False),
-                "anno_wide": anno_wide.to_csv(index=False)
-            }
+                "anno_wide": anno_wide.to_csv(index=False),
+            },
         }
 
     except HTTPException as e:
@@ -35,5 +48,6 @@ def filter_annotations(filters: ReportFilterRequest):
     except Exception as e:
         # Log the actual exception
         import logging
+
         logging.exception("Unhandled exception in filter_annotations")
         raise HTTPException(status_code=500, detail="Internal server error")

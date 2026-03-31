@@ -7,7 +7,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Check, ChevronsUpDown } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 const people = [
   {
@@ -65,6 +65,16 @@ type SelectUserProps = {
 export default function GridList02({ onSelect }: SelectUserProps) {
       const [selectedUser, setSelectedUser] = useState<null | typeof people[0]>(null);
 
+useEffect(() => {
+  const savedRole = localStorage.getItem("selectedGenebuilder");
+  if (!savedRole) return;
+
+  const foundUser = people.find(p => p.role === savedRole);
+  if (foundUser) {
+    setSelectedUser(foundUser);
+    onSelect(foundUser); // sync with parent
+  }
+}, []);
 
   return (
     <DropdownMenu>
@@ -98,6 +108,7 @@ export default function GridList02({ onSelect }: SelectUserProps) {
             key={person.name}
             onClick={() => {
               setSelectedUser(person);
+                localStorage.setItem("selectedGenebuilder", person.role); // persist
               onSelect(person);
             }}
           >

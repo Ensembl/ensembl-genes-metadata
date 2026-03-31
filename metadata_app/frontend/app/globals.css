@@ -31,8 +31,6 @@
   --color-chart-3: var(--chart-3);
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
-  --color-chart-6: var(--chart-6);
-  --color-chart-7: var(--chart-7);
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar-primary: var(--sidebar-primary);
@@ -43,6 +41,7 @@
   --color-sidebar-ring: var(--sidebar-ring);
   --color-filter-background: var(--filter-background);
   --color-filter-input-bg: var(--filter-input-bg);
+    --animate-shine: shine var(--duration) infinite linear;
 }
 
 :root {
@@ -65,13 +64,11 @@
   --border: oklch(0.92 0.004 286.32);
   --input: oklch(0.92 0.004 286.32);
   --ring: oklch(0.705 0.015 286.067);
-  --chart-1: oklch(0.92 0.005 25);
-  --chart-2: oklch(0.78 0.004 270);
-  --chart-3: oklch(0.61 0.006 270);
-  --chart-4: oklch(0.44 0.006 270);
-  --chart-5: oklch(0.29 0.01 270);
-  --chart-6 : oklch(0.216 0.004 282);
-  --chart-7 : oklch(0.141 0.005 285.823);
+  --chart-1: oklch(0.8654 0.1272 207.08);
+  --chart-2: oklch(0.7224 0.129759 217.9549);
+  --chart-3: oklch(0.6136 0.115888 224.6354);
+  --chart-4: oklch(0.5234 0.099455 225.325);
+  --chart-5: oklch(0.451 0.0845 223.79);
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.141 0.005 285.823);
   --sidebar-primary: oklch(0.21 0.006 285.885);
@@ -103,13 +100,11 @@
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
   --ring: oklch(0.552 0.016 285.938);
-  --chart-1: oklch(0.915 0.004 20);
-  --chart-2: oklch(0.742 0.003 265);
-  --chart-3: oklch(0.58 0.004 265);
-  --chart-4: oklch(0.42 0.004 265);
-  --chart-5: oklch(0.26 0.007 265);
-  --chart-6: oklch(0.216 0.004 282);
-  --chart-7: oklch(0.985 0 0);
+  --chart-1: oklch(0.8654 0.1272 207.08);
+  --chart-2: oklch(0.7224 0.129759 217.9549);
+  --chart-3: oklch(0.6136 0.115888 224.6354);
+  --chart-4: oklch(0.5234 0.099455 225.325);
+  --chart-5: oklch(0.451 0.0845 223.79);
   --sidebar: oklch(0.21 0.006 285.885);
   --sidebar-foreground: oklch(0.985 0 0);
   --sidebar-primary: oklch(0.488 0.243 264.376);

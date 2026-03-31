@@ -20,6 +20,8 @@ export default function Page() {
     imageUrl: string;
   }) => {
     setSelectedGenebuilder(user.role);
+    // Save to browser
+  localStorage.setItem("selectedGenebuilder", user.role);
   };
   const [hoTableData, setHoTable] = useState<Handover[]>([]);
     const [horeadyCount, setCountHOR] = useState<number>(0);
@@ -70,6 +72,13 @@ export default function Page() {
   };
 
   useEffect(() => {
+  const saved = localStorage.getItem("selectedGenebuilder");
+  if (saved) {
+    setSelectedGenebuilder(saved);
+  }
+}, []);
+
+  useEffect(() => {
     if (selectedGenebuilder) handleGetHO();
   }, [selectedGenebuilder]);
 
@@ -80,7 +89,7 @@ export default function Page() {
         <div className="grid max-w-6xl gap-8 grid-cols-2">
         <h1 className="scroll-m-20 text-4xl font-extrabold tracking-tight text-balance">{title}</h1>
         <div className="max-w-lg min-w-lg flex justify-end">
-            <GridList02 onSelect={handleGenebuilderChange} placeholder="Select a Genebuilder" />
+            <GridList02 value={selectedGenebuilder} onSelect={handleGenebuilderChange} placeholder="Select a Genebuilder" />
             </div>
             </div>
             <p className="leading-7 [&:not(:first-child):mt-6]">{description}</p>

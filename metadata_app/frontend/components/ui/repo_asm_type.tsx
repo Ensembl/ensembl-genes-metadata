@@ -28,11 +28,11 @@ type Props = {
 
 const chartConfig: Record<string, { label: string; color?: string }> = {
   count: { label: "Assemblies" },
-  haploid: { label: "haploid", color: "var(--chart-1)" },
-  "alternate-pseudohaplotype": { label: "alternate-pseudohaplotype", color: "var(--chart-2)" },
+  haploid: { label: "haploid", color: "var(--chart-3)" },
+  "alternate-pseudohaplotype": { label: "alternate-pseudohaplotype", color: "var(--chart-3)" },
   "unresolved-diploid": { label: "unresolved-diploid", color: "var(--chart-3)" },
-  "haploid-with-alt-loci": { label: "haploid-with-alt-loci", color: "var(--chart-4)" },
-  diploid: { label: "diploid", color: "var(--chart-5)" },
+  "haploid-with-alt-loci": { label: "haploid-with-alt-loci", color: "var(--chart-3)" },
+  diploid: { label: "diploid", color: "var(--chart-3)" },
 } satisfies ChartConfig
 
 
