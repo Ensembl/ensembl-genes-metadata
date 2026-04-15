@@ -1,6 +1,7 @@
 import pandas as pd
 import logging
 from metadata_app.backend.app.services.annotations_service import generate_tables
+from metadata_app.backend.app.services.busco_parser import parse_busco_string
 from metadata_app.backend.app.services.taxonomy_service import (
     get_descendant_taxa,
     assign_clade_and_species,
@@ -68,18 +69,34 @@ def generate_report(end_date, start_date, group_name, taxon_id, bioproject_id):
     )
 
     if "protein_busco" in anno_wide.columns:
-        extracted = anno_wide["protein_busco"].str.extract(r"C:(\d+\.\d+)%")[0]
+        busco_scores = anno_wide["protein_busco"].apply(parse_busco_string)
+        busco_scores_df = pd.DataFrame(
+            [score.__dict__ for score in busco_scores],
+            index=anno_wide.index,
+        ).rename(
+            columns={
+                "complete": "busco_complete",
+                "single": "busco_single_copy",
+                "duplicated": "busco_duplicated",
+                "fragmented": "busco_fragmented",
+                "missing": "busco_missing",
+                "searched": "busco_genes_searched",
+            }
+        )
+        anno_wide = pd.concat([anno_wide, busco_scores_df], axis=1)
 
-        # Convert to float, but invalid values → None instead of NaN
-        extracted = pd.to_numeric(extracted, errors="coerce")
-        # Store cleaned series back in the DataFrame (optional)
-        anno_wide["busco_complete"] = extracted
         # Compute average only on valid numbers
-        valid = extracted.dropna()
+        valid = anno_wide["busco_complete"].dropna()
 
         average_busco = valid.mean() if not valid.empty else "Not available"
     else:
         anno_wide["protein_busco"] = "Not available"
+        anno_wide["busco_complete"] = pd.NA
+        anno_wide["busco_single_copy"] = pd.NA
+        anno_wide["busco_duplicated"] = pd.NA
+        anno_wide["busco_fragmented"] = pd.NA
+        anno_wide["busco_missing"] = pd.NA
+        anno_wide["busco_genes_searched"] = pd.NA
         average_busco = "Not available"
 
     main_report = anno_wide[
