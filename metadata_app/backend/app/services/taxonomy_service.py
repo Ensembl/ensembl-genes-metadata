@@ -1,18 +1,27 @@
 import json
 import logging
+from pathlib import Path
 import time
 import requests
 
 
 def load_clade_data():
-    """Hardcoded path for clade settings."""
-    json_file = "metadata_app/backend/data/clade_settings.json"
+    """Load clade settings JSON reliably."""
+    base_dir = Path(__file__).resolve().parents[4]  # adjust if needed
+    json_file = base_dir / "metadata_app/backend/data/clade_settings.json"
+
+    if not json_file.exists():
+        logging.error(f"Clade config not found: {json_file}")
+        raise FileNotFoundError(f"{json_file} not found")
+
     with open(json_file, "r") as f:
         logging.info("Loading clade settings json file.")
         return json.load(f)
 
 
-def assign_clade_and_species(lowest_taxon_id, clade_data, taxonomy_dict, human_taxon_id=9606):
+def assign_clade_and_species(
+    lowest_taxon_id, clade_data, taxonomy_dict, human_taxon_id=9606
+):
     """
     Assign clade, species_id, genus_id, and pipeline based on taxonomy efficiently.
     vert_taxon_id_set should be preloaded once for all records.
@@ -21,31 +30,47 @@ def assign_clade_and_species(lowest_taxon_id, clade_data, taxonomy_dict, human_t
     lowest_taxon_id = int(lowest_taxon_id)
     human_taxon_id = int(human_taxon_id)
 
-    taxonomy_hierarchy = taxonomy_dict.get(str(lowest_taxon_id)) or taxonomy_dict.get(lowest_taxon_id, [])
+    taxonomy_hierarchy = taxonomy_dict.get(str(lowest_taxon_id)) or taxonomy_dict.get(
+        lowest_taxon_id, []
+    )
 
     if not taxonomy_hierarchy:
         logging.warning(f"No taxonomy hierarchy found for taxon_id {lowest_taxon_id}")
         return "Unassigned", None, None
 
     # Build a quick mapping taxon_class -> taxon_class_id
-    taxon_class_map = {t['taxon_class']: t['taxon_class_id'] for t in taxonomy_hierarchy}
+    taxon_class_map = {
+        t["taxon_class"]: t["taxon_class_id"] for t in taxonomy_hierarchy
+    }
 
-    species_taxon_id = taxon_class_map.get('species')
-    genus_taxon_id = taxon_class_map.get('genus')
+    species_taxon_id = taxon_class_map.get("species")
+    genus_taxon_id = taxon_class_map.get("genus")
 
     # Precompute taxon_id → clade_name mapping
-    clade_lookup = {int(details['taxon_id']): clade_name for clade_name, details in clade_data.items() if details.get('taxon_id')}
+    clade_lookup = {
+        int(details["taxon_id"]): clade_name
+        for clade_name, details in clade_data.items()
+        if details.get("taxon_id")
+    }
 
     # Assign internal clade
     internal_clade = "Unassigned"
-    for taxon_class in ['species', 'genus', 'family', 'order', 'class', 'phylum', 'kingdom']:
+    for taxon_class in [
+        "species",
+        "genus",
+        "family",
+        "order",
+        "class",
+        "phylum",
+        "kingdom",
+    ]:
         taxon_id = taxon_class_map.get(taxon_class)
         if taxon_id is not None and int(taxon_id) in clade_lookup:
             internal_clade = clade_lookup[int(taxon_id)]
             break
 
-
     return internal_clade, species_taxon_id, genus_taxon_id
+
 
 def get_descendant_taxa(taxon_id):
     """
@@ -62,7 +87,7 @@ def get_descendant_taxa(taxon_id):
         "retmax": 100000,  # Fetch in chunks
         "retstart": 0,
         "tool": "your_tool_name",
-        "email": "your_email@example.com"
+        "email": "your_email@example.com",
     }
 
     taxon_ids = set()
@@ -70,7 +95,9 @@ def get_descendant_taxa(taxon_id):
     while True:
         response = requests.get(base_url, params=params)
         if response.status_code != 200:
-            logging.error(f"Error retrieving taxonomic data from NCBI. HTTP {response.status_code}.")
+            logging.error(
+                f"Error retrieving taxonomic data from NCBI. HTTP {response.status_code}."
+            )
             break
 
         try:
