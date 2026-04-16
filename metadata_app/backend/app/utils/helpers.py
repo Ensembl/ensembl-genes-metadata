@@ -2,7 +2,12 @@ import pandas as pd
 
 def transform_metrics(df: pd.DataFrame) -> pd.DataFrame:
     """
-    Convert key-value metrics into structured format.
+    Convert key-value metrics into structured tabular format.
+
+    Expected columns:
+    - genome_id
+    - metric_name
+    - metric_value
     """
 
     if df.empty:
@@ -12,11 +17,13 @@ def transform_metrics(df: pd.DataFrame) -> pd.DataFrame:
     if not required_cols.issubset(df.columns):
         raise ValueError(f"Missing required columns: {required_cols}")
 
-    return df.pivot(
+    result = df.pivot(
         index="genome_id",
         columns="metric_name",
         values="metric_value"
-    ).reset_index()
+    )
+
+    return result.reset_index()
 
 def compute_basic_metrics(df: pd.DataFrame) -> dict:
     """
