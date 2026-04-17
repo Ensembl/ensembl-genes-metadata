@@ -7,11 +7,11 @@ from datetime import datetime
 import argparse
 import sys
 import re
+import requests
+import pandas as pd
 
-# Add the repo root to sys.path
-REPO_ROOT = Path(__file__).parents[5]  # adjust depending on depth
-sys.path.insert(0, str(REPO_ROOT))
-from metadata_app.backend.app.services.annotations_service import generate_tables
+
+BIOPROJECT_ID_RE = re.compile(r"^PRJ[A-Z]{2}\d+$", re.IGNORECASE)
 
 
 def setup_logging(log_folder: Path) -> None:
@@ -29,29 +29,43 @@ def setup_logging(log_folder: Path) -> None:
     logging.info(f"Logging initialized. Log file: {log_file}")
 
 
+def fetch_tables_from_api(
+    api_base_url: str,
+    bioproject_id=None,
+    group_name=None,
+):
+    url = f"{api_base_url}/api/annotations/annotations/filter"
+
+    payload = {
+        "bioproject_id": bioproject_id,
+        "group_name": group_name,
+    }
+
+    response = requests.post(url, json=payload, timeout=300)
+    response.raise_for_status()
+    return response.json()
+
+
 def create_report_csv(project_key: str, project_info: dict, csv_folder: Path) -> Path:
-    """Create CSV report per project and return the path."""
     csv_folder.mkdir(parents=True, exist_ok=True)
 
-    project_id = project_info["id"]
+    project_id = str(project_info["id"]).strip()
 
-    # Determine if project_id is a BioprojectID or group name
-    if project_id.startswith(("PRJEB", "PRJNA")):  # clearly a bioproject ID
+    if BIOPROJECT_ID_RE.match(project_id):
         bioproject_id = [project_id]
         group_name = None
     else:
         bioproject_id = None
         group_name = [project_id]
 
-    # Call the generate_tables service
-    anno_main, anno_wide = generate_tables(
-        annotation_date=None,
-        taxon_id=None,
+    api_result = fetch_tables_from_api(
+        api_base_url="http://127.0.0.1:8000",
         bioproject_id=bioproject_id,
         group_name=group_name,
     )
 
-    # Clean table from email report
+    anno_main = pd.DataFrame(api_result["anno_main"])
+
     anno_main = anno_main.drop(
         columns=[
             "gca_root",
@@ -59,13 +73,13 @@ def create_report_csv(project_key: str, project_info: dict, csv_folder: Path) ->
             "annotated_version",
             "assembly_version",
             "latest_version",
-        ]
+        ],
+        errors="ignore",
     )
     anno_main = anno_main.rename(
         columns={"latest_annotated": "latest_version_annotated"}
     )
 
-    # Save CSV file
     date_tag = datetime.now().strftime("%Y_%m")
     csv_path = csv_folder / f"{project_key}_{date_tag}.csv"
     anno_main.to_csv(csv_path, index=False)
@@ -86,7 +100,7 @@ def send_project_emails(
     """Send emails for each project in the base folder."""
 
     SCRIPT_FOLDER = Path(__file__).parent
-    config_file = SCRIPT_FOLDER / "project_email_list_full.json"
+    config_file = SCRIPT_FOLDER / "project_email_list.json"
     csv_folder = base_folder / "csv_reports"
     log_folder = base_folder / "logs"
 
