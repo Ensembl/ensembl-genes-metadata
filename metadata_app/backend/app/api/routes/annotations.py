@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from metadata_app.backend.app.models.annotation_schemas import AnnotationFilterRequest
-from metadata_app.backend.app.services.annotations_service import generate_tables
+from metadata_app.backend.app.services.annotations_service import generate_tables, compute_gene_stats
 
 annotations = APIRouter()
 
@@ -13,6 +13,10 @@ def filter_annotations(filters: AnnotationFilterRequest):
             taxon_id=filters.taxon_id,
             group_name= filters.group_name,
         )
+        
+        # Calculate summary statistics
+        gene_stats = compute_gene_stats(anno_wide)
+
         # Build an informative suffix
         suffix = "_".join(
             filter(None, [
@@ -25,6 +29,7 @@ def filter_annotations(filters: AnnotationFilterRequest):
 
         return {
             "anno_main": anno_main.to_dict(orient="records"),
+            "gene_stats": gene_stats,   # 👈 NEW FEATURE
             "downloadables_anno": {
                 "anno_main": {
                     "filename": f"anno_main_{suffix}.csv",

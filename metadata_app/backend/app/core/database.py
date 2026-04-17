@@ -9,13 +9,16 @@ from contextlib import contextmanager
 
 def setup_logging():
 	"""Configure logging for the application"""
+	log_dir = "logs"
+	os.makedirs(log_dir, exist_ok=True)
+	
 	log_format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 	logging.basicConfig(
 		level=logging.INFO,
 		format=log_format,
 		handlers=[
 			logging.StreamHandler(),
-			logging.FileHandler("logs/app.log")
+			logging.FileHandler(os.path.join(log_dir, "app.log"))
 		]
 	)
 	return logging.getLogger(__name__)
