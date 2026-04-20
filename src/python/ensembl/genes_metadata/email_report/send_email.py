@@ -91,10 +91,8 @@ def create_report_csv(project_key: str, project_info: dict, csv_folder: Path) ->
 def send_project_emails(
     base_folder: Path,
     from_email: str,
-    smtp_server: str,
+    smtp_host: str,
     smtp_port: int,
-    smtp_user: str,
-    smtp_pass: str,
     body_text: str,
 ) -> None:
     """Send emails for each project in the base folder."""
@@ -145,13 +143,15 @@ def send_project_emails(
 
         # Send email
         try:
-            with smtplib.SMTP(smtp_server, smtp_port) as smtp:
-                smtp.starttls()
-                smtp.login(smtp_user, smtp_pass)
-                smtp.send_message(msg)
-            logging.info(
-                f"Email successfully sent to {recipient} for project {project_label}"
-            )
+            with smtplib.SMTP(smtp_host, smtp_port) as smtp:
+                smtp.sendmail(
+                msg["From"],
+                [msg["To"]],
+                msg.as_string()
+                )
+                logging.info(
+                    f"Email successfully sent to {recipient} for project {project_label}"
+                )
         except Exception as e:
             logging.error(
                 f"Failed to send email to {recipient} for project {project_label}: {e}"
@@ -167,34 +167,21 @@ def main():
     parser.add_argument(
         "-bf", "--base_folder", type=str, help="Base folder for CSV reports and logs"
     )
-    parser.add_argument(
-        "-u", "--user", type=str, help="User for SMTP authentication (not sender email)"
-    )
-    parser.add_argument(
-        "-p",
-        "--password",
-        type=str,
-        help="Password for SMTP authentication (not sender email)",
-    )
     args = parser.parse_args()
 
     BASE_FOLDER = Path(args.base_folder)
 
     # ---------- CONFIG ----------
-    FROM_EMAIL = "genebuild@ebi.ac.uk"
-    SMTP_SERVER = "outgoing.ebi.ac.uk"
-    SMTP_PORT = 587
-    SMTP_USER = args.user
-    SMTP_PASS = args.password
+    FROM_EMAIL = "genebuild-metadata@ebi.ac.uk"
+    SMTP_HOST = "localhost"
+    SMTP_PORT = 25
     BODY_TEXT = "Hello,\n\nLorem ipsum dolor sit amet.\n\nRegards,\nEnsembl Genebuild"
 
     send_project_emails(
         base_folder=BASE_FOLDER,
         from_email=FROM_EMAIL,
-        smtp_server=SMTP_SERVER,
+        smtp_host=SMTP_HOST,
         smtp_port=SMTP_PORT,
-        smtp_user=SMTP_USER,
-        smtp_pass=SMTP_PASS,
         body_text=BODY_TEXT,
     )
 
