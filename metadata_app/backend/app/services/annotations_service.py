@@ -321,3 +321,21 @@ def generate_tables(annotation_date, taxon_id, bioproject_id, group_name):
     anno_wide = anno_wide.apply(lambda col: col.fillna("") if col.dtype == "object" else col)
 
     return anno_wide, anno_main
+
+
+def compute_gene_stats(df):
+    if df is None or df.empty or "coding_genes" not in df.columns:
+        return {}
+
+    
+    gene_series = pd.to_numeric(df["coding_genes"], errors="coerce")
+
+    if pd.isna(gene_series).all():
+        return {}
+
+    return {
+        "avg_gene_count": float(gene_series.mean()),
+        "max_gene_count": int(gene_series.max()),
+        "min_gene_count": int(gene_series.min()),
+        "total_genomes": int(gene_series.count())
+    }
