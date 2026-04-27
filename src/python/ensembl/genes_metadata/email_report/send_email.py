@@ -66,6 +66,21 @@ def create_report_csv(project_key: str, project_info: dict, csv_folder: Path) ->
 
     anno_main = pd.DataFrame(api_result["anno_main"])
 
+    # Define statuses to exclude
+    exclude_statuses = {"archive", "abandoned"}
+    
+    # Define renaming mapping
+    status_mapping = {
+        "check_busco": "low_protein_busco",
+        "poor_genome_busco": "low_genome_busco"
+    }
+    
+    # Drop rows with unwanted statuses
+    anno_main = anno_main[~anno_main["gb_status"].isin(exclude_statuses)]
+    
+    # Rename remaining statuses
+    anno_main["gb_status"] = anno_main["gb_status"].replace(status_mapping)
+
     anno_main = anno_main.drop(
         columns=[
             "gca_root",
@@ -73,11 +88,16 @@ def create_report_csv(project_key: str, project_info: dict, csv_folder: Path) ->
             "annotated_version",
             "assembly_version",
             "latest_version",
+            "last_genebuild_update",
+            "date_status_update"
         ],
         errors="ignore",
     )
     anno_main = anno_main.rename(
-        columns={"latest_annotated": "latest_version_annotated"}
+        columns={"latest_annotated": "latest_assembly_version_annotated"}
+    )
+    anno_main = anno_main.rename(
+        columns={"lowest_taxon_id": "taxon_id"}
     )
 
     date_tag = datetime.now().strftime("%Y_%m")
@@ -175,7 +195,24 @@ def main():
     FROM_EMAIL = "genebuild-metadata@ebi.ac.uk"
     SMTP_HOST = "localhost"
     SMTP_PORT = 25
-    BODY_TEXT = "Hello,\n\nLorem ipsum dolor sit amet.\n\nRegards,\nEnsembl Genebuild"
+    BODY_TEXT = BODY_TEXT = """Hello,
+
+Please find attached the latest annotation report.
+
+The `gb_status` column indicates the current state of each genome annotation:
+
+- live: Annotation is publicly available on beta.ensembl.org
+- handed_over: Annotation is going through processing and will be soon available on beta.ensembl.org
+- completed: Annotation work finished but not yet live
+- low_genome_busco: Genome quality is low based on BUSCO assessment
+- insufficient_data: Not enough data available to proceed with annotation
+- in_progress: Annotation is currently underway
+- low_protein_busco: Protein BUSCO score is low and/or differs from the genome BUSCO score by more than 10%
+- pre_released: Annotation is done, and the draft version can be found on https://ftp.ebi.ac.uk/pub/databases/ensembl/pre-release/ Please note that this may not be identical to the final annotation that will be made public on beta.ensembl.org
+
+Regards,
+Ensembl Genebuild
+"""
 
     send_project_emails(
         base_folder=BASE_FOLDER,
