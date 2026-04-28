@@ -25,6 +25,7 @@ from logger_settings import get_logger
 
 logger = get_logger(__name__)
 
+
 def check_status_production_db(gca_tuple):
     """
     Fetch genebuild status, release date, and genebuild version for given assemblies
@@ -74,48 +75,61 @@ def check_status_production_db(gca_tuple):
 
         production_status = mysql_fetch_data(
             production_query,
-            host="mysql-ens-production-1",
+            host="mysql-ens-meta-prod-1",
             user="ensro",
-            port=4721,
+            port=4483,
             database="ensembl_genome_metadata",
-            password=""
+            password="",
         )
         production_status = pd.DataFrame(production_status)
         # If the DataFrame is empty, return an empty standardized DataFrame
         if production_status.empty:
             logger.info("No production entries found, returning empty DataFrame.")
-            return pd.DataFrame(columns=[
-                "gca_accession", "status", "release_date", "genebuild_version", "annotation_source", "annotation_method", "last_genebuild_update"
-            ])
-
-        pivoted = (
-            production_status.pivot_table(
-                index=["gca_accession", "status", "release_date"],
-                columns="attribute_id",
-                values="value",
-                aggfunc="first",
-                dropna=False
+            return pd.DataFrame(
+                columns=[
+                    "gca_accession",
+                    "status",
+                    "release_date",
+                    "genebuild_version",
+                    "annotation_source",
+                    "annotation_method",
+                    "last_genebuild_update",
+                ]
             )
-            .reset_index()
-        )
+
+        pivoted = production_status.pivot_table(
+            index=["gca_accession", "status", "release_date"],
+            columns="attribute_id",
+            values="value",
+            aggfunc="first",
+            dropna=False,
+        ).reset_index()
 
         # Optional: rename columns for clarity
-        pivoted = pivoted.rename(columns={
-            71: "genebuild_version",
-            169: "annotation_source",
-            37: "annotation_method",
-            34: "last_genebuild_update"
-        })
+        pivoted = pivoted.rename(
+            columns={
+                71: "genebuild_version",
+                169: "annotation_source",
+                37: "annotation_method",
+                34: "last_genebuild_update",
+            }
+        )
 
         # Keep only entries where annotation_source is 'ensembl', 'helixer'
         pivoted = pivoted[pivoted["annotation_source"].isin(["helixer", "ensembl"])]
         pivoted["annotation_method"] = pivoted["annotation_method"].apply(
             lambda x: "external_annotation_import" if x == "import" else x
         )
-        pivoted['last_genebuild_update'] = pd.to_datetime(pivoted['last_genebuild_update'], errors='coerce')
-        pivoted = pivoted.sort_values(['gca_accession', 'last_genebuild_update'])
-        pivoted = pivoted[pivoted["genebuild_version"].str.startswith(("ENS", "HLX", "EXT", "BRK"), na=False)]
-        pivoted = pivoted.drop_duplicates(subset='gca_accession', keep='last')
+        pivoted["last_genebuild_update"] = pd.to_datetime(
+            pivoted["last_genebuild_update"], errors="coerce"
+        )
+        pivoted = pivoted.sort_values(["gca_accession", "last_genebuild_update"])
+        pivoted = pivoted[
+            pivoted["genebuild_version"].str.startswith(
+                ("ENS", "HLX", "EXT", "BRK"), na=False
+            )
+        ]
+        pivoted = pivoted.drop_duplicates(subset="gca_accession", keep="last")
 
         logger.info(f"Found {len(pivoted)} entries in production table.")
 
