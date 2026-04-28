@@ -1,3 +1,4 @@
 .codex
 *.pyc
-src/python/ensembl/genes_metadata/email_report/__pycache__/send_email.cpython-310.pyc
+.idea
+venv
