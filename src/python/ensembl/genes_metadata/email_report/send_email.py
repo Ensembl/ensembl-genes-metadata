@@ -195,9 +195,13 @@ def main():
     FROM_EMAIL = "genebuild-metadata@ebi.ac.uk"
     SMTP_HOST = "localhost"
     SMTP_PORT = 25
-    BODY_TEXT = BODY_TEXT = """Hello,
+    BODY_TEXT = (
+        BODY_TEXT
+    ) = """Hello,
 
 Please find attached the latest annotation report.
+
+The `latest_assembly_version_annotated` indicates whether a newer version of the GCA chain is available but has not yet been annotated.
 
 The `gb_status` column indicates the current state of each genome annotation:
 
