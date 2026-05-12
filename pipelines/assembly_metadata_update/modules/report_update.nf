@@ -21,15 +21,15 @@ process REPORT_UPDATE {
     label 'python'
     tag "$gca"
     publishDir "${params.output_dir}/nextflow_output/$gca", mode: 'copy'
-    
-    when:
-    reporting.trim() == 'true'
 
     input:
     tuple val(gca), val(check), val(reporting), val(old_value), val(new_value)
     
     output:
     path "slack_reporting.log", emit: asm_file
+
+    when:
+    reporting.trim() == 'true'
     
     script:
     """

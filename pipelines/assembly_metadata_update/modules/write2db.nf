@@ -22,15 +22,15 @@ process WRITE2DB {
     tag "$gca"
     publishDir "${params.output_dir}/nextflow_output/$gca", mode: 'copy'
 
-    when:
-    attempt_update.trim() == 'true'
-
     input:
     tuple val(gca), val(attempt_update), path(metadata_json), path(taxonomy_json)
 
     output:
     tuple val(gca), val(attempt_update), path(metadata_json), emit: to_taxonomy
-    path "${taxonomy_json.baseName}.last_id" 
+    path "${taxonomy_json.baseName}.last_id"
+
+    when:
+    attempt_update.trim() == 'true'
 
     script:
     """

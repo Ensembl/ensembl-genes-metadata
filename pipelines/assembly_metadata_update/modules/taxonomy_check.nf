@@ -21,9 +21,6 @@ process TAXONOMY_CHECK {
     
     label 'python'
     tag "$gca"
-    
-    when:
-    attempt_update.trim() == 'true'
 
     input:
     tuple val(gca), val(attempt_update), path(metadata_json)
@@ -32,6 +29,9 @@ process TAXONOMY_CHECK {
     tuple val(gca), val(attempt_update), path(metadata_json), 
           env(OLD_TAXON_ID), env(NEW_TAXON_ID), env(STATUS), 
           emit: taxonomy_check
+
+    when:
+    attempt_update.trim() == 'true'
 
     script:
     """

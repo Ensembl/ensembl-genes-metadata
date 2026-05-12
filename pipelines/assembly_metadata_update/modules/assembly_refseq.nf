@@ -20,15 +20,15 @@ process ASSEMBLY_REFSEQ {
     
     label 'python'
     tag "$gca"
-    
-    when:
-    attempt_update.trim() == 'true'
 
     input:
     tuple val(gca), val(attempt_update), path(metadata_json)
 
     output:
     stdout emit: asm_refseq_update
+
+    when:
+    attempt_update.trim() == 'true'
 
     script:
     """

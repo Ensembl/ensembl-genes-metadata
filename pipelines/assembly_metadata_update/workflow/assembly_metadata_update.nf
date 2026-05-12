@@ -46,6 +46,8 @@ WORKFLOW: REGISTER NEW ASSEMBLIES IN DB
 
 
 workflow ASSEMBLY_METADATA_UPDATE {
+
+    main:
     // help
     if (params.help) {
     log.info"""
@@ -56,7 +58,7 @@ workflow ASSEMBLY_METADATA_UPDATE {
     Usage: 
     nextflow -C ensembl-genes-metadata/conf/assembly_pipeline.config \
                 run ensembl-genes-metadata/pipeline/assembly_pipeline.nf \
-                --enscode $ENSCODE --output_dir <OutDir> --taxon <taxon>
+                --enscode <ENSCODE> --output_dir <OutDir> --taxon <taxon>
 
     Required arguments:
     --output_dir STR            Output directory path
@@ -71,8 +73,6 @@ workflow ASSEMBLY_METADATA_UPDATE {
 
     // print params
     params.each { k, v -> println "params.${k.padRight(25)} = ${v}" }
-
-    main:
 
     FETCH_ASSEMBLIES(params.screen_date)
     def gca = FETCH_ASSEMBLIES.out.splitText().map { it -> it.trim() }
@@ -159,8 +159,8 @@ workflow ASSEMBLY_METADATA_UPDATE {
     name: "${params.output_dir}/report_track.csv",
     seed: 'assembly,check_type,reporting,previous_value,new_value\n' ) { row -> row.join(',') + '\n' }
 
+    workflow.onComplete {
+        log.info "Pipeline completed at: ${new Date().format('dd-MM-yyyy HH:mm:ss')}"
+    }
 }
 
-workflow.onComplete {
-    log.info "Pipeline completed at: ${new Date().format('dd-MM-yyyy HH:mm:ss')}"
-}

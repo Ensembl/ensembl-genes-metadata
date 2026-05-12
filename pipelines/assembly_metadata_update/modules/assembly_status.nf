@@ -20,15 +20,15 @@ process ASSEMBLY_STATUS {
     
     label 'python'
     tag "$gca"
-    
-    when:
-    attempt_update.trim() == 'true'
 
     input:
     tuple val(gca), val(attempt_update), path(metadata_json)
 
     output:
     stdout emit: asm_status_update
+
+    when:
+    attempt_update.trim() == 'true'
 
     script:
     """
