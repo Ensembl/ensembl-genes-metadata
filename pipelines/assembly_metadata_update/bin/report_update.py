@@ -18,9 +18,9 @@
 import logging
 import argparse
 import json
-import pymysql
-from slack_sdk import WebClient
-from slack_sdk.errors import SlackApiError
+import pymysql # type: ignore
+from slack_sdk import WebClient # type: ignore
+from slack_sdk.errors import SlackApiError # type: ignore
 
 
 def execute_query(query, db_params):
@@ -127,7 +127,7 @@ def main():
     
     slack_id, gb_status = fetching_user(args.accession, args.metadata_params, slack_users)
 
-    if slack_id is not None and gb_status is not None:
+    if slack_id is not None and gb_status is not None and args.check_type in ('asm_status', 'refseq_check'):
     
         custom_message = slack_message(args.accession, gb_status, args.check_type, args.previous_value, args.current_value)
 
