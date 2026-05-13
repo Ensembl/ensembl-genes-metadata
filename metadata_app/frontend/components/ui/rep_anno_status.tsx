@@ -28,16 +28,17 @@ type Props = {
 
 const chartConfig: Record<string, { label: string; color?: string }> = {
   count: { label: "Annotations" },
-  pre_released: { label: "Pre-released", color: "var(--chart-3)" },
-    archive: { label: "Archived", color: "var(--chart-3)" },
-  live: { label: "Live", color: "var(--chart-3)" },
-  handed_over: { label: "Handed over", color: "var(--chart-3)" },
   in_progress: { label: "In progress", color: "var(--chart-3)" },
   completed: { label: "Completed", color: "var(--chart-3)" },
+  pre_released: { label: "Pre-released", color: "var(--chart-3)" },
+  handed_over: { label: "Handed over", color: "var(--chart-3)" },
+  coming_soon: { label: "Almost live", color: "var(--chart-3)" },
+  live: { label: "Live", color: "var(--chart-3)" },
+    archive: { label: "Archived", color: "var(--chart-3)" },
     check_busco: { label: "Low pBUSCO", color: "var(--chart-3)"},
   insufficient_data: { label: "Low evidence", color: "var(--chart-3)" },
     poor_genome_busco: { label: "Low gBUSCO", color: "var(--chart-3)" },
-    abandoned: { label: "Abandoned", color: "var(--chart-3)" }
+    abandoned: { label: "Abandoned", color: "var(--chart-3)" },
 } satisfies ChartConfig
 
 

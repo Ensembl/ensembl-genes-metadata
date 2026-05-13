@@ -3,3 +3,6 @@
 .idea
 venv
 __pycache__
+.next
+node_modules
+out

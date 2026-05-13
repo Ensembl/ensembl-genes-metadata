@@ -26,7 +26,7 @@ def get_ready_to_ho(genebuilder):
 				LEFT JOIN bioproject b ON b.assembly_id = a.assembly_id
 				LEFT JOIN main_bioproject m ON m.bioproject_id = b.bioproject_id
 				LEFT JOIN species s ON s.lowest_taxon_id = a.lowest_taxon_id
-				WHERE g.gb_status IN ('completed', 'pre_released', 'handed_over', 'in_progress', 'check_busco', 'insufficient_data')
+				WHERE g.gb_status IN ('completed', 'pre_released', 'handed_over', 'coming_soon', 'in_progress', 'check_busco', 'insufficient_data')
 				  AND g.genebuilder = %s
 			"""
 
@@ -147,7 +147,7 @@ def update_gca(genebuilder, items, new_status):
 					genebuild_status g
 				SET g.gb_status = %s,
                     g.date_status_update = CURRENT_DATE
-				WHERE g.gb_status IN ('completed', 'pre_released')
+				WHERE g.gb_status IN ('completed', 'pre_released', 'coming_soon')
 				  AND g.genebuilder = %s
 				  AND g.gca_accession = %s
 				  AND g.annotation_method = %s
