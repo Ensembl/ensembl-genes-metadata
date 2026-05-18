@@ -17,8 +17,9 @@ def run_nextflow_busco(
 ):
 
     outdir_path = Path(outdir)
-    log = outdir_path / "log_flow_busco.log"
-    command_file = outdir_path / "busco_genome_nextflow_command.sh"
+    csv_stem = Path(csv_file).stem
+    log = outdir_path / f"log_flow_busco_{csv_stem}.log"
+    command_file = outdir_path / f"busco_genome_nextflow_command_{csv_stem}.sh"
     log.parent.mkdir(parents=True, exist_ok=True)
 
     enscode = enscode or os.environ.get("ENSCODE")
@@ -65,15 +66,15 @@ def run_nextflow_busco(
 
             ## Nextflow command
 
-            ```bash
+            bash:
             {cmd}
-            ```
+            
 
             ## Log output
 
-            ```text
+            text:
             {log_text}
-            ```
+
         """
         )
             
