@@ -1,5 +1,5 @@
 from prefect import task  # type: ignore
-from prefect.artifacts import create_markdown_artifact # type: ignore
+from gb_prefect.utils.artifact_utils import create_busco_run_artifact
 from gb_prefect.utils.logging_utils import append_log
 from gb_prefect.utils.shell_utils import run_cmd_bash_capture
 from datetime import datetime
@@ -52,30 +52,14 @@ def run_nextflow_busco(
     append_log(log, f"[{datetime.now()}] INFO: Return code {rc}.\n")
 
     if create_artifact:
-        log_text = log.read_text()
-        create_markdown_artifact(
-            key="busco-run-log",
-            description="Nextflow BUSCO run log",
-            markdown=f"""# BUSCO run log
-
-            **CSV file:** `{csv_file}`  
-            **Outdir:** `{outdir}`  
-            **Dry run:** `{dry_run}`
-            **Command file:** `{command_file}`
-            **Return code:** `{rc}`
-
-            ## Nextflow command
-
-            bash:
-            {cmd}
-            
-
-            ## Log output
-
-            text:
-            {log_text}
-
-        """
+        create_busco_run_artifact(
+            csv_file=csv_file,
+            outdir=outdir,
+            command_file=str(command_file),
+            cmd=cmd,
+            log_text=log.read_text(),
+            rc=rc,
+            dry_run=dry_run,
         )
             
     return {
