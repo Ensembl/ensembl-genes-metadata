@@ -29,13 +29,14 @@ type Props = {
 const chartConfig: Record<string, { label: string; color?: string }> = {
   number_of_annotations: { label: "Annotations" },
   DToL: { label: "DToL", color: "var(--chart-1)" },
-  "ERGA/BGE": { label: "ERGA/BG", color: "var(--chart-2)" },
-  ERGA: { label: "ERGA", color: "var(--chart-3)" },
-  EBP: { label: "EBP", color: "var(--chart-4)" },
-  ERGA_pilot: { label: "ERGA_pilot", color: "var(--chart-5)" },
-  ASG: { label: "ASG", color: "var(--chart-6)" },
-  VGP: { label: "VGP", color: "var(--chart-7)" },
-  CBP: { label: "CBP", color: "var(--chart-7)" },
+  "ERGA/BGE": { label: "ERGA/BG", color: "var(--chart-1)" },
+  ERGA: { label: "ERGA", color: "var(--chart-1)" },
+  EBP: { label: "EBP", color: "var(--chart-1)" },
+  ERGA_pilot: { label: "ERGA_pilot", color: "var(--chart-1)" },
+  ASG: { label: "ASG", color: "var(--chart-1)" },
+  VGP: { label: "VGP", color: "var(--chart-1)" },
+  CBP: { label: "CBP", color: "var(--chart-1)" },
+    AEGIS: { label: "AEGIS", color: "var(--chart-1)" },
 } satisfies ChartConfig
 
 

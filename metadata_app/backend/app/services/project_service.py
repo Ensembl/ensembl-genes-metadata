@@ -3,6 +3,7 @@ import logging
 from metadata_app.backend.app.core.database import get_db_connection
 import pandas as pd
 
+
 def get_dtol():
     """Returns GCA info"""
     try:
@@ -27,29 +28,31 @@ def get_dtol():
             cursor.execute(query)
             result = cursor.fetchall()
 
-        df = pd.DataFrame(result, columns=[
-            "gca",
-            "lowest_taxon_id",
-            "scientific_name",
-            "asm_name",
-            "asm_level",
-            "gb_status",
-            "genebuilder"
-        ])
+        df = pd.DataFrame(
+            result,
+            columns=[
+                "gca",
+                "lowest_taxon_id",
+                "scientific_name",
+                "asm_name",
+                "asm_level",
+                "gb_status",
+                "genebuilder",
+            ],
+        )
         df["gb_status"] = df["gb_status"].fillna("not_started")
         df = df[~df["asm_name"].str.contains("alternate", case=False, na=False)]
         df = df.drop(columns=["asm_name"])
         df = df[~df["asm_level"].str.lower().isin(["contig", "scaffold"])]
-        df = df.drop_duplicates(
-            subset=["gca", "gb_status"],
-            keep="first"
-        )
+        df = df.drop_duplicates(subset=["gca", "gb_status"], keep="first")
 
         return df.to_dict(orient="records")
 
     except Exception as e:
         logging.error(f"Error fetching annotation counts: {e}")
         return []
+
+
 def get_tol():
     """Returns GCA info"""
     try:
@@ -74,29 +77,30 @@ def get_tol():
             cursor.execute(query)
             result = cursor.fetchall()
 
-        df = pd.DataFrame(result, columns=[
-            "gca",
-            "lowest_taxon_id",
-            "scientific_name",
-            "asm_name",
-            "asm_level",
-            "gb_status",
-            "genebuilder"
-        ])
+        df = pd.DataFrame(
+            result,
+            columns=[
+                "gca",
+                "lowest_taxon_id",
+                "scientific_name",
+                "asm_name",
+                "asm_level",
+                "gb_status",
+                "genebuilder",
+            ],
+        )
         df["gb_status"] = df["gb_status"].fillna("not_started")
         df = df[~df["asm_name"].str.contains("alternate", case=False, na=False)]
         df = df.drop(columns=["asm_name"])
         df = df[~df["asm_level"].str.lower().isin(["contig", "scaffold"])]
-        df = df.drop_duplicates(
-            subset=["gca", "gb_status"],
-            keep="first"
-        )
+        df = df.drop_duplicates(subset=["gca", "gb_status"], keep="first")
 
         return df.to_dict(orient="records")
 
     except Exception as e:
         logging.error(f"Error fetching annotation counts: {e}")
         return []
+
 
 def get_erga():
     """Returns GCA info"""
@@ -122,23 +126,23 @@ def get_erga():
             cursor.execute(query)
             result = cursor.fetchall()
 
-        df = pd.DataFrame(result, columns=[
-            "gca",
-            "lowest_taxon_id",
-            "scientific_name",
-            "asm_name",
-            "asm_level",
-            "gb_status",
-            "genebuilder"
-        ])
+        df = pd.DataFrame(
+            result,
+            columns=[
+                "gca",
+                "lowest_taxon_id",
+                "scientific_name",
+                "asm_name",
+                "asm_level",
+                "gb_status",
+                "genebuilder",
+            ],
+        )
         df["gb_status"] = df["gb_status"].fillna("not_started")
         df = df[~df["asm_name"].str.contains("alternate", case=False, na=False)]
         df = df.drop(columns=["asm_name"])
         df = df[~df["asm_level"].str.lower().isin(["contig", "scaffold"])]
-        df = df.drop_duplicates(
-            subset=["gca", "gb_status"],
-            keep="first"
-        )
+        df = df.drop_duplicates(subset=["gca", "gb_status"], keep="first")
         return df.to_dict(orient="records")
 
     except Exception as e:
@@ -170,23 +174,23 @@ def get_asg():
             cursor.execute(query)
             result = cursor.fetchall()
 
-        df = pd.DataFrame(result, columns=[
-            "gca",
-            "lowest_taxon_id",
-            "scientific_name",
-            "asm_name",
-            "asm_level",
-            "gb_status",
-            "genebuilder"
-        ])
+        df = pd.DataFrame(
+            result,
+            columns=[
+                "gca",
+                "lowest_taxon_id",
+                "scientific_name",
+                "asm_name",
+                "asm_level",
+                "gb_status",
+                "genebuilder",
+            ],
+        )
         df["gb_status"] = df["gb_status"].fillna("not_started")
         df = df[~df["asm_name"].str.contains("alternate", case=False, na=False)]
         df = df.drop(columns=["asm_name"])
         df = df[~df["asm_level"].str.lower().isin(["contig", "scaffold"])]
-        df = df.drop_duplicates(
-            subset=["gca", "gb_status"],
-            keep="first"
-        )
+        df = df.drop_duplicates(subset=["gca", "gb_status"], keep="first")
         return df.to_dict(orient="records")
 
     except Exception as e:
@@ -218,28 +222,29 @@ def get_erga_pilot():
             cursor.execute(query)
             result = cursor.fetchall()
 
-        df = pd.DataFrame(result, columns=[
-            "gca",
-            "lowest_taxon_id",
-            "scientific_name",
-            "asm_name",
-            "asm_level",
-            "gb_status",
-            "genebuilder"
-        ])
+        df = pd.DataFrame(
+            result,
+            columns=[
+                "gca",
+                "lowest_taxon_id",
+                "scientific_name",
+                "asm_name",
+                "asm_level",
+                "gb_status",
+                "genebuilder",
+            ],
+        )
         df["gb_status"] = df["gb_status"].fillna("not_started")
         df = df[~df["asm_name"].str.contains("alternate", case=False, na=False)]
         df = df.drop(columns=["asm_name"])
         df = df[~df["asm_level"].str.lower().isin(["contig", "scaffold"])]
-        df = df.drop_duplicates(
-            subset=["gca", "gb_status"],
-            keep="first"
-        )
+        df = df.drop_duplicates(subset=["gca", "gb_status"], keep="first")
         return df.to_dict(orient="records")
 
     except Exception as e:
         logging.error(f"Error fetching annotation counts: {e}")
         return []
+
 
 def get_erga_bge():
     """Returns GCA info"""
@@ -265,28 +270,29 @@ def get_erga_bge():
             cursor.execute(query)
             result = cursor.fetchall()
 
-        df = pd.DataFrame(result, columns=[
-            "gca",
-            "lowest_taxon_id",
-            "scientific_name",
-            "asm_name",
-            "asm_level",
-            "gb_status",
-            "genebuilder"
-        ])
+        df = pd.DataFrame(
+            result,
+            columns=[
+                "gca",
+                "lowest_taxon_id",
+                "scientific_name",
+                "asm_name",
+                "asm_level",
+                "gb_status",
+                "genebuilder",
+            ],
+        )
         df["gb_status"] = df["gb_status"].fillna("not_started")
         df = df[~df["asm_name"].str.contains("alternate", case=False, na=False)]
         df = df.drop(columns=["asm_name"])
         df = df[~df["asm_level"].str.lower().isin(["contig", "scaffold"])]
-        df = df.drop_duplicates(
-            subset=["gca", "gb_status"],
-            keep="first"
-        )
+        df = df.drop_duplicates(subset=["gca", "gb_status"], keep="first")
         return df.to_dict(orient="records")
 
     except Exception as e:
         logging.error(f"Error fetching annotation counts: {e}")
         return []
+
 
 def get_vgp():
     """Returns GCA info"""
@@ -312,28 +318,29 @@ def get_vgp():
             cursor.execute(query)
             result = cursor.fetchall()
 
-        df = pd.DataFrame(result, columns=[
-            "gca",
-            "lowest_taxon_id",
-            "scientific_name",
-            "asm_name",
-            "asm_level",
-            "gb_status",
-            "genebuilder"
-        ])
+        df = pd.DataFrame(
+            result,
+            columns=[
+                "gca",
+                "lowest_taxon_id",
+                "scientific_name",
+                "asm_name",
+                "asm_level",
+                "gb_status",
+                "genebuilder",
+            ],
+        )
         df["gb_status"] = df["gb_status"].fillna("not_started")
         df = df[~df["asm_name"].str.contains("alternate", case=False, na=False)]
         df = df.drop(columns=["asm_name"])
         df = df[~df["asm_level"].str.lower().isin(["contig", "scaffold"])]
-        df = df.drop_duplicates(
-            subset=["gca", "gb_status"],
-            keep="first"
-        )
+        df = df.drop_duplicates(subset=["gca", "gb_status"], keep="first")
         return df.to_dict(orient="records")
 
     except Exception as e:
         logging.error(f"Error fetching annotation counts: {e}")
         return []
+
 
 def get_ebp():
     """Returns GCA info"""
@@ -359,28 +366,29 @@ def get_ebp():
             cursor.execute(query)
             result = cursor.fetchall()
 
-        df = pd.DataFrame(result, columns=[
-            "gca",
-            "lowest_taxon_id",
-            "scientific_name",
-            "asm_name",
-            "asm_level",
-            "gb_status",
-            "genebuilder"
-        ])
+        df = pd.DataFrame(
+            result,
+            columns=[
+                "gca",
+                "lowest_taxon_id",
+                "scientific_name",
+                "asm_name",
+                "asm_level",
+                "gb_status",
+                "genebuilder",
+            ],
+        )
         df["gb_status"] = df["gb_status"].fillna("not_started")
         df = df[~df["asm_name"].str.contains("alternate", case=False, na=False)]
         df = df.drop(columns=["asm_name"])
         df = df[~df["asm_level"].str.lower().isin(["contig", "scaffold"])]
-        df = df.drop_duplicates(
-            subset=["gca", "gb_status"],
-            keep="first"
-        )
+        df = df.drop_duplicates(subset=["gca", "gb_status"], keep="first")
         return df.to_dict(orient="records")
 
     except Exception as e:
         logging.error(f"Error fetching annotation counts: {e}")
         return []
+
 
 def get_hprc():
     """Returns GCA info"""
@@ -406,28 +414,29 @@ def get_hprc():
             cursor.execute(query)
             result = cursor.fetchall()
 
-        df = pd.DataFrame(result, columns=[
-            "gca",
-            "lowest_taxon_id",
-            "scientific_name",
-            "asm_name",
-            "asm_level",
-            "gb_status",
-            "genebuilder"
-        ])
+        df = pd.DataFrame(
+            result,
+            columns=[
+                "gca",
+                "lowest_taxon_id",
+                "scientific_name",
+                "asm_name",
+                "asm_level",
+                "gb_status",
+                "genebuilder",
+            ],
+        )
         df["gb_status"] = df["gb_status"].fillna("not_started")
         df = df[~df["asm_name"].str.contains("alternate", case=False, na=False)]
         df = df.drop(columns=["asm_name"])
         df = df[~df["asm_level"].str.lower().isin(["contig", "scaffold"])]
-        df = df.drop_duplicates(
-            subset=["gca", "gb_status"],
-            keep="first"
-        )
+        df = df.drop_duplicates(subset=["gca", "gb_status"], keep="first")
         return df.to_dict(orient="records")
 
     except Exception as e:
         logging.error(f"Error fetching annotation counts: {e}")
         return []
+
 
 def get_cbp():
     """Returns GCA info"""
@@ -453,28 +462,29 @@ def get_cbp():
             cursor.execute(query)
             result = cursor.fetchall()
 
-        df = pd.DataFrame(result, columns=[
-            "gca",
-            "lowest_taxon_id",
-            "scientific_name",
-            "asm_name",
-            "asm_level",
-            "gb_status",
-            "genebuilder"
-        ])
+        df = pd.DataFrame(
+            result,
+            columns=[
+                "gca",
+                "lowest_taxon_id",
+                "scientific_name",
+                "asm_name",
+                "asm_level",
+                "gb_status",
+                "genebuilder",
+            ],
+        )
         df["gb_status"] = df["gb_status"].fillna("not_started")
         df = df[~df["asm_name"].str.contains("alternate", case=False, na=False)]
         df = df.drop(columns=["asm_name"])
         df = df[~df["asm_level"].str.lower().isin(["contig", "scaffold"])]
-        df = df.drop_duplicates(
-            subset=["gca", "gb_status"],
-            keep="first"
-        )
+        df = df.drop_duplicates(subset=["gca", "gb_status"], keep="first")
         return df.to_dict(orient="records")
 
     except Exception as e:
         logging.error(f"Error fetching annotation counts: {e}")
         return []
+
 
 def get_hprc():
     """Returns GCA info"""
@@ -500,28 +510,29 @@ def get_hprc():
             cursor.execute(query)
             result = cursor.fetchall()
 
-        df = pd.DataFrame(result, columns=[
-            "gca",
-            "lowest_taxon_id",
-            "scientific_name",
-            "asm_name",
-            "asm_level",
-            "gb_status",
-            "genebuilder"
-        ])
+        df = pd.DataFrame(
+            result,
+            columns=[
+                "gca",
+                "lowest_taxon_id",
+                "scientific_name",
+                "asm_name",
+                "asm_level",
+                "gb_status",
+                "genebuilder",
+            ],
+        )
         df["gb_status"] = df["gb_status"].fillna("not_started")
         df = df[~df["asm_name"].str.contains("alternate", case=False, na=False)]
         df = df.drop(columns=["asm_name"])
         df = df[~df["asm_level"].str.lower().isin(["contig", "scaffold"])]
-        df = df.drop_duplicates(
-            subset=["gca", "gb_status"],
-            keep="first"
-        )
+        df = df.drop_duplicates(subset=["gca", "gb_status"], keep="first")
         return df.to_dict(orient="records")
 
     except Exception as e:
         logging.error(f"Error fetching annotation counts: {e}")
         return []
+
 
 def get_laca():
     """Returns GCA info"""
@@ -546,28 +557,29 @@ def get_laca():
             cursor.execute(query)
             result = cursor.fetchall()
 
-        df = pd.DataFrame(result, columns=[
-            "gca",
-            "lowest_taxon_id",
-            "scientific_name",
-            "asm_name",
-            "asm_level",
-            "gb_status",
-            "genebuilder"
-        ])
+        df = pd.DataFrame(
+            result,
+            columns=[
+                "gca",
+                "lowest_taxon_id",
+                "scientific_name",
+                "asm_name",
+                "asm_level",
+                "gb_status",
+                "genebuilder",
+            ],
+        )
         df["gb_status"] = df["gb_status"].fillna("not_started")
         df = df[~df["asm_name"].str.contains("alternate", case=False, na=False)]
         df = df.drop(columns=["asm_name"])
         df = df[~df["asm_level"].str.lower().isin(["contig", "scaffold"])]
-        df = df.drop_duplicates(
-            subset=["gca", "gb_status"],
-            keep="first"
-        )
+        df = df.drop_duplicates(subset=["gca", "gb_status"], keep="first")
         return df.to_dict(orient="records")
 
     except Exception as e:
         logging.error(f"Error fetching annotation counts: {e}")
         return []
+
 
 def get_aegis():
     """Returns GCA info"""
@@ -587,28 +599,29 @@ def get_aegis():
 				       OR
 				       (g.group_type = 'assembly' AND a.gca_chain = g.item)
 				     )
-                WHERE g.group_name = 'AEGIS'
+                JOIN main_bioproject mb ON b.bioproject_id = mb.bioproject_id
+                WHERE mb.bioproject_name = 'AEGIS'
             """
             cursor.execute(query)
             result = cursor.fetchall()
 
-        df = pd.DataFrame(result, columns=[
-            "gca",
-            "lowest_taxon_id",
-            "scientific_name",
-            "asm_name",
-            "asm_level",
-            "gb_status",
-            "genebuilder"
-        ])
+        df = pd.DataFrame(
+            result,
+            columns=[
+                "gca",
+                "lowest_taxon_id",
+                "scientific_name",
+                "asm_name",
+                "asm_level",
+                "gb_status",
+                "genebuilder",
+            ],
+        )
         df["gb_status"] = df["gb_status"].fillna("not_started")
         df = df[~df["asm_name"].str.contains("alternate", case=False, na=False)]
         df = df.drop(columns=["asm_name"])
         df = df[~df["asm_level"].str.lower().isin(["contig", "scaffold"])]
-        df = df.drop_duplicates(
-            subset=["gca", "gb_status"],
-            keep="first"
-        )
+        df = df.drop_duplicates(subset=["gca", "gb_status"], keep="first")
         return df.to_dict(orient="records")
 
     except Exception as e:
