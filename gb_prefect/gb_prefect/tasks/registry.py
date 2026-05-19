@@ -1,21 +1,20 @@
 from prefect import task # type: ignore
-from gb_prefect.utils.logging_utils import append_log 
+from gb_prefect.utils.logging_utils import append_log
 from gb_prefect.utils.shell_utils import run_cmd_bash_capture
 from gb_prefect.utils.artifact_utils import create_registry_run_artifact
 from pathlib import Path
 from datetime import datetime
 import os
+import re
 
 @task(log_prints=True)
 def register_assemblies(
-    date:str,
+    date: str,
     outdir: str,
     enscode: str = None,
     dry_run: bool = False,
     create_artifact: bool = True,
 ):
-
-
     outdir_path = Path(outdir)
     date_fmt = datetime.strptime(date, "%m-%d-%Y").strftime("%Y-%m-%d")
     log = outdir_path / f"log_flow_register_assemblies_{date_fmt}.log"
@@ -28,29 +27,52 @@ def register_assemblies(
             enscode = "<ENSCODE>"
         else:
             raise ValueError("ENSCODE is required when dry_run=False. Pass enscode=..., set ENSCODE, or run with dry_run=True.")
-        
     append_log(log, f"[{datetime.now()}] INFO: ENSCODE set to {enscode}.\n")
 
-    cmd = f"""
-    module load ensembl/asm_update_dev &&
-    module load nextflow &&
-    cd {outdir} &&
-    nextflow run \
+    sbatch_script = f"""#!/bin/bash
+#SBATCH --job-name=asm_registry_{date_fmt}
+#SBATCH --output={outdir}/slurm_%j.out
+#SBATCH --error={outdir}/slurm_%j.err
+#SBATCH --time=02:00:00
+#SBATCH --mem=4G
+umask 002
+
+module load ensembl/asm_update_dev
+module load nextflow
+
+cd {outdir}
+
+nextflow run \
     {enscode}/ensembl-genes-metadata/pipelines/assembly_metadata/main.nf \
         --output_dir {outdir} \
         --enscode {enscode} \
         --date {date}
-    """
+"""
 
-    append_log(log, f"[{datetime.now()}] INFO: {cmd}.\n")
-    command_file.write_text(cmd.strip() + "\n")
+    append_log(log, f"[{datetime.now()}] INFO: sbatch script:\n{sbatch_script}\n")
+    command_file.write_text(sbatch_script)
+    command_file.chmod(0o755)
 
     if dry_run:
         rc = 0
-        append_log(log, f"[{datetime.now()}] INFO: Dry run enabled; Nextflow command was not executed.\n")
+        job_id = None
+        append_log(log, f"[{datetime.now()}] INFO: Dry run enabled; sbatch job was not submitted.\n")
     else:
-        result = run_cmd_bash_capture(cmd, log_path=log)
-        rc = result.returncode
+        sbatch_result = run_cmd_bash_capture(f"sbatch --wait {command_file}", log_path=log)
+        rc = sbatch_result.returncode
+
+        job_id_match = re.search(r"Submitted batch job (\d+)", sbatch_result.stdout)
+        job_id = job_id_match.group(1) if job_id_match else None
+        append_log(log, f"[{datetime.now()}] INFO: SLURM job ID: {job_id}.\n")
+
+        if job_id:
+            for slurm_file in (
+                outdir_path / f"slurm_{job_id}.out",
+                outdir_path / f"slurm_{job_id}.err",
+            ):
+                if slurm_file.exists():
+                    append_log(log, f"[{datetime.now()}] INFO: --- {slurm_file.name} ---\n")
+                    append_log(log, slurm_file.read_text())
 
     append_log(log, f"[{datetime.now()}] INFO: Return code {rc}.\n")
 
@@ -59,7 +81,7 @@ def register_assemblies(
             date=date_fmt,
             outdir=outdir,
             command_file=str(command_file),
-            cmd=cmd,
+            cmd=sbatch_script,
             log_text=log.read_text(),
             rc=rc,
             dry_run=dry_run,
@@ -67,9 +89,10 @@ def register_assemblies(
 
     return {
         "returncode": rc,
-        "command": cmd,
+        "command": sbatch_script,
         "command_file": str(command_file),
         "log_file": str(log),
+        "slurm_job_id": job_id if not dry_run else None,
         "pipeline_run_date": date_fmt,
         "pipeline_ran": not dry_run,
         "dry_run": dry_run,
