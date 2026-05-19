@@ -17,8 +17,8 @@ def register_assemblies(
 
 
     outdir_path = Path(outdir)
-    log = outdir_path / f"log_flow_register_assemblies_{date}.log"
-    command_file = outdir_path / f"register_assemblies_command_{date}.sh"
+    log = outdir_path / f"log_flow_register_assemblies_{date.strftime('%Y-%m-%d')}.log"
+    command_file = outdir_path / f"register_assemblies_command_{date.strftime('%Y-%m-%d')}.sh"
     log.parent.mkdir(parents=True, exist_ok=True)
 
     enscode = enscode or os.environ.get("ENSCODE")
@@ -55,7 +55,7 @@ def register_assemblies(
 
     if create_artifact:
         create_registry_run_artifact(
-            date=date,
+            date=date.strftime("%Y-%m-%d"),
             outdir=outdir,
             command_file=str(command_file),
             cmd=cmd,
@@ -69,7 +69,7 @@ def register_assemblies(
         "command": cmd,
         "command_file": str(command_file),
         "log_file": str(log),
-        "pipeline_run_date": date,
+        "pipeline_run_date": date.strftime("%Y-%m-%d"),
         "pipeline_ran": not dry_run,
         "dry_run": dry_run,
     }
