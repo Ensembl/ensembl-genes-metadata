@@ -1,4 +1,5 @@
 from prefect import task # type: ignore
+from prefect.states import Failed, Completed # type: ignore
 from gb_prefect.utils.logging_utils import append_log
 from gb_prefect.utils.shell_utils import run_cmd_bash_capture
 from gb_prefect.utils.artifact_utils import create_registry_run_artifact
@@ -89,7 +90,7 @@ nextflow run \
             dry_run=dry_run,
         )
 
-    return {
+    result = {
         "returncode": rc,
         "command": sbatch_script,
         "command_file": str(command_file),
@@ -99,3 +100,10 @@ nextflow run \
         "pipeline_ran": not dry_run,
         "dry_run": dry_run,
     }
+
+    if rc != 0:
+        return Failed(
+            message=f"Nextflow pipeline failed with return code {rc}",
+            data=result,
+        )
+    return Completed(data=result)
