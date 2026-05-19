@@ -16,7 +16,9 @@ def register_assemblies(
     create_artifact: bool = True,
 ):
     outdir_path = Path(outdir)
-    date_fmt = datetime.strptime(date, "%m-%d-%Y").strftime("%Y-%m-%d")
+    parsed_date = datetime.strptime(date, "%m-%d-%Y")
+    date_fmt = parsed_date.strftime("%Y-%m-%d")
+    date_slash = parsed_date.strftime("%m/%d/%Y")
     log = outdir_path / f"log_flow_register_assemblies_{date_fmt}.log"
     command_file = outdir_path / f"register_assemblies_command_{date_fmt}.sh"
     log.parent.mkdir(parents=True, exist_ok=True)
@@ -46,7 +48,7 @@ nextflow run \
     {enscode}/ensembl-genes-metadata/pipelines/assembly_metadata/main.nf \
         --output_dir {outdir} \
         --enscode {enscode} \
-        --date {date}
+        --date {date_slash}
 """
 
     append_log(log, f"[{datetime.now()}] INFO: sbatch script:\n{sbatch_script}\n")
