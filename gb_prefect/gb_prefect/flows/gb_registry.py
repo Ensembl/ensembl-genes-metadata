@@ -15,7 +15,7 @@ from gb_prefect.tasks.registry import register_assemblies
 def gb_registry_flow(
     date: str,
     outdir: str,
-    enscode: str = None,
+    enscode: str,
     dry_run: bool = False,
 ):
 
