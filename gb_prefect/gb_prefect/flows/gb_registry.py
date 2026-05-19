@@ -33,9 +33,11 @@ if __name__ == "__main__":
 
     try:
         parsed_date = datetime.strptime(args.date, "%m-%d-%Y")
+        
     except ValueError:
         raise ValueError(f"Date '{args.date}' is not in MM-DD-YYYY format")
 
-    gb_registry_flow(date=args.date, 
-                     outdir = f"{args.outdir}/{parsed_date.strftime('%Y-%m-%d')}", 
+    date_fmt = parsed_date.strftime("%Y-%m-%d")
+    gb_registry_flow(date=date_fmt, 
+                     outdir = f"{args.outdir}/{date_fmt}", 
                      dry_run=args.dry_run)
