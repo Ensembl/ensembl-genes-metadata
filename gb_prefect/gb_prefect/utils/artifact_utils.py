@@ -41,3 +41,44 @@ def create_busco_run_artifact(
         description="Nextflow BUSCO run log",
         markdown=markdown,
     )
+
+def create_registry_run_artifact(
+    date: str,
+    outdir: str,
+    command_file: str,
+    cmd: str,
+    log_text: str,
+    rc: int,
+    dry_run: bool,
+) -> None:
+    status = "SUCCESS" if rc == 0 else f"FAILED (rc={rc})"
+    dry_run_badge = " *(dry run)*" if dry_run else ""
+    markdown = f"""\
+# Assembly registry run log
+
+**Status:** {status}{dry_run_badge}
+
+| Field | Value |
+|---|---|
+| Date | `{date}` |
+| Outdir | `{outdir}` |
+| Command file | `{command_file}` |
+| Return code | `{rc}` |
+
+## Nextflow command
+
+```bash
+{cmd.strip()}
+```
+
+## Log output
+
+```
+{log_text.strip()}
+```
+"""
+    create_markdown_artifact(
+        key="registry-run-log",
+        description="Nextflow Assembly registry run log",
+        markdown=markdown,
+    )
