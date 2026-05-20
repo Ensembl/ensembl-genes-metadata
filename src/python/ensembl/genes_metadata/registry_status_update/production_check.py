@@ -77,9 +77,9 @@ def check_status_production_db(gca_tuple):
 
         production_status = mysql_fetch_data(
             production_query,
-            host="mysql-ens-meta-prod-1",
+            host="mysql-ens-production-1",
             user="ensro",
-            port=4483,
+            port=4721,
             database="ensembl_genome_metadata",
             password="",
         )
