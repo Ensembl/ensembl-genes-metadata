@@ -26,7 +26,7 @@ Arguments:
     -p, --password        MySQL password for the write user.
     -t, --test            Run in test mode (no database updates applied).
     -or, --old_registry   Boolean flag to check and copy entries from the old registry.
-    -sa, --stop_apply     Boolean flag; if True, do not apply updates from old registry (default: True).
+    -do, --dry_old     Boolean flag; if True, do not apply updates from old registry (default: True).
 
 Example:
     # Run in test mode
@@ -161,20 +161,17 @@ def get_status_updates(merged_df):
         df = df[~condition_faulty].copy()
         logger.info(f"{len(df)} rows remain after filtering out faulty entries.")
 
-    # 2. Production Released in current release -> coming_soon, previous release -> live
+    # 2. Production Released in current release -> coming_soon, older release -> live
     current_release_ids = df.loc[df["is_current_release"] == 1, "release_id"].dropna()
     current_release_id = (
         current_release_ids.max() if not current_release_ids.empty else pd.NA
     )
-    previous_release_id = (
-        current_release_id - 1 if pd.notna(current_release_id) else pd.NA
-    )
-    previous_release = pd.Series(False, index=df.index)
-    if pd.notna(previous_release_id):
-        previous_release = df["release_id"].eq(previous_release_id)
+    older_release = pd.Series(False, index=df.index)
+    if pd.notna(current_release_id):
+        older_release = df["release_id"].lt(current_release_id)
     else:
         logger.warning(
-            "No current release_id found in production data; live updates by previous release will be skipped."
+            "No current release_id found in production data; live updates by older release will be skipped."
         )
 
     condition_current_release = (df["status"] == "Released") & (
@@ -195,21 +192,21 @@ def get_status_updates(merged_df):
     )
     df.loc[condition_current_release, "release_type_new"] = "beta"
 
-    condition_previous_release = (df["status"] == "Released") & previous_release
-    condition_previous_release_status = condition_previous_release & (
+    condition_older_release = (df["status"] == "Released") & older_release
+    condition_older_release_status = condition_older_release & (
         df["gb_status"] != "live"
     )
     logger.info(
-        f"Released previous-release -> live updates: {condition_previous_release_status.sum()}"
+        f"Released older-release -> live updates: {condition_older_release_status.sum()}"
     )
-    df.loc[condition_previous_release_status, "gb_status_new"] = "live"
-    df.loc[condition_previous_release, "release_date_new"] = df.loc[
-        condition_previous_release, "release_date_production"
+    df.loc[condition_older_release_status, "gb_status_new"] = "live"
+    df.loc[condition_older_release, "release_date_new"] = df.loc[
+        condition_older_release, "release_date_production"
     ]
-    df.loc[condition_previous_release_status, "date_status_update_new"] = (
+    df.loc[condition_older_release_status, "date_status_update_new"] = (
         pd.Timestamp.today().normalize()
     )
-    df.loc[condition_previous_release, "release_type_new"] = "beta"
+    df.loc[condition_older_release, "release_type_new"] = "beta"
 
     # 3. Live but missing release_date
     condition_missing_date = (
@@ -420,13 +417,13 @@ def update_genebuild_status(updated_df, password):
         connection.close()
 
 
-def main(password, test, apply_method, old_registry, apply_old):
+def main(password, test, apply_method, old_registry, dry_old):
 
     if old_registry:
         logger.info("Checking status in old registry.")
         gb_status = get_genebuild_status()
         copy_from_old_registry = insert_entries_from_old_registry(
-            password, gb_status, apply_old
+            password, gb_status, dry_old
         )
 
     logger.info("Only using the new registry.")
@@ -524,12 +521,12 @@ if __name__ == "__main__":
         "-or", "--old_registry", action="store_true", help="Check old registry status"
     )
     parser.add_argument(
-        "-ao",
-        "--apply_old",
+        "-do",
+        "--dry_old",
         action="store_true",
-        help="Apply updates from old registry (default is stop).",
+        help="Dry run old registry check",
     )
 
     args = parser.parse_args()
 
-    main(args.password, args.test, args.apply_method, args.old_registry, args.apply_old)
+    main(args.password, args.test, args.apply_method, args.old_registry, args.dry_old)

@@ -24,6 +24,7 @@ import pandas as pd
 from logger_settings import get_logger
 
 logger = get_logger(__name__)
+import sys
 
 
 def check_status_production_db(gca_tuple):
@@ -148,3 +149,21 @@ def check_status_production_db(gca_tuple):
     except pymysql.Error as err:
         logger.error("MySQL error: %s", err)
         return
+
+
+if __name__ == "__main__":
+    if len(sys.argv) != 2:
+        print("Usage: python production_check.py gca_list.txt")
+        sys.exit(1)
+
+    gca_file = sys.argv[1]
+
+    with open(gca_file) as fh:
+        gcas = tuple(line.strip() for line in fh if line.strip())
+
+    result = check_status_production_db(gcas)
+
+    if result is not None and not result.empty:
+        print(result.to_string(index=False))
+    else:
+        print("No entries found.")
