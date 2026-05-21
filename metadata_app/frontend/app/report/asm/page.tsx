@@ -24,6 +24,7 @@ import {
 import {Switch} from "@/components/ui/switch";
 import {CladeItem, RepClade} from "@/components/ui/repo_asm_clade";
 import {AsmTypeItem, RepAsmType} from "@/components/ui/repo_asm_type";
+import {AsmLevelItem, RepAsmLevel} from "@/components/ui/repo_asm_level";
 import {TranscItem, TranscCard} from "@/components/ui/rep_asm_transc";
 import {LengthItem, LengthChart} from "@/components/ui/rep_asm_length";
 import {RepTranscENA, TranscENAItem} from "@/components/ui/repo_asm_transc_ena";
@@ -67,7 +68,9 @@ export default function Page() {
   const [downloadables, setDownloadables] = useState<Downloadables | null>(null);
   const [loading, setLoading] = useState(false);
   const [candidate, setCandidate] = useState<boolean>(false);
+  const [nonAnnotated, setNonAnnotated] = useState<boolean>(true);
   const [asmtypeData, setAsmType] = useState<AsmTypeItem[]>([]);
+  const [asmlevelData, setAsmLevel] = useState<AsmLevelItem[]>([]);
   const [transcData, setTransc] = useState<TranscItem| null>(null);
   const [taxaData, setTaxa] = useState<NumTaxaItem | null>(null);
   const [topTaxaData, setTopTaxa] = useState<TaxaItem[]>([]);
@@ -79,9 +82,9 @@ export default function Page() {
   const [transc, setTransc_check_reg] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const title = "Generate non-annotated assembly report";
+  const title = "Generate assembly report";
   const description =
-    "Select a biodiversity project or enter a BioProject ID to generate an overview of non-annotated assemblies. Use the optional filters to further customize your report. Generate a table with assemblies and download a PDF report.";
+    "Select a biodiversity project or enter a BioProject ID to generate an overview of assemblies. Use the optional filters to further customize your report. Generate a table with assemblies and download a PDF report.";
 
   const groupNameValues = ["LACA", "AQUA-FAANG"];
   const hasBioprojectInput =
@@ -144,6 +147,7 @@ export default function Page() {
         start_date: baseFieldValues["Report start date"] || null,
         end_date: baseFieldValues["Report end date"] || null,
         candidate: candidate,
+        non_annotated: nonAnnotated,
         transc_ena: transc_ena,
         transc: transc,
       };
@@ -174,6 +178,7 @@ export default function Page() {
       if (result.rep_asm_main) {
         setReport(result.rep_asm_main);
         setAsmType(result.asm_type_group);
+        setAsmLevel(result.asm_level_group);
         setTransc(result.transc_reg_count);
         setTaxa(result.num_unique_taxa);
         setTopTaxa(result.top_3_taxa);
@@ -322,12 +327,20 @@ export default function Page() {
                 </TooltipContent>
                 </Tooltip>
                 </div>
+
+                <div className="flex items-center gap-2">
+                  <Switch
+                    checked={nonAnnotated}
+                    onCheckedChange={setNonAnnotated}
+                  />
+                  <Label className="mt-1 block">Only show non-annotated assemblies</Label>
+                </div>
              </div>
 
             </div>
             <div className="mt-6 flex justify-end">
               <Button className="cursor-pointer" onClick={handleGetAnnotations} disabled={loading}>
-                {loading ? <Loader2 className="animate-spin h-4 w-4 mr-2" /> : "Generate non-annotated assembly report"}
+                {loading ? <Loader2 className="animate-spin h-4 w-4 mr-2" /> : "Generate assembly report"}
               </Button>
             </div>
           </div>
@@ -368,6 +381,7 @@ export default function Page() {
                 {!hasBioprojectInput &&
                     <RepProject data={projectData} />}
                 <RepAsmType data={asmtypeData} />
+                <RepAsmLevel data={asmlevelData} />
 
                 {baseFieldValues["Taxon ID"] && (
                   <>
