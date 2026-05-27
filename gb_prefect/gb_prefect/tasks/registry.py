@@ -41,7 +41,7 @@ def register_assemblies(
 #SBATCH --mem=4G
 umask 002
 
-source ${asm_venv}/bin/activate
+source {asm_venv}/bin/activate
 
 cd {outdir}
 
