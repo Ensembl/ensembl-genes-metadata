@@ -41,7 +41,7 @@ def register_assemblies(
 #SBATCH --mem=4G
 umask 002
 
-module load nextlow
+module load nextflow
 source {asm_venv}/bin/activate
 
 cd {outdir}
