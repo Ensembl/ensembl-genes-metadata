@@ -3,5 +3,15 @@
       "label": "Darwin Tree of Life",
       "email": "lazar@ebi.ac.uk",
       "id": "PRJEB40665"
+    },
+    "VGP": {
+      "label": "Vertebrate Genomes",
+      "email": "",
+      "id": "PRJNA489243"
+    },
+    "ERGA_BGE": {
+      "label": "European Reference Genome Atlas/Biodiversity Genomics Europe",
+      "email": "",
+      "id": "PRJEB61747"
     }
   }

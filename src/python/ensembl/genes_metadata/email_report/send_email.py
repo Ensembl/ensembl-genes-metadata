@@ -9,6 +9,7 @@ import sys
 import re
 import requests
 import pandas as pd
+from io import StringIO
 
 
 BIOPROJECT_ID_RE = re.compile(r"^PRJ[A-Z]{2}\d+$", re.IGNORECASE)
@@ -63,8 +64,9 @@ def create_report_csv(project_key: str, project_info: dict, csv_folder: Path) ->
         bioproject_id=bioproject_id,
         group_name=group_name,
     )
-
-    anno_main = pd.DataFrame(api_result["anno_main"])
+    
+    anno_wide_csv = api_result["downloadables_anno"]["anno_wide"]["csv"]
+    anno_main = pd.read_csv(StringIO(anno_wide_csv))
 
     # Define statuses to exclude
     exclude_statuses = {"archive", "abandoned"}
@@ -72,7 +74,11 @@ def create_report_csv(project_key: str, project_info: dict, csv_folder: Path) ->
     # Define renaming mapping
     status_mapping = {
         "check_busco": "low_protein_busco",
-        "poor_genome_busco": "low_genome_busco"
+        "poor_genome_busco": "low_genome_busco",
+        "completed": "pending_release",
+        "handed_over": "pending_release",
+        "coming_soon": "pending_release",
+        "pre_released": "pending_release"
     }
     
     # Drop rows with unwanted statuses
@@ -80,25 +86,42 @@ def create_report_csv(project_key: str, project_info: dict, csv_folder: Path) ->
     
     # Rename remaining statuses
     anno_main["gb_status"] = anno_main["gb_status"].replace(status_mapping)
-
-    anno_main = anno_main.drop(
-        columns=[
-            "gca_root",
-            "version",
-            "annotated_version",
-            "assembly_version",
+    
+    # Drop columns
+    cols_to_keep = [
+            "associated_project",
+            "gca",
+            "scientific_name",
+            "common_name",
+            "lowest_taxon_id",
+            "release_date",
+            "gb_status",
             "latest_version",
-            "last_genebuild_update",
-            "date_status_update"
-        ],
-        errors="ignore",
-    )
-    anno_main = anno_main.rename(
-        columns={"latest_annotated": "latest_assembly_version_annotated"}
-    )
+            "assembly_busco",
+            "assembly_busco_lineage",
+            "protein_busco",
+            "protein_busco_lineage",
+            "coding_genes"
+            ]
+    anno_main = anno_main[cols_to_keep]
+
+    # Rename columns
     anno_main = anno_main.rename(
         columns={"lowest_taxon_id": "taxon_id"}
     )
+    anno_main = anno_main.rename(
+        columns={"latest_version": "latest_assembly_version_annotated"}
+    )
+    anno_main = anno_main.rename(
+        columns={"coding_genes": "number_of_protein_coding_genes"}
+    )
+    anno_main = anno_main.rename(
+        columns={"gb_status": "status"}
+    )
+
+    # Order table by status column
+    anno_main = anno_main.sort_values("status")
+
 
     date_tag = datetime.now().strftime("%Y_%m")
     csv_path = csv_folder / f"{project_key}_{date_tag}.csv"
@@ -203,16 +226,16 @@ Please find attached the latest annotation report.
 
 The `latest_assembly_version_annotated` indicates whether a newer version of the GCA chain is available but has not yet been annotated.
 
-The `gb_status` column indicates the current state of each genome annotation:
+The `status` column indicates the current state of each genome annotation:
 
 - live: Annotation is publicly available on beta.ensembl.org
-- handed_over: Annotation is going through processing and will be soon available on beta.ensembl.org
-- completed: Annotation work finished but not yet live
+- pending_release: Annotation is complete and  will be featured in an upcoming release on beta.ensembl.org. A draft version of the annotation can be found on https://ftp.ebi.ac.uk/pub/databases/ensembl/pre-release/ Please note that this may not be identical to the final annotation that will be made public on beta.ensembl.org
+- in_progress: Annotation is currently underway
 - low_genome_busco: Genome quality is low based on BUSCO assessment
 - insufficient_data: Not enough data available to proceed with annotation
-- in_progress: Annotation is currently underway
 - low_protein_busco: Protein BUSCO score is low and/or differs from the genome BUSCO score by more than 10%
-- pre_released: Annotation is done, and the draft version can be found on https://ftp.ebi.ac.uk/pub/databases/ensembl/pre-release/ Please note that this may not be identical to the final annotation that will be made public on beta.ensembl.org
+
+If you have any questions regarding these emails please send them to genebuild@ebi.ac.uk. This inbox is not monitored.
 
 Regards,
 Ensembl Genebuild

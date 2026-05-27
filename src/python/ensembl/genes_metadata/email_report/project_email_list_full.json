@@ -1,62 +1,62 @@
 {
     "DToL": {
       "label": "Darwin Tree of Life",
-      "email": "leanne@ebi.ac.uk",
+      "email": "",
       "id": "PRJEB40665"
     },
     "ERGA_BGE": {
       "label": "European Reference Genome Atlas/Biodiversity Genomics Europe",
-      "email": "leanne@ebi.ac.uk",
+      "email": "",
       "id": "PRJEB61747"
     },
     "ERGA": {
       "label": "European Reference Genome Atlas",
-      "email": "leanne@ebi.ac.uk",
+      "email": "",
       "id": "PRJEB43510"
     },
     "EBP": {
       "label": "Earth BioGenome",
-      "email": "leanne@ebi.ac.uk",
+      "email": "",
       "id": "PRJNA533106"
     },
     "ERGA_pilot": {
       "label": "European Reference Genome Atlas pilot",
-      "email": "leanne@ebi.ac.uk",
+      "email": "",
       "id": "PRJEB47820"
     },
     "ASG": {
       "label": "Aquatic Symbiosis",
-      "email": "leanne@ebi.ac.uk",
+      "email": "",
       "id": "PRJEB43743"
     },
     "VGP": {
       "label": "Vertebrate Genomes",
-      "email": "leanne@ebi.ac.uk",
+      "email": "",
       "id": "PRJNA489243"
     },
     "CBP": {
       "label": "Canadian BioGenome",
-      "email": "leanne@ebi.ac.uk",
+      "email": "",
       "id": "PRJNA813333"
     },
     "AEGIS": {
       "label": "Ancient Environmental Genomics Initiative for Sustainability",
-      "email": "leanne@ebi.ac.uk",
+      "email": "",
       "id": "PRJEB80366"
     },
     "ToL": {
       "label": "Tree of Life",
-      "email": "leanne@ebi.ac.uk",
+      "email": "",
       "id": "PRJEB43745"
     },
     "LACA": {
       "label": "Livestock And Companion Animals",
-      "email": "leanne@ebi.ac.uk",
+      "email": "",
       "id": "LACA"
     },
     "AQUA_FAANG": {
       "label": "Aqua FAANG",
-      "email": "leanne@ebi.ac.uk",
+      "email": "",
       "id": "AQUA-FAANG"
     }
   }
