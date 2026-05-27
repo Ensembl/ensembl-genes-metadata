@@ -35,8 +35,7 @@ def run_assembly_pipeline(
     else:
         # Only attempt to load modules when not in dry run mode
         check_env = (
-            "module load ensembl/asm_update_dev && "
-            "module load nextflow && "
+            "source /var/tmp/prefect_venv/asm_venv/bin/activate && "
             'if [[ -z "${ENSCODE:-}" ]]; then echo "ENSCODE_NOT_SET"; else echo "$ENSCODE"; fi'
         )
         env_proc = subprocess.run(
