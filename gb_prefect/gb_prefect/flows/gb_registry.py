@@ -16,6 +16,7 @@ def gb_registry_flow(
     date: str,
     outdir: str,
     enscode: str,
+    asm_venv: str,
     dry_run: bool = False,
 ):
 
@@ -23,6 +24,7 @@ def gb_registry_flow(
         date=date,
         outdir=f"{outdir}/{date}",
         enscode=enscode,
+        asm_venv=asm_venv,
         dry_run=dry_run,
     )
 
@@ -32,7 +34,7 @@ if __name__ == "__main__":
     parser.add_argument("--date", required=True, help="Date for the registry run (e.g., MM-DD-YYYY).")
     parser.add_argument("--outdir", required=True, help="Base output directory.")
     parser.add_argument("--enscode", required=True, help="Path to ENSCODE directory.")
-    parser.add_argument("--asm-venv", required=True, help="Path to the assembly registry virtual environment.")
+    parser.add_argument("--asmvenv", required=True, help="Path to the assembly registry virtual environment.")
     args = parser.parse_args()
 
     try:
@@ -44,5 +46,5 @@ if __name__ == "__main__":
     gb_registry_flow(date=args.date,
                      outdir=f"{args.outdir}/{date_fmt}",
                      enscode=args.enscode,
-                     asm_venv=args.asm_venv,
+                     asm_venv=args.asmvenv,
                      dry_run=args.dry_run)
