@@ -12,6 +12,7 @@ import re
 def register_assemblies(
     date: str,
     outdir: str,
+    asm_venv: str,
     enscode: str = None,
     dry_run: bool = False,
     create_artifact: bool = True,
@@ -40,7 +41,7 @@ def register_assemblies(
 #SBATCH --mem=4G
 umask 002
 
-source /var/tmp/prefect_venv/asm_venv/bin/activate 
+source ${asm_venv}/bin/activate
 
 cd {outdir}
 
