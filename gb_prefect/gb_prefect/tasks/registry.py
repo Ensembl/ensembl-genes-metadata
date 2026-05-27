@@ -40,8 +40,7 @@ def register_assemblies(
 #SBATCH --mem=4G
 umask 002
 
-module load ensembl/asm_update_dev
-module load nextflow
+source /var/tmp/prefect_venv/asm_venv/bin/activate 
 
 cd {outdir}
 
