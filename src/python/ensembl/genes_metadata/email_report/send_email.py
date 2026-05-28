@@ -96,7 +96,7 @@ def create_report_csv(project_key: str, project_info: dict, csv_folder: Path) ->
             "lowest_taxon_id",
             "release_date",
             "gb_status",
-            "latest_version",
+            "latest_annotated",
             "assembly_busco",
             "assembly_busco_lineage",
             "protein_busco",
@@ -110,7 +110,7 @@ def create_report_csv(project_key: str, project_info: dict, csv_folder: Path) ->
         columns={"lowest_taxon_id": "taxon_id"}
     )
     anno_main = anno_main.rename(
-        columns={"latest_version": "latest_assembly_version_annotated"}
+        columns={"latest_annotated": "latest_assembly_version_annotated"}
     )
     anno_main = anno_main.rename(
         columns={"coding_genes": "number_of_protein_coding_genes"}
