@@ -4,6 +4,7 @@ from metadata_app.backend.app.services.annotations_service import generate_table
 
 annotations = APIRouter()
 
+
 @annotations.post("/annotations/filter")
 def filter_annotations(filters: AnnotationFilterRequest):
     try:
@@ -11,16 +12,36 @@ def filter_annotations(filters: AnnotationFilterRequest):
             bioproject_id=filters.bioproject_id,
             annotation_date=filters.annotation_date,
             taxon_id=filters.taxon_id,
-            group_name= filters.group_name,
+            group_name=filters.group_name,
+            gca=filters.gca,
         )
         # Build an informative suffix
         suffix = "_".join(
-            filter(None, [
-                f"bioproject_{'_'.join(filters.bioproject_id)}" if filters.bioproject_id else None,
-                f"taxon_{'_'.join(map(str, filters.taxon_id))}" if filters.taxon_id else None,
-                f"date_{filters.annotation_date}" if filters.annotation_date else None,
-                f"group_{'_'.join(filters.group_name)}" if filters.group_name else None,
-            ])
+            filter(
+                None,
+                [
+                    (
+                        f"bioproject_{'_'.join(filters.bioproject_id)}"
+                        if filters.bioproject_id
+                        else None
+                    ),
+                    (
+                        f"taxon_{'_'.join(map(str, filters.taxon_id))}"
+                        if filters.taxon_id
+                        else None
+                    ),
+                    (
+                        f"date_{filters.annotation_date}"
+                        if filters.annotation_date
+                        else None
+                    ),
+                    (
+                        f"group_{'_'.join(filters.group_name)}"
+                        if filters.group_name
+                        else None
+                    ),
+                ],
+            )
         )
 
         return {
@@ -42,5 +63,6 @@ def filter_annotations(filters: AnnotationFilterRequest):
     except Exception as e:
         # Log the actual exception
         import logging
+
         logging.exception("Unhandled exception in filter_annotations")
         raise HTTPException(status_code=500, detail="Internal server error")

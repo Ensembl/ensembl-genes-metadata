@@ -17,6 +17,10 @@ export type Annotations = {
   latest_annotated: string
   date_status_update: string
   release_date: string
+  assembly_busco : string
+  assembly_busco_lineage: string
+  protein_busco: string
+  protein_busco_lineage: string
 }
 
 function sortableHeader(label: string, accessor: string) {
@@ -87,5 +91,21 @@ export const columns: ColumnDef<Annotations>[] = [
       <Badge className="text-foreground w-5 h-5"  />
     );
   },
-}
+},
+    {
+    accessorKey: "assembly_busco",
+    header: sortableHeader("Assembly BUSCO", "assembly_busco"),
+  },
+     {
+    accessorKey: "assembly_busco_lineage",
+    header: sortableHeader("Assembly BUSCO lineage", "assembly_busco_lineage"),
+  },
+      {
+    accessorKey: "protein_busco",
+    header: sortableHeader("Protein BUSCO", "protein_busco"),
+  },
+     {
+    accessorKey: "protein_busco_lineage",
+    header: sortableHeader("Protein BUSCO", "protein_busco_lineage"),
+  },
 ]

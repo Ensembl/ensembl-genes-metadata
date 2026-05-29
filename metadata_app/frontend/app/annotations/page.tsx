@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Loader2, Terminal } from "lucide-react";
+import {InfoIcon, Loader2, Terminal} from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,8 @@ import { DataTable } from "@/app/tables/data-table";
 import { Annotations, columns } from "@/app/tables/annotations_columns";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import MultipleSelector, { Option } from "@/components/ui/multi_select";
+import {InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput} from "@/components/ui/input-group";
+import {Tooltip, TooltipContent, TooltipTrigger} from "@/components/ui/tooltip";
 
 
 type DownloadableFile = {
@@ -51,8 +53,7 @@ export default function Page() {
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const groupNameValues = ["LACA", "AQUA-FAANG"];
-
-
+  const [gcaInput, setGcaInput] = useState<string>("");
 
   const handleGetAnnotations = async (): Promise<void> => {
     setErrorMessage(null);
@@ -103,11 +104,21 @@ export default function Page() {
       }
 
 
+      // Parse GCA(s)
+      let uniqueGCA: string[] = [];
+      if (gcaInput) {
+        uniqueGCA = gcaInput
+          .split(",")
+          .map((id) => id.trim())
+          .filter((id) => id);
+      }
+
       const payload = {
         bioproject_id: uniqueBioprojects.length > 0 ? uniqueBioprojects : null,
         group_name: groupNames.length > 0 ? groupNames : null,
         annotation_date: baseFieldValues["Annotation date"] || null,
-        taxon_id: taxonIdArray
+        taxon_id: taxonIdArray,
+        gca: uniqueGCA.length > 0 ? uniqueGCA : null,
       };
 
       const cleanPayload = Object.fromEntries(
@@ -190,6 +201,32 @@ export default function Page() {
                   defaultOptions={projectOptions}
                   onChange={(values) => setSelectedProjects(values)}
                 />
+              </div>
+              <div>
+                <Label className="mb-3 block">GCA(s)</Label>
+                <InputGroup className="mt-3 gap-2 bg-filter-input-bg dark:bg-transparent">
+                <InputGroupInput
+                    placeholder="GCA_12345333.1, GCA_23456782.2"
+                    value={gcaInput}
+                    onChange={(e) => setGcaInput(e.target.value)}/>
+                <InputGroupAddon align="inline-end">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <InputGroupButton
+                        variant="ghost"
+                        aria-label="Info"
+                        size="icon-xs"
+                      >
+                        <InfoIcon />
+                      </InputGroupButton>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>GCAs must be comma seperated</p>
+                  </TooltipContent>
+                </Tooltip>
+              </InputGroupAddon>
+            </InputGroup>
+
               </div>
               </div>
             <div className="grid justify-center grid-cols-4 gap-4">
