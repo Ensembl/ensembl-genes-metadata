@@ -12,13 +12,15 @@ import {
   ToggleGroup,
   ToggleGroupItem,
 } from "@/components/ui/assembly_toggle";
-import { Assemblies, columns } from "@/app/tables/assemblies_columns";
-import { DataTable } from "@/app/tables/data-table";
+import { Assemblies, columns } from "@/features/assemblies/columns";
+import { DataTable } from "@/components/tables/data-table";
 import {cn} from "@/lib/utils";
 import {StartAnnotationDialog} from "@/components/start_anno_dialog";
 import {Tooltip, TooltipContent, TooltipTrigger} from "@/components/ui/tooltip";
 import {Alert, AlertDescription, AlertTitle} from "@/components/ui/alert";
 import {InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput} from "@/components/ui/input-group";
+import { cleanPayload, parseTaxonIds, splitCommaSeparated, splitProjectFilters } from "@/features/shared/filter-utils";
+import { PROJECT_OPTIONS } from "@/features/shared/project-options";
 
 
 
@@ -27,22 +29,6 @@ export default function Page() {
     { label: "BioProject ID", placeholder: "PRJNA123456"},
     { label: "Taxon ID", placeholder: "9606" },
     { label: "Release date", placeholder: "2024-12-31" },
-  ];
-
-  const projectOptions: Option[] = [
-    { value: "PRJEB40665", label: "Darwin Tree of Life" },
-    { value: "PRJEB61747", label: "European Reference Genome Atlas/Biodiversity Genomics Europe" },
-    { value: "PRJEB43510", label: "European Reference Genome Atlas" },
-    { value: "PRJNA533106", label: "Earth BioGenome" },
-    { value: "PRJEB47820", label: "European Reference Genome Atlas pilot" },
-    { value: "PRJEB43743", label: "Aquatic Symbiosis" },
-    { value: "PRJNA489243", label: "Vertebrate Genomes" },
-    { value: "PRJEB80366", label: "Ancient Environmental Genomics Initiative for Sustainability" },
-    { value: "PRJNA813333", label: "Canadian BioGenome" },
-    { value: "LACA", label: "Livestock And Companion Animals" },
-    { value: "AQUA-FAANG", label: "Aqua FAANG" },
-      { value: "PRJEB43745", label: "Tree of Life" },
-
   ];
 
   const [selectedProjects, setSelectedProjects] = useState<Option[]>([]);
@@ -64,8 +50,6 @@ export default function Page() {
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const groupNameValues = ["LACA", "AQUA-FAANG"];
-
   const isNumeric = (value: string) => /^\d+(\.\d+)?$/.test(value);
 
   const handleToggleChange = (metric: string, values: string[]) => {
@@ -73,7 +57,7 @@ export default function Page() {
   };
 
   const handleGetResults = async () => {
-      // Reset states at the beginning
+    // Reset states at the beginning
     setErrorMessage(null);
     setAssemblies([]);
 
@@ -88,34 +72,14 @@ export default function Page() {
     setLoading(true);
 
     try {
-      const bioprojectArray: string[] = [];
-      const groupNames: string[] = [];
+      const { bioprojectIds, groupNames } = splitProjectFilters(
+        selectedProjects,
+        baseFieldValues["BioProject ID"],
+      );
 
-      // Parse selection from dropdown
-      selectedProjects.forEach((item) => {
-        if (groupNameValues.includes(item.value)) {
-          groupNames.push(item.value);
-        } else {
-          bioprojectArray.push(item.value);
-        }
-      });
-
-      // Include manually entered BioProject IDs
-      const manualIdInput = baseFieldValues["BioProject ID"];
-      if (manualIdInput) {
-        const manualIds = manualIdInput
-          .split(",")
-          .map((id) => id.trim())
-          .filter((id) => id);
-        bioprojectArray.push(...manualIds);
-      }
-
-      // Remove duplicates
-      const uniqueBioprojects = Array.from(new Set(bioprojectArray));
-
-      // Format metric thresholds
-      const metric_thresholds: Record<string, number> = {};      Object.entries(metricValues)
-        .filter(([_, value]) => value) // Only include fields with values
+      const metric_thresholds: Record<string, number> = {};
+      Object.entries(metricValues)
+        .filter(([, value]) => value) // Only include fields with values
         .forEach(([metric, value]) => {
           metric_thresholds[metric] = Number(value);
         });
@@ -124,36 +88,12 @@ export default function Page() {
       const asm_level = toggleStates["Assembly level"] || null;
       const asm_type = toggleStates["Assembly type"] || null;
 
-      // Format taxon_id as number
-      let taxonIdArray = null;
-      const taxonInput = baseFieldValues["Taxon ID"];
-
-      if (taxonInput) {
-        if (taxonInput.includes(',')) {
-          taxonIdArray = taxonInput
-            .split(',')
-            .map(id => parseInt(id.trim(), 10))
-            .filter(id => !isNaN(id));
-        } else {
-          const parsed = parseInt(taxonInput.trim(), 10);
-          if (!isNaN(parsed)) {
-            taxonIdArray = [parsed];
-          }
-        }
-      }
-
-      // Parse GCA(s)
-      let uniqueGCA: string[] = [];
-      if (gcaInput) {
-        uniqueGCA = gcaInput
-          .split(",")
-          .map((id) => id.trim())
-          .filter((id) => id);
-      }
+      const taxonIdArray = parseTaxonIds(baseFieldValues["Taxon ID"]);
+      const uniqueGCA = splitCommaSeparated(gcaInput);
 
       // Format the payload according to API expectations
       const payload = {
-        bioproject_id: uniqueBioprojects.length > 0 ? uniqueBioprojects : null,
+        bioproject_id: bioprojectIds.length > 0 ? bioprojectIds : null,
         group_name: groupNames.length > 0 ? groupNames : null,
         metric_thresholds: Object.keys(metric_thresholds).length > 0 ? metric_thresholds : null,
         asm_level: asm_level,
@@ -177,7 +117,7 @@ export default function Page() {
           "Content-Type": "application/json",
           "accept": "application/json"
         },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(cleanPayload(payload)),
       });
 
       if (!res.ok) {
@@ -297,7 +237,7 @@ export default function Page() {
                 <Label className="mb-3 block">Select project name</Label>
                 <MultipleSelector
                   placeholder="Select projects or groups..."
-                  defaultOptions={projectOptions}
+                  defaultOptions={PROJECT_OPTIONS}
                   onChange={(values) => setSelectedProjects(values)}
                 />
               </div>

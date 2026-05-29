@@ -6,8 +6,8 @@ import { useReactToPrint } from 'react-to-print';
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { DataTable } from "@/app/tables/data-table";
-import { Report, columns } from "@/app/tables/report_columns";
+import { DataTable } from "@/components/tables/data-table";
+import { Report, columns } from "@/features/reports/annotation-columns";
 import MultipleSelector, { Option } from "@/components/ui/multi_select";
 import {RepStatus, StatusItem} from "@/components/ui/rep_anno_status";
 import {AnnotatedBuscoCard, BuscoItem} from "@/components/ui/rep_anno_busco"
@@ -20,6 +20,8 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import {DropdownMenu, DropdownMenuContent, DropdownMenuLabel, DropdownMenuItem, DropdownMenuTrigger} from "@/components/ui/dropdown-menu";
 import {CladeItem, RepClade} from "@/components/ui/repo_anno_clade";
 import {CladeLiveItem, RepCladeLive} from "@/components/ui/repo_anno_clade_live";
+import { cleanPayload, parseTaxonIds, splitProjectFilters } from "@/features/shared/filter-utils";
+import { PROJECT_OPTIONS } from "@/features/shared/project-options";
 
 
 
@@ -34,21 +36,6 @@ export default function Page() {
     { label: "Taxon ID", placeholder: "9606" },
     { label: "Report start date", placeholder: "2024-12-31" },
     { label: "Report end date", placeholder: "2024-03-05" },
-  ];
-
-  const projectOptions: Option[] = [
-    { value: "PRJEB40665", label: "Darwin Tree of Life" },
-    { value: "PRJEB61747", label: "European Reference Genome Atlas/Biodiversity Genomics Europe" },
-    { value: "PRJEB43510", label: "European Reference Genome Atlas" },
-    { value: "PRJNA533106", label: "Earth BioGenome" },
-    { value: "PRJEB47820", label: "European Reference Genome Atlas pilot" },
-    { value: "PRJEB43743", label: "Aquatic Symbiosis" },
-    { value: "PRJNA489243", label: "Vertebrate Genomes" },
-    { value: "PRJNA813333", label: "Canadian BioGenome" },
-    { value: "PRJEB80366", label: "Ancient Environmental Genomics Initiative for Sustainability" },
-    { value: "LACA", label: "Livestock And Companion Animals" },
-    { value: "AQUA-FAANG", label: "Aqua FAANG" },
-      { value: "PRJEB43745", label: "Tree of Life" },
   ];
 
   const [selectedProjects, setSelectedProjects] = useState<Option[]>([]);
@@ -72,68 +59,28 @@ export default function Page() {
   const description =
     "Select a biodiversity project or enter a BioProject ID to generate an overview of annotations by Genebuild. Use the optional filters to further customize your report. Generate a table with annotations and download a PDF report.";
 
-  const groupNameValues = ["LACA", "AQUA-FAANG"];
-
   const handleGetAnnotations = async () => {
     setErrorMessage(null);
     setReport([]);
 
     setLoading(true);
     try {
-      const bioprojectArray: string[] = [];
-      const groupNames: string[] = [];
-
-      // Parse selection from dropdown
-      selectedProjects.forEach((item) => {
-        if (groupNameValues.includes(item.value)) {
-          groupNames.push(item.value);
-        } else {
-          bioprojectArray.push(item.value);
-        }
-      });
-
-      // Include manually entered BioProject IDs
-      const manualIdInput = baseFieldValues["BioProject ID"];
-      if (manualIdInput) {
-        const manualIds = manualIdInput
-          .split(",")
-          .map((id) => id.trim())
-          .filter((id) => id);
-        bioprojectArray.push(...manualIds);
-      }
-
-      // Remove duplicates
-      const uniqueBioprojects = Array.from(new Set(bioprojectArray));
-
-      let taxonIdArray = null;
-      const taxonInput = baseFieldValues["Taxon ID"];
-
-      if (taxonInput) {
-        if (taxonInput.includes(',')) {
-          taxonIdArray = taxonInput
-            .split(',')
-            .map(id => parseInt(id.trim(), 10))
-            .filter(id => !isNaN(id));
-        } else {
-          const parsed = parseInt(taxonInput.trim(), 10);
-          if (!isNaN(parsed)) {
-            taxonIdArray = [parsed];
-          }
-        }
-      }
+      const { bioprojectIds, groupNames } = splitProjectFilters(
+        selectedProjects,
+        baseFieldValues["BioProject ID"],
+      );
+      const taxonIdArray = parseTaxonIds(baseFieldValues["Taxon ID"]);
 
 
       const payload = {
-        bioproject_id: uniqueBioprojects.length > 0 ? uniqueBioprojects : null,
+        bioproject_id: bioprojectIds.length > 0 ? bioprojectIds : null,
         group_name: groupNames.length > 0 ? groupNames : null,
         taxon_id: taxonIdArray,
         start_date: baseFieldValues["Report start date"] || null,
         end_date: baseFieldValues["Report end date"] || null
       };
 
-      const cleanPayload = Object.fromEntries(
-        Object.entries(payload).filter(([_, value]) => value !== null && value !== undefined)
-      );
+      const cleanedPayload = cleanPayload(payload);
 
       const res = await fetch("/api/report/anno/report/anno/filter", {
         method: "POST",
@@ -141,7 +88,7 @@ export default function Page() {
           "Content-Type": "application/json",
           accept: "application/json",
         },
-        body: JSON.stringify(cleanPayload),
+        body: JSON.stringify(cleanedPayload),
       });
 
       if (!res.ok) {
@@ -235,7 +182,7 @@ export default function Page() {
                 <Label className="mb-3 block">Main projects</Label>
                 <MultipleSelector
                   placeholder="Select projects or groups..."
-                  defaultOptions={projectOptions}
+                  defaultOptions={PROJECT_OPTIONS}
                   onChange={(values) => setSelectedProjects(values)}
                 />
               </div>

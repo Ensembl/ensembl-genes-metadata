@@ -1,20 +1,36 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { Terminal } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { DataTable } from "@/app/tables/data-table-sorting";
-import { ProjectGCA, columns } from "@/app/tables/project_columns";
+import { DataTable } from "@/components/tables/data-table-large";
+import { columns, type ProjectGCA } from "@/features/projects/columns";
 
-export default function Page() {
+type ProjectPageClientProps = {
+  projectSlug: string;
+  projectTitle: string;
+  projectExists: boolean;
+};
+
+export function ProjectPageClient({
+  projectSlug,
+  projectTitle,
+  projectExists,
+}: ProjectPageClientProps) {
   const [assemblies, setAssemblies] = useState<ProjectGCA[]>([]);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
+      if (!projectExists) {
+        setErrorMessage(`Unknown project: ${projectSlug}`);
+        setLoading(false);
+        return;
+      }
+
       try {
-        const res = await fetch("/api/project/project/asg");
+        const res = await fetch(`/api/project/project/${projectSlug}`);
 
         if (!res.ok) {
           const errorText = await res.text();
@@ -22,8 +38,6 @@ export default function Page() {
         }
 
         const json = await res.json();
-        console.log("API response:", json);
-
         const formatted = json.map((item: ProjectGCA) => ({
           gca: item.gca,
           lowest_taxon_id: item.lowest_taxon_id,
@@ -37,7 +51,7 @@ export default function Page() {
       } catch (err) {
         console.error("Error fetching data:", err);
         setErrorMessage(
-          err instanceof Error ? err.message : "Unknown error occurred"
+          err instanceof Error ? err.message : "Unknown error occurred",
         );
       } finally {
         setLoading(false);
@@ -45,7 +59,7 @@ export default function Page() {
     };
 
     fetchData();
-  }, []);
+  }, [projectExists, projectSlug]);
 
   return (
     <div className="flex items-center justify-center">
@@ -60,16 +74,16 @@ export default function Page() {
 
         <div className="flex items-center justify-between px-8 py-6">
           <h1 className="text-2xl font-semibold">
-            ASG number of GCAs: {assemblies.length}
+            {projectTitle} number of GCAs: {assemblies.length}
           </h1>
         </div>
 
         {loading ? (
           <p className="text-muted-foreground">Loading data...</p>
         ) : (
-            <div className="border-border border-2 rounded-md shadow-border">
+          <div className="border-border border-2 rounded-md shadow-border">
             <DataTable columns={columns} data={assemblies} />
-            </div>
+          </div>
         )}
       </div>
     </div>
