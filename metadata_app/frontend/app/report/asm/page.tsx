@@ -230,60 +230,53 @@ export default function Page() {
                 </div>
               ))}
 
-              <div className="grid justify-center grid-cols-2 mt-4">
-
-                <div className="flex items-center space-x-2">
+              <div className="col-span-2 grid grid-cols-4 gap-10 mt-4 items-center">
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <div className="flex flex-wrap gap-2">
-                    <Switch
-                      checked={transc_ena}
-                      onCheckedChange={setENA}
-                    />
-                    <Label className="mt-1 block">Check ENA for RNASeq</Label>
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        checked={transc_ena}
+                        onCheckedChange={setENA}
+                      />
+                      <Label>Check ENA for RNASeq</Label>
                     </div>
                   </TooltipTrigger>
-                <TooltipContent>
-                  <p>This will take longer to process</p>
-                </TooltipContent>
+                  <TooltipContent>
+                    <p>This will take longer to process</p>
+                  </TooltipContent>
                 </Tooltip>
+
+                <div className="flex items-center gap-2">
+                  <Switch
+                    checked={transc}
+                    onCheckedChange={setTransc_check_reg}
+                  />
+                  <Label>Check transcriptomic registry</Label>
                 </div>
 
-              <div className="flex flex-wrap gap-2">
-                <Switch
-                  checked={transc}
-                  onCheckedChange={setTransc_check_reg}
-                />
-                <Label className="mt-1 block">Check transcriptomic registry</Label>
-              </div>
-              </div>
-
-              <div className="grid justify-center grid-cols-2 gap-4 mt-4">
-              <div className="flex items-center space-x-2">
                 <Tooltip>
                   <TooltipTrigger asChild>
-                <div className="flex flex-wrap gap-2">
-                <Switch
-                  checked={candidate}
-                  onCheckedChange={setCandidate}
-                />
-                <Label className="mt-1 block">Annotation candidates</Label>
-              </div>
-                    </TooltipTrigger>
-                <TooltipContent>
-                  <p>Contig N50 min. 100.000, chromosome and complete genome.</p>
-                </TooltipContent>
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        checked={candidate}
+                        onCheckedChange={setCandidate}
+                      />
+                      <Label>Annotation candidates</Label>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Contig N50 min. 100.000, chromosome and complete genome.</p>
+                  </TooltipContent>
                 </Tooltip>
-                </div>
 
                 <div className="flex items-center gap-2">
                   <Switch
                     checked={nonAnnotated}
                     onCheckedChange={setNonAnnotated}
                   />
-                  <Label className="mt-1 block">Only show non-annotated assemblies</Label>
+                  <Label className="leading-tight">Only show non-annotated assemblies</Label>
                 </div>
-             </div>
+              </div>
 
             </div>
             <div className="mt-6 flex justify-end">
