@@ -6,3 +6,4 @@ __pycache__
 .next
 node_modules
 out
+metadata_app/backend/conf/db_config.dev.json
