@@ -23,7 +23,7 @@ def genome_busco_master_flow(
 
     nxf_outdir = str(pathlib.Path(outdir) / f"busco_genome_{datetime.now().strftime('%Y%m%d_%H%M%S')}")
 
-    csv_files = split_csv(csv_file, outdir)
+    csv_files = split_csv(csv_file, nxf_outdir)
     futures = [
         run_nextflow_busco.submit(
             csv_file=f,
