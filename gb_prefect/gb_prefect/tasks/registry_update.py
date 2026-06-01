@@ -20,10 +20,8 @@ def update_assemblies(
     create_artifact: bool = True,
 ):
     outdir_path = Path(outdir)
-    parsed_date = datetime.strptime(date, "%m-%d-%Y") if date else datetime.now()
-    date_fmt = parsed_date.strftime("%Y-%m-%d")
-    log = outdir_path / f"log_flow_update_assemblies_{date_fmt}.log"
-    command_file = outdir_path / f"update_assemblies_command_{date_fmt}.sh"
+    log = outdir_path / f"log_flow_update_assemblies_{date}.log"
+    command_file = outdir_path / f"update_assemblies_command_{date}.sh"
     log.parent.mkdir(parents=True, exist_ok=True)
 
     enscode = enscode or os.environ.get("ENSCODE")
@@ -35,7 +33,7 @@ def update_assemblies(
     append_log(log, f"[{datetime.now()}] INFO: ENSCODE set to {enscode}.\n")
 
     sbatch_script = f"""#!/bin/bash
-#SBATCH --job-name=asm_registry_update_{date_fmt}
+#SBATCH --job-name=asm_registry_update_{date}
 #SBATCH --output={outdir}/asm_registry_update_slurm_%j.out
 #SBATCH --error={outdir}/asm_registry_update_slurm_%j.err
 #SBATCH --time=02:00:00
@@ -55,7 +53,7 @@ run {enscode}/ensembl-genes-metadata/pipelines/assembly_metadata_update/main.nf 
     --gca_input true \
     --slack_report {str(slack_report).lower()} \
     -with-report \
-    -with-dag {outdir}/assembly_update_dag_{date_fmt}.png
+    -with-dag {outdir}/assembly_update_dag_{date}.png
 """
 
     append_log(log, f"[{datetime.now()}] INFO: sbatch script:\n{sbatch_script}\n")
@@ -87,7 +85,7 @@ run {enscode}/ensembl-genes-metadata/pipelines/assembly_metadata_update/main.nf 
 
     if create_artifact:
         create_registry_run_artifact(
-            date=date_fmt,
+            date=date,
             outdir=outdir,
             command_file=str(command_file),
             cmd=sbatch_script,
@@ -102,7 +100,7 @@ run {enscode}/ensembl-genes-metadata/pipelines/assembly_metadata_update/main.nf 
         "command_file": str(command_file),
         "log_file": str(log),
         "slurm_job_id": job_id if not dry_run else None,
-        "pipeline_run_date": date_fmt,
+        "pipeline_run_date": date,
         "pipeline_ran": not dry_run,
         "dry_run": dry_run,
     }

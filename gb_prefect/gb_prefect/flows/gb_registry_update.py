@@ -22,8 +22,10 @@ def gb_registry_update_flow(
     enscode: Optional[str] = None,
     dry_run: bool = False,
 ):
-    if not date:
+    if not args.date:
         date = datetime.now().strftime("%Y-%m-%d")
+    else:
+        date = datetime.strptime(args.date,"%Y-%m-%d")
     
     return update_assemblies(
         gca_list=gca_list,
@@ -42,14 +44,14 @@ if __name__ == "__main__":
     parser.add_argument("--asm_venv", required=True, help="Path to the assembly registry virtual environment.")
     parser.add_argument("--slack-report", action="store_true", help="Whether to send a Slack report after the Nextflow run.")
     parser.add_argument("--enscode", required=True, help="Path to ENSCODE directory.")
-    parser.add_argument("--date", required=False, help="Date for the registry run (e.g., MM-DD-YYYY).")
+    parser.add_argument("--date", required=False, help="Date for the registry run (e.g., YYYY-MM-DD).")
     parser.add_argument("--dry-run", action="store_true", help="Create the Nextflow command without running it.")
     args = parser.parse_args()
     
     if not args.date:
         date = datetime.now().strftime("%Y-%m-%d")
     else:
-        date = args.date
+        date = datetime.strptime(args.date,"%Y-%m-%d")
 
     gb_registry_update_flow(date=date,
                      outdir=f"{args.outdir}/asm_update_{date}",
