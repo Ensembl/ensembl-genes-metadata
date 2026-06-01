@@ -13,6 +13,7 @@ def update_assemblies(
     gca_list: str, 
     outdir: str,
     asm_venv: str,
+    slack_report: bool = True,
     date: str = None,
     enscode: str = None,
     dry_run: bool = False,
@@ -52,7 +53,7 @@ run {enscode}/ensembl-genes-metadata/pipelines/assembly_metadata_update/main.nf 
     --output_dir {outdir} \
     --gca_list {gca_list} \
     --gca_input true \
-    --slack_report true \
+    --slack_report {str(slack_report).lower()} \
     -with-report \
     -with-dag {outdir}/assembly_update_dag_{date_fmt}.png
 """
@@ -75,8 +76,8 @@ run {enscode}/ensembl-genes-metadata/pipelines/assembly_metadata_update/main.nf 
 
         if job_id:
             for slurm_file in (
-                outdir_path / f"slurm_{job_id}.out",
-                outdir_path / f"slurm_{job_id}.err",
+                outdir_path / f"asm_registry_update_slurm_{job_id}.out",
+                outdir_path / f"asm_registry_update_slurm_{job_id}.err",
             ):
                 if slurm_file.exists():
                     append_log(log, f"[{datetime.now()}] INFO: --- {slurm_file.name} ---\n")
