@@ -3,6 +3,7 @@ import sys
 from pathlib import Path
 from prefect import flow # type: ignore
 from datetime import datetime
+from typing import Optional
 
 
 PACKAGE_ROOT = Path(__file__).resolve().parents[2]
@@ -17,14 +18,16 @@ def gb_registry_update_flow(
     outdir: str,
     asm_venv: str,
     slack_report: bool = True,
-    date: str = None,
-    enscode: str = None,
+    date: Optional[str] = None,
+    enscode: Optional[str] = None,
     dry_run: bool = False,
 ):
+    if not date:
+        date = datetime.now().strftime("%Y-%m-%d")
     
     return update_assemblies(
         gca_list=gca_list,
-        outdir=f"{outdir}/{date}",
+        outdir=f"{outdir}/asm_update_{date}",
         asm_venv=asm_venv,
         slack_report=slack_report,
         date=date,
