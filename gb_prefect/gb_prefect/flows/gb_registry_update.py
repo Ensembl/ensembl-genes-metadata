@@ -22,10 +22,10 @@ def gb_registry_update_flow(
     enscode: Optional[str] = None,
     dry_run: bool = False,
 ):
-    if not args.date:
+    if not date:
         date = datetime.now().strftime("%Y-%m-%d")
     else:
-        date = datetime.strptime(args.date,"%Y-%m-%d")
+        date = datetime.strptime(date,"%Y-%m-%d").strftime("%Y-%m-%d")
     
     return update_assemblies(
         gca_list=gca_list,
