@@ -19,7 +19,7 @@ def is_reference(
 ):
     
     outdir_path = Path(output_path)
-    output_file = outdir_path / f"{Path(file_path).stem}_output.txt"
+    output_file = outdir_path / f"{Path(file_path).stem}_output.csv"
     log = outdir_path / f"log_flow_is_reference_{datetime.now().strftime('%Y-%m-%d')}.log"
     command_file = outdir_path / f"is_reference_command_{datetime.now().strftime('%Y-%m-%d')}.sh"
     output_file.parent.mkdir(parents=True, exist_ok=True)
