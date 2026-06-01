@@ -47,7 +47,7 @@ if __name__ == "__main__":
         date = datetime.now().strftime("%Y-%m-%d")
 
     gb_registry_update_flow(date=args.date,
-                     outdir=f"{args.outdir}/{date}",
+                     outdir=f"{args.outdir}/asm_update_{date}",
                      gca_list=args.gca_list,
                      enscode=args.enscode,
                      asm_venv=args.asm_venv,
