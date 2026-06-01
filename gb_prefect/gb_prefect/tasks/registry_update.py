@@ -45,7 +45,7 @@ source {asm_venv}/bin/activate
 
 cd {outdir}
 
-nextflow -C {enscode}ensembl-genes-metadata/pipelines/assembly_metadata_update/nexflow.config \
+nextflow -C {enscode}/ensembl-genes-metadata/pipelines/assembly_metadata_update/nexflow.config \
 run {enscode}/ensembl-genes-metadata/pipelines/assembly_metadata_update/main.nf \
     --screen_date 2026-01-15 \
     --output_dir {outdir} \
