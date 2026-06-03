@@ -9,3 +9,7 @@ out
 metadata_app/backend/conf/db_config.dev.json
 __pycache__/
 *.pyc
+
+# GSoC development artifacts
+test_outputs/
+**/__pycache__/
