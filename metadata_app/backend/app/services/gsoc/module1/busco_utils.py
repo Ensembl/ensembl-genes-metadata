@@ -37,7 +37,7 @@ def parse_busco_string(busco_string: str) -> dict[str, Optional[float | int]]:
         "n_genes": None,
     }
 
-    if not busco_string or not isinstance(busco_string, str):
+    if not isinstance(busco_string, str) or (busco_string and not re.search(r"C:", busco_string)):
         logging.warning("Invalid BUSCO string received: %s", busco_string)
         return result
 
