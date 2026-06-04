@@ -9,10 +9,10 @@ Module 1 (per-genome reports) and Module 2 (comparative analysis).
 
 import re
 import logging
-from typing import Optional
+from typing import Dict, Optional, Union
 
 
-def parse_busco_string(busco_string: str) -> dict[str, Optional[float | int]]:
+def parse_busco_string(busco_string: str) -> Dict[str, Optional[Union[float, int]]]:
     """
     Parse a BUSCO score string into its component values.
 
@@ -28,7 +28,7 @@ def parse_busco_string(busco_string: str) -> dict[str, Optional[float | int]]:
         {'complete': 94.3, 'single_copy': 91.2, 'duplicated': 3.1,
          'fragmented': 2.1, 'missing': 3.6, 'n_genes': 255}
     """
-    result: dict[str, Optional[float | int]] = {
+    result: Dict[str, Optional[Union[float, int]]] = {
         "complete": None,
         "single_copy": None,
         "duplicated": None,
