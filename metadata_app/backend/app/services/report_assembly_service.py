@@ -11,6 +11,10 @@ from metadata_app.backend.app.services.assembly_service import (
 from metadata_app.backend.app.services.get_transcriptomic_data_ENA_service import (
     add_data_from_ena,
 )
+from metadata_app.backend.app.services.taxonomy_service import (
+    assign_clade_and_species,
+    load_clade_data,
+)
 
 REPORT_ASSEMBLY_MAIN_COLUMNS = [
     "associated_project",
@@ -60,7 +64,7 @@ def _add_transcriptomic_evidence(df_wide):
         lowest_reads = pd.to_numeric(df_wide[lowest_col], errors="coerce")
         genus_reads = pd.to_numeric(df_wide[genus_col], errors="coerce")
         df_wide["transcriptomic_evidence"] = np.where(
-            (lowest_reads != 0) | ((lowest_reads == 0) & (genus_reads >= 1)),
+            (lowest_reads != 0) | ((lowest_reads == 0) & (genus_reads >= 2)),
             "yes",
             "no",
         )
@@ -384,6 +388,41 @@ def generate_overview():
             subset=["project_name", "assembly_id", "lowest_taxon_id"], keep="first"
         )
 
+        lowest_taxon_ids = {
+            row["lowest_taxon_id"]
+            for row in results
+            if row.get("lowest_taxon_id") is not None
+        }
+        taxonomy_dict = {}
+        if lowest_taxon_ids:
+            with get_db_connection("meta") as conn:
+                cursor = conn.cursor()
+                taxonomy_query = """
+                    SELECT lowest_taxon_id, taxon_class_id, taxon_class
+                    FROM taxonomy
+                    WHERE lowest_taxon_id IN ({})
+                """.format(",".join(["%s"] * len(lowest_taxon_ids)))
+                cursor.execute(taxonomy_query, tuple(lowest_taxon_ids))
+                taxonomy_results = cursor.fetchall()
+
+            for row in taxonomy_results:
+                lowest_taxon_id = row["lowest_taxon_id"]
+                taxonomy_dict.setdefault(lowest_taxon_id, []).append(
+                    {
+                        "taxon_class_id": row["taxon_class_id"],
+                        "taxon_class": row["taxon_class"],
+                    }
+                )
+
+        clade_data = load_clade_data()
+        df[["internal_clade", "species_taxon_id", "genus_taxon_id", "pipeline"]] = (
+            df["lowest_taxon_id"].apply(
+                lambda x: pd.Series(
+                    assign_clade_and_species(x, clade_data, taxonomy_dict)
+                )
+            )
+        )
+
         df_wide = df.pivot_table(
             index=[
                 "project_name",
@@ -394,6 +433,7 @@ def generate_overview():
                 "species_taxon_id",
                 "genus_taxon_id",
                 "genebuild_status",
+                "pipeline",
             ],
             columns="metrics_name",
             values="metrics_value",
@@ -412,7 +452,7 @@ def generate_overview():
                 how="left",
             )
             df_wide["transcriptomic_evidence"] = np.where(
-                df_wide["short_read_paired_end_illumina"].fillna(0) > 0, "yes", "no"
+                df_wide["short_read_paired_end_illumina"].fillna(0) > 2, "yes", "no"
             )
         else:
             df_wide["transcriptomic_evidence"] = "no"
@@ -432,10 +472,19 @@ def generate_overview():
             & (df_wide["genebuild_status"] == "not_annotated")
         )
 
+        df_wide["unannotated_main"] = (
+            df_wide["unannotated"] & (df_wide["pipeline"] == "main")
+        )
+        df_wide["unannotated_anno"] = (
+            df_wide["unannotated"] & (df_wide["pipeline"] == "anno")
+        )
+
         summary = df_wide.groupby("project_name", as_index=False).agg(
             total_assemblies=("assembly_id", "nunique"),
             annotation_candidates=("is_annotation_candidate", "sum"),
             unannotated=("unannotated", "sum"),
+            unannotated_main=("unannotated_main", "sum"),
+            unannotated_anno=("unannotated_anno", "sum"),
             in_progress=(
                 "genebuild_status",
                 lambda x: x.isin(["in_progress", "complete", "pre_released"]).sum(),

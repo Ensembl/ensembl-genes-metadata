@@ -218,7 +218,7 @@ def query_meta_registry(annotation_date, taxon_id, bioproject_id, group_name, gc
         clade_data = load_clade_data()
 
         df_meta_genebuild[
-            ["internal_clade", "species_taxon_id", "genus_taxon_id"]
+            ["internal_clade", "species_taxon_id", "genus_taxon_id", "pipeline"]
         ] = df_meta_genebuild["lowest_taxon_id"].apply(
             lambda x: pd.Series(assign_clade_and_species(x, clade_data, taxonomy_dict))
         )

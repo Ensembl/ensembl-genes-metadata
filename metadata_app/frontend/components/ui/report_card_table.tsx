@@ -37,6 +37,8 @@ export type Report_Table = {
   total_assemblies: number
   annotation_candidates: number
   unannotated: number
+  unannotated_main: number
+  unannotated_anno: number
   in_progress: number
   live: number
 }
@@ -70,11 +72,25 @@ export const columns: ColumnDef<Report_Table>[] = [
       <div className="capitalize">{row.getValue("annotation_candidates")}</div>
     ),
   },
-    {
+  {
     accessorKey: "unannotated",
-    header: () => ( <> Annotation candidates <br /> unannotated</>),
+    header: () => ( <> Annotation candidates <br /> unannotated total</>),
     cell: ({ row }) => (
       <div className="capitalize">{row.getValue("unannotated")}</div>
+    ),
+  },
+  {
+    accessorKey: "unannotated_main",
+    header: () => ( <> Annotation candidates <br /> unannotated main</>),
+    cell: ({ row }) => (
+      <div className="capitalize">{row.getValue("unannotated_main")}</div>
+    ),
+  },
+  {
+    accessorKey: "unannotated_anno",
+    header: () => ( <> Annotation candidates <br /> unannotated anno</>),
+    cell: ({ row }) => (
+      <div className="capitalize">{row.getValue("unannotated_anno")}</div>
     ),
   },
   {
@@ -112,6 +128,8 @@ export function CardsReportTable() {
           project_name: item.project_name || "Unknown",
           total_assemblies: item.total_assemblies,
           unannotated: item.unannotated,
+          unannotated_main: item.unannotated_main ?? 0,
+          unannotated_anno: item.unannotated_anno ?? 0,
           annotation_candidates: item.annotation_candidates,
           in_progress: item.in_progress,
           live: item.live,

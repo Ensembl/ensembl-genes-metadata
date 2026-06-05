@@ -64,9 +64,10 @@ def get_filtered_assemblies(
             # Build query conditions
             conditions = []
             params = []
+            project_conditions = []
 
             if bioproject_id:
-                conditions.append(
+                project_conditions.append(
                     f"b.bioproject_id IN ({','.join(['%s'] * len(bioproject_id))})"
                 )
                 params.extend(bioproject_id)
@@ -75,11 +76,16 @@ def get_filtered_assemblies(
             if group_name:
                 if isinstance(group_name, str):
                     group_name = [group_name]
-                conditions.append(
+                project_conditions.append(
                     f"g.group_name IN ({','.join(['%s'] * len(group_name))})"
                 )
                 params.extend(group_name)
                 logging.info(f"Filtering by group name: {', '.join(group_name)}")
+
+            if len(project_conditions) == 1:
+                conditions.append(project_conditions[0])
+            elif len(project_conditions) > 1:
+                conditions.append(f"({' OR '.join(project_conditions)})")
 
             if release_date:
                 if isinstance(release_date, pd.Timestamp):
@@ -220,6 +226,20 @@ def get_filtered_assemblies(
         df["release_date"] = pd.to_datetime(df["release_date"], errors="coerce")
         df["gca"] = df["gca_chain"].astype(str) + "." + df["gca_version"].astype(str)
 
+        # Flag assemblies that have another live version on the same GCA chain.
+        live_gca_sets = (
+            df.loc[df["gb_status"] == "live"]
+            .groupby("gca_chain")["gca"]
+            .agg(lambda series: set(series))
+            .to_dict()
+        )
+        df["other_version_live"] = [
+            "yes"
+            if len(live_gca_sets.get(gca_chain, set()) - {gca}) > 0
+            else "no"
+            for gca_chain, gca in zip(df["gca_chain"], df["gca"])
+        ]
+
         # Clean genome_coverage
         logging.info(f"Cleaning genome coverage")
         df["metrics_value"] = df.apply(
@@ -247,6 +267,21 @@ def get_filtered_assemblies(
 
         df["GCA"] = df["gca_chain"].astype(str) + "." + df["gca_version"].astype(str)
 
+        # Assign taxonomy-derived fields before deduplication so the row identity
+        # matches the actual data we will later pivot and return.
+        clade_data = load_clade_data()
+        df[["internal_clade", "species_taxon_id", "genus_taxon_id", "pipeline"]] = (
+            pd.DataFrame(
+                df.apply(
+                    lambda r: assign_clade_and_species(
+                        r["lowest_taxon_id"], clade_data, taxonomy_dict
+                    ),
+                    axis=1,
+                ).tolist(),
+                index=df.index,
+            )
+        )
+
         index_cols = [
             "bioproject_id",
             "associated_project",
@@ -263,6 +298,8 @@ def get_filtered_assemblies(
             "infra_name",
             "is_current",
             "gb_status",
+            "other_version_live",
+            "pipeline",
             "metrics_name",
         ]
 
@@ -291,6 +328,8 @@ def get_filtered_assemblies(
                 "infra_name",
                 "is_current",
                 "gb_status",
+                "other_version_live",
+                "pipeline",
             ],
             columns="metrics_name",
             values="metrics_value",
@@ -326,10 +365,8 @@ def get_filtered_assemblies(
         if df_wide.empty:
             return "No assemblies meet the given thresholds.", None, None, None, None
 
-        # Add clade, species, and genus information
-        clade_data = load_clade_data()
-
-        df_wide[["internal_clade", "species_taxon_id", "genus_taxon_id"]] = (
+        # Re-attach taxonomy-derived columns on the wide frame for downstream merges.
+        df_wide[["internal_clade", "species_taxon_id", "genus_taxon_id", "pipeline"]] = (
             pd.DataFrame(
                 df_wide.apply(
                     lambda r: assign_clade_and_species(

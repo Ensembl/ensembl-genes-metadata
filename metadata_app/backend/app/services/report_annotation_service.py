@@ -141,7 +141,7 @@ def generate_report(end_date, start_date, group_name, taxon_id, bioproject_id):
         )
     clade_data = load_clade_data()
 
-    anno_wide[["internal_clade", "species_taxon_id", "genus_taxon_id"]] = anno_wide[
+    anno_wide[["internal_clade", "species_taxon_id", "genus_taxon_id", "pipeline"]] = anno_wide[
         "lowest_taxon_id"
     ].apply(lambda x: pd.Series(assign_clade_and_species(x, clade_data, taxonomy_dict)))
 

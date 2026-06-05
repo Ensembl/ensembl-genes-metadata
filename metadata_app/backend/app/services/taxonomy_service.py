@@ -20,7 +20,11 @@ def load_clade_data():
 
 
 def assign_clade_and_species(
-    lowest_taxon_id, clade_data, taxonomy_dict, human_taxon_id=9606
+    lowest_taxon_id,
+    clade_data,
+    taxonomy_dict,
+    chordata_taxon_id=7711,
+    human_taxon_id=9606,
 ):
     """
     Assign clade, species_id, genus_id, and pipeline based on taxonomy efficiently.
@@ -36,7 +40,7 @@ def assign_clade_and_species(
 
     if not taxonomy_hierarchy:
         logging.warning(f"No taxonomy hierarchy found for taxon_id {lowest_taxon_id}")
-        return "Unassigned", None, None
+        return "Unassigned", None, None, "anno"
 
     # Build a quick mapping taxon_class -> taxon_class_id
     taxon_class_map = {
@@ -69,7 +73,13 @@ def assign_clade_and_species(
             internal_clade = clade_lookup[int(taxon_id)]
             break
 
-    return internal_clade, species_taxon_id, genus_taxon_id
+    if lowest_taxon_id == human_taxon_id:
+        pipeline = "hprc"
+    else:
+        clade_settings = clade_data.get(internal_clade, {})
+        pipeline = "main" if clade_settings.get("sanity_set") else "anno"
+
+    return internal_clade, species_taxon_id, genus_taxon_id, pipeline
 
 
 def get_descendant_taxa(taxon_id):
