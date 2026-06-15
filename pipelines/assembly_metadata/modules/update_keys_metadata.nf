@@ -15,6 +15,19 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+/*
+UPDATE_KEYS_METADATA
+This process updates the keys in the metadata JSON based on the provided temporary metadata and last processed ID
+Inputs:
+- gca: The GCA accession.
+- metadata_tmp: The temporary metadata file.
+- last_id: The last processed ID.
+- species_tmp: The temporary species metadata file.
+Outputs:
+- gca: The GCA accession.
+- ${metadata_tmp.baseName}.json: The updated metadata in JSON format.
+- species_tmp: The temporary species metadata file (unchanged).
+*/
 
 process UPDATE_KEYS_METADATA {
 

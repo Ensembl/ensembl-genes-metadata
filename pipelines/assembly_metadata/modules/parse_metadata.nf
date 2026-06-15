@@ -15,6 +15,17 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+/*
+PARSE_METADATA
+This process retrieves the assembly metadata for a given GCA accession from the NCBI
+Inputs:
+- gca: The GCA accession for which to retrieve assembly metadata.
+Outputs:
+- gca: The GCA accession.
+- ${gca}_assembly.json: The assembly metadata in JSON format.
+- ${gca}_metadata.tmp: The assembly metadata in temporary format.
+- ${gca}_species.tmp: The species metadata in temporary format. 
+*/
 
 process PARSE_METADATA {
     

@@ -15,6 +15,15 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+/*
+SET DATE
+This process determines the date to be used for fetching new assemblies based on the provided parameters.
+Inputs:
+- params.date: The date provided by the user (optional).
+- params.full_screen: A flag indicating whether to fetch the date for a full screen update (optional).
+Outputs:
+- stdout: The determined date to be used for fetching new assemblies.
+*/
 
 process SET_DATE {
     output:

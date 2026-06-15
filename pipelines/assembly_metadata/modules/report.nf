@@ -15,6 +15,16 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+/*
+REPORT
+This process generates a report based on the provided GCA list and last update date.
+Inputs:
+- gca_list: The list of GCA accessions to include in the report.
+- last_update: The date of the last update to filter new assemblies.
+Outputs:
+- report.txt: The generated report file.
+- gca_to_run_ncbi.csv: A CSV file containing formatted to be input of the BUSCO Nextflow pipeline
+ */
 
 process REPORT {
 

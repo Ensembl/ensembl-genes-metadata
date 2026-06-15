@@ -15,6 +15,17 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+/*
+SPECIES CHECKER
+This process checks the species information based on the provided JSON.
+Inputs:
+- gca: The GCA accession.
+- species_tmp: The temporary species metadata file.
+- last_id: The last processed ID.
+Outputs:
+- gca: The GCA accession.
+- ${species_tmp.baseName}.json: The updated species metadata in JSON format.
+*/
 
 process SPECIES_CHECKER {
 

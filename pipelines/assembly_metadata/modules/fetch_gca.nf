@@ -15,6 +15,15 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+/*
+FETCH_GCA
+This process fetches the GCA accessions for a given taxon from the NCBI
+Inputs:
+- taxon: The taxon ID for which to fetch GCA accessions.
+- last_update: The date of the last update to filter new assemblies.
+Outputs:
+- stdout: The standard output containing the fetched GCA accessions.
+*/
 
 process FETCH_GCA {
 
