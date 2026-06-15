@@ -39,17 +39,17 @@ process FETCH_GCA {
 
     script:
     if (params.add_gca) {
-    """
+        """
         grep '^GCA_' ${params.gca_list}
-    """
+        """
     }
     else {
-    """
-    fetch_new_assemblies.py \
-    --taxon $taxon --date_update $last_update --db asm_metadata \
-    --registry ${params.registry_params} --metadata ${params.metadata_params} \
-    --ncbi ${params.ncbi_params} --ncbi_url ${params.ncbi_url}
-    """
+        """
+        fetch_new_assemblies.py \
+        --taxon $taxon --date_update $last_update --db asm_metadata \
+        --registry ${params.registry_params} --metadata ${params.metadata_params} \
+        --ncbi ${params.ncbi_params} --ncbi_url ${params.ncbi_url}
+        """
     }
 
 }
