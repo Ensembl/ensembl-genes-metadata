@@ -32,14 +32,13 @@ Returns:
 """
 
 import requests # type: ignore
-import os
 import json
 from datetime import datetime
 import pymysql # type: ignore
 import argparse
 import logging
 from tenacity import retry, stop_after_attempt, wait_random # type: ignore
-from typing import Dict, List, Any, Tuple
+from typing import Dict, List, Any, Tuple, Optional
 
 DEFAULT_ASSEMBLY_DATE = "01/01/2019"
 
@@ -49,7 +48,7 @@ def set_date(ncbi_params: Dict[str, Any], date_update: Optional[str] = None) -> 
 
     Args:
         ncbi_params (dict): NCBI API parameters to update in place.
-        date_update (str, optional): Release date filter (DD/MM/YYYY). 
+        date_update (str, optional): Release date filter (MM/DD/YYYY). 
                                      Defaults to DEFAULT_ASSEMBLY_DATE if not provided.
 
     Returns:
@@ -63,19 +62,29 @@ def set_date(ncbi_params: Dict[str, Any], date_update: Optional[str] = None) -> 
     ncbi_params['filters.first_release_date'] = effective_date
 
     if date_update:
-        logging.info(f"Using provided date {effective_date!r} to retrieve assemblies")
+        logging.info("Using provided date %r to retrieve assemblies", effective_date)
     else:
-        logging.info(f"No date provided. Using default date {effective_date!r}")
+        logging.info("No date provided. Using default date %r", effective_date)
 
     return ncbi_params, effective_date
 
 @retry(stop=stop_after_attempt(3), wait=wait_random(min=1, max=3))
 def connection_ncbi(uri: str, params: Dict[str, str]) -> requests.Response:
+    """Make a GET request to the NCBI API.
+
+    Args:
+        uri (str): The URI for the NCBI API endpoint.
+        params (dict): Parameters for the GET request.
+
+    Returns:
+        requests.Response: The response object from the GET request.
+    """
+    logging.debug("Requesting NCBI URL: %s with params: %s", uri, params)
     response = requests.get(uri, params=params)
     response.raise_for_status()
     return response
 
-def fetch_gca_list(taxon: int, ncbi_params: Dict[str, str], ncbi_url) -> set[str]:
+def fetch_gca_list(taxon: int, ncbi_params: Dict[str, str], ncbi_url: str) -> set[str]:
     """
     Fetch a list of GCA accessions from NCBI API based on the taxon ID.
 
@@ -124,9 +133,12 @@ def build_db_query(release_date: str) -> str:
         str: SQL query string
     """
     release_date_sql = datetime.strptime(release_date, '%m/%d/%Y').strftime('%Y-%m-%d')
-    return """SELECT concat(gca_chain, '.', gca_version)
-    FROM assembly
-    WHERE release_date >= DATE('{}') ; """.format(release_date_sql)
+    query = """
+        SELECT CONCAT(gca_chain, '.', gca_version)
+        FROM assembly
+        WHERE release_date >= %s
+    """
+    return query, (release_date_sql,)
 
 def fetch_records_db(db_params: Dict[str, Any], query: str) -> List[str]:
     """Fetch assemblies that have been registered after the last update.
@@ -138,11 +150,11 @@ def fetch_records_db(db_params: Dict[str, Any], query: str) -> List[str]:
     Returns:
         list: list of GCA accessions recorded after the last update date
     """
-    conn = pymysql.connect(**db_params)
-    with conn.cursor() as cur:
-        cur.execute(query)
-        output = cur.fetchall()
-        reg_gca = [row[0] for row in output]
+    with pymysql.connect(**db_params) as conn:
+        with conn.cursor() as cur:
+            cur.execute(query)
+            output = cur.fetchall()
+            reg_gca = [row[0] for row in output]
 
     return reg_gca
 
@@ -180,34 +192,25 @@ def main():
                         help="Last update date")
     parser.add_argument('--metadata',
                         type=str,
+                        required=True,
                         help="Path to the metadata database params in json format")
     parser.add_argument('--ncbi',
                         type=str,
+                        required=True,
                         help="Path to the NCBI API params in json format")
     parser.add_argument('--ncbi_url',
                         type=str,
+                        required=True,
                         help="NCBI API URL")
 
     args = parser.parse_args()
     logging.info(args)
 
-    if not isinstance(args.taxon, int):
-        raise ValueError("Please enter a valid taxon numeric value.")
-    taxon = args.taxon
-
-    if not args.metadata or not os.path.exists(args.metadata):
-        raise ValueError("Please enter a valid file path for metadata database parameters")
     with open(args.metadata, 'r') as file:
         metadata_params = json.load(file)
 
-    if not args.ncbi or not os.path.exists(args.ncbi):
-        raise ValueError("Please enter a valid file path for NCBI API parameters")
     with open(args.ncbi, 'r') as file:
         ncbi_params = json.load(file)
-
-    if not args.ncbi_url:
-        raise ValueError("Please enter a valid URL for NCBI API")
-    ncbi_url = args.ncbi_url
 
     if args.date_update:
         try:
@@ -218,7 +221,7 @@ def main():
         logging.info(f"Default date ({DEFAULT_ASSEMBLY_DATE}) will be used to retrieve assemblies")
 
     ncbi_params, release_date = set_date(ncbi_params, args.date_update)
-    gca_list = fetch_gca_list(taxon, ncbi_params, ncbi_url)
+    gca_list = fetch_gca_list(args.taxon, ncbi_params, args.ncbi_url)
 
     if len(gca_list) > 0:
         query = build_db_query(release_date)
