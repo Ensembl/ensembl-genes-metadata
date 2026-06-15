@@ -12,13 +12,48 @@ import re
 
 # Example server info: list of dicts
 servers = [
-    {"host": "mysql-ens-genebuild-prod-2", "port": 4528, "user": "ensro", "password": ""},
-    {"host": "mysql-ens-genebuild-prod-3", "port": 4529, "user": "ensro", "password": ""},
-    {"host": "mysql-ens-genebuild-prod-4", "port": 4530, "user": "ensro", "password": ""},
-    {"host": "mysql-ens-genebuild-prod-5", "port": 4531, "user": "ensro", "password": ""},
-    {"host": "mysql-ens-genebuild-prod-6", "port": 4532, "user": "ensro", "password": ""},
-    {"host": "mysql-ens-genebuild-prod-7", "port": 4533, "user": "ensro", "password": ""},
-
+    {
+        "host": "mysql-ens-genebuild-prod-1",
+        "port": 4527,
+        "user": "ensro",
+        "password": "",
+    },
+    {
+        "host": "mysql-ens-genebuild-prod-2",
+        "port": 4528,
+        "user": "ensro",
+        "password": "",
+    },
+    {
+        "host": "mysql-ens-genebuild-prod-3",
+        "port": 4529,
+        "user": "ensro",
+        "password": "",
+    },
+    {
+        "host": "mysql-ens-genebuild-prod-4",
+        "port": 4530,
+        "user": "ensro",
+        "password": "",
+    },
+    {
+        "host": "mysql-ens-genebuild-prod-5",
+        "port": 4531,
+        "user": "ensro",
+        "password": "",
+    },
+    {
+        "host": "mysql-ens-genebuild-prod-6",
+        "port": 4532,
+        "user": "ensro",
+        "password": "",
+    },
+    {
+        "host": "mysql-ens-genebuild-prod-7",
+        "port": 4533,
+        "user": "ensro",
+        "password": "",
+    },
 ]
 
 
@@ -50,7 +85,9 @@ def get_live_annotations(genebuilder):
         return df
 
     except Exception as e:
-        logging.error(f"Error fetching live annotations for {genebuilder}: {e}", exc_info=True)
+        logging.error(
+            f"Error fetching live annotations for {genebuilder}: {e}", exc_info=True
+        )
         return pd.DataFrame()
 
 
@@ -84,7 +121,7 @@ def find_genebuilder_databases(df):
                 port=server["port"],
                 user=server["user"],
                 password=server["password"],
-                cursorclass=pymysql.cursors.DictCursor
+                cursorclass=pymysql.cursors.DictCursor,
             )
             with conn.cursor() as cursor:
                 cursor.execute("SHOW DATABASES;")
@@ -93,16 +130,21 @@ def find_genebuilder_databases(df):
                     db_name = db["Database"]
                     for pattern, gb in pattern_map:
                         if re.fullmatch(pattern, db_name, re.IGNORECASE):
-                            db_list.append({
-                                "database": db_name,
-                                "server": server["host"],
-                                "port": server["port"],
-                                "genebuilder": gb
-                            })
+                            db_list.append(
+                                {
+                                    "database": db_name,
+                                    "server": server["host"],
+                                    "port": server["port"],
+                                    "genebuilder": gb,
+                                }
+                            )
                             break  # stop after first matching pattern
             conn.close()
         except Exception as e:
-            logging.error(f"Error connecting to {server['host']}:{server['port']} - {e}", exc_info=True)
+            logging.error(
+                f"Error connecting to {server['host']}:{server['port']} - {e}",
+                exc_info=True,
+            )
 
     if not db_list:
         return pd.DataFrame(columns=["database", "server", "port"])
@@ -134,7 +176,7 @@ def generate_drop_script(df):
         "-- ========================================",
         "-- Generated automatically by db_clean_service",
         "-- Please be careful when using this script. Anno pipelines cannot be checked per live GCA. Check if they can be deleted.",
-        ""
+        "",
     ]
 
     # Group by server/port to provide connection context
@@ -150,6 +192,7 @@ def generate_drop_script(df):
 
     return "\n".join(script_lines)
 
+
 def server_clean_main(genebuilder):
     df = get_live_annotations(genebuilder)
     df_db = find_genebuilder_databases(df)
@@ -157,7 +200,3 @@ def server_clean_main(genebuilder):
 
     df_db = df_db.to_dict(orient="records")
     return df_db, commands
-
-
-
-
