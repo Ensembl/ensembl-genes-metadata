@@ -28,7 +28,7 @@ Outputs:
 process FETCH_GCA {
 
     label 'python'
-    tag "taxon:$taxon"
+    tag "update:$last_update"
 
     input:
     val taxon
@@ -46,8 +46,8 @@ process FETCH_GCA {
     else {
         """
         fetch_new_assemblies.py \
-        --taxon $taxon --date_update $last_update --db asm_metadata \
-        --registry ${params.registry_params} --metadata ${params.metadata_params} \
+        --taxon $taxon --date_update $last_update \
+        --metadata ${params.metadata_params} \
         --ncbi ${params.ncbi_params} --ncbi_url ${params.ncbi_url}
         """
     }
