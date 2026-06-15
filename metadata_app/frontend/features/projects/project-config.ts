@@ -66,6 +66,11 @@ export const PROJECTS: ProjectConfig[] = [
     title: "LACA",
     description: "Livestock And Companion Animals",
   },
+    {
+    slug: "rodent2k",
+    title: "Rodent2K",
+    description: "Rodent 2K",
+  },
 ];
 
 export const PROJECTS_BY_SLUG = Object.fromEntries(

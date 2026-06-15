@@ -19,6 +19,7 @@ export const PROJECT_OPTIONS: Option[] = [
   },
   { value: "PRJNA813333", label: "Canadian BioGenome" },
   { value: "PRJEB43745", label: "Tree of Life" },
+  { value: "PRJNA1399476", label: "Rodent 2K" },
   { value: "LACA", label: "Livestock And Companion Animals" },
   { value: "AQUA-FAANG", label: "Aqua FAANG" },
 ];

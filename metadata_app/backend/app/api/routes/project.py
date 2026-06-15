@@ -15,62 +15,72 @@ from metadata_app.backend.app.services.project_service import get_erga_pilot
 from metadata_app.backend.app.services.project_service import get_laca
 from metadata_app.backend.app.services.project_service import get_aegis
 from metadata_app.backend.app.services.project_service import get_tol
-
-
-
+from metadata_app.backend.app.services.project_service import get_rodent2k
 
 project_router = APIRouter()
 
 
 @project_router.get("/project/erga")
 def get_erga_project():
-    """
-    """
+    """ """
     return get_erga()
+
 
 @project_router.get("/project/vgp")
 def get_vgp_project():
     return get_vgp()
 
+
 @project_router.get("/project/ebp")
 def get_ebp_project():
     return get_ebp()
+
 
 @project_router.get("/project/erga-bge")
 def get_erga_bge_project():
     return get_erga_bge()
 
+
 @project_router.get("/project/asg")
 def get_asg_project():
     return get_asg()
+
 
 @project_router.get("/project/cbp")
 def get_cbp_project():
     return get_cbp()
 
+
 @project_router.get("/project/dtol")
 def get_dtol_project():
     return get_dtol()
+
 
 @project_router.get("/project/hprc")
 def get_hprc_project():
     return get_hprc()
 
+
 @project_router.get("/project/erga-pilot")
 def get_erga_pilot_project():
     return get_erga_pilot()
+
 
 @project_router.get("/project/laca")
 def get_laca_project():
     return get_laca()
 
+
 @project_router.get("/project/aegis")
 def get_aegis_project():
     return get_aegis()
+
 
 @project_router.get("/project/tol")
 def get_tol_project():
     return get_tol()
 
 
-
+@project_router.get("/project/rodent2k")
+def get_rodent2k_project():
+    return get_rodent2k()
