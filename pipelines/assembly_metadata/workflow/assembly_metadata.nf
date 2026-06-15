@@ -52,7 +52,7 @@ workflow ASSEMBLY_METADATA {
     Usage: 
     nextflow -C ensembl-genes-metadata/conf/assembly_pipeline.config \
                 run ensembl-genes-metadata/pipeline/assembly_pipeline.nf \
-                --enscode $ENSCODE --output_dir <OutDir> --taxon <taxon>
+                --enscode <ENSCODE> --output_dir <OutDir> --taxon <taxon>
 
     Required arguments:
     --enscode STR               ENSCODE directory path
@@ -66,6 +66,8 @@ workflow ASSEMBLY_METADATA {
     --gca_list STR              GCA list file path. Requires --add_gca to be used as input
     --help BOOLEAN              Help option
     """.stripIndent()
+
+    exit 0
     }
 
     // print params
@@ -93,12 +95,8 @@ workflow ASSEMBLY_METADATA {
 
     WRITE2DB_TOLID(get_tolid_out)
 
-    gca_list = WRITE2DB_TOLID.out.gca.map { it -> it.trim() }.collectFile(name: 'gca_list_to_report.txt', newLine: true).view()
+    gca_list = WRITE2DB_TOLID.out.gca.map { it -> it.trim() }.collectFile(name: 'gca_list_to_report.txt', newLine: true)
 
     REPORT(gca_list, last_update)
 
-}
-
-workflow.onComplete {
-    log.info "Pipeline completed at: ${new Date().format('dd-MM-yyyy HH:mm:ss')}"
 }
