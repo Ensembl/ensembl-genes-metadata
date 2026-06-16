@@ -133,12 +133,11 @@ def build_db_query(release_date: str) -> str:
         str: SQL query string
     """
     release_date_sql = datetime.strptime(release_date, '%m/%d/%Y').strftime('%Y-%m-%d')
-    query = """
+    return f"""
         SELECT CONCAT(gca_chain, '.', gca_version)
         FROM assembly
-        WHERE release_date >= %s
+        WHERE release_date >= DATE('{release_date_sql}')
     """
-    return query, (release_date_sql,)
 
 def fetch_records_db(db_params: Dict[str, Any], query: str) -> List[str]:
     """Fetch assemblies that have been registered after the last update.
