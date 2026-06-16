@@ -1,13 +1,13 @@
 # app/services/db_clean_service.py
 
 import logging
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import numpy as np
 from metadata_app.backend.app.core.database import get_db_connection
 import pymysql.cursors
 import pymysql
 import pandas as pd
-import logging
 import re
 
 # Example server info: list of dicts
@@ -67,9 +67,11 @@ def get_live_annotations(genebuilder):
                         g.gb_status,
                         g.last_genebuild_update,
                         g.genebuilder,
+                        s.scientific_name,
                         CONCAT(a.gca_chain, ".", a.gca_version) AS gca
                     FROM genebuild_status g
                     JOIN assembly a ON a.assembly_id = g.assembly_id
+                    LEFT JOIN species s ON s.lowest_taxon_id = a.lowest_taxon_id
                     WHERE g.gb_status = 'live'
                     AND g.genebuilder = %s
                 """
@@ -91,6 +93,88 @@ def get_live_annotations(genebuilder):
         return pd.DataFrame()
 
 
+def _normalise_gca_for_db_name(gca):
+    return str(gca).lower().replace("gca_", "gca").replace(".", "v")
+
+
+def _scientific_name_to_db_prefix(scientific_name):
+    if pd.isna(scientific_name):
+        return None
+
+    prefix = re.sub(r"\s+", "_", str(scientific_name).strip().lower())
+    return prefix or None
+
+
+def _build_database_matchers(df, chunk_size=250):
+    """
+    Compile database-name matchers once instead of rebuilding/checking one
+    regex per live annotation for every database on every server.
+    """
+    candidates = set()
+
+    for _, row in df.iterrows():
+        gca_clean = _normalise_gca_for_db_name(row["gca"])
+        prefixes = {str(row["genebuilder"])}
+
+        if "scientific_name" in row:
+            species_prefix = _scientific_name_to_db_prefix(row["scientific_name"])
+            if species_prefix:
+                prefixes.add(species_prefix)
+
+        for prefix in prefixes:
+            candidates.add(f"{prefix}_{gca_clean}")
+
+    escaped_candidates = [re.escape(candidate) for candidate in candidates]
+    return [
+        re.compile(rf"^(?:{'|'.join(escaped_candidates[i:i + chunk_size])}).*$", re.IGNORECASE)
+        for i in range(0, len(escaped_candidates), chunk_size)
+    ]
+
+
+def _database_matches(db_name, matchers):
+    return any(matcher.fullmatch(db_name) for matcher in matchers)
+
+
+def _find_databases_on_server(server, matchers, genebuilder):
+    db_list = []
+    conn = None
+
+    try:
+        conn = pymysql.connect(
+            host=server["host"],
+            port=server["port"],
+            user=server["user"],
+            password=server["password"],
+            cursorclass=pymysql.cursors.DictCursor,
+            connect_timeout=5,
+            read_timeout=30,
+        )
+        with conn.cursor() as cursor:
+            cursor.execute("SHOW DATABASES;")
+            databases = cursor.fetchall()
+            for db in databases:
+                db_name = db["Database"]
+                if _database_matches(db_name, matchers):
+                    db_list.append(
+                        {
+                            "database": db_name,
+                            "server": server["host"],
+                            "port": server["port"],
+                            "genebuilder": genebuilder,
+                        }
+                    )
+    except Exception as e:
+        logging.error(
+            f"Error connecting to {server['host']}:{server['port']} - {e}",
+            exc_info=True,
+        )
+    finally:
+        if conn:
+            conn.close()
+
+    return db_list
+
+
 def find_genebuilder_databases(df):
     """
     Find genebuilder-related databases across servers based on live annotations.
@@ -98,53 +182,30 @@ def find_genebuilder_databases(df):
     Parameters
     ----------
     df : pd.DataFrame
-        Must contain columns "gca" and "genebuilder"
+        Must contain columns "gca" and "genebuilder".
+        If "scientific_name" is present, species-prefixed database names are
+        also matched for GB1-style core database names.
 
     Returns
     -------
     pd.DataFrame
         Columns: database, server, port, genebuilder
     """
+    if df.empty:
+        return pd.DataFrame(columns=["database", "server", "port"])
+
     db_list = []
+    genebuilder = str(df.iloc[0]["genebuilder"])
+    matchers = _build_database_matchers(df)
 
-    # Build dynamic patterns per row
-    pattern_map = []
-    for _, row in df.iterrows():
-        gca_clean = row["gca"].lower().replace("gca_", "gca").replace(".", "v")
-        gb = row["genebuilder"]
-        pattern_map.append((rf"{gb}_{gca_clean}.*", gb))
+    with ThreadPoolExecutor(max_workers=len(servers)) as executor:
+        futures = [
+            executor.submit(_find_databases_on_server, server, matchers, genebuilder)
+            for server in servers
+        ]
 
-    for server in servers:
-        try:
-            conn = pymysql.connect(
-                host=server["host"],
-                port=server["port"],
-                user=server["user"],
-                password=server["password"],
-                cursorclass=pymysql.cursors.DictCursor,
-            )
-            with conn.cursor() as cursor:
-                cursor.execute("SHOW DATABASES;")
-                databases = cursor.fetchall()
-                for db in databases:
-                    db_name = db["Database"]
-                    for pattern, gb in pattern_map:
-                        if re.fullmatch(pattern, db_name, re.IGNORECASE):
-                            db_list.append(
-                                {
-                                    "database": db_name,
-                                    "server": server["host"],
-                                    "port": server["port"],
-                                    "genebuilder": gb,
-                                }
-                            )
-                            break  # stop after first matching pattern
-            conn.close()
-        except Exception as e:
-            logging.error(
-                f"Error connecting to {server['host']}:{server['port']} - {e}",
-                exc_info=True,
-            )
+        for future in as_completed(futures):
+            db_list.extend(future.result())
 
     if not db_list:
         return pd.DataFrame(columns=["database", "server", "port"])
@@ -172,7 +233,7 @@ def generate_drop_script(df):
         return "-- No databases found to drop.\n"
 
     script_lines = [
-        "-- Cleanup script for genebuilder databases",
+        "-- Cleanup script for live databases",
         "-- ========================================",
         "-- Generated automatically by db_clean_service",
         "-- Please be careful when using this script. Anno pipelines cannot be checked per live GCA. Check if they can be deleted.",
