@@ -15,6 +15,21 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+"""
+Script to create a report of the recently registered assemblies in the metadata database. The report includes an overview of the assembly types and levels, 
+a list of assemblies from relevant bioprojects, and information about assemblies with RefSeq available, 
+invalid taxon IDs, missing biosample information, and missing submitter information. 
+The script also creates a CSV file for running BUSCO genome analyses on shortlisted assemblies.
+
+The script takes the following arguments:
+    --file-list: Path to a text file containing a list of GCA accessions (one per line).
+    --metadata: Path to a JSON file containing the metadata database connection parameters (host, user, password, database).
+    --update-date: Date used to update the database (format: YYYY-MM-DD).
+    --bioprojects: (Optional) List of bioproject IDs to filter assemblies (default: specific bioprojects).
+
+The script generates a report in a text file and a CSV file for BUSCO genome analyses, and updates the last update date in the metadata database.
+"""
+
 import logging
 import argparse
 import pymysql # type: ignore
@@ -42,6 +57,15 @@ def execute_query(metadata_params, query):
         return cur.fetchall()
 
 def fetch_report_data(metadata_params, gca_list, bioprojects):
+    """
+    Fetches data for the report based on the provided GCA list and bioprojects. Executes multiple SQL queries to gather information about assembly types, levels, relevant bioprojects, RefSeq availability, invalid taxon IDs, missing biosample information, and missing submitter information.
+        Args:
+        metadata_params (dict): Database connection parameters.
+        gca_list (list): List of GCA accessions to filter the assemblies.
+        bioprojects (list): List of bioproject IDs to filter the assemblies.
+        Returns:
+        dict: A dictionary containing the results of the executed queries, organized by query type.
+    """
     gca_string = ','.join([f"'{gca}'" for gca in gca_list])
     bioprojects_string = ','.join([f"'{project}'" for project in bioprojects])
     logging.info(f"GCA string for report:{gca_string}")
@@ -110,6 +134,12 @@ def format_section(header, data):
     return f"{header}:\n{formatted_data if formatted_data else 'No data available'}\n\n"
 
 def create_report(update_date, report_data):
+    """
+    Create a report based on the provided update date and report data.
+    Args:
+        update_date (str): The date used to update the database.
+        report_data (dict): A dictionary containing the results of the executed queries, organized by query type.
+    """
     sections = [
         ("Num GCA", len(report_data['gca_list'])),
         ("Update Date", update_date),
