@@ -15,6 +15,17 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+/*
+ASSEMBLY_METRICS
+This process runs the assembly_metrics.py script to update assembly metrics in the database. 
+Inputs:
+- gca: The GCA accession number for the assembly.
+- attempt_update: A flag indicating whether to attempt the update (true/false).
+- metadata_json: Path to the JSON file containing metadata for the assembly.
+Outputs:
+- asm_metrics_update: The standard output from the assembly_metrics.py script, a string indicating the result of the update operation.
+
+*/
 
 process ASSEMBLY_METRICS {
     label 'python'

@@ -15,6 +15,16 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+/*
+BIOPROJECT
+This process runs the bioproject.py script to update bioproject information in the database.
+Inputs:
+- gca: The GCA accession number for the assembly.
+- attempt_update: A flag indicating whether to attempt the update (true/false).
+- metadata_json: Path to the JSON file containing metadata for the assembly.
+Outputs:
+- bioproject_update: The standard output from the bioproject.py script, a string indicating the result of the update operation.
+*/  
 
 process BIOPROJECT {
     
