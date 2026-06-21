@@ -3,65 +3,114 @@ busco_utils.py
 Shared utility functions for parsing and interpreting BUSCO score strings.
 BUSCO scores in the database are stored as strings like:
 "C:94.3%[S:91.2%,D:3.1%],F:2.1%,M:3.6%,n:255"
+Newer BUSCO runs may include additional trailing fields after ``n:``, e.g.
+"C:97.8%[S:93.6%,D:4.2%],F:0.3%,M:1.9%,n:7207,E:4.5%". These are captured
+generically in the ``extra`` dict of the parse result rather than assumed.
 This module provides a single canonical parsing location used by both
 Module 1 (per-genome reports) and Module 2 (comparative analysis).
 """
 
 import re
-import logging
 from typing import Dict, Optional, Union
 
+from metadata_app.backend.app.services.gsoc.module1.logging_utils import (  # pylint: disable=import-error
+    get_logger,
+)
 
-def parse_busco_string(busco_string: str) -> Dict[str, Optional[Union[float, int]]]:
+logger = get_logger(__name__)
+
+# Canonical quality label vocabulary. This is the single source of truth
+# for BUSCO quality bands - all other modules (report_renderer, html_renderer)
+# must source their labels/colours from this list rather than redefining
+# their own threshold checks or label strings.
+QUALITY_THRESHOLDS = (
+    ("Excellent", 95.0),
+    ("Good", 85.0),
+    ("Moderate", 70.0),
+)
+QUALITY_UNKNOWN = "Unknown"
+QUALITY_POOR = "Poor"
+
+# Fields always present in a standard BUSCO short summary string.
+_CORE_FIELD_PATTERNS = {
+    "complete": r"C:(\d+\.?\d*)%",
+    "single_copy": r"S:(\d+\.?\d*)%",
+    "duplicated": r"D:(\d+\.?\d*)%",
+    "fragmented": r"F:(\d+\.?\d*)%",
+    "missing": r"M:(\d+\.?\d*)%",
+}
+_N_GENES_PATTERN = r"n:(\d+)"
+
+# Any other "Letter:value%" token is captured generically into `extra`
+# rather than silently dropped. This covers fields such as "E:4.5%" that
+# are not always present and whose exact meaning may vary by BUSCO version.
+_GENERIC_EXTRA_PATTERN = re.compile(r"(?<![A-Za-z])([A-Za-z]):(\d+\.?\d*)%")
+_KNOWN_LETTERS = {"C", "S", "D", "F", "M"}
+
+
+def parse_busco_string(
+    busco_string: str,
+) -> Dict[str, Optional[Union[float, int, Dict[str, float]]]]:
     """
     Parse a BUSCO score string into its component values.
 
     Args:
         busco_string: Raw BUSCO string e.g. "C:94.3%[S:91.2%,D:3.1%],F:2.1%,M:3.6%,n:255"
+            Leading/trailing whitespace and letter case are normalised before
+            matching, so "  c:94.3%[s:91.2%...] " is also accepted.
 
     Returns:
-        Dictionary with keys: complete, single_copy, duplicated, fragmented, missing, n_genes
-        All float values except n_genes (int). Returns None for unparseable fields.
+        Dictionary with keys: complete, single_copy, duplicated, fragmented,
+        missing, n_genes, extra. All values are floats except n_genes (int)
+        and extra (a dict of any additional "Letter:value%" fields found,
+        e.g. {"E": 4.5} for "...,n:7207,E:4.5%"). Returns None for fields
+        that could not be parsed; extra is always a dict (empty if no
+        additional fields were present).
 
     Example:
         >>> parse_busco_string("C:94.3%[S:91.2%,D:3.1%],F:2.1%,M:3.6%,n:255")
         {'complete': 94.3, 'single_copy': 91.2, 'duplicated': 3.1,
-         'fragmented': 2.1, 'missing': 3.6, 'n_genes': 255}
+         'fragmented': 2.1, 'missing': 3.6, 'n_genes': 255, 'extra': {}}
     """
-    result: Dict[str, Optional[Union[float, int]]] = {
+    result: Dict[str, Optional[Union[float, int, Dict[str, float]]]] = {
         "complete": None,
         "single_copy": None,
         "duplicated": None,
         "fragmented": None,
         "missing": None,
         "n_genes": None,
+        "extra": {},
     }
 
-    if not isinstance(busco_string, str) or (busco_string and not re.search(r"C:", busco_string)):
-        logging.warning("Invalid BUSCO string received: %s", busco_string)
+    if not isinstance(busco_string, str):
+        logger.warning("Invalid BUSCO string received: %r", busco_string)
+        return result
+
+    normalised = busco_string.strip()
+    if not normalised:
+        return result
+
+    if not re.search(r"[Cc]:", normalised):
+        logger.warning("Invalid BUSCO string received: %r", busco_string)
         return result
 
     try:
-        complete_match = re.search(r"C:(\d+\.?\d*)%", busco_string)
-        single_match = re.search(r"S:(\d+\.?\d*)%", busco_string)
-        duplicated_match = re.search(r"D:(\d+\.?\d*)%", busco_string)
-        fragmented_match = re.search(r"F:(\d+\.?\d*)%", busco_string)
-        missing_match = re.search(r"M:(\d+\.?\d*)%", busco_string)
-        n_genes_match = re.search(r"n:(\d+)", busco_string)
+        for key, pattern in _CORE_FIELD_PATTERNS.items():
+            match = re.search(pattern, normalised, re.IGNORECASE)
+            result[key] = float(match.group(1)) if match else None
 
-        result["complete"] = float(complete_match.group(1)) if complete_match else None
-        result["single_copy"] = float(single_match.group(1)) if single_match else None
-        result["duplicated"] = (
-            float(duplicated_match.group(1)) if duplicated_match else None
-        )
-        result["fragmented"] = (
-            float(fragmented_match.group(1)) if fragmented_match else None
-        )
-        result["missing"] = float(missing_match.group(1)) if missing_match else None
+        n_genes_match = re.search(_N_GENES_PATTERN, normalised, re.IGNORECASE)
         result["n_genes"] = int(n_genes_match.group(1)) if n_genes_match else None
 
-    except re.error as e:
-        logging.error("Failed to parse BUSCO string '%s': %s", busco_string, e)
+        extra: Dict[str, float] = {}
+        for letter, value in _GENERIC_EXTRA_PATTERN.findall(normalised):
+            if letter.upper() in _KNOWN_LETTERS:
+                continue
+            extra[letter.upper()] = float(value)
+        result["extra"] = extra
+
+    except re.error as exc:
+        logger.error("Failed to parse BUSCO string '%s': %s", busco_string, exc)
 
     return result
 
@@ -78,12 +127,20 @@ def get_busco_complete(busco_string: str) -> Optional[float]:
         Complete BUSCO percentage as float, or None if unparseable
     """
     value = parse_busco_string(busco_string)["complete"]
-    return float(value) if value is not None else None
+    if isinstance(value, (float, int)):
+        return float(value)
+    return None
 
 
 def busco_quality_label(complete_pct: Optional[float]) -> str:
     """
     Convert a BUSCO complete percentage to a human-readable quality label.
+
+    This is the single canonical source of BUSCO quality labels. Any code
+    that needs to colour-code or style a quality band (e.g. html_renderer,
+    report_renderer) should call this function rather than re-implementing
+    its own threshold checks, so the label vocabulary never drifts out of
+    sync across the codebase.
 
     Args:
         complete_pct: Complete BUSCO percentage (0-100)
@@ -92,11 +149,8 @@ def busco_quality_label(complete_pct: Optional[float]) -> str:
         Quality label string: 'Excellent', 'Good', 'Moderate', 'Poor', or 'Unknown'
     """
     if complete_pct is None:
-        return "Unknown"
-    if complete_pct >= 95:
-        return "Excellent"
-    if complete_pct >= 85:
-        return "Good"
-    if complete_pct >= 70:
-        return "Moderate"
-    return "Poor"
+        return QUALITY_UNKNOWN
+    for label, threshold in QUALITY_THRESHOLDS:
+        if complete_pct >= threshold:
+            return label
+    return QUALITY_POOR
