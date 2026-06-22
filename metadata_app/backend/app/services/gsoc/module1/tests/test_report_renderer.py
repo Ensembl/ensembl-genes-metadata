@@ -22,7 +22,6 @@ from metadata_app.backend.app.services.gsoc.module1.report_renderer import (
     render_txt,
 )
 
-
 # Fixtures
 
 
@@ -49,10 +48,12 @@ def full_report() -> GenomeReport:
         protein_busco_version="5.4.3",
         protein_busco_complete=94.3,
         protein_busco_quality="High",
+        protein_busco_extra={},
         assembly_busco_raw="C:98.1%[S:97.0%,D:1.1%],F:0.9%,M:1.0%,n:255",
         assembly_busco_lineage="primates_odb10",
         assembly_busco_version="5.4.3",
         assembly_busco_complete=98.1,
+        assembly_busco_extra={},
         coding_genes=20442,
         latest_annotated="Yes",
         annotated_version=29.0,
@@ -84,10 +85,12 @@ def sparse_report() -> GenomeReport:
         protein_busco_version=None,
         protein_busco_complete=None,
         protein_busco_quality="Unknown",
+        protein_busco_extra={},
         assembly_busco_raw=None,
         assembly_busco_lineage=None,
         assembly_busco_version=None,
         assembly_busco_complete=None,
+        assembly_busco_extra={},
         coding_genes=None,
         latest_annotated=None,
         annotated_version=None,
@@ -96,9 +99,7 @@ def sparse_report() -> GenomeReport:
     )
 
 
-
 # create_output_directory
-
 
 
 def test_create_output_directory_creates_path(tmp_path: Path) -> None:
@@ -115,9 +116,7 @@ def test_create_output_directory_idempotent(tmp_path: Path) -> None:
     create_output_directory("GCA_000001405.29", str(tmp_path))
 
 
-
 # render_csv
-
 
 
 def test_render_csv_creates_file(tmp_path: Path, full_report: GenomeReport) -> None:
@@ -154,9 +153,7 @@ def test_render_csv_none_values_become_empty(
     assert "None" not in content
 
 
-
 # render_txt
-
 
 
 def test_render_txt_creates_file(tmp_path: Path, full_report: GenomeReport) -> None:
@@ -178,17 +175,15 @@ def test_render_txt_contains_gca(tmp_path: Path, full_report: GenomeReport) -> N
     assert "GCA_000001405.29" in txt_path.read_text(encoding="utf-8")
 
 
-def test_render_txt_sparse_no_crash(tmp_path: Path, sparse_report: GenomeReport) -> None:
+def test_render_txt_sparse_no_crash(
+    tmp_path: Path, sparse_report: GenomeReport
+) -> None:
     """render_txt does not crash on a report with all-None optional fields."""
     txt_path = render_txt(sparse_report, tmp_path)
     assert txt_path.exists()
 
 
-
-
 # _busco_color
-
-
 
 
 def test_busco_color_none_returns_grey() -> None:
@@ -221,11 +216,7 @@ def test_busco_color_boundary_85() -> None:
     assert _busco_color(85.0) == "#f39c12"
 
 
-
-
 # plot_busco_bar
-
-
 
 
 def test_plot_busco_bar_creates_file(tmp_path: Path, full_report: GenomeReport) -> None:
@@ -243,10 +234,7 @@ def test_plot_busco_bar_sparse_no_crash(
     assert plot_path.exists()
 
 
-
-
 # plot_quality_summary
-
 
 
 def test_plot_quality_summary_creates_file(
@@ -266,16 +254,16 @@ def test_plot_quality_summary_sparse_no_crash(
     assert plot_path.exists()
 
 
-
 # _draw_busco_bars (internal helper)
-
 
 
 def test_draw_busco_bars_no_crash_empty_string(tmp_path: Path) -> None:
     """_draw_busco_bars handles empty BUSCO string without crashing."""
     import matplotlib
+
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
+
     _, ax = plt.subplots()
     _draw_busco_bars(ax, "", "Test")
     plt.close()
@@ -284,16 +272,16 @@ def test_draw_busco_bars_no_crash_empty_string(tmp_path: Path) -> None:
 def test_draw_busco_bars_no_crash_none(tmp_path: Path) -> None:
     """_draw_busco_bars handles None BUSCO string without crashing."""
     import matplotlib
+
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
+
     _, ax = plt.subplots()
     _draw_busco_bars(ax, None, "Test")
     plt.close()
 
 
-
 # render_report (integration)
-
 
 
 def test_render_report_returns_all_keys(
@@ -301,7 +289,13 @@ def test_render_report_returns_all_keys(
 ) -> None:
     """render_report returns a dict with all expected output keys."""
     outputs = render_report(full_report, base_output_dir=str(tmp_path))
-    assert set(outputs.keys()) == {"csv", "txt", "busco_plot", "summary_plot", "output_dir"}
+    assert set(outputs.keys()) == {
+        "csv",
+        "txt",
+        "busco_plot",
+        "summary_plot",
+        "output_dir",
+    }
 
 
 def test_render_report_all_files_exist(

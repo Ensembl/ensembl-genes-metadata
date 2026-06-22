@@ -21,7 +21,6 @@ from metadata_app.backend.app.services.gsoc.module1.html_renderer import (
     render_html,
 )
 
-
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
@@ -50,10 +49,12 @@ def full_report() -> GenomeReport:
         protein_busco_version="5.4.3",
         protein_busco_complete=97.7,
         protein_busco_quality="Excellent",
+        protein_busco_extra={},
         assembly_busco_raw="C:98.5%[S:97.2%,D:1.3%],F:0.7%,M:0.8%,n:255",
         assembly_busco_lineage="primates_odb10",
         assembly_busco_version="5.4.3",
         assembly_busco_complete=98.5,
+        assembly_busco_extra={},
         coding_genes=23534,
         latest_annotated="Yes",
         annotated_version=5.0,
@@ -85,10 +86,12 @@ def sparse_report() -> GenomeReport:
         protein_busco_version=None,
         protein_busco_complete=None,
         protein_busco_quality="Very Low",
+        protein_busco_extra={},
         assembly_busco_raw=None,
         assembly_busco_lineage=None,
         assembly_busco_version=None,
         assembly_busco_complete=None,
+        assembly_busco_extra={},
         coding_genes=None,
         latest_annotated=None,
         annotated_version=None,
@@ -347,9 +350,7 @@ def test_render_html_contains_chart_js_cdn(
     assert "chart.js" in content
 
 
-def test_render_html_contains_footer(
-    tmp_path: Path, full_report: GenomeReport
-) -> None:
+def test_render_html_contains_footer(tmp_path: Path, full_report: GenomeReport) -> None:
     """The HTML report contains the Ensembl Genebuild Metadata footer."""
     render_html(full_report, tmp_path)
     content = (tmp_path / "GCA_000001515_5_report.html").read_text(encoding="utf-8")
