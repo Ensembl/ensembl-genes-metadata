@@ -10,25 +10,95 @@ GenomeReport dataclass ready for rendering into an HTML report.
 This module does NOT query the database directly - it receives anno_wide
 from the existing annotations_service.generate_tables() function, keeping
 a clean separation between data retrieval and report generation.
+
+TODO(AGAT/new-metrics): extend GenomeReport and the extraction below with
+transcript/gene/exon counts and length-distribution summaries once the
+new_metrics table mapping has been confirmed with the team (see Leanne's
+2026-06-18 review feedback). A field-mapping table documenting source
+table/metric name/type/missing-value handling should be added alongside.
 """
 
-import logging
 from dataclasses import dataclass, field
-from typing import Optional
+from typing import Any, Dict, Optional, Union
+
 import pandas as pd
 
 from metadata_app.backend.app.services.gsoc.module1.busco_utils import (  # pylint: disable=import-error
     parse_busco_string,
     busco_quality_label,
 )
+from metadata_app.backend.app.services.gsoc.module1.logging_utils import (  # pylint: disable=import-error
+    get_logger,
+)
+
+logger = get_logger(__name__)
+
+
+def safe_str(val: Any) -> Optional[str]:
+    """Normalise a raw DataFrame value to a clean string, or None if missing."""
+    if pd.isna(val) or val == "":
+        return None
+    return str(val)
+
+
+def safe_int(val: Any) -> Optional[int]:
+    """Normalise a raw DataFrame value to an int, or None if missing/invalid."""
+    try:
+        if pd.isna(val) or val == "":
+            return None
+        return int(val)
+    except (ValueError, TypeError):
+        return None
+
+
+def safe_float(val: Any) -> Optional[float]:
+    """Normalise a raw DataFrame value to a float, or None if missing/invalid."""
+    try:
+        if pd.isna(val) or val == "":
+            return None
+        return float(val)
+    except (ValueError, TypeError):
+        return None
+
+
+def _busco_complete_as_float(
+    parsed: Dict[str, Optional[Union[float, int, Dict[str, float]]]],
+) -> Optional[float]:
+    """
+    Narrow parse_busco_string()["complete"] to Optional[float].
+
+    parse_busco_string() returns a dict typed broadly enough to also hold
+    the "extra" sub-dict, so callers that only want the numeric "complete"
+    value need an explicit narrowing step rather than calling float()
+    directly on a value mypy can't prove isn't a dict.
+    """
+    value = parsed["complete"]
+    if isinstance(value, (float, int)):
+        return float(value)
+    return None
+
+
+def _busco_extra_as_dict(
+    parsed: Dict[str, Optional[Union[float, int, Dict[str, float]]]],
+) -> Dict[str, float]:
+    """Narrow parse_busco_string()["extra"] to a plain Dict[str, float]."""
+    value = parsed["extra"]
+    if isinstance(value, dict):
+        return value
+    return {}
 
 
 @dataclass
-class GenomeReport:
-    # pylint: disable=too-many-instance-attributes
-    """  # pylint: disable=too-many-instance-attributes
+class GenomeReport:  # pylint: disable=too-many-instance-attributes
+    """
     Structured representation of a single genome's annotation metrics.
     All fields map directly to columns in anno_wide from annotations_service.
+
+    Deliberately has many attributes (R0902 disabled above): this is a
+    flat data-transfer object mirroring the columns of anno_wide, and
+    splitting it into sub-objects would add indirection without benefit
+    for a dataclass that is never extended with behaviour beyond field
+    storage.
     """
 
     # Identity
@@ -57,12 +127,14 @@ class GenomeReport:
     protein_busco_lineage: Optional[str]
     protein_busco_version: Optional[str]
     protein_busco_quality: str
+    protein_busco_extra: Dict[str, float]
 
     # Assembly BUSCO
     assembly_busco_raw: Optional[str]
     assembly_busco_complete: Optional[float]
     assembly_busco_lineage: Optional[str]
     assembly_busco_version: Optional[str]
+    assembly_busco_extra: Dict[str, float]
 
     # Gene counts
     coding_genes: Optional[int]
@@ -81,6 +153,56 @@ class GenomeReport:
     clade_sample_size: Optional[int] = field(default=None)
 
 
+def _select_current_annotation_row(genome_rows: pd.DataFrame, gca: str) -> pd.Series:
+    """
+    Pick the row representing the "current" annotation for a GCA when
+    multiple genebuild_status rows exist for the same assembly.
+
+    Selection rule (provisional - flagged for mentor confirmation, see
+    code review 2026-06-18): the row with the most recent
+    ``date_status_update`` wins. If that column is missing or all rows
+    are unparseable, falls back to the first row and logs a warning so
+    the ambiguity is visible rather than silently swallowed.
+
+    Args:
+        genome_rows: Rows from anno_wide already filtered to this GCA.
+        gca: The GCA accession, used only for log messages.
+
+    Returns:
+        The single row (pandas Series) to use for this genome.
+    """
+    if len(genome_rows) == 1:
+        return genome_rows.iloc[0]
+
+    logger.warning(
+        "Multiple annotation rows found for GCA %s (%d rows); "
+        "selecting most recent by date_status_update.",
+        gca,
+        len(genome_rows),
+    )
+
+    if "date_status_update" not in genome_rows.columns:
+        logger.warning(
+            "date_status_update column unavailable for GCA %s; "
+            "falling back to the first row.",
+            gca,
+        )
+        return genome_rows.iloc[0]
+
+    parsed_dates = pd.to_datetime(genome_rows["date_status_update"], errors="coerce")
+    if parsed_dates.isna().all():
+        logger.warning(
+            "Could not parse date_status_update for any row of GCA %s; "
+            "falling back to the first row.",
+            gca,
+        )
+        return genome_rows.iloc[0]
+
+    selected = genome_rows.loc[parsed_dates.idxmax()]
+    assert isinstance(selected, pd.Series)
+    return selected
+
+
 def extract_genome_report(gca: str, anno_wide: pd.DataFrame) -> GenomeReport:
     """
     Extract a GenomeReport for a single GCA accession from anno_wide.
@@ -95,44 +217,25 @@ def extract_genome_report(gca: str, anno_wide: pd.DataFrame) -> GenomeReport:
     Raises:
         ValueError: If the GCA is not found in anno_wide
     """
-    logging.info("Extracting genome report for GCA: %s", gca)
+    logger.info("Extracting genome report for GCA: %s", gca)
 
     genome_rows = anno_wide[anno_wide["gca"] == gca]
 
     if genome_rows.empty:
-        logging.error("GCA %s not found in anno_wide", gca)
+        logger.error("GCA %s not found in anno_wide", gca)
         raise ValueError(f"GCA '{gca}' not found in the provided dataset.")
 
-    row = genome_rows.iloc[0]
-
-    def safe_str(val) -> Optional[str]:
-        if pd.isna(val) or val == "":
-            return None
-        return str(val)
-
-    def safe_int(val) -> Optional[int]:
-        try:
-            if pd.isna(val) or val == "":
-                return None
-            return int(val)
-        except (ValueError, TypeError):
-            return None
-
-    def safe_float(val) -> Optional[float]:
-        try:
-            if pd.isna(val) or val == "":
-                return None
-            return float(val)
-        except (ValueError, TypeError):
-            return None
+    row = _select_current_annotation_row(genome_rows, gca)
 
     protein_busco_raw = safe_str(row.get("protein_busco"))
     protein_busco_parsed = parse_busco_string(protein_busco_raw or "")
-    protein_busco_complete = protein_busco_parsed["complete"]
+    protein_busco_complete = _busco_complete_as_float(protein_busco_parsed)
+    protein_busco_extra = _busco_extra_as_dict(protein_busco_parsed)
 
     assembly_busco_raw = safe_str(row.get("assembly_busco"))
     assembly_busco_parsed = parse_busco_string(assembly_busco_raw or "")
-    assembly_busco_complete = assembly_busco_parsed["complete"]
+    assembly_busco_complete = _busco_complete_as_float(assembly_busco_parsed)
+    assembly_busco_extra = _busco_extra_as_dict(assembly_busco_parsed)
 
     report = GenomeReport(
         gca=gca,
@@ -150,26 +253,16 @@ def extract_genome_report(gca: str, anno_wide: pd.DataFrame) -> GenomeReport:
         date_status_update=safe_str(row.get("date_status_update")),
         last_genebuild_update=safe_str(row.get("last_genebuild_update")),
         protein_busco_raw=protein_busco_raw,
-        protein_busco_complete=(
-            float(protein_busco_complete)
-            if protein_busco_complete is not None
-            else None
-        ),
+        protein_busco_complete=protein_busco_complete,
         protein_busco_lineage=safe_str(row.get("protein_busco_lineage")),
         protein_busco_version=safe_str(row.get("protein_busco_version")),
-        protein_busco_quality=busco_quality_label(
-            float(protein_busco_complete)
-            if protein_busco_complete is not None
-            else None
-        ),
+        protein_busco_quality=busco_quality_label(protein_busco_complete),
+        protein_busco_extra=protein_busco_extra,
         assembly_busco_raw=assembly_busco_raw,
-        assembly_busco_complete=(
-            float(assembly_busco_complete)
-            if assembly_busco_complete is not None
-            else None
-        ),
+        assembly_busco_complete=assembly_busco_complete,
         assembly_busco_lineage=safe_str(row.get("assembly_busco_lineage")),
         assembly_busco_version=safe_str(row.get("assembly_busco_version")),
+        assembly_busco_extra=assembly_busco_extra,
         coding_genes=safe_int(row.get("coding_genes")),
         latest_annotated=safe_str(row.get("latest_annotated")),
         annotated_version=safe_float(row.get("annotated_version")),
@@ -177,7 +270,7 @@ def extract_genome_report(gca: str, anno_wide: pd.DataFrame) -> GenomeReport:
         ftp=safe_str(row.get("ftp")),
     )
 
-    logging.info(
+    logger.info(
         "Successfully extracted report for %s (%s), BUSCO: %s%%, clade: %s",
         gca,
         report.scientific_name,
