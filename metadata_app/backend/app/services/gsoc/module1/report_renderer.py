@@ -9,7 +9,7 @@ import csv
 import logging
 from dataclasses import asdict
 from pathlib import Path
-from typing import Optional
+from typing import Dict, Optional, Union
 
 import matplotlib  # pylint: disable=wrong-import-order
 
@@ -18,11 +18,24 @@ import matplotlib.patches as mpatches  # noqa: E402  # pylint: disable=wrong-imp
 import matplotlib.pyplot as plt  # noqa: E402  # pylint: disable=wrong-import-position
 
 from metadata_app.backend.app.services.gsoc.module1.busco_utils import (  # pylint: disable=wrong-import-position,import-error
+    QUALITY_THRESHOLDS,
     parse_busco_string,
 )
 from metadata_app.backend.app.services.gsoc.module1.genome_report import (  # pylint: disable=wrong-import-position,import-error
     GenomeReport,
 )
+
+# Grey used for "no data" / unknown across all BUSCO-related visuals.
+_NO_DATA_COLOR = "#cccccc"
+
+# Colour for the worst quality band, below the lowest QUALITY_THRESHOLDS entry.
+_POOR_COLOR = "#e74c3c"
+
+# Explicit colour-per-band mapping, in the same order as QUALITY_THRESHOLDS
+# (highest threshold first). Keeping this as its own small table (rather
+# than re-deriving colours mathematically) makes the colour choices easy
+# to tweak without touching the threshold logic itself.
+_BAND_COLORS = ("#2ecc71", "#f39c12", "#e67e22")
 
 
 def create_output_directory(gca: str, base_output_dir: str = "outputs") -> Path:
@@ -47,6 +60,30 @@ def render_csv(report: GenomeReport, output_dir: Path) -> Path:
     return csv_path
 
 
+def _fmt_value(value: Optional[object]) -> str:
+    """
+    Format an optional field for display, using an explicit None check.
+
+    Using `value is not None` (rather than truthiness) matters here because
+    a legitimate value of 0, 0.0, or "" must still be displayed as-is, not
+    silently replaced with "N/A". Falling back to truthiness would, for
+    example, show "N/A" for a genuinely 0% BUSCO score.
+    """
+    return str(value) if value is not None else "N/A"
+
+
+def _fmt_busco_pct(value: Optional[float]) -> str:
+    """
+    Format a BUSCO completeness percentage consistently to 1 decimal place.
+
+    Uses an explicit None check (not truthiness) so a real 0.0% value is
+    still displayed as "0.0%" rather than falling back to "N/A".
+    """
+    if value is None:
+        return "N/A"
+    return f"{value:.1f}%"
+
+
 def render_txt(report: GenomeReport, output_dir: Path) -> Path:
     """Write a human-readable text summary."""
     txt_path = output_dir / f"{report.gca.replace('.', '_')}_summary.txt"
@@ -56,33 +93,33 @@ def render_txt(report: GenomeReport, output_dir: Path) -> Path:
         "=" * 60,
         f"GCA Accession   : {report.gca}",
         f"Species         : {report.scientific_name}",
-        f"Common Name     : {report.common_name or 'N/A'}",
-        f"Taxon ID        : {report.lowest_taxon_id or 'N/A'}",
-        f"Clade           : {report.internal_clade or 'N/A'}",
+        f"Common Name     : {_fmt_value(report.common_name)}",
+        f"Taxon ID        : {_fmt_value(report.lowest_taxon_id)}",
+        f"Clade           : {_fmt_value(report.internal_clade)}",
         "",
         "--- Annotation Info ---",
-        f"Status          : {report.gb_status or 'N/A'}",
-        f"Method          : {report.annotation_method or 'N/A'}",
-        f"Genebuilder     : {report.genebuilder or 'N/A'}",
-        f"Release Date    : {report.release_date or 'N/A'}",
-        f"Latest Annotated: {report.latest_annotated or 'N/A'}",
+        f"Status          : {_fmt_value(report.gb_status)}",
+        f"Method          : {_fmt_value(report.annotation_method)}",
+        f"Genebuilder     : {_fmt_value(report.genebuilder)}",
+        f"Release Date    : {_fmt_value(report.release_date)}",
+        f"Latest Annotated: {_fmt_value(report.latest_annotated)}",
         "",
         "--- Protein BUSCO ---",
-        f"Score           : {report.protein_busco_raw or 'N/A'}",
-        f"Complete        : {report.protein_busco_complete or 'N/A'}%",
+        f"Score           : {_fmt_value(report.protein_busco_raw)}",
+        f"Complete        : {_fmt_busco_pct(report.protein_busco_complete)}",
         f"Quality         : {report.protein_busco_quality}",
-        f"Lineage         : {report.protein_busco_lineage or 'N/A'}",
+        f"Lineage         : {_fmt_value(report.protein_busco_lineage)}",
         "",
         "--- Assembly BUSCO ---",
-        f"Score           : {report.assembly_busco_raw or 'N/A'}",
-        f"Complete        : {report.assembly_busco_complete or 'N/A'}%",
-        f"Lineage         : {report.assembly_busco_lineage or 'N/A'}",
+        f"Score           : {_fmt_value(report.assembly_busco_raw)}",
+        f"Complete        : {_fmt_busco_pct(report.assembly_busco_complete)}",
+        f"Lineage         : {_fmt_value(report.assembly_busco_lineage)}",
         "",
         "--- Gene Statistics ---",
-        f"Coding Genes    : {report.coding_genes or 'N/A'}",
+        f"Coding Genes    : {_fmt_value(report.coding_genes)}",
         "",
         "--- FTP ---",
-        f"Link            : {report.ftp or 'N/A'}",
+        f"Link            : {_fmt_value(report.ftp)}",
         "=" * 60,
     ]
     with open(txt_path, "w", encoding="utf-8") as f:
@@ -92,25 +129,49 @@ def render_txt(report: GenomeReport, output_dir: Path) -> Path:
 
 
 def _busco_color(complete: Optional[float]) -> str:
-    """Return a hex color based on BUSCO completeness percentage."""
+    """
+    Return a hex color based on BUSCO completeness percentage.
+
+    Sources thresholds from busco_utils.QUALITY_THRESHOLDS (the single
+    canonical source of truth for BUSCO quality bands) rather than
+    redefining the 95/85/70 cutoffs locally, so this stays in sync with
+    busco_quality_label() and cannot silently drift out of step with it.
+    """
     if complete is None:
-        return "#cccccc"
-    if complete >= 95:
-        return "#2ecc71"
-    if complete >= 85:
-        return "#f39c12"
-    if complete >= 70:
-        return "#e67e22"
-    return "#e74c3c"
+        return _NO_DATA_COLOR
+    for (_, threshold), color in zip(QUALITY_THRESHOLDS, _BAND_COLORS):
+        if complete >= threshold:
+            return color
+    return _POOR_COLOR
+
+
+def _numeric_field(
+    parsed: Dict[str, Optional[Union[float, int, Dict[str, float]]]], key: str
+) -> float:
+    """
+    Safely extract a numeric (float or int) value from a parsed BUSCO dict.
+
+    parse_busco_string() returns Optional[Union[float, int, Dict[str, float]]]
+    per field because the same return type is shared with the "extra" key,
+    which holds a dict. Standard fields (single_copy, duplicated, fragmented,
+    missing, etc.) never actually hold a dict in practice, but the type
+    system can't express that distinction, so we narrow explicitly here
+    with isinstance() rather than silencing mypy with type:ignore. Returns
+    0.0 for None, missing keys, or any unexpected non-numeric value.
+    """
+    value = parsed.get(key)
+    if isinstance(value, (float, int)):
+        return float(value)
+    return 0.0
 
 
 def _draw_busco_bars(ax: plt.Axes, raw: Optional[str], label: str) -> None:
     """Draw a stacked bar chart of BUSCO components onto the given axes."""
     parsed = parse_busco_string(raw or "")
-    single = float(parsed.get("single_copy") or 0)
-    duplicated = float(parsed.get("duplicated") or 0)
-    fragmented = float(parsed.get("fragmented") or 0)
-    missing = float(parsed.get("missing") or 0)
+    single = _numeric_field(parsed, "single_copy")
+    duplicated = _numeric_field(parsed, "duplicated")
+    fragmented = _numeric_field(parsed, "fragmented")
+    missing = _numeric_field(parsed, "missing")
     total = single + duplicated + fragmented + missing
     if total == 0:
         ax.text(0.5, 0.5, "No BUSCO data", ha="center", va="center")
@@ -181,20 +242,12 @@ def plot_quality_summary(report: GenomeReport, output_dir: Path) -> Path:
     metrics = [
         (
             "Protein BUSCO",
-            (
-                f"{report.protein_busco_complete}%"
-                if report.protein_busco_complete
-                else "N/A"
-            ),
+            _fmt_busco_pct(report.protein_busco_complete),
             _busco_color(report.protein_busco_complete),
         ),
         (
             "Assembly BUSCO",
-            (
-                f"{report.assembly_busco_complete}%"
-                if report.assembly_busco_complete
-                else "N/A"
-            ),
+            _fmt_busco_pct(report.assembly_busco_complete),
             _busco_color(report.assembly_busco_complete),
         ),
         (
@@ -204,13 +257,13 @@ def plot_quality_summary(report: GenomeReport, output_dir: Path) -> Path:
         ),
         (
             "Coding Genes",
-            str(report.coding_genes) if report.coding_genes else "N/A",
+            _fmt_value(report.coding_genes),
             "#3498db",
         ),
-        ("Annotation Method", report.annotation_method or "N/A", "#9b59b6"),
-        ("Status", report.gb_status or "N/A", "#1abc9c"),
-        ("Clade", report.internal_clade or "N/A", "#e67e22"),
-        ("Latest Annotated", report.latest_annotated or "N/A", "#2c3e50"),
+        ("Annotation Method", _fmt_value(report.annotation_method), "#9b59b6"),
+        ("Status", _fmt_value(report.gb_status), "#1abc9c"),
+        ("Clade", _fmt_value(report.internal_clade), "#e67e22"),
+        ("Latest Annotated", _fmt_value(report.latest_annotated), "#2c3e50"),
     ]
     y = 0.82
     for metric_name, value, color in metrics:
