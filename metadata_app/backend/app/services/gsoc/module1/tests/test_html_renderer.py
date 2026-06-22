@@ -207,10 +207,10 @@ def test_badge_style_excellent_contains_green() -> None:
     assert "#dcfce7" in style
 
 
-def test_badge_style_very_low_contains_red() -> None:
-    """Very Low quality badge contains a red colour value."""
-    style = _quality_badge_style("Very Low")
-    assert "#7f1d1d" in style
+def test_badge_style_poor_contains_orange() -> None:
+    """Poor quality badge (the canonical busco_utils.QUALITY_POOR label) contains its colour."""
+    style = _quality_badge_style("Poor")
+    assert "#9a3412" in style
 
 
 def test_badge_style_unknown_quality_returns_fallback() -> None:
@@ -222,7 +222,7 @@ def test_badge_style_unknown_quality_returns_fallback() -> None:
 
 def test_badge_style_format_is_css() -> None:
     """The returned string is a valid inline CSS snippet."""
-    style = _quality_badge_style("High")
+    style = _quality_badge_style("Good")
     assert "color:" in style
     assert "background:" in style
 
@@ -251,10 +251,10 @@ def test_busco_chart_js_four_datasets(full_report: GenomeReport) -> None:
 
 
 def test_busco_chart_js_sparse_report_no_crash(sparse_report: GenomeReport) -> None:
-    """_busco_chart_js does not crash when BUSCO data is None."""
+    """_busco_chart_js shows an explicit no-data message when BUSCO data is None."""
     js = _busco_chart_js(sparse_report)
-    assert "new Chart" in js
-    assert "0.00" in js
+    assert "No BUSCO data available" in js
+    assert "new Chart" not in js
 
 
 # ---------------------------------------------------------------------------
@@ -409,13 +409,19 @@ def test_render_html_sparse_no_ftp_anchor(
     assert "ftp.ebi.ac.uk" not in content
 
 
-def test_render_html_busco_pct_zero_when_none(
+def test_render_html_busco_pct_na_when_none(
     tmp_path: Path, sparse_report: GenomeReport
 ) -> None:
-    """When protein_busco_complete is None, the displayed percentage is 0.0%."""
+    """When protein_busco_complete is None, the displayed percentage is N/A.
+
+    This was previously "0.0%", which incorrectly made missing data look
+    identical to a genuine 0% BUSCO score. An explicit None check now
+    distinguishes the two cases.
+    """
     render_html(sparse_report, tmp_path)
     content = (tmp_path / "GCA_000000001_1_report.html").read_text(encoding="utf-8")
-    assert "0.0%" in content
+    assert "N/A" in content
+    assert "0.0%" not in content
 
 
 def test_render_html_is_valid_html_skeleton(

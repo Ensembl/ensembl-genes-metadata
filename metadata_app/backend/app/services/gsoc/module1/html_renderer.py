@@ -6,11 +6,16 @@ Produces a self-contained HTML quality report from a GenomeReport.
 No external dependencies at render time - Chart.js loaded from CDN.
 """
 
+import html
 import logging
 from datetime import date
 from pathlib import Path
+from typing import Dict, Optional, Union
 
 from metadata_app.backend.app.services.gsoc.module1.busco_utils import (  # pylint: disable=import-error
+    QUALITY_POOR,
+    QUALITY_THRESHOLDS,
+    QUALITY_UNKNOWN,
     parse_busco_string,
 )
 from metadata_app.backend.app.services.gsoc.module1.genome_report import (  # pylint: disable=import-error
@@ -19,29 +24,57 @@ from metadata_app.backend.app.services.gsoc.module1.genome_report import (  # py
 
 logger = logging.getLogger(__name__)
 
+# Colour pairs (text colour, background colour), one per QUALITY_THRESHOLDS
+# band in order (highest threshold first), plus explicit entries for the
+# Poor/Unknown bands which fall outside QUALITY_THRESHOLDS itself.
+_BAND_BADGE_COLORS = (
+    ("#166534", "#dcfce7"),  # Excellent
+    ("#14532d", "#bbf7d0"),  # Good
+    ("#92400e", "#fef3c7"),  # Moderate
+)
+_POOR_BADGE_COLOR = ("#9a3412", "#ffedd5")
+_UNKNOWN_BADGE_COLOR = ("#374151", "#f3f4f6")
+
+# Same band colours, but as flat hex strings for the progress-bar fill
+# (no background pairing needed there).
+_BAND_BAR_COLORS = ("#16a34a", "#d97706", "#ea580c")
+_POOR_BAR_COLOR = "#dc2626"
+_NO_DATA_BAR_COLOR = "#9ca3af"
+
 
 def _quality_badge_style(quality: str) -> str:
-    """Return CSS colour pair for a quality label."""
-    mapping = {
-        "Excellent": ("#166534", "#dcfce7"),
-        "High": ("#14532d", "#bbf7d0"),
-        "Medium": ("#92400e", "#fef3c7"),
-        "Low": ("#9a3412", "#ffedd5"),
-        "Very Low": ("#7f1d1d", "#fee2e2"),
-    }
-    color, bg = mapping.get(quality, ("#374151", "#f3f4f6"))
+    """
+    Return CSS colour pair for a quality label.
+
+    Sources its label set from busco_utils (QUALITY_THRESHOLDS band names,
+    plus QUALITY_POOR/QUALITY_UNKNOWN) so this stays in sync with the
+    canonical vocabulary rather than redefining its own label strings,
+    which previously caused every label except "Excellent" to silently
+    fall back to the default grey.
+    """
+    band_names = [name for name, _ in QUALITY_THRESHOLDS]
+    mapping: Dict[str, tuple] = dict(zip(band_names, _BAND_BADGE_COLORS))
+    mapping[QUALITY_POOR] = _POOR_BADGE_COLOR
+    mapping[QUALITY_UNKNOWN] = _UNKNOWN_BADGE_COLOR
+    color, bg = mapping.get(quality, _UNKNOWN_BADGE_COLOR)
     return f"color:{color};background:{bg}"
 
 
-def _busco_bar_color(pct: float) -> str:
-    """Return a hex fill colour for the BUSCO progress bar."""
-    if pct >= 95:
-        return "#16a34a"
-    if pct >= 85:
-        return "#d97706"
-    if pct >= 70:
-        return "#ea580c"
-    return "#dc2626"
+def _busco_bar_color(pct: Optional[float]) -> str:
+    """
+    Return a hex fill colour for the BUSCO progress bar.
+
+    Sources thresholds from busco_utils.QUALITY_THRESHOLDS rather than
+    redefining the 95/85/70 cutoffs locally, so this cannot silently
+    drift out of sync with busco_quality_label() or report_renderer's
+    _busco_color().
+    """
+    if pct is None:
+        return _NO_DATA_BAR_COLOR
+    for (_, threshold), color in zip(QUALITY_THRESHOLDS, _BAND_BAR_COLORS):
+        if pct >= threshold:
+            return color
+    return _POOR_BAR_COLOR
 
 
 def _fmt(val: object) -> str:
@@ -51,45 +84,101 @@ def _fmt(val: object) -> str:
     return str(val)
 
 
+def _numeric_field(
+    parsed: Dict[str, Optional[Union[float, int, Dict[str, float]]]], key: str
+) -> float:
+    """
+    Safely extract a numeric (float or int) value from a parsed BUSCO dict.
+
+    parse_busco_string() returns Optional[Union[float, int, Dict[str, float]]]
+    per field because the same return type is shared with the "extra" key,
+    which holds a dict. Standard fields never actually hold a dict in
+    practice, but the type system can't express that, so we narrow
+    explicitly with isinstance() rather than silencing mypy with
+    type:ignore. Returns 0.0 for None, missing keys, or any unexpected
+    non-numeric value.
+    """
+    value = parsed.get(key)
+    if isinstance(value, (float, int)):
+        return float(value)
+    return 0.0
+
+
 def _safe_float(v: object) -> float:
-    """Safely cast a value to float, returning 0.0 on failure."""
+    """
+    Safely cast a value to float, returning 0.0 on failure.
+
+    Explicitly excludes None and dict (the latter being the type
+    parse_busco_string()'s "extra" field can hold) before attempting the
+    cast, then relies on float()'s own str/int/float handling for
+    everything else. The remaining type:ignore is narrow and deliberate:
+    it covers only "trust that a non-None, non-dict object is float()-able
+    at runtime", not the dict-confusion bug this replaced.
+    """
+    if v is None or isinstance(v, dict):
+        return 0.0
     try:
-        return float(v) if v is not None else 0.0  # type: ignore[arg-type]
+        return float(v)  # type: ignore[arg-type]
     except (TypeError, ValueError):
         return 0.0
 
 
-def _busco_chart_js(report: GenomeReport) -> str:
-    """Return an inline Chart.js script block for the BUSCO stacked bar."""
-    p = parse_busco_string(report.protein_busco_raw or "")
-    single = _safe_float(p.get("single_copy"))
-    dup = _safe_float(p.get("duplicated"))
-    frag = _safe_float(p.get("fragmented"))
-    missing = _safe_float(p.get("missing"))
+def _busco_dataset_row(
+    parsed: Dict[str, Optional[Union[float, int, Dict[str, float]]]],
+) -> tuple:
+    """Return (single, duplicated, fragmented, missing) as floats for one BUSCO row."""
+    return (
+        _numeric_field(parsed, "single_copy"),
+        _numeric_field(parsed, "duplicated"),
+        _numeric_field(parsed, "fragmented"),
+        _numeric_field(parsed, "missing"),
+    )
 
-    ds_single = (
-        f"{{ label: 'Single ({single:.1f}%)', data: [{single:.2f}],"
-        f" backgroundColor: '#16a34a' }}"
+
+def _busco_chart_js(report: GenomeReport) -> str:
+    """
+    Return an inline Chart.js script block for the protein + assembly
+    BUSCO stacked bars.
+
+    If neither protein nor assembly BUSCO data is available, the chart
+    is still rendered but with an explicit "No BUSCO data available"
+    message overlay instead of silently showing an empty/invisible chart.
+    """
+    protein_row = _busco_dataset_row(parse_busco_string(report.protein_busco_raw or ""))
+    assembly_row = _busco_dataset_row(parse_busco_string(report.assembly_busco_raw or ""))
+
+    if (sum(protein_row) + sum(assembly_row)) == 0:
+        return """
+    const ctx = document.getElementById('buscoChart').getContext('2d');
+    ctx.canvas.parentElement.innerHTML =
+        '<p style="text-align:center;color:#94a3b8;padding:2rem 0;">' +
+        'No BUSCO data available</p>';
+"""
+
+    # (label, colour, index-into-protein_row/assembly_row) for each BUSCO
+    # component, so the four datasets can be built in one loop instead of
+    # four near-identical blocks of locals.
+    component_specs = (
+        ("Single", "#16a34a", 0),
+        ("Duplicated", "#4ade80", 1),
+        ("Fragmented", "#f59e0b", 2),
+        ("Missing", "#ef4444", 3),
     )
-    ds_dup = (
-        f"{{ label: 'Duplicated ({dup:.1f}%)', data: [{dup:.2f}],"
-        f" backgroundColor: '#4ade80' }}"
-    )
-    ds_frag = (
-        f"{{ label: 'Fragmented ({frag:.1f}%)', data: [{frag:.2f}],"
-        f" backgroundColor: '#f59e0b' }}"
-    )
-    ds_missing = (
-        f"{{ label: 'Missing ({missing:.1f}%)', data: [{missing:.2f}],"
-        f" backgroundColor: '#ef4444' }}"
-    )
+    datasets = [
+        (
+            f"{{ label: '{label}', data: [{protein_row[idx]:.2f}, {assembly_row[idx]:.2f}],"
+            f" backgroundColor: '{color}' }}"
+        )
+        for label, color, idx in component_specs
+    ]
+    ds_single, ds_dup, ds_frag, ds_missing = datasets
 
     return f"""
     const ctx = document.getElementById('buscoChart').getContext('2d');
     new Chart(ctx, {{
         type: 'bar',
         data: {{
-            labels: ['Protein BUSCO'],
+            labels: ['Protein BUSCO', 'Assembly BUSCO'],
             datasets: [
                 {ds_single},
                 {ds_dup},
@@ -117,9 +206,18 @@ def _busco_chart_js(report: GenomeReport) -> str:
 """
 
 
-def render_html(report: GenomeReport, output_dir: Path) -> Path:
+def render_html(  # pylint: disable=too-many-locals
+    report: GenomeReport, output_dir: Path
+) -> Path:
     """
     Render a self-contained HTML quality report for a GenomeReport.
+
+    Note: many local variables here are inherent to assembling one large
+    HTML document from many independent report fields (badge style, two
+    BUSCO percentages/colours, chart script, metrics rows, ftp html, four
+    display strings, etc.) -- grouping them into a dict would reduce the
+    local count but make the long template harder to read, since each
+    name documents what it is at the point of use.
 
     Args:
         report: Populated GenomeReport dataclass.
@@ -130,8 +228,10 @@ def render_html(report: GenomeReport, output_dir: Path) -> Path:
     """
     html_path = output_dir / f"{report.gca.replace('.', '_')}_report.html"
     badge_style = _quality_badge_style(report.protein_busco_quality)
-    busco_pct = report.protein_busco_complete or 0.0
-    busco_bar_color = _busco_bar_color(busco_pct)
+    protein_busco_pct = report.protein_busco_complete
+    assembly_busco_pct = report.assembly_busco_complete
+    protein_bar_color = _busco_bar_color(protein_busco_pct)
+    assembly_bar_color = _busco_bar_color(assembly_busco_pct)
     chart_script = _busco_chart_js(report)
     generated = date.today().isoformat()
 
@@ -154,6 +254,7 @@ def render_html(report: GenomeReport, output_dir: Path) -> Path:
         ("Protein BUSCO Version", _fmt(report.protein_busco_version)),
         ("Assembly BUSCO", _fmt(report.assembly_busco_raw)),
         ("Assembly BUSCO Lineage", _fmt(report.assembly_busco_lineage)),
+        ("Assembly BUSCO Version", _fmt(report.assembly_busco_version)),
         ("Coding Genes", _fmt(report.coding_genes)),
         ("Latest Annotated", _fmt(report.latest_annotated)),
         ("Annotated Version", _fmt(report.annotated_version)),
@@ -162,31 +263,46 @@ def render_html(report: GenomeReport, output_dir: Path) -> Path:
 
     table_rows_html = "\n".join(
         f"            <tr>\n"
-        f'              <td class="metric-name">{name}</td>\n'
-        f'              <td class="metric-value">{value}</td>\n'
+        f'              <td class="metric-name">{html.escape(name)}</td>\n'
+        f'              <td class="metric-value">{html.escape(value)}</td>\n'
         f"            </tr>"
         for name, value in metrics_rows
     )
 
-    ftp_html = (
-        f'<a href="{report.ftp}" target="_blank" class="ftp-link">' f"{report.ftp}</a>"
-        if report.ftp
-        else "N/A"
+    if report.ftp:
+        safe_ftp = html.escape(report.ftp, quote=True)
+        ftp_html = (
+            f'<a href="{safe_ftp}" target="_blank" class="ftp-link">{safe_ftp}</a>'
+        )
+    else:
+        ftp_html = "N/A"
+
+    protein_bar_pct = (
+        f"{min(protein_busco_pct, 100):.1f}%" if protein_busco_pct is not None else "0%"
+    )
+    assembly_bar_pct = (
+        f"{min(assembly_busco_pct, 100):.1f}%"
+        if assembly_busco_pct is not None
+        else "0%"
+    )
+    protein_pct_display = (
+        f"{protein_busco_pct:.1f}%" if protein_busco_pct is not None else "N/A"
+    )
+    assembly_pct_display = (
+        f"{assembly_busco_pct:.1f}%" if assembly_busco_pct is not None else "N/A"
     )
 
-    busco_bar_pct = f"{min(busco_pct, 100):.1f}%"
-
-    html = f"""<!DOCTYPE html>
+    html_doc = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Genome Report \u2014 {report.scientific_name} ({report.gca})</title>
+  <title>Genome Report — {html.escape(report.scientific_name)} ({html.escape(report.gca)})</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <style>
     *, *::before, *::after {{ box-sizing: border-box; margin: 0; padding: 0; }}
     body {{
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, sans-serif;
       background: #f8fafc;
       color: #1e293b;
       line-height: 1.6;
@@ -262,8 +378,14 @@ def render_html(report: GenomeReport, output_dir: Path) -> Path:
     .busco-bar-fill {{
       height: 100%;
       border-radius: 999px;
-      background: {busco_bar_color};
-      width: {busco_bar_pct};
+    }}
+    .protein-busco-bar-fill {{
+      background: {protein_bar_color};
+      width: {protein_bar_pct};
+    }}
+    .assembly-busco-bar-fill {{
+      background: {assembly_bar_color};
+      width: {assembly_bar_pct};
     }}
     .section {{
       background: #fff;
@@ -317,9 +439,9 @@ def render_html(report: GenomeReport, output_dir: Path) -> Path:
 <body>
 
 <div class="header">
-  <h1>{report.scientific_name}</h1>
-  <div class="gca">{report.gca}</div>
-  <span class="badge">&#9679; {report.protein_busco_quality} Quality</span>
+  <h1>{html.escape(report.scientific_name)}</h1>
+  <div class="gca">{html.escape(report.gca)}</div>
+  <span class="badge">&#9679; {html.escape(report.protein_busco_quality)} Quality</span>
 </div>
 
 <div class="container">
@@ -328,29 +450,37 @@ def render_html(report: GenomeReport, output_dir: Path) -> Path:
   <div class="cards">
     <div class="card">
       <div class="card-label">Protein BUSCO</div>
-      <div class="card-value">{busco_pct:.1f}%</div>
-      <div class="busco-bar-wrap"><div class="busco-bar-fill"></div></div>
-      <div class="card-sub">{_fmt(report.protein_busco_lineage)}</div>
+      <div class="card-value">{protein_pct_display}</div>
+      <div class="busco-bar-wrap"><div class="busco-bar-fill protein-busco-bar-fill"></div></div>
+      <div class="card-sub">{html.escape(_fmt(report.protein_busco_lineage))}</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Assembly BUSCO</div>
+      <div class="card-value">{assembly_pct_display}</div>
+      <div class="busco-bar-wrap"><div class="busco-bar-fill assembly-busco-bar-fill"></div></div>
+      <div class="card-sub">{html.escape(_fmt(report.assembly_busco_lineage))}</div>
     </div>
     <div class="card">
       <div class="card-label">Coding Genes</div>
-      <div class="card-value">{_fmt(report.coding_genes)}</div>
+      <div class="card-value">{html.escape(_fmt(report.coding_genes))}</div>
       <div class="card-sub">protein-coding</div>
     </div>
     <div class="card">
       <div class="card-label">Status</div>
-      <div class="card-value" style="font-size:1rem">{_fmt(report.gb_status)}</div>
-      <div class="card-sub">{_fmt(report.annotation_method)}</div>
+      <div class="card-value" style="font-size:1rem">{html.escape(_fmt(report.gb_status))}</div>
+      <div class="card-sub">{html.escape(_fmt(report.annotation_method))}</div>
     </div>
     <div class="card">
       <div class="card-label">Clade</div>
-      <div class="card-value" style="font-size:1rem">{_fmt(report.internal_clade)}</div>
-      <div class="card-sub">Taxon ID: {_fmt(report.lowest_taxon_id)}</div>
+      <div class="card-value" style="font-size:1rem">
+        {html.escape(_fmt(report.internal_clade))}
+      </div>
+      <div class="card-sub">Taxon ID: {html.escape(_fmt(report.lowest_taxon_id))}</div>
     </div>
     <div class="card">
       <div class="card-label">Release Date</div>
-      <div class="card-value" style="font-size:1rem">{_fmt(report.release_date)}</div>
-      <div class="card-sub">Latest: {_fmt(report.latest_annotated)}</div>
+      <div class="card-value" style="font-size:1rem">{html.escape(_fmt(report.release_date))}</div>
+      <div class="card-sub">Latest: {html.escape(_fmt(report.latest_annotated))}</div>
     </div>
   </div>
 
@@ -358,7 +488,7 @@ def render_html(report: GenomeReport, output_dir: Path) -> Path:
   <div class="section">
     <h2>BUSCO Composition</h2>
     <div class="chart-container">
-      <canvas id="buscoChart" height="120"></canvas>
+      <canvas id="buscoChart" height="160"></canvas>
     </div>
   </div>
 
@@ -390,7 +520,7 @@ def render_html(report: GenomeReport, output_dir: Path) -> Path:
 """
 
     with open(html_path, "w", encoding="utf-8") as f:
-        f.write(html)
+        f.write(html_doc)
 
     logger.info("Written HTML report to %s", html_path)
     return html_path
