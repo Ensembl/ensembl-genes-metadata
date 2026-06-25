@@ -8,10 +8,8 @@ import {
   Cell,
   Line,
   LineChart,
-  ResponsiveContainer,
   Scatter,
   ScatterChart,
-  Tooltip as RechartsTooltip,
   XAxis,
   YAxis,
 } from "recharts";
@@ -34,6 +32,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  ChartConfig,
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+} from "@/components/ui/chart";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 type GenebuildStatus = "live" | "in progress" | "handover" | "blocked";
 
@@ -323,6 +335,39 @@ const statusOptions: Array<"all" | GenebuildStatus> = [
   "blocked",
 ];
 
+const qcChartConfig = {
+  genomeComplete: {
+    label: "Genome complete",
+    color: "var(--chart-2)",
+  },
+  proteinComplete: {
+    label: "Protein complete",
+    color: "var(--chart-4)",
+  },
+  mean: {
+    label: "Mean",
+    color: "var(--chart-2)",
+  },
+  median: {
+    label: "Median",
+    color: "var(--chart-4)",
+  },
+  assembly: {
+    label: "Assembly",
+    color: "var(--chart-2)",
+  },
+  annotation: {
+    label: "Annotation",
+    color: "var(--chart-4)",
+  },
+  pcoa1: {
+    label: "PCoA 1",
+  },
+  pcoa2: {
+    label: "PCoA 2",
+  },
+} satisfies ChartConfig;
+
 const mean = (values: number[]) =>
   values.length ? values.reduce((total, value) => total + value, 0) / values.length : 0;
 
@@ -458,6 +503,22 @@ export default function AnnotationQcPage() {
     assembly: record.assemblyScore,
     annotation: record.annotationScore,
   }));
+
+  const pcoaSummary = useMemo(() => {
+    const pcoa1Values = filteredRecords.map((record) => record.pcoa1);
+    const pcoa2Values = filteredRecords.map((record) => record.pcoa2);
+    const formatRange = (values: number[]) =>
+      values.length
+        ? `${formatNumber(Math.min(...values), 2)} to ${formatNumber(Math.max(...values), 2)}`
+        : "n/a";
+
+    return {
+      assemblies: filteredRecords.length,
+      outliers: outliers.length,
+      pcoa1Range: formatRange(pcoa1Values),
+      pcoa2Range: formatRange(pcoa2Values),
+    };
+  }, [filteredRecords, outliers.length]);
 
   const buscoAverageDifference = useMemo(() => {
     const records = singleRecord
@@ -685,41 +746,39 @@ export default function AnnotationQcPage() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="h-72">
-                    <ResponsiveContainer width="100%" height="100%">
+                  <ChartContainer config={qcChartConfig} className="h-72 w-full">
                       <BarChart data={cohortStats}>
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis dataKey="metric" tick={{ fontSize: 11 }} interval={0} angle={-18} textAnchor="end" height={70} />
                         <YAxis tickFormatter={(value) => Number(value).toLocaleString("en-GB")} />
-                        <RechartsTooltip formatter={(value) => Number(value).toLocaleString("en-GB")} />
+                        <ChartTooltip content={<ChartTooltipContent />} />
                         <Bar dataKey="mean" fill="var(--chart-2)" name="Mean" radius={[4, 4, 0, 0]} />
                         <Bar dataKey="median" fill="var(--chart-4)" name="Median" radius={[4, 4, 0, 0]} />
                       </BarChart>
-                    </ResponsiveContainer>
-                  </div>
+                  </ChartContainer>
                   <div className="mt-4 overflow-x-auto rounded-md border">
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="border-b text-left">
-                          <th className="px-3 py-2 font-medium">Metric</th>
-                          <th className="px-3 py-2 font-medium text-right">Mean</th>
-                          <th className="px-3 py-2 font-medium text-right">Median</th>
-                        </tr>
-                      </thead>
-                      <tbody>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Metric</TableHead>
+                          <TableHead className="text-right">Mean</TableHead>
+                          <TableHead className="text-right">Median</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
                         {cohortStats.map((item) => (
-                          <tr key={item.metric} className="border-b last:border-0">
-                            <td className="px-3 py-2">{item.metric}</td>
-                            <td className="px-3 py-2 text-right">
+                          <TableRow key={item.metric}>
+                            <TableCell>{item.metric}</TableCell>
+                            <TableCell className="text-right">
                               {Math.round(item.mean).toLocaleString("en-GB")}
-                            </td>
-                            <td className="px-3 py-2 text-right">
+                            </TableCell>
+                            <TableCell className="text-right">
                               {Math.round(item.median).toLocaleString("en-GB")}
-                            </td>
-                          </tr>
+                            </TableCell>
+                          </TableRow>
                         ))}
-                      </tbody>
-                    </table>
+                      </TableBody>
+                    </Table>
                   </div>
                 </CardContent>
               </Card>
@@ -729,13 +788,16 @@ export default function AnnotationQcPage() {
                   <CardTitle>PCoA metric space</CardTitle>
                   <CardDescription>Mock ordination using assembly and annotation QC features.</CardDescription>
                 </CardHeader>
-                <CardContent className="h-80">
-                  <ResponsiveContainer width="100%" height="100%">
+                <CardContent>
+                  <ChartContainer config={qcChartConfig} className="h-80 w-full">
                     <ScatterChart>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="pcoa1" name="PCoA 1" type="number" />
                       <YAxis dataKey="pcoa2" name="PCoA 2" type="number" />
-                      <RechartsTooltip cursor={{ strokeDasharray: "3 3" }} />
+                      <ChartTooltip
+                        cursor={{ strokeDasharray: "3 3" }}
+                        content={<ChartTooltipContent />}
+                      />
                       <Scatter data={filteredRecords} name="Assembly">
                         {filteredRecords.map((entry) => (
                           <Cell
@@ -745,7 +807,25 @@ export default function AnnotationQcPage() {
                         ))}
                       </Scatter>
                     </ScatterChart>
-                  </ResponsiveContainer>
+                  </ChartContainer>
+                  <div className="mt-4 grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
+                    <div className="rounded-md border p-3">
+                      <div className="text-muted-foreground">Assemblies plotted</div>
+                      <div className="mt-1 text-lg font-semibold">{pcoaSummary.assemblies}</div>
+                    </div>
+                    <div className="rounded-md border p-3">
+                      <div className="text-muted-foreground">Outliers</div>
+                      <div className="mt-1 text-lg font-semibold">{pcoaSummary.outliers}</div>
+                    </div>
+                    <div className="rounded-md border p-3">
+                      <div className="text-muted-foreground">PCoA 1 range</div>
+                      <div className="mt-1 font-medium">{pcoaSummary.pcoa1Range}</div>
+                    </div>
+                    <div className="rounded-md border p-3">
+                      <div className="text-muted-foreground">PCoA 2 range</div>
+                      <div className="mt-1 font-medium">{pcoaSummary.pcoa2Range}</div>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
 
@@ -754,17 +834,17 @@ export default function AnnotationQcPage() {
                   <CardTitle>QC score profile</CardTitle>
                   <CardDescription>Assembly and annotation score by matched assembly.</CardDescription>
                 </CardHeader>
-                <CardContent className="h-80">
-                  <ResponsiveContainer width="100%" height="100%">
+                <CardContent>
+                  <ChartContainer config={qcChartConfig} className="h-80 w-full">
                     <LineChart data={scoreTrend}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="species" />
                       <YAxis domain={[50, 100]} />
-                      <RechartsTooltip />
+                      <ChartTooltip content={<ChartTooltipContent />} />
                       <Line type="monotone" dataKey="assembly" stroke="var(--chart-2)" strokeWidth={2} />
                       <Line type="monotone" dataKey="annotation" stroke="var(--chart-4)" strokeWidth={2} />
                     </LineChart>
-                  </ResponsiveContainer>
+                  </ChartContainer>
                 </CardContent>
               </Card>
 
@@ -783,28 +863,28 @@ export default function AnnotationQcPage() {
                     </div>
                   ) : (
                     <div className="overflow-x-auto">
-                      <table className="w-full text-sm">
-                        <thead>
-                          <tr className="border-b text-left">
-                            <th className="py-2 font-medium">GCA</th>
-                            <th className="py-2 font-medium">Species</th>
-                            <th className="py-2 font-medium">Status</th>
-                            <th className="py-2 font-medium text-right">Score</th>
-                          </tr>
-                        </thead>
-                        <tbody>
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>GCA</TableHead>
+                            <TableHead>Species</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead className="text-right">Score</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
                           {outliers.map((record) => (
-                            <tr key={record.gca} className="border-b last:border-0">
-                              <td className="py-3 font-mono text-xs">{record.gca}</td>
-                              <td className="py-3">{record.species}</td>
-                              <td className="py-3">
+                            <TableRow key={record.gca}>
+                              <TableCell className="font-mono text-xs">{record.gca}</TableCell>
+                              <TableCell>{record.species}</TableCell>
+                              <TableCell>
                                 <Badge variant={getStatusBadge(record.status)}>{record.status}</Badge>
-                              </td>
-                              <td className="py-3 text-right">{formatNumber(record.outlierScore)}</td>
-                            </tr>
+                              </TableCell>
+                              <TableCell className="text-right">{formatNumber(record.outlierScore)}</TableCell>
+                            </TableRow>
                           ))}
-                        </tbody>
-                      </table>
+                        </TableBody>
+                      </Table>
                     </div>
                   )}
                 </CardContent>
@@ -864,40 +944,40 @@ function BuscoComparisonBlock({
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-1 gap-6">
-          <div className="h-96 min-w-0">
-            <ResponsiveContainer width="100%" height="100%">
+          <div className="min-w-0">
+            <ChartContainer config={qcChartConfig} className="h-96 w-full">
               <BarChart data={data}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="name" tick={{ fontSize: 11 }} />
                 <YAxis domain={[0, 100]} />
-                <RechartsTooltip />
+                <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
                 <Bar dataKey="genomeComplete" fill="var(--chart-2)" name="Genome complete %" radius={[4, 4, 0, 0]} />
                 <Bar dataKey="proteinComplete" fill="var(--chart-4)" name="Protein complete %" radius={[4, 4, 0, 0]} />
               </BarChart>
-            </ResponsiveContainer>
+            </ChartContainer>
           </div>
 
           <div className="max-h-96 overflow-auto rounded-md border">
-            <table className="w-full text-sm">
-              <thead className="sticky top-0 bg-card">
-                <tr className="border-b text-left">
-                  <th className="px-3 py-2 font-medium">Sample</th>
-                  <th className="px-3 py-2 font-medium text-right">Genome C</th>
-                  <th className="px-3 py-2 font-medium text-right">Protein C</th>
-                  <th className="px-3 py-2 font-medium text-right">D</th>
-                  <th className="px-3 py-2 font-medium text-right">Delta</th>
-                  <th className="px-3 py-2 font-medium">Flags</th>
-                </tr>
-              </thead>
-              <tbody>
+            <Table>
+              <TableHeader className="sticky top-0 bg-card">
+                <TableRow>
+                  <TableHead>Sample</TableHead>
+                  <TableHead className="text-right">Genome C</TableHead>
+                  <TableHead className="text-right">Protein C</TableHead>
+                  <TableHead className="text-right">D</TableHead>
+                  <TableHead className="text-right">Delta</TableHead>
+                  <TableHead>Flags</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {data.map((item) => (
-                  <tr key={item.name} className="border-b last:border-0">
-                    <td className="max-w-64 truncate px-3 py-3">{item.name}</td>
-                    <td className="px-3 py-3 text-right">{formatNumber(item.genomeComplete)}%</td>
-                    <td className="px-3 py-3 text-right">{formatNumber(item.proteinComplete)}%</td>
-                    <td className="px-3 py-3 text-right">{formatNumber(item.duplicated)}%</td>
-                    <td className="px-3 py-3 text-right">{formatNumber(item.difference)}%</td>
-                    <td className="px-3 py-3">
+                  <TableRow key={item.name}>
+                    <TableCell className="max-w-64 truncate">{item.name}</TableCell>
+                    <TableCell className="text-right">{formatNumber(item.genomeComplete)}%</TableCell>
+                    <TableCell className="text-right">{formatNumber(item.proteinComplete)}%</TableCell>
+                    <TableCell className="text-right">{formatNumber(item.duplicated)}%</TableCell>
+                    <TableCell className="text-right">{formatNumber(item.difference)}%</TableCell>
+                    <TableCell>
                       <div className="flex flex-wrap gap-1">
                         {item.differenceFlagged && (
                           <Badge variant="destructive">Delta above avg</Badge>
@@ -909,11 +989,11 @@ function BuscoComparisonBlock({
                           <Badge variant="outline">OK</Badge>
                         )}
                       </div>
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
 
           <div className="max-h-72 overflow-auto rounded-md border p-3">

@@ -15,21 +15,21 @@ export default function Page() {
                 <div className="w-full mb-8">
                     <WelcomeCard></WelcomeCard>
                   </div>
-              <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+              <div className="columns-1 space-y-4 lg:columns-2">
 
-                  <div className="w-full">
+                  <div className="w-full mb-4 break-inside-avoid">
                     <CardsDataTable></CardsDataTable>
                   </div>
-                  <div className="w-full">
+                  <div className="w-full mb-4 break-inside-avoid">
                     <DatabaseCleanup></DatabaseCleanup>
                   </div>
-                  <div className="w-full">
+                  <div className="w-full mb-4 break-inside-avoid lg:break-before-column">
                     <CardsStats></CardsStats>
                   </div>
-                 <div className="w-full">
+                 <div className="w-full mb-4 break-inside-avoid">
                     <CardsDataTableGroup></CardsDataTableGroup>
                  </div>
-                  <div className="w-full">
+                  <div className="w-full mb-4 break-inside-avoid">
                     <ReportCard></ReportCard>
                   </div>
               </div>
