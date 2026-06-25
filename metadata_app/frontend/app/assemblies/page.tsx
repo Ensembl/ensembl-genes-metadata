@@ -227,12 +227,12 @@ export default function Page() {
   );
 
   return (
-    <div className="min-h-screen justify-center flex flex-wrap align-items-center">
-      <div className="container m-16 mt-10 max-w-6xl">
+    <div className="min-h-screen flex justify-center px-4 py-10 sm:px-6 lg:px-8">
+      <div className="w-full max-w-6xl">
         <div className="rounded-2xl border-accent shadow-lg">
           {/* Filter Section */}
-          <div className="rounded-t-2xl bg-secondary p-8 gap-10">
-            <div className="grid justify-center grid-cols-2 gap-4 mb-4">
+          <div className="rounded-t-2xl bg-secondary p-4 gap-10 sm:p-8">
+            <div className="grid grid-cols-1 gap-4 mb-4 md:grid-cols-2">
             <div>
                 <Label className="mb-3 block">Select project name</Label>
                 <MultipleSelector
@@ -269,7 +269,7 @@ export default function Page() {
 
               </div>
               </div>
-            <div className="grid justify-center grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
 
 
               {baseFields.map(({ label, placeholder }, index) => (
@@ -301,7 +301,7 @@ export default function Page() {
               </div>
             </div>
 
-            <div className="flex gap-10 mt-6">
+            <div className="grid grid-cols-1 gap-4 mt-6 sm:grid-cols-2 lg:grid-cols-4">
 
               <div className="flex items-center space-x-2">
                 <Tooltip>
@@ -336,7 +336,7 @@ export default function Page() {
           {selectedMetrics.length > 0 && (
           <div
             className={cn(
-              "bg-color-sidebar-accent dark:border-x-2 dark:border-b-2 rounded-b-2xl flex flex-col p-8",
+              "bg-color-sidebar-accent dark:border-x-2 dark:border-b-2 rounded-b-2xl flex flex-col p-4 sm:p-8",
               hasToggleGroup && hasInputFields && "space-y-8"
             )}
           >
@@ -385,7 +385,7 @@ export default function Page() {
             )}
 
             {hasInputFields && (
-              <div className="grid grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 {selectedMetrics.map((metric) =>
                   !toggleMetrics.some((tm) => tm.label === metric) ? (
                     <div key={metric}>
@@ -428,7 +428,7 @@ export default function Page() {
 
         {/* Get Results Button */}
         <div className="mt-8 flex justify-end">
-          <Button className="cursor-pointer" size="lg" onClick={handleGetResults} disabled={loading}>
+          <Button className="w-full cursor-pointer sm:w-auto" size="lg" onClick={handleGetResults} disabled={loading}>
             {loading ? (
               <>
                 <Loader2 className="animate-spin mr-2" />
@@ -453,9 +453,9 @@ export default function Page() {
         {/* Results */}
         {assemblies.length > 0 &&  (
           <div className="mt-10 shadow-lg border border:border rounded-2xl">
-            <div className="flex items-center justify-between px-8 py-6 border-b border:border">
+            <div className="flex flex-col gap-4 px-4 py-6 border-b border:border sm:px-8 md:flex-row md:items-center md:justify-between">
               <h2 className="text-lg font-semibold">Filtered Assemblies ({assemblies.length}) </h2>
-              <div className="flex gap-2">
+              <div className="grid w-full grid-cols-1 gap-2 sm:grid-cols-2 md:w-auto md:flex">
                 {/* Download GCA List (.txt) */}
                 <Button
                   variant="outline"

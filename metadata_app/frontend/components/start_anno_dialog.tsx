@@ -27,17 +27,17 @@ export function StartAnnotationDialog() {
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="genebuilder_id" className="text-right">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">
+            <Label htmlFor="genebuilder_id" className="sm:text-right">
               Genebuilder ID
             </Label>
-            <Input id="genebuilder_id" value="60" className="col-span-3" />
+            <Input id="genebuilder_id" value="60" className="sm:col-span-3" />
           </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="workking_dir" className="text-right">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-4 sm:items-center sm:gap-4">
+            <Label htmlFor="workking_dir" className="sm:text-right">
               Working directory
             </Label>
-            <Input id="workking_dir" value="working/directory/path" className="col-span-3" />
+            <Input id="workking_dir" value="working/directory/path" className="sm:col-span-3" />
           </div>
         </div>
         <DialogFooter>

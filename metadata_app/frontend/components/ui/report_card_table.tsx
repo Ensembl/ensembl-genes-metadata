@@ -167,14 +167,14 @@ export function CardsReportTable() {
 
 
   return (
-    <Card className="dark:bg-secondary">
+    <Card className="min-w-0 dark:bg-secondary">
       <CardHeader className="mb-4">
         <CardTitle className="text-xl">Biodiversity projects overview</CardTitle>
         <CardDescription>Number of annotations per project. Qualified assemblies shows the number of chromosome level, primary, current assemblies with transciptomic data.
         In progress shows in progress, completed and handed over annotations. This takes a couple of seconds to load.</CardDescription>
       </CardHeader>
-      <CardContent className="overflow-visible mb-4">
-        <div className="rounded-md">
+      <CardContent className="mb-4 min-w-0 overflow-x-auto">
+        <div className="min-w-[760px] rounded-md">
           {loading ? (
             <p className="text-muted-foreground">Loading data...</p>
           ) : (

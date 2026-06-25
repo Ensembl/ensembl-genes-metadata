@@ -18,11 +18,11 @@ export default function ReportSelectorPage() {
     "Select Biodiversity Project to track annotation status. High priority projects are marked with *. Shows primary, chromosome or complete genome level assemblies per project.";
 
   return (
-    <div className="flex items-center justify-center mt-15">
-      <div className="container m-16 max-w-6xl">
-        <h1 className="scroll-m-20 text-4xl font-extrabold tracking-tight text-balance">{title}</h1>
+    <div className="flex justify-center px-4 py-10 sm:px-6 lg:px-8">
+      <div className="w-full max-w-6xl">
+        <h1 className="scroll-m-20 text-3xl font-extrabold tracking-tight text-balance sm:text-4xl">{title}</h1>
         <p className="leading-7 [&:not(:first-child)]:mt-6">{description}</p>
-        <div className="grid grid-cols-2 gap-4 justify-center mt-8">
+        <div className="grid grid-cols-1 gap-4 justify-center mt-8 md:grid-cols-2">
           {PROJECTS.map((project) => (
             <Link
               key={project.slug}

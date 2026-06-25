@@ -77,13 +77,13 @@ export function ProjectsBar() {
   }, [])
 
   return (
-      <div className="grid grid-cols-2 gap-4">
-        <Card>
+      <div className="grid min-w-0 grid-cols-1 gap-4 lg:grid-cols-2">
+        <Card className="min-w-0">
           <CardHeader>
             <CardTitle>Assemblies per year per project</CardTitle>
             <CardDescription>Biodiversity projects</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="min-w-0">
               <ChartContainer config={chartConfig} className="h-[400px] w-full">
                 <BarChart accessibilityLayer data={assemblyData}>
                   <CartesianGrid vertical={false} />
@@ -110,12 +110,12 @@ export function ProjectsBar() {
           </CardContent>
           </Card>
 
-        <Card>
+        <Card className="min-w-0">
           <CardHeader>
             <CardTitle>Assemblies per year per project</CardTitle>
             <CardDescription>Custom groups</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="min-w-0">
               <ChartContainer config={chartConfig} className="h-[400px] w-full">
                 <BarChart accessibilityLayer data={assemblyData}>
                   <CartesianGrid vertical={false} />
@@ -135,12 +135,12 @@ export function ProjectsBar() {
           </CardContent>
           </Card>
 
-          <Card>
+          <Card className="min-w-0">
             <CardHeader>
             <CardTitle>Annotations in Beta per year per project</CardTitle>
             <CardDescription>Biodiversity projects</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="min-w-0">
               <ChartContainer config={chartConfig} className="h-[400px] w-full">
                 <BarChart accessibilityLayer data={annotationData}>
                   <CartesianGrid vertical={false} />
@@ -167,12 +167,12 @@ export function ProjectsBar() {
           </CardContent>
             </Card>
 
-        <Card>
+        <Card className="min-w-0">
           <CardHeader>
             <CardTitle>Annotations in Beta per year per project</CardTitle>
             <CardDescription>Custom groups</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="min-w-0">
               <ChartContainer config={chartConfig} className="h-[400px] w-full">
                 <BarChart accessibilityLayer data={annotationData}>
                   <CartesianGrid vertical={false} />

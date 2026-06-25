@@ -10,9 +10,9 @@ export function MainNav() {
   const pathname = usePathname()
 
   return (
-  <div className="flex w-full items-center">
+  <div className="flex w-full min-w-0 flex-wrap items-center gap-y-3 sm:flex-nowrap">
     {/* Logo Section */}
-    <Link href="/" className="flex items-start mr-6 gap-2 lg:mr-6">
+    <Link href="/" className="mr-4 flex shrink-0 items-start gap-2 lg:mr-6">
       <Icons.logo className="h-6 w-6" />
       <span className="hidden font-bold lg:inline-block leading-tight">
         Genebuild<br />Metadata
@@ -20,8 +20,8 @@ export function MainNav() {
     </Link>
 
     {/* Right-side nav + mode switch */}
-    <div className="flex items-center gap-6 ml-auto">
-      <nav className="flex items-center gap-4 text-sm xl:gap-6">
+    <div className="ml-auto flex min-w-0 flex-1 flex-wrap items-center justify-end gap-3 sm:flex-nowrap sm:gap-6">
+      <nav className="flex min-w-0 flex-wrap items-center justify-end gap-x-3 gap-y-2 overflow-visible text-sm sm:flex-nowrap sm:gap-4 xl:gap-6">
         <Link
           href="/"
           className={cn(

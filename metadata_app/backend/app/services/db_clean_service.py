@@ -56,6 +56,8 @@ servers = [
     },
 ]
 
+PIPE_EXCLUDED_HOSTS = {"mysql-ens-genebuild-prod-1"}
+
 
 def get_live_annotations(genebuilder):
     try:
@@ -111,10 +113,13 @@ def _build_database_matchers(df, chunk_size=250):
     regex per live annotation for every database on every server.
     """
     candidates = set()
+    live_gcas = set()
 
     for _, row in df.iterrows():
         gca_clean = _normalise_gca_for_db_name(row["gca"])
-        prefixes = {str(row["genebuilder"])}
+        genebuilder = str(row["genebuilder"])
+        prefixes = {genebuilder}
+        live_gcas.add(gca_clean)
 
         if "scientific_name" in row:
             species_prefix = _scientific_name_to_db_prefix(row["scientific_name"])
@@ -125,17 +130,40 @@ def _build_database_matchers(df, chunk_size=250):
             candidates.add(f"{prefix}_{gca_clean}")
 
     escaped_candidates = [re.escape(candidate) for candidate in candidates]
-    return [
-        re.compile(rf"^(?:{'|'.join(escaped_candidates[i:i + chunk_size])}).*$", re.IGNORECASE)
+
+    general_matchers = [
+        re.compile(
+            rf"^(?:{'|'.join(escaped_candidates[i:i + chunk_size])}).*$",
+            re.IGNORECASE,
+        )
         for i in range(0, len(escaped_candidates), chunk_size)
     ]
+
+    return general_matchers, live_gcas
 
 
 def _database_matches(db_name, matchers):
     return any(matcher.fullmatch(db_name) for matcher in matchers)
 
 
-def _find_databases_on_server(server, matchers, genebuilder):
+def _is_live_gca_pipe_database(db_name, genebuilder, live_gcas):
+    """
+    Match selected-genebuilder pipe databases for live GCAs.
+
+    Examples:
+    lazar_gca006229185v1_pipe_116
+    lazar_gca006229185v1_repeat_masking_pipe_116
+    """
+    pattern = rf"^{re.escape(genebuilder)}_(gca\d+v\d+)(?:_.*)?_pipe(?:_.*)?$"
+    match = re.fullmatch(pattern, db_name, re.IGNORECASE)
+    return bool(match and match.group(1).lower() in live_gcas)
+
+
+def _database_name_from_row(row):
+    return next(iter(row.values()))
+
+
+def _find_databases_on_server(server, matchers, live_gcas, genebuilder):
     db_list = []
     conn = None
 
@@ -153,8 +181,14 @@ def _find_databases_on_server(server, matchers, genebuilder):
             cursor.execute("SHOW DATABASES;")
             databases = cursor.fetchall()
             for db in databases:
-                db_name = db["Database"]
-                if _database_matches(db_name, matchers):
+                db_name = _database_name_from_row(db)
+                is_pipe_db = _is_live_gca_pipe_database(
+                    db_name, genebuilder, live_gcas
+                )
+                if is_pipe_db and server["host"] in PIPE_EXCLUDED_HOSTS:
+                    continue
+
+                if is_pipe_db or _database_matches(db_name, matchers):
                     db_list.append(
                         {
                             "database": db_name,
@@ -163,6 +197,30 @@ def _find_databases_on_server(server, matchers, genebuilder):
                             "genebuilder": genebuilder,
                         }
                     )
+
+            if server["host"] not in PIPE_EXCLUDED_HOSTS:
+                cursor.execute(
+                    "SHOW DATABASES LIKE %s",
+                    (f"{genebuilder}\\_gca%\\_pipe%",),
+                )
+                pipe_databases = cursor.fetchall()
+                existing_databases = {item["database"] for item in db_list}
+
+                for db in pipe_databases:
+                    db_name = _database_name_from_row(db)
+                    if (
+                        db_name not in existing_databases
+                        and _is_live_gca_pipe_database(db_name, genebuilder, live_gcas)
+                    ):
+                        db_list.append(
+                            {
+                                "database": db_name,
+                                "server": server["host"],
+                                "port": server["port"],
+                                "genebuilder": genebuilder,
+                            }
+                        )
+                        existing_databases.add(db_name)
     except Exception as e:
         logging.error(
             f"Error connecting to {server['host']}:{server['port']} - {e}",
@@ -196,11 +254,17 @@ def find_genebuilder_databases(df):
 
     db_list = []
     genebuilder = str(df.iloc[0]["genebuilder"])
-    matchers = _build_database_matchers(df)
+    matchers, live_gcas = _build_database_matchers(df)
 
     with ThreadPoolExecutor(max_workers=len(servers)) as executor:
         futures = [
-            executor.submit(_find_databases_on_server, server, matchers, genebuilder)
+            executor.submit(
+                _find_databases_on_server,
+                server,
+                matchers,
+                live_gcas,
+                genebuilder,
+            )
             for server in servers
         ]
 

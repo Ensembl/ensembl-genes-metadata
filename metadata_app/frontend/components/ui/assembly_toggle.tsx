@@ -60,7 +60,7 @@ function ToggleGroupItem({
           variant: context.variant || variant,
           size: context.size || size,
         }),
-        "rounded-md px-4 py-2 text-sm focus:z-10 focus-visible:z-10 aria-pressed:bg-primary aria-pressed:text-primary-foreground",
+        "min-w-0 rounded-md px-4 py-2 text-center text-sm whitespace-normal focus:z-10 focus-visible:z-10 aria-pressed:bg-primary aria-pressed:text-primary-foreground",
         className
       )}
       {...props}

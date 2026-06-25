@@ -186,7 +186,7 @@ const reloadData = async () => {
 
 
   return (
-    <Card id="ho-ready-table" className="dark:bg-secondary">
+    <Card id="ho-ready-table" className="min-w-0 dark:bg-secondary">
       <CardHeader className="mb-4">
         <CardTitle className="text-xl">Handover ready cores</CardTitle>
           <CardAction>
@@ -290,7 +290,7 @@ const reloadData = async () => {
           </CardAction>
 
       </CardHeader>
-      <CardContent className="overflow-visible mb-4">
+      <CardContent className="mb-4 min-w-0 overflow-x-auto">
         <div className="rounded-md">
           {loading ? (
             <p className="text-muted-foreground">Loading data...</p>

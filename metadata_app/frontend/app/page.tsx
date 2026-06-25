@@ -9,27 +9,27 @@ import {CardsDataTableGroup} from "@/components/ui/card_groups"
 
 export default function Page() {
   return (
-      <div className="min-h-screen justify-center flex flex-wrap align-items-center">
-          <div className="container m-16 mt-10 max-w-6xl">
-            <div className="pt-8 pb-10 py-16">
-                <div className="w-full mb-8 break-inside-avoid">
+      <div className="min-h-screen flex justify-center px-4 sm:px-6 lg:px-8">
+          <div className="w-full max-w-6xl py-10 sm:py-16">
+            <div className="pt-4 pb-10 sm:pt-8">
+                <div className="w-full mb-8">
                     <WelcomeCard></WelcomeCard>
                   </div>
-              <div className="columns-2 space-y-4">
+              <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
 
-                  <div className="w-full mb-4 break-inside-avoid">
+                  <div className="w-full">
                     <CardsDataTable></CardsDataTable>
                   </div>
-                  <div className="w-full mb-4 break-inside-avoid">
+                  <div className="w-full">
                     <DatabaseCleanup></DatabaseCleanup>
                   </div>
-                  <div className="w-full mb-4 break-inside-avoid break-before-column">
+                  <div className="w-full">
                     <CardsStats></CardsStats>
                   </div>
-                 <div className="w-full mb-4 break-inside-avoid">
+                 <div className="w-full">
                     <CardsDataTableGroup></CardsDataTableGroup>
                  </div>
-                  <div className="w-full mb-4 break-inside-avoid">
+                  <div className="w-full">
                     <ReportCard></ReportCard>
                   </div>
               </div>

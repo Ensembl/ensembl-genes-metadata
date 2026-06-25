@@ -84,17 +84,17 @@ export default function Page() {
 
 
   return (
-    <div className="flex items-center justify-center mt-15">
-        <div>
-        <div className="grid max-w-6xl gap-8 grid-cols-2">
-        <h1 className="scroll-m-20 text-4xl font-extrabold tracking-tight text-balance">{title}</h1>
-        <div className="max-w-lg min-w-lg flex justify-end">
+    <div className="flex justify-center px-4 py-10 sm:px-6 lg:px-8">
+        <div className="w-full max-w-6xl">
+        <div className="grid gap-6 md:grid-cols-2 md:items-start">
+        <h1 className="scroll-m-20 text-3xl font-extrabold tracking-tight text-balance sm:text-4xl">{title}</h1>
+        <div className="flex w-full justify-start md:justify-end">
             <GridList02 value={selectedGenebuilder} onSelect={handleGenebuilderChange} placeholder="Select a Genebuilder" />
             </div>
             </div>
             <p className="leading-7 [&:not(:first-child):mt-6]">{description}</p>
       {selectedGenebuilder ? (
-            <div className="grid max-w-6xl gap-8">
+            <div className="grid gap-8">
         <StatusBox
           horeadyCount={horeadyCount ?? 0}
           dataCount={dataCount ?? 0}
@@ -109,7 +109,7 @@ export default function Page() {
         />
           </div>
               ) : (
-              <div className="mt-8 w-full max-w-6xl h-64 flex items-center justify-center border-2 border-dashed text-gray-400">
+              <div className="mt-8 w-full h-64 flex items-center justify-center border-2 border-dashed text-gray-400">
           Select a Genebuilder to see the handover data
         </div>
       )}

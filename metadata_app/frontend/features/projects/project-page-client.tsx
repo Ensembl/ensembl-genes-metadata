@@ -62,8 +62,8 @@ export function ProjectPageClient({
   }, [projectExists, projectSlug]);
 
   return (
-    <div className="flex items-center justify-center">
-      <div className="container mt-4 m-16 max-w-6xl">
+    <div className="flex justify-center px-4 py-10 sm:px-6 lg:px-8">
+      <div className="w-full max-w-6xl">
         {errorMessage && (
           <Alert variant="destructive" className="mt-8">
             <Terminal />
@@ -72,8 +72,8 @@ export function ProjectPageClient({
           </Alert>
         )}
 
-        <div className="flex items-center justify-between px-8 py-6">
-          <h1 className="text-2xl font-semibold">
+        <div className="flex items-center justify-between py-6 sm:px-8">
+          <h1 className="text-xl font-semibold sm:text-2xl">
             {projectTitle} number of GCAs: {assemblies.length}
           </h1>
         </div>

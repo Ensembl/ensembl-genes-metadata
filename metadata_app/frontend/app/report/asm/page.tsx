@@ -192,16 +192,16 @@ export default function Page() {
   });
 
   return (
-    <div className="min-h-screen justify-center flex flex-wrap align-items-center">
-      <div className="container m-16 mt-10 max-w-6xl">
+    <div className="min-h-screen flex justify-center px-4 py-10 sm:px-6 lg:px-8">
+      <div className="w-full max-w-6xl">
         <div className="rounded-2xl border-accent">
-          <div className="rounded-2xl bg-secondary p-8 gap-10 shadow-lg">
+          <div className="rounded-2xl bg-secondary p-4 gap-10 shadow-lg sm:p-8">
             <div className="mb-8">
               <h1 className="text-2xl font-bold mb-2">{title}</h1>
               <p className="text-muted-foreground">{description}</p>
             </div>
-            <div className="grid justify-center grid-cols-2 gap-4">
-              <div className="col-span-2">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="sm:col-span-2">
                 <Label className="mb-3 block">Main projects</Label>
                 <MultipleSelector
                   placeholder="Select projects or groups..."
@@ -230,7 +230,7 @@ export default function Page() {
                 </div>
               ))}
 
-              <div className="col-span-2 grid grid-cols-4 gap-10 mt-4 items-center">
+              <div className="grid grid-cols-1 gap-4 mt-4 items-center sm:col-span-2 sm:grid-cols-2 lg:grid-cols-4">
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <div className="flex items-center gap-2">
@@ -280,7 +280,7 @@ export default function Page() {
 
             </div>
             <div className="mt-6 flex justify-end">
-              <Button className="cursor-pointer" onClick={handleGetAnnotations} disabled={loading}>
+              <Button className="w-full cursor-pointer sm:w-auto" onClick={handleGetAnnotations} disabled={loading}>
                 {loading ? <Loader2 className="animate-spin h-4 w-4 mr-2" /> : "Generate assembly report"}
               </Button>
             </div>
@@ -298,8 +298,8 @@ export default function Page() {
         )}
 
         {assemblies.length > 0 && (
-          <div className="p-8">
-            <div className="flex items-center justify-between mt-4 mb-6">
+          <div className="py-8 sm:p-8">
+            <div className="flex flex-col gap-4 mt-4 mb-6 sm:flex-row sm:items-center sm:justify-between">
               <h1 className="text-xl font-semibold">Assembly report</h1>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -318,7 +318,7 @@ export default function Page() {
               </DropdownMenu>
             </div>
             <div className="grid grid-cols-1 gap-6">
-              <div ref={componentRef} className="grid grid-cols-2 gap-6">
+              <div ref={componentRef} className="grid grid-cols-1 gap-6 lg:grid-cols-2">
                 {!hasBioprojectInput &&
                     <RepProject data={projectData} />}
                 <RepAsmType data={asmtypeData} />
@@ -338,11 +338,11 @@ export default function Page() {
                 <RepTranscENA data={transcenaData} />
                 )}
 
-                <div className="col-span-2">
+                <div className="lg:col-span-2">
                 <RepClade data={cladeData} />
                 </div>
 
-                <div className="col-span-2">
+                <div className="lg:col-span-2">
                 <LengthChart data={lengthData} />
                 </div>
 
