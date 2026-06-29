@@ -385,7 +385,13 @@ def generate_overview():
 
         df["genebuild_status"] = df["genebuild_status"].fillna("not_annotated")
         df = df.drop_duplicates(
-            subset=["project_name", "assembly_id", "lowest_taxon_id"], keep="first"
+            subset=[
+                "project_name",
+                "assembly_id",
+                "lowest_taxon_id",
+                "genebuild_status",
+            ],
+            keep="first",
         )
 
         lowest_taxon_ids = {
@@ -415,12 +421,10 @@ def generate_overview():
                 )
 
         clade_data = load_clade_data()
-        df[["internal_clade", "species_taxon_id", "genus_taxon_id", "pipeline"]] = (
-            df["lowest_taxon_id"].apply(
-                lambda x: pd.Series(
-                    assign_clade_and_species(x, clade_data, taxonomy_dict)
-                )
-            )
+        df[["internal_clade", "species_taxon_id", "genus_taxon_id", "pipeline"]] = df[
+            "lowest_taxon_id"
+        ].apply(
+            lambda x: pd.Series(assign_clade_and_species(x, clade_data, taxonomy_dict))
         )
 
         df_wide = df.pivot_table(
@@ -472,11 +476,11 @@ def generate_overview():
             & (df_wide["genebuild_status"] == "not_annotated")
         )
 
-        df_wide["unannotated_main"] = (
-            df_wide["unannotated"] & (df_wide["pipeline"] == "main")
+        df_wide["unannotated_main"] = df_wide["unannotated"] & (
+            df_wide["pipeline"] == "main"
         )
-        df_wide["unannotated_anno"] = (
-            df_wide["unannotated"] & (df_wide["pipeline"] == "anno")
+        df_wide["unannotated_anno"] = df_wide["unannotated"] & (
+            df_wide["pipeline"] == "anno"
         )
 
         summary = df_wide.groupby("project_name", as_index=False).agg(
