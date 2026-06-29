@@ -23,7 +23,6 @@ def assign_clade_and_species(
     lowest_taxon_id,
     clade_data,
     taxonomy_dict,
-    chordata_taxon_id=7711,
     human_taxon_id=9606,
 ):
     """
@@ -40,6 +39,8 @@ def assign_clade_and_species(
 
     if not taxonomy_hierarchy:
         logging.warning(f"No taxonomy hierarchy found for taxon_id {lowest_taxon_id}")
+        if lowest_taxon_id == human_taxon_id:
+            return "human", human_taxon_id, None, "hprc"
         return "Unassigned", None, None, "anno"
 
     # Build a quick mapping taxon_class -> taxon_class_id
@@ -49,6 +50,8 @@ def assign_clade_and_species(
 
     species_taxon_id = taxon_class_map.get("species")
     genus_taxon_id = taxon_class_map.get("genus")
+    species_taxon_id_int = int(species_taxon_id) if species_taxon_id is not None else None
+    is_human = lowest_taxon_id == human_taxon_id or species_taxon_id_int == human_taxon_id
 
     # Precompute taxon_id → clade_name mapping
     clade_lookup = {
@@ -73,7 +76,8 @@ def assign_clade_and_species(
             internal_clade = clade_lookup[int(taxon_id)]
             break
 
-    if lowest_taxon_id == human_taxon_id:
+    if is_human:
+        internal_clade = "human"
         pipeline = "hprc"
     else:
         clade_settings = clade_data.get(internal_clade, {})
