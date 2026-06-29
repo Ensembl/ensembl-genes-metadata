@@ -2,6 +2,7 @@ import logging
 import numpy as np
 import pandas as pd
 import datetime
+import re
 from fastapi import HTTPException
 from metadata_app.backend.app.core.database import get_db_connection
 from metadata_app.backend.app.services.taxonomy_service import (
@@ -9,6 +10,61 @@ from metadata_app.backend.app.services.taxonomy_service import (
     load_clade_data,
     assign_clade_and_species,
 )
+
+
+ENSEMBL_ORGANISMS_FTP_BASE_URL = "https://ftp.ebi.ac.uk/pub/ensemblorganisms"
+
+
+def _format_assembly_accession_path(gca_accession):
+    accession = str(gca_accession).strip()
+    match = re.fullmatch(r"(?P<prefix>GC[AF])_(?P<digits>\d+)\.(?P<version>\d+)", accession)
+    if not match:
+        return None
+
+    digits = match.group("digits")
+    if len(digits) % 3 != 0:
+        return None
+
+    grouped_digits = "/".join(
+        digits[index : index + 3] for index in range(0, len(digits), 3)
+    )
+    return f"{match.group('prefix')}/{grouped_digits}/{match.group('version')}"
+
+
+def _format_annotation_date_path(date_value):
+    if pd.isna(date_value):
+        return None
+
+    timestamp = pd.to_datetime(date_value, errors="coerce")
+    if pd.isna(timestamp):
+        return None
+
+    return timestamp.strftime("%Y_%m")
+
+
+def _format_annotation_provider_path(annotation_source):
+    if pd.isna(annotation_source):
+        return "ensembl"
+
+    source = str(annotation_source).strip().lower()
+    if not source:
+        return "ensembl"
+
+    return "ensembl" if source == "ensembl" else "community"
+
+
+def build_ensemblorganisms_ftp_url(row):
+    accession_path = _format_assembly_accession_path(row.get("gca"))
+    annotation_date = _format_annotation_date_path(row.get("last_genebuild_update"))
+    provider = _format_annotation_provider_path(row.get("annotation_source"))
+
+    if not accession_path or not annotation_date or pd.isna(row.get("release_date")):
+        return None
+
+    return (
+        f"{ENSEMBL_ORGANISMS_FTP_BASE_URL}/"
+        f"{accession_path}/{provider}/{annotation_date}/"
+    )
 
 
 def query_meta_registry(annotation_date, taxon_id, bioproject_id, group_name, gca):
@@ -330,18 +386,9 @@ def generate_tables(annotation_date, taxon_id, bioproject_id, group_name, gca=No
     anno_wide = check_if_gca_is_latest_annotated(df_meta_genebuild)
     logging.info(f"After latest annotated check: {anno_wide.shape}")
 
-    # Create the FTP URL using the scientific_name, replacing spaces with underscores
+    # Create the FTP URL using the accession-based Ensembl Organisms structure.
     logging.info("Generating FTP paths.")
-    anno_wide["ftp"] = anno_wide.apply(
-        lambda row: (
-            f"https://ftp.ebi.ac.uk/pub/ensemblorganisms/{row['scientific_name'].replace(' ', '_')}/{row['gca']}/"
-            if pd.notnull(row["scientific_name"])
-            and pd.notnull(row["gca"])
-            and pd.notnull(row.get("release_date"))
-            else None
-        ),
-        axis=1,
-    )
+    anno_wide["ftp"] = anno_wide.apply(build_ensemblorganisms_ftp_url, axis=1)
 
     # filtered_df = filtered_df.drop(columns=['year', 'gca', 'version'])
     # df_info_result = df_info_result.drop(columns=['year', 'version', 'gca_latest'])
