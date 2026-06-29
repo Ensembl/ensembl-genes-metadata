@@ -74,6 +74,11 @@ def query_meta_registry(annotation_date, taxon_id, bioproject_id, group_name, gc
         with get_db_connection("meta") as conn:
             cursor = conn.cursor()
 
+            if isinstance(bioproject_id, str):
+                bioproject_id = [bioproject_id]
+            if isinstance(group_name, str):
+                group_name = [group_name]
+
             # Validate BioProject IDs if provided
             if bioproject_id:
                 cursor.execute("SELECT DISTINCT bioproject_id FROM bioproject;")
@@ -88,18 +93,26 @@ def query_meta_registry(annotation_date, taxon_id, bioproject_id, group_name, gc
             # Build dynamic SQL filtering
             conditions = []
             parameters = []
+            project_conditions = []
 
             if bioproject_id:
-                conditions.append(
+                project_conditions.append(
                     f"b.bioproject_id IN ({','.join(['%s'] * len(bioproject_id))})"
                 )
                 parameters.extend(bioproject_id)
                 logging.info(f"Filtering by BioProject IDs: {', '.join(bioproject_id)}")
 
             if group_name:
-                conditions.append("g.group_name = %s")
-                parameters.append(group_name)
-                logging.info(f"Filtering by group name: {group_name}")
+                project_conditions.append(
+                    f"g.group_name IN ({','.join(['%s'] * len(group_name))})"
+                )
+                parameters.extend(group_name)
+                logging.info(f"Filtering by group name: {', '.join(group_name)}")
+
+            if len(project_conditions) == 1:
+                conditions.append(project_conditions[0])
+            elif len(project_conditions) > 1:
+                conditions.append(f"({' OR '.join(project_conditions)})")
 
             if taxon_id:
                 all_descendant_taxa = set()
@@ -142,8 +155,8 @@ def query_meta_registry(annotation_date, taxon_id, bioproject_id, group_name, gc
                 parameters.extend(gca)
                 logging.info(f"Filtering by GCA: {', '.join(gca)}")
 
-            # If there are conditions, join them with AND; otherwise, select all
-            where_clause = " WHERE " + " AND ".join(conditions) if conditions else ""
+            conditions.append("gb.last_attempt = 1")
+            where_clause = " WHERE " + " AND ".join(conditions)
 
             meta_query = f"""
                 SELECT 
@@ -198,7 +211,6 @@ def query_meta_registry(annotation_date, taxon_id, bioproject_id, group_name, gc
                       GROUP BY assembly_id
                 ) asm ON a.assembly_id = asm.assembly_id
                 {where_clause}
-                AND gb.last_attempt = 1
                 GROUP BY
                     b.bioproject_id,
                     mb.bioproject_name,
