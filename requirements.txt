@@ -6,13 +6,16 @@
 # pandas release confirmed to support Python 3.9.
 pandas==2.3.3
 PyMySQL==1.2.0
-matplotlib==3.11.0
+# matplotlib is pinned to 3.9.4, the last version with Python 3.9
+# wheels available. 3.10+ requires Python 3.10+, but this project
+# must run on Codon's Python 3.9.
+matplotlib==3.9.4
 
 # Development / quality gate tools -- needed to work on the code
 # (these are dev-only tools, version mismatches here matter less than for
 # pandas, but if you hit install errors on Codon, try without exact pins)
-pytest==9.1.1
-pylint==4.0.6
-mypy==2.1.0
+pytest==8.4.2
+pylint==3.3.9
+mypy==1.19.1
 mypy_extensions==1.1.0
-black==26.5.1
+black==25.11.0
