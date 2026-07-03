@@ -1,5 +1,5 @@
-USE gb_assembly_metadata ;
-DROP TABLE IF EXISTS assembly
+USE gb_assembly_metadata;
+DROP TABLE IF EXISTS assembly;
 
 CREATE TABLE assembly (
   assembly_id int NOT NULL AUTO_INCREMENT,
