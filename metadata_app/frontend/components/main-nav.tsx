@@ -78,15 +78,15 @@ export function MainNav() {
           Projects
         </Link>
         <Link
-          href="/handover"
+          href="/genebuild"
           className={cn(
             "transition-colors hover:text-foreground/80",
-            pathname?.startsWith("/handover")
+            pathname?.startsWith("/genebuild")
               ? "text-foreground font-bold"
               : "text-foreground/80"
           )}
         >
-          Handover
+          Genebuild
         </Link>
       </nav>
 

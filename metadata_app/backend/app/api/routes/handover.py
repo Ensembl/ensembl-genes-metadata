@@ -39,9 +39,16 @@ async def get_ready_to_handover(req: GenebuilderRequest):
     if isinstance(result, tuple) and isinstance(result[0], str):
         raise HTTPException(status_code=400, detail=result[0])
 
-    df_ready, count_ho_ready, count_data, count_pending, list_data, list_pending = (
-        result
-    )
+    (
+        df_ready,
+        count_ho_ready,
+        count_data,
+        count_pending,
+        list_data,
+        list_pending,
+        annotation_overview,
+        status_summary,
+    ) = result
 
     return {
         "df_ready": df_ready,
@@ -50,6 +57,8 @@ async def get_ready_to_handover(req: GenebuilderRequest):
         "count_pending": count_pending,
         "list_data": list_data,
         "list_pending": list_pending,
+        "annotation_overview": annotation_overview,
+        "status_summary": status_summary,
     }
 
 
