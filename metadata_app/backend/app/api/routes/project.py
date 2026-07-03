@@ -16,6 +16,7 @@ from metadata_app.backend.app.services.project_service import get_laca
 from metadata_app.backend.app.services.project_service import get_aegis
 from metadata_app.backend.app.services.project_service import get_tol
 from metadata_app.backend.app.services.project_service import get_rodent2k
+from metadata_app.backend.app.services.project_service import get_atlasea
 
 project_router = APIRouter()
 
@@ -84,3 +85,8 @@ def get_tol_project():
 @project_router.get("/project/rodent2k")
 def get_rodent2k_project():
     return get_rodent2k()
+
+
+@project_router.get("/project/atlasea")
+def get_atlasea_project():
+    return get_atlasea()

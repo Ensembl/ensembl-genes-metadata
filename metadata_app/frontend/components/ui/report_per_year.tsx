@@ -1,5 +1,6 @@
 "use client"
 import { Bar, BarChart, CartesianGrid, XAxis } from "recharts"
+import { PROJECTS } from "@/features/projects/project-config"
 
 import {
   Card,
@@ -12,50 +13,30 @@ import {
   ChartTooltip,
   ChartTooltipContent,
   ChartContainer,
+  type ChartConfig,
 } from "@/components/ui/chart"
 import React from "react"
 
-const chartConfig = {
-  AEGIS: {
-    label: "AEGIS",
-  },
-  "AQUA-FAANG": {
-    label: "AQUA-FAANG",
-  },
-  ASG: {
-    label: "ASG",
-  },
-  CBP: {
-    label: "CBP",
-  },
-  DToL: {
-    label: "DToL",
-  },
-  EBP: {
-    label: "EBP",
-  },
-  ERGA: {
-    label: "ERGA",
-  },
-  "ERGA/BGE": {
-    label: "ERGA/BGE",
-  },
-  ERGA_pilot: {
-    label: "ERGA Pilot",
-  },
-  HPRC: {
-    label: "HPRC",
-  },
-  LACA: {
-    label: "LACA",
-  },
-  VGP: {
-    label: "VGP",
-  },
-    ToL: {
-    label: "ToL",
-  },
-}
+const reportProjects = PROJECTS.filter((project) => project.reportKey)
+const biodiversityProjects = reportProjects.filter(
+  (project) => project.reportGroup === "biodiversity",
+)
+const customProjects = reportProjects.filter(
+  (project) => project.reportGroup === "custom",
+)
+const chartConfig = Object.fromEntries(
+  reportProjects.map((project) => [
+    project.reportKey,
+    {
+      label: project.reportLabel ?? project.reportKey,
+    },
+  ]),
+) satisfies ChartConfig
+
+const renderProjectBars = (projects: typeof reportProjects) =>
+  projects.map((project) => (
+    <Bar key={project.reportKey} dataKey={project.reportKey} fill="var(--chart-3)" radius={4} />
+  ))
 
 export function ProjectsBar() {
   const [assemblyData, setAssemblyData] = React.useState<any[]>([])
@@ -95,16 +76,7 @@ export function ProjectsBar() {
                     tickFormatter={(value) => value.toString()}
                   />
                   <ChartTooltip cursor={false} content={<ChartTooltipContent indicator="dashed" />} />
-                  <Bar dataKey="AEGIS" fill="var(--chart-3)" radius={4} />
-                  <Bar dataKey="ASG" fill="var(--chart-3)" radius={4} />
-                  <Bar dataKey="CBP" fill="var(--chart-3)" radius={4} />
-                  <Bar dataKey="DToL" fill="var(--chart-3)" radius={4} />
-                  <Bar dataKey="EBP" fill="var(--chart-3)" radius={4} />
-                  <Bar dataKey="ERGA" fill="var(--chart-3)" radius={4} />
-                  <Bar dataKey="ERGA/BGE" fill="var(--chart-3)" radius={4} />
-                  <Bar dataKey="ERGA_pilot" fill="var(--chart-3)" radius={4} />
-                  <Bar dataKey="VGP" fill="var(--chart-3)" radius={4} />
-                    <Bar dataKey="ToL" fill="var(--chart-3)" radius={4} />
+                  {renderProjectBars(biodiversityProjects)}
                 </BarChart>
               </ChartContainer>
           </CardContent>
@@ -127,9 +99,7 @@ export function ProjectsBar() {
                     tickFormatter={(value) => value.toString()}
                   />
                   <ChartTooltip cursor={false} content={<ChartTooltipContent indicator="dashed" />} />
-                  <Bar dataKey="AQUA-FAANG" fill="var(--chart-3)" radius={4} />
-                  <Bar dataKey="HPRC" fill="var(--chart-3)" radius={4} />
-                  <Bar dataKey="LACA" fill="var(--chart-3)" radius={4} />
+                  {renderProjectBars(customProjects)}
                 </BarChart>
               </ChartContainer>
           </CardContent>
@@ -152,16 +122,7 @@ export function ProjectsBar() {
                     tickFormatter={(value) => value.toString()}
                   />
                   <ChartTooltip cursor={false} content={<ChartTooltipContent indicator="dashed" />} />
-                  <Bar dataKey="AEGIS" fill="var(--chart-3)" radius={4} />
-                  <Bar dataKey="ASG" fill="var(--chart-3)" radius={4} />
-                  <Bar dataKey="CBP" fill="var(--chart-3)" radius={4} />
-                  <Bar dataKey="DToL" fill="var(--chart-3)" radius={4} />
-                  <Bar dataKey="EBP" fill="var(--chart-3)" radius={4} />
-                  <Bar dataKey="ERGA" fill="var(--chart-3)" radius={4} />
-                  <Bar dataKey="ERGA/BGE" fill="var(--chart-3)" radius={4} />
-                  <Bar dataKey="ERGA_pilot" fill="var(--chart-3)" radius={4} />
-                  <Bar dataKey="VGP" fill="var(--chart-3)" radius={4} />
-                    <Bar dataKey="ToL" fill="var(--chart-3)" radius={4} />
+                  {renderProjectBars(biodiversityProjects)}
                 </BarChart>
               </ChartContainer>
           </CardContent>
@@ -184,9 +145,7 @@ export function ProjectsBar() {
                     tickFormatter={(value) => value.toString()}
                   />
                   <ChartTooltip cursor={false} content={<ChartTooltipContent indicator="dashed" />} />
-                  <Bar dataKey="AQUA-FAANG" fill="var(--chart-3)" radius={4} />
-                  <Bar dataKey="HPRC" fill="var(--chart-3)" radius={4} />
-                  <Bar dataKey="LACA" fill="var(--chart-3)" radius={4} />
+                  {renderProjectBars(customProjects)}
                 </BarChart>
               </ChartContainer>
           </CardContent>

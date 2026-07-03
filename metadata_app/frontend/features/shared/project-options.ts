@@ -22,4 +22,5 @@ export const PROJECT_OPTIONS: Option[] = [
   { value: "PRJNA1399476", label: "Rodent 2K" },
   { value: "LACA", label: "Livestock And Companion Animals" },
   { value: "AQUA-FAANG", label: "Aqua FAANG" },
+    { value: "PRJEB64126", label: "ATLASea" },
 ];

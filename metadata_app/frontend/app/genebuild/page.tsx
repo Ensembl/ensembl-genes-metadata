@@ -50,7 +50,9 @@ import {
   CircleDashed,
   ListChecks,
   LockKeyhole,
+  Download,
   RefreshCw,
+  ArrowUpDown,
   UserRound,
 } from "lucide-react";
 
@@ -100,6 +102,9 @@ type StatusSummaryItem = {
   bioprojects?: string;
 };
 
+type OverviewSortKey = "status" | "priority" | "updated";
+type SortDirection = "asc" | "desc";
+
 const formatStatus = (status: string) =>
   status
     .replace(/_/g, " ")
@@ -145,6 +150,10 @@ export default function Page() {
   const [selectedAnnotationIds, setSelectedAnnotationIds] = useState<string[]>([]);
   const [selectedStatus, setSelectedStatus] = useState<string>("");
   const [statusDialogOpen, setStatusDialogOpen] = useState(false);
+  const [overviewSort, setOverviewSort] = useState<{
+    key: OverviewSortKey;
+    direction: SortDirection;
+  }>({ key: "priority", direction: "asc" });
 
 
   const handleGetHO = async () => {
@@ -279,16 +288,78 @@ export default function Page() {
     return [...dataItems, ...pendingItems];
   }, [staleDataItems, stalePendingItems]);
   const selectableDashboardItems = useMemo(
-    () => dashboardItems.filter((item) => item.method),
+    () => dashboardItems.filter((item) => item.gca),
     [dashboardItems],
   );
   const selectedOverviewItems = useMemo(
-    () => dashboardItems.filter((item) => selectedAnnotationIds.includes(item.id) && item.method),
+    () => dashboardItems.filter((item) => selectedAnnotationIds.includes(item.id) && item.gca),
     [dashboardItems, selectedAnnotationIds],
   );
+  const statusChangeItems = useMemo(
+    () => selectedOverviewItems.filter((item) => item.method),
+    [selectedOverviewItems],
+  );
+  const sortedDashboardItems = useMemo(() => {
+    const priorityRank: Record<DashboardItem["priority"], number> = {
+      high: 0,
+      medium: 1,
+      normal: 2,
+    };
+
+    return [...dashboardItems].sort((a, b) => {
+      let comparison = 0;
+
+      if (overviewSort.key === "priority") {
+        comparison = priorityRank[a.priority] - priorityRank[b.priority];
+      } else if (overviewSort.key === "updated") {
+        const aTime = a.updated ? new Date(a.updated).getTime() : Number.NEGATIVE_INFINITY;
+        const bTime = b.updated ? new Date(b.updated).getTime() : Number.NEGATIVE_INFINITY;
+        comparison = aTime - bTime;
+      } else {
+        comparison = a.status.localeCompare(b.status);
+      }
+
+      if (comparison === 0) {
+        comparison = a.scientific_name.localeCompare(b.scientific_name);
+      }
+
+      return overviewSort.direction === "asc" ? comparison : -comparison;
+    });
+  }, [dashboardItems, overviewSort]);
   const allOverviewRowsSelected =
     selectableDashboardItems.length > 0 &&
     selectableDashboardItems.every((item) => selectedAnnotationIds.includes(item.id));
+
+  const toggleOverviewSort = (key: OverviewSortKey) => {
+    setOverviewSort((current) => ({
+      key,
+      direction: current.key === key && current.direction === "asc" ? "desc" : "asc",
+    }));
+  };
+
+  const sortLabel = (key: OverviewSortKey) =>
+    overviewSort.key === key ? (overviewSort.direction === "asc" ? "ascending" : "descending") : "none";
+
+  const SortableHead = ({
+    sortKey,
+    children,
+  }: {
+    sortKey: OverviewSortKey;
+    children: React.ReactNode;
+  }) => (
+    <Button
+      type="button"
+      variant="ghost"
+      size="sm"
+      className="-ml-3 h-8 px-3"
+      onClick={() => toggleOverviewSort(sortKey)}
+      aria-label={`Sort by ${children}`}
+      aria-sort={sortLabel(sortKey) as "ascending" | "descending" | "none" | "other"}
+    >
+      {children}
+      <ArrowUpDown className="size-3.5" />
+    </Button>
+  );
 
   const toggleAnnotationSelection = (id: string, checked: boolean) => {
     setSelectedAnnotationIds((current) =>
@@ -306,8 +377,8 @@ export default function Page() {
       return;
     }
 
-    if (!selectedOverviewItems.length) {
-      alert("Select at least one annotation");
+    if (!statusChangeItems.length) {
+      alert("Select at least one annotation with an annotation method");
       return;
     }
 
@@ -316,7 +387,7 @@ export default function Page() {
       return;
     }
 
-    const items = selectedOverviewItems.map((item) => ({
+    const items = statusChangeItems.map((item) => ({
       gca: item.gca,
       annotation_method: item.method as string,
     }));
@@ -343,6 +414,29 @@ export default function Page() {
       console.error(error);
       alert("Error updating records");
     }
+  };
+
+  const handleDownloadSelectedGcas = () => {
+    const selectedGcas = Array.from(
+      new Set(selectedOverviewItems.map((item) => item.gca).filter(Boolean)),
+    );
+
+    if (!selectedGcas.length) return;
+
+    const blob = new Blob([`${selectedGcas.join("\n")}\n`], {
+      type: "text/plain;charset=utf-8",
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    const genebuilder = selectedGenebuilder ?? "genebuilder";
+    const safeGenebuilder = genebuilder.replace(/[^a-z0-9_-]+/gi, "_").toLowerCase();
+
+    link.href = url;
+    link.download = `${safeGenebuilder}_selected_gcas.txt`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   const totalTracked = backendStatusSummary.reduce(
@@ -544,9 +638,19 @@ export default function Page() {
               <CardTitle>Annotation overview</CardTitle>
               <CardDescription>All assigned annotations returned by the handover service, ordered by records that need attention first.</CardDescription>
               <CardAction>
+                <div className="flex flex-col gap-2 sm:flex-row">
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={!selectedOverviewItems.length}
+                  onClick={handleDownloadSelectedGcas}
+                >
+                  <Download className="size-4" />
+                  Download GCAs
+                </Button>
                 <Dialog open={statusDialogOpen} onOpenChange={setStatusDialogOpen}>
                   <DialogTrigger asChild>
-                    <Button disabled={!selectedOverviewItems.length}>
+                    <Button disabled={!statusChangeItems.length}>
                       Change status
                     </Button>
                   </DialogTrigger>
@@ -572,9 +676,15 @@ export default function Page() {
                         </SelectContent>
                       </Select>
                       <p className="text-sm text-muted-foreground">
-                        {selectedOverviewItems.length} annotation
-                        {selectedOverviewItems.length !== 1 ? "s" : ""} selected.
+                        {statusChangeItems.length} annotation
+                        {statusChangeItems.length !== 1 ? "s" : ""} can be updated.
                       </p>
+                      {selectedOverviewItems.length > statusChangeItems.length ? (
+                        <p className="text-sm text-muted-foreground">
+                          {selectedOverviewItems.length - statusChangeItems.length} selected row
+                          {selectedOverviewItems.length - statusChangeItems.length !== 1 ? "s" : ""} can only be used for GCA download.
+                        </p>
+                      ) : null}
                     </div>
                     <DialogFooter>
                       <DialogClose asChild>
@@ -586,6 +696,7 @@ export default function Page() {
                     </DialogFooter>
                   </DialogContent>
                 </Dialog>
+                </div>
               </CardAction>
             </CardHeader>
             <CardContent className="min-w-0 overflow-x-auto">
@@ -600,21 +711,35 @@ export default function Page() {
                       />
                     </TableHead>
                     <TableHead>Annotation</TableHead>
-                    <TableHead>Status</TableHead>
+                    <TableHead>
+                      <SortableHead sortKey="status">Status</SortableHead>
+                    </TableHead>
                     <TableHead>Queue</TableHead>
                     <TableHead>Next action</TableHead>
-                    <TableHead>Priority</TableHead>
-                    <TableHead>Last update</TableHead>
+                    <TableHead>
+                      <SortableHead sortKey="priority">Priority</SortableHead>
+                    </TableHead>
+                    <TableHead>
+                      <SortableHead sortKey="updated">Last update</SortableHead>
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {dashboardItems.length ? (
-                    dashboardItems.map((item) => (
-                      <TableRow key={item.id}>
-                        <TableCell>
+                    sortedDashboardItems.map((item) => (
+                      <TableRow
+                        key={item.id}
+                        className={item.gca ? "cursor-pointer select-none" : "cursor-not-allowed opacity-70"}
+                        onClick={() => {
+                          if (!item.gca) return;
+                          toggleAnnotationSelection(item.id, !selectedAnnotationIds.includes(item.id));
+                        }}
+                        aria-selected={selectedAnnotationIds.includes(item.id)}
+                      >
+                        <TableCell onClick={(event) => event.stopPropagation()}>
                           <Checkbox
                             checked={selectedAnnotationIds.includes(item.id)}
-                            disabled={!item.method}
+                            disabled={!item.gca}
                             onCheckedChange={(checked) => toggleAnnotationSelection(item.id, checked === true)}
                             aria-label={`Select ${item.gca}`}
                           />
