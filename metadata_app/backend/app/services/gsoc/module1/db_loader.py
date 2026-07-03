@@ -88,6 +88,7 @@ SELECT
     s.common_name,
     a.lowest_taxon_id,
     s.clade                                      AS internal_clade,
+    gs.genebuild_status_id,
     gs.gb_status,
     gs.annotation_method,
     gs.genebuilder,
