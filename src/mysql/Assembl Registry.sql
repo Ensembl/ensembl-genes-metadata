@@ -193,7 +193,7 @@ CREATE TABLE genebuild_metrics (
   metrics_name varchar(50),
   metrics_value varchar(225),
   PRIMARY KEY (`gb_metrics_id`),
-  FOREIGN KEY (`genebuild_id`) REFERENCES assembly(`genebuild_id`)
+  FOREIGN KEY (`genebuild_id`) REFERENCES genebuild_status(`genebuild_id`)
 ) ENGINE=MyISAM AUTO_INCREMENT=1 DEFAULT CHARSET=latin1;
 
 
