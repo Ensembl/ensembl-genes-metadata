@@ -77,7 +77,7 @@ CREATE TABLE taxonomy_name (
   taxonomy_name_id int NOT NULL AUTO_INCREMENT,
   taxon_class_id int(15) NOT NULL,
   taxon_class_name varchar(50) NOT NULL,
-  PRIMARY KEY (`organism_id`),
+  PRIMARY KEY (`taxonomy_name_id`),
   FOREIGN KEY (`taxon_class_id`) REFERENCES taxonomy(`taxon_class_id`),
   CONSTRAINT taxon_id_name UNIQUE (taxon_class_id, taxon_class_name)
 ) ENGINE=MyISAM AUTO_INCREMENT=1 DEFAULT CHARSET=latin1;
