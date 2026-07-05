@@ -25,7 +25,7 @@ process INDEXING_FILES {
     input:
     //tuple val(taxon_id), val(genomeDir),  val(tissue),  path(aligned_file)
     tuple val(taxon_id), val(genomeDir), val(tissue),val(platform),  val(output_dir), path(aligned_file)
-    val estension
+    val extension
     output:
     tuple val(taxon_id), val(genomeDir), val(tissue), val(platform), val(output_dir), path(aligned_file)
 
@@ -34,9 +34,9 @@ process INDEXING_FILES {
     script:
     def output_dir="${params.outDir}/$taxon_id/$output_dir/alignment"
     """
-    if [ ! -s "${output_dir}/${aligned_file}.${estension}" ]; then
-    samtools index ${output_dir}/${aligned_file} ${output_dir}/${aligned_file}.${estension}
-    echo "${output_dir}/${aligned_file}.${estension}"
+    if [ ! -s "${output_dir}/${aligned_file}.${extension}" ] || [ ! -s "${output_dir}/${aligned_file}.csi" ]; then
+    samtools index -c  ${output_dir}/${aligned_file} ${output_dir}/${aligned_file}.${extension} -@ ${task.cpus}
+    echo "${output_dir}/${aligned_file}.${extension}"
     else
     echo "skip file exists"
     fi

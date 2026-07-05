@@ -38,12 +38,12 @@ process DOWNLOAD_FASTQS {
 
     script: 
     // define fastq paths
-  //  def fastq1 = file("${params.outDir}/${taxon_id}/${run_accession}/*_1.fastq.gz")
-   // def fastq2 = paired ? file("${params.outDir}/${taxon_id}/${run_accession}/*_2.fastq.gz") : null
+    def fastq1 = "${params.outDir}/${taxon_id}/${run_accession}/${run_accession}_1.fastq.gz"
+    def fastq2 = paired ? "${params.outDir}/${taxon_id}/${run_accession}/${run_accession}_2.fastq.gz" : null
 
     def optionalArgs = paired ? "--url2 ${url2} --md5_2 ${md5_2} --paired" : ""
     """
-    if [ ! -s "${params.outDir}/$taxon_id/$run_accession/alignment/${run_accession}*.fastq.gz" ]; then
+    if [ ! -s "${fastq1}" ] || { ${paired} && [ ! -s "${fastq2}" ]; }; then 
     chmod +x $projectDir/pipelines/nextflow/workflows/bin/download_fastq.py
     python3 $projectDir/pipelines/nextflow/workflows/bin/download_fastq.py \
         --taxon_id ${taxon_id} \

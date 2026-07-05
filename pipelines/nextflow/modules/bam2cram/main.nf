@@ -34,7 +34,7 @@ process BAM2CRAM {
     def genomeFile = genomeDirPath.listFiles().find { it.name.endsWith('fna') }
     def bam_basename = aligned_file.baseName  // strips .bam
     """
-    samtools view -C -T ${genomeFile} -o $output_dir/${bam_basename}.cram ${aligned_file}
+    samtools view -@ ${task.cpus}  -C -T ${genomeFile} -o $output_dir/${bam_basename}.cram ${aligned_file}
     ln -s $output_dir/${bam_basename}.cram .
     """
     

@@ -22,7 +22,7 @@ process STAR_INDEX_GENOME {
     tag "$taxon_id:$gca"
     publishDir "${genomeDir}", mode: 'copy'
     afterScript "sleep $params.files_latency"  // Needed because of file system latency
-    maxForks 10
+    maxForks 1
 
     input:
     tuple val(taxon_id), val(genomeDir), val(gca), val(platform), val(paired), val(tissue), val(run_accession), val(pair1), val(pair2)
@@ -127,7 +127,8 @@ for (int retryCount = 0; retryCount < maxRetries; retryCount++) {
             --genomeSAindexNbases ${genomeSAindexNbases} \
             --genomeChrBinNbits ${genomeChrBinNbits} \
             --genomeFastaFiles ${genomeFile} \
-            --outTmpDir _STARtmp;
+            --outTmpDir _STARtmp \
+            --limitBAMsortRAM 50361651101;   
     fi
     """
     } else {

@@ -32,11 +32,13 @@ process STAR {
     tuple val(taxon_id), val(genomeDir), val(tissue), val(platform), val(run_accession), path("*.bam")
     script:
     def starTmpDir =  "${params.outDir}/${taxon_id}/${run_accession}/alignment/tmp"
-    def outFileNamePrefix = "${params.outDir}/${taxon_id}/${run_accession}/alignment/${run_accession}_"
-    
+    def outFileNamePrefix = "${run_accession}_"
+    //def outFileNamePrefix = "${params.outDir}/${taxon_id}/${run_accession}/alignmenti/${run_accession}_"
+    def memBytes = task.memory.toBytes() 
     """
     if [ ! -s "${params.outDir}/$taxon_id/$run_accession/alignment/${run_accession}_Aligned.sortedByCoord.out.bam" ]; then
     rm -rf ${starTmpDir}
+    mkdir -p ${params.outDir}/${taxon_id}/${run_accession}/alignment/
     STAR \
     --runThreadN ${task.cpus} \
     --twopassMode Basic \
@@ -46,13 +48,15 @@ process STAR {
     --outFileNamePrefix ${outFileNamePrefix} \
     --readFilesCommand zcat \
     --outSAMattrRGline "ID:${run_accession}" \
-    --outTmpDir ${starTmpDir} \
+    --outTmpDir ./tmp \
     --outSAMtype BAM SortedByCoordinate  \
     --limitSjdbInsertNsj 2000000 \
     --outFilterIntronMotifs RemoveNoncanonicalUnannotated \
-    --outSAMstrandField intronMotif 
-   ln -s ${params.outDir}/${taxon_id}/${run_accession}/alignment/*.bam ./ 
-   else
+    --outSAMstrandField intronMotif \
+    --limitBAMsortRAM 60000000000
+    cp ${outFileNamePrefix}* ${params.outDir}/${taxon_id}/${run_accession}/alignment/
+    
+    else
     echo "skip file exists"
     ln -s ${params.outDir}/${taxon_id}/${run_accession}/alignment/*.bam ./
     fi

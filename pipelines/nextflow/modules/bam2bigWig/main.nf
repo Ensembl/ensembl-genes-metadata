@@ -33,13 +33,15 @@ process BAM2BIGWIG {
     def bam_basename = bam_file1.baseName  // strips .bam 
     def bam2_provided = bam_file2 ? true : false
     """
-    ln -s ${output_dir}/${bam_file1}.bai .
+    ln -s ${output_dir}/${bam_file1}.* .
     bamCoverage -b ${output_dir}/${bam_file1} -o ${output_dir}/${bam_basename}.bw --binSize 1 --numberOfProcessors ${task.cpus} 
     ln -s ${output_dir}/${bam_basename}.bw .
  if [  -s "${bam_file2}" ]; then
-   ln -s ${output_dir}/${bam_file2}.bai .
+   ln -s ${output_dir}/${bam_file2}.* .
   bamCoverage -b ${output_dir}/${bam_file2} -o ${output_dir}/${bam_file2.baseName}.bw --binSize 1 --numberOfProcessors ${task.cpus}
   ln -s ${output_dir}/${bam_file2.baseName}.bw .
+  else
+          echo "Reverse strand BAM not found, skipping..."
  fi 
  """
 }

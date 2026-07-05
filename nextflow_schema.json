@@ -86,7 +86,12 @@
             "type": "integer",
             "default": 100000,
             "description": "STAR option max_intron_size."
+        },
+        "genome_file": {
+            "type": "string",
+            "description": "Path for genome file."
         }
+
     }
 }
 },

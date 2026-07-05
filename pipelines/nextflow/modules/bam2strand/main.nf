@@ -37,12 +37,24 @@ process BAM2STRAND {
     def bam_basename = aligned_file.baseName  // strips .bam
     """
     # Plus strand
-    samtools view -h ${aligned_file} | grep -E '^@|XS:A:\\+' | samtools view -Sb - > ${output_dir}/${bam_basename}_forward_strand.bam
-    samtools index ${output_dir}/${bam_basename}_forward_strand.bam ${output_dir}/${bam_basename}_forward_strand.bam.bai
+    # samtools view -h ${aligned_file} | grep -E '^@|XS:A:\\+' | samtools view -Sb - > ${output_dir}/${bam_basename}_forward_strand.bam
+    samtools view -b -f 0x2 -F 0x10 ${aligned_file} > ${output_dir}/${bam_basename}_forward_strand.bam
+    
+    samtools index -c ${output_dir}/${bam_basename}_forward_strand.bam ${output_dir}/${bam_basename}_forward_strand.bam.csi
 
     # Minus strand
-    samtools view -h ${aligned_file} | grep -E '^@|XS:A:-' | samtools view -Sb - > ${output_dir}/${bam_basename}_reverse_strand.bam
-    samtools index ${output_dir}/${bam_basename}_reverse_strand.bam ${output_dir}/${bam_basename}_reverse_strand.bam.bai
+    #samtools view -h ${aligned_file} | grep -E '^@|XS:A:-' | samtools view -Sb - > ${output_dir}/${bam_basename}_reverse_strand.bam
+    samtools view -b -f 0x2 -f 0x10 ${aligned_file} > ${output_dir}/${bam_basename}_reverse_strand.bam
+
+    samtools index -c ${output_dir}/${bam_basename}_reverse_strand.bam ${output_dir}/${bam_basename}_reverse_strand.bam.csi
+
+    # Optional sanity check
+    if [ ! -s "${bam_basename}_forward_strand.bam" ]; then
+       echo "Warning: forward strand BAM is empty"
+    fi
+    if [ ! -s "${bam_basename}_reverse_strand.bam" ]; then
+       echo "Warning: reverse strand BAM is empty"
+    fi
 
     """
 }

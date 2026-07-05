@@ -22,7 +22,7 @@ process FETCH_GENOME {
 
   //publishDir "${params.outDir}/$taxon_id/$gca/", mode: "copy"  doesn't work for multiple files
   afterScript "sleep $params.files_latency"  // Needed because of file system latency
-  maxForks 10
+  maxForks 1
 
   input:
   tuple val(taxon_id), val(gca), val(platform), val(paired), val(tissue), val(run_accession), val(url1), val(md5_1), val(url2),  val(md5_2) 
@@ -32,15 +32,18 @@ process FETCH_GENOME {
   
   script:
   """
-  if [ ! -d "${params.outDir}/${taxon_id}/${gca}/" ]; then
+  mkdir -p ${params.outDir}/${taxon_id}/${gca}
+  if [[ ! -d "${params.outDir}/${taxon_id}/${gca}/" && ! -f "${params.genome_file}" ]]; then
     echo "Directory ncbi_dataset does not exist. Proceeding with download..."
     curl --retry 3  -X GET "${params.ncbiBaseUrl}/${gca}/download?include_annotation_type=GENOME_FASTA&hydrated=FULLY_HYDRATED" -H "Accept: application/zip" --output genome_file.zip
     unzip -j genome_file.zip
-    mkdir -p ${params.outDir}/${taxon_id}/${gca} 
     cp -r * ${params.outDir}/${taxon_id}/${gca}/
-  else
-    echo "Directory ncbi_dataset already exists. Skipping download."
+  
+  
   fi
+  if [[ -f "${params.genome_file}" ]]; then
+        rsync -av --checksum "${params.genome_file}" ${params.outDir}/${taxon_id}/${gca}/genome.fna
+  fi      
   """
 //    mkdir -p ${params.outDir}/${taxon_id}/${gca}/ncbi_dataset && mv *. ${params.outDir}/${taxon_id}/${gca}/ncbi_dataset
 

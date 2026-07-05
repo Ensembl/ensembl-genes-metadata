@@ -18,8 +18,8 @@ limitations under the License.
 
 process MERGE_BAM_PER_TISSUE {
     label "samtools"
-    tag "${taxon_id}"
-    maxForks 25
+    tag "${tissue}"
+    maxForks 2
     storeDir "${params.outDir}/$taxon_id/$platform/$tissue/alignment"
     afterScript "sleep $params.files_latency"  // Needed because of file system latency
 
@@ -33,10 +33,14 @@ process MERGE_BAM_PER_TISSUE {
     script:
     def outputDir="${params.outDir}/$taxon_id/$platform/$tissue/alignment"
     """
+    if [ ! -s "${outputDir}/${tissue}.bam" ]; then
     mkdir -p ${outputDir}
-    samtools merge -f -o ${outputDir}/${tissue}.bam ${bamFiles.join(' ')}
+    samtools merge -@ ${task.cpus}  -f -O BAM -o ${outputDir}/${tissue}.bam ${bamFiles.join(' ')}
     samtools index ${outputDir}/${tissue}.bam ${outputDir}/${tissue}.bam.bai
     ln -s ${outputDir}/${tissue}.bam .
+    else
+    echo "merging"
+    fi
     """
 }
 
