@@ -48,7 +48,6 @@ import {
   LucideHeartCrack,
   Smile,
   CircleDashed,
-  ListChecks,
   LockKeyhole,
   Download,
   RefreshCw,
@@ -447,12 +446,6 @@ export default function Page() {
     0,
   );
   const actionNeeded = dataCount + pendingCount;
-  const suggestions = [
-    "Add due dates or expected handover week so delayed annotations are visible before they become stale.",
-    "Track a blocker reason and next action owner for every non-handover annotation.",
-    "Show last status update age and highlight records with no movement in 30, 90, and 180 days.",
-    "Add quick filters for project, clade, annotation method, and priority.",
-  ];
 
 
   return (
@@ -784,23 +777,6 @@ export default function Page() {
                   )}
                 </TableBody>
               </Table>
-            </CardContent>
-          </Card>
-
-          <Card className="min-w-0 overflow-hidden">
-            <CardHeader>
-              <CardTitle>Useful additions</CardTitle>
-              <CardDescription>Fields that would make this a stronger personalised annotation tracker.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-3 md:grid-cols-2">
-                {suggestions.map((suggestion) => (
-                  <div key={suggestion} className="flex gap-3 rounded-lg border p-4">
-                    <ListChecks className="mt-0.5 size-5 shrink-0 text-primary" />
-                    <p className="text-sm text-muted-foreground">{suggestion}</p>
-                  </div>
-                ))}
-              </div>
             </CardContent>
           </Card>
           </div>
