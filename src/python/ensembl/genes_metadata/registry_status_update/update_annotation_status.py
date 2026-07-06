@@ -7,7 +7,6 @@ entries against the current production status, identifies discrepancies in statu
 or release date, and updates the registry accordingly.
 
 Key Features:
-- Optionally copies entries from the old registry.
 - Fetches current genebuild statuses from the registry.
 - Compares against production database statuses.
 - Updates registry entries where the status or release date has changed.
@@ -17,7 +16,7 @@ Modules:
 - get_genebuild_status: Retrieves genebuild status entries from the registry.
 - get_status_updates: Determines which entries require updates.
 - update_genebuild_status: Applies updates to the registry.
-- main: Orchestrates the workflow with optional old registry checks and test mode.
+- main: Orchestrates the workflow with optional and test mode.
 
 Usage:
     python update_genebuild_status.py -p <MYSQL_PASSWORD> [options]
@@ -25,8 +24,6 @@ Usage:
 Arguments:
     -p, --password        MySQL password for the write user.
     -t, --test            Run in test mode (no database updates applied).
-    -or, --old_registry   Boolean flag to check and copy entries from the old registry.
-    -do, --dry_old     Boolean flag; if True, do not apply updates from old registry (default: True).
 
 Example:
     # Run in test mode
@@ -38,7 +35,6 @@ Example:
 Dependencies:
     - pandas
     - pymysql
-    - copy_status_old_registry (module)
     - helper (module with mysql_fetch_data function)
     - production_check (module with check_status_production_db function)
     - logger_settings (module with get_logger function)
@@ -52,7 +48,6 @@ Notes:
 import argparse
 import pandas as pd
 import pymysql
-from copy_status_old_registry import insert_entries_from_old_registry
 from helper import mysql_fetch_data
 from production_check import check_status_production_db
 from missing_method import add_missing_methods
@@ -417,14 +412,7 @@ def update_genebuild_status(updated_df, password):
         connection.close()
 
 
-def main(password, test, apply_method, old_registry, dry_old):
-
-    if old_registry:
-        logger.info("Checking status in old registry.")
-        gb_status = get_genebuild_status()
-        copy_from_old_registry = insert_entries_from_old_registry(
-            password, gb_status, dry_old
-        )
+def main(password, test, apply_method):
 
     logger.info("Only using the new registry.")
     logger.info("Fetching genebuild status from new registry.")
@@ -517,16 +505,7 @@ if __name__ == "__main__":
         action="store_true",
         help="Apply method updates (default is stop)",
     )
-    parser.add_argument(
-        "-or", "--old_registry", action="store_true", help="Check old registry status"
-    )
-    parser.add_argument(
-        "-do",
-        "--dry_old",
-        action="store_true",
-        help="Dry run old registry check",
-    )
 
     args = parser.parse_args()
 
-    main(args.password, args.test, args.apply_method, args.old_registry, args.dry_old)
+    main(args.password, args.test, args.apply_method)
