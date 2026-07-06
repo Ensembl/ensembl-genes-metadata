@@ -72,25 +72,25 @@ type DashboardItem = {
 
 type AnnotationOverview = {
   genebuild_status_id: number;
-  gca: string;
-  scientific_name: string;
-  gb_status: string;
-  dashboard_status: string;
-  queue: string;
-  next_action: string;
+  gca: string | null;
+  scientific_name: string | null;
+  gb_status: string | null;
+  dashboard_status: string | null;
+  queue: string | null;
+  next_action: string | null;
   priority: "high" | "medium" | "normal";
-  bioproject_name?: string;
-  annotation_method?: string;
-  date_status_update?: string;
+  bioproject_name?: string | null;
+  annotation_method?: string | null;
+  date_status_update?: string | null;
   days_since_update?: number | null;
 };
 
 type NeedActionApiItem = {
-  gca: string;
-  scientific_name: string;
-  gb_status: string;
-  bioproject_name?: string;
-  date_status_update?: string;
+  gca: string | null;
+  scientific_name: string | null;
+  gb_status: string | null;
+  bioproject_name?: string | null;
+  date_status_update?: string | null;
   days_since_update?: number | null;
 };
 
@@ -109,6 +109,9 @@ const formatStatus = (status: string) =>
   status
     .replace(/_/g, " ")
     .replace(/\b\w/g, (letter) => letter.toUpperCase());
+
+const stringValue = (value: string | null | undefined, fallback = "Unknown") =>
+  value && value.trim() ? value : fallback;
 
 const getPriorityBadge = (priority: DashboardItem["priority"]) => {
   if (priority === "high") return "destructive";
@@ -242,15 +245,15 @@ export default function Page() {
     if (annotationOverview.length) {
       return annotationOverview.map((item) => ({
         id: `overview-${item.genebuild_status_id}`,
-        gca: item.gca,
-        scientific_name: item.scientific_name,
-        status: item.dashboard_status,
-        queue: item.queue,
-        action: item.next_action,
+        gca: stringValue(item.gca, ""),
+        scientific_name: stringValue(item.scientific_name),
+        status: stringValue(item.dashboard_status),
+        queue: stringValue(item.queue),
+        action: stringValue(item.next_action, "Review current status and next action"),
         priority: item.priority,
-        project: item.bioproject_name,
-        method: item.annotation_method,
-        updated: item.date_status_update,
+        project: stringValue(item.bioproject_name),
+        method: item.annotation_method ?? undefined,
+        updated: item.date_status_update ?? undefined,
         daysSinceUpdate: item.days_since_update,
       }));
     }
@@ -261,27 +264,27 @@ export default function Page() {
   const needActionItems = useMemo<DashboardItem[]>(() => {
     const dataItems = staleDataItems.map((item, index) => ({
       id: `data-${item.gca}-${item.gb_status}-${index}`,
-      gca: item.gca,
-      scientific_name: item.scientific_name,
-      status: item.gb_status,
+      gca: stringValue(item.gca, ""),
+      scientific_name: stringValue(item.scientific_name),
+      status: stringValue(item.gb_status),
       queue: "Data quality",
       action: "Check BUSCO, transcript/protein evidence, or mark abandoned",
       priority: "high" as const,
-      project: item.bioproject_name,
-      updated: item.date_status_update,
+      project: stringValue(item.bioproject_name),
+      updated: item.date_status_update ?? undefined,
       daysSinceUpdate: item.days_since_update,
     }));
 
     const pendingItems = stalePendingItems.map((item, index) => ({
       id: `pending-${item.gca}-${item.gb_status}-${index}`,
-      gca: item.gca,
-      scientific_name: item.scientific_name,
-      status: item.gb_status,
+      gca: stringValue(item.gca, ""),
+      scientific_name: stringValue(item.scientific_name),
+      status: stringValue(item.gb_status),
       queue: "In progress",
       action: "Follow up stale in-progress annotation",
       priority: "high" as const,
-      project: item.bioproject_name,
-      updated: item.date_status_update,
+      project: stringValue(item.bioproject_name),
+      updated: item.date_status_update ?? undefined,
       daysSinceUpdate: item.days_since_update,
     }));
 
@@ -316,11 +319,11 @@ export default function Page() {
         const bTime = b.updated ? new Date(b.updated).getTime() : Number.NEGATIVE_INFINITY;
         comparison = aTime - bTime;
       } else {
-        comparison = a.status.localeCompare(b.status);
+        comparison = stringValue(a.status).localeCompare(stringValue(b.status));
       }
 
       if (comparison === 0) {
-        comparison = a.scientific_name.localeCompare(b.scientific_name);
+        comparison = stringValue(a.scientific_name).localeCompare(stringValue(b.scientific_name));
       }
 
       return overviewSort.direction === "asc" ? comparison : -comparison;
