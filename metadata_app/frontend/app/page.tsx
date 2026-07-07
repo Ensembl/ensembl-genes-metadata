@@ -4,7 +4,6 @@ import { CardsStats } from "@/components/ui/cards_stats"
 import  { CardsDataTable } from "@/components/ui/card_projects"
 import { WelcomeCard } from "@/components/ui/card_welcome"
 import {ReportCard} from "@/components/ui/card_action_report";
-import {DatabaseCleanup} from "@/components/ui/card_clean_up"
 import {CardsDataTableGroup} from "@/components/ui/card_groups"
 
 export default function Page() {
@@ -19,9 +18,6 @@ export default function Page() {
 
                   <div className="w-full mb-4 break-inside-avoid">
                     <CardsDataTable></CardsDataTable>
-                  </div>
-                  <div className="w-full mb-4 break-inside-avoid">
-                    <DatabaseCleanup></DatabaseCleanup>
                   </div>
                   <div className="w-full mb-4 break-inside-avoid lg:break-before-column">
                     <CardsStats></CardsStats>

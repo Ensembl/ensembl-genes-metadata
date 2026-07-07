@@ -8,7 +8,7 @@ annotations = APIRouter()
 @annotations.post("/annotations/filter")
 def filter_annotations(filters: AnnotationFilterRequest):
     try:
-        anno_wide, anno_main = generate_tables(
+        anno_wide, anno_main, _ = generate_tables(
             bioproject_id=filters.bioproject_id,
             annotation_date=filters.annotation_date,
             taxon_id=filters.taxon_id,

@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
+import {DatabaseCleanup} from "@/components/ui/card_clean_up"
 import {
   Card,
   CardAction,
@@ -529,6 +530,10 @@ export default function Page() {
               </CardHeader>
             </Card>
             </BackgroundGradient>
+          </div>
+
+          <div className="min-w-0">
+            <DatabaseCleanup genebuilder={selectedGenebuilder} />
           </div>
 
           <Card className="min-w-0 overflow-hidden">

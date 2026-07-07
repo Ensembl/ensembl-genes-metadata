@@ -401,6 +401,9 @@ def generate_tables(annotation_date, taxon_id, bioproject_id, group_name, gca=No
     # Create the FTP URL using the accession-based Ensembl Organisms structure.
     logging.info("Generating FTP paths.")
     anno_wide["ftp"] = anno_wide.apply(build_ensemblorganisms_ftp_url, axis=1)
+    anno_project_memberships = anno_wide[
+        ["gca", "associated_project", "gb_status", "date_status_update"]
+    ].drop_duplicates(subset=["gca", "associated_project"])
 
     # filtered_df = filtered_df.drop(columns=['year', 'gca', 'version'])
     # df_info_result = df_info_result.drop(columns=['year', 'version', 'gca_latest'])
@@ -433,5 +436,8 @@ def generate_tables(annotation_date, taxon_id, bioproject_id, group_name, gca=No
     anno_wide = anno_wide.apply(
         lambda col: col.fillna("") if col.dtype == "object" else col
     )
+    anno_project_memberships = anno_project_memberships.apply(
+        lambda col: col.fillna("") if col.dtype == "object" else col
+    )
 
-    return anno_wide, anno_main
+    return anno_wide, anno_main, anno_project_memberships

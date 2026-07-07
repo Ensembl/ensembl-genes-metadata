@@ -49,6 +49,7 @@ export default function Page() {
   const [taxaData, setTaxa] = useState<NumTaxaItem | null>(null);
   const [topTaxaData, setTopTaxa] = useState<TaxaItem[]>([])
   const [projectData, setProject] = useState<ProjectItem[]>([])
+  const [projectLiveData, setProjectLive] = useState<ProjectItem[]>([])
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [cladeData, setClade] = useState<CladeItem[]>([]);
   const [cladeDataLive, setCladeLive] = useState<CladeLiveItem[]>([]);
@@ -109,6 +110,7 @@ export default function Page() {
         setTaxa(result.num_unique_taxa);
         setTopTaxa(result.top_3_taxa);
         setProject(result.project_report);
+        setProjectLive(result.project_report_live ?? []);
         setClade(result.clade_group);
         setCladeLive(result.clade_group_live);
       } else {
@@ -247,6 +249,11 @@ export default function Page() {
               <div ref={componentRef} className="grid grid-cols-1 gap-6 lg:grid-cols-2">
                 <RepStatus data={statusData} />
                 <RepProject data={projectData} />
+                <RepProject
+                  data={projectLiveData}
+                  title="Live associated biodiversity projects"
+                  description="Number of live annotations per project"
+                />
 
                 <AnnotatedBuscoCard data={buscoData} />
                 <AnoMethodSummaryChart data={methodData} />

@@ -10,8 +10,8 @@ from fastapi import HTTPException
 from metadata_app.backend.app.core.database import get_db_connection
 
 
-def generate_report(end_date, start_date, group_name, taxon_id, bioproject_id):
-    anno_wide, anno_main = generate_tables(
+def generate_report(start_date, end_date, group_name, taxon_id, bioproject_id):
+    anno_wide, anno_main, anno_project_memberships = generate_tables(
         group_name=group_name,
         taxon_id=taxon_id,
         bioproject_id=bioproject_id,
@@ -21,14 +21,31 @@ def generate_report(end_date, start_date, group_name, taxon_id, bioproject_id):
     for col in ["last_genebuild_update", "release_date", "date_status_update"]:
         if col in anno_wide.columns:
             anno_wide[col] = pd.to_datetime(anno_wide[col], errors="coerce")
+    if "date_status_update" in anno_project_memberships.columns:
+        anno_project_memberships["date_status_update"] = pd.to_datetime(
+            anno_project_memberships["date_status_update"], errors="coerce"
+        )
 
-    if end_date:
-        end_date = pd.to_datetime(end_date)
-        anno_wide = anno_wide[anno_wide["date_status_update"] <= end_date]
+    start_date = pd.to_datetime(start_date) if start_date else None
+    end_date = pd.to_datetime(end_date) if end_date else None
 
-    if start_date:
-        start_date = pd.to_datetime(start_date)
+    if start_date is not None and end_date is not None and start_date > end_date:
+        raise HTTPException(
+            status_code=400,
+            detail="Report start date must be before or equal to report end date.",
+        )
+
+    if start_date is not None:
         anno_wide = anno_wide[anno_wide["date_status_update"] >= start_date]
+        anno_project_memberships = anno_project_memberships[
+            anno_project_memberships["date_status_update"] >= start_date
+        ]
+
+    if end_date is not None:
+        anno_wide = anno_wide[anno_wide["date_status_update"] <= end_date]
+        anno_project_memberships = anno_project_memberships[
+            anno_project_memberships["date_status_update"] <= end_date
+        ]
 
     # Create tables for charts
     number_of_annotations_raw = (
@@ -61,9 +78,18 @@ def generate_report(end_date, start_date, group_name, taxon_id, bioproject_id):
     )
 
     project_report = (
-        anno_wide[["gca", "associated_project"]]
-        .groupby("associated_project")
-        .size()
+        anno_project_memberships[["gca", "associated_project"]]
+        .groupby("associated_project")["gca"]
+        .nunique()
+        .reset_index(name="count")
+    )
+    live_project_memberships = anno_project_memberships[
+        anno_project_memberships["gb_status"] == "live"
+    ]
+    project_report_live = (
+        live_project_memberships[["gca", "associated_project"]]
+        .groupby("associated_project")["gca"]
+        .nunique()
         .reset_index(name="count")
     )
 
@@ -185,6 +211,9 @@ def generate_report(end_date, start_date, group_name, taxon_id, bioproject_id):
     project_report = project_report.apply(
         lambda col: col.fillna("") if col.dtype == "object" else col
     )
+    project_report_live = project_report_live.apply(
+        lambda col: col.fillna("") if col.dtype == "object" else col
+    )
     main_report = main_report.apply(
         lambda col: col.fillna("") if col.dtype == "object" else col
     )
@@ -202,6 +231,7 @@ def generate_report(end_date, start_date, group_name, taxon_id, bioproject_id):
         num_unique_taxa,
         top_3_taxa,
         project_report,
+        project_report_live,
         average_busco,
         main_report,
         clade_group,
