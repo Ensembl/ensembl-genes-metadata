@@ -8,7 +8,7 @@ WORKDIR /ensembl-genes-metadata
 # Install Node.js for frontend build
 RUN apt-get update && \
     apt-get install -y curl && \
-    curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
+    curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \
     apt-get install -y nodejs && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
@@ -32,6 +32,7 @@ WORKDIR /ensembl-genes-metadata/metadata_app/frontend
 COPY metadata_app/frontend/next.config.ts ./
 
 # Install frontend dependencies and build static export
+RUN npm install -g npm@latest
 RUN npm install
 RUN npm run build
 
