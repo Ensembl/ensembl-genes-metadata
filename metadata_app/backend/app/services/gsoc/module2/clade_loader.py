@@ -4,51 +4,63 @@ clade_loader.py
 Module 2: Clade-aware annotation metrics loader.
 
 Loads annotation quality metrics from gsoc_registry grouped by biological
-clade, using the taxonomy + clade_list tables to assign each genome to its
-most specific matching clade. The resulting DataFrame is the input for
-PCA and MAD-based outlier detection in clade_analysis.py.
+clade, using the existing taxonomy_service.assign_clade_and_species()
+function and clade_settings.json to assign each genome to its correct
+clade. This replaces the previous clade_list DB table join, which Anna
+confirmed is legacy and will be deleted.
 
 Clade assignment strategy:
-  - Each genome has a lowest_taxon_id in the species table.
-  - The taxonomy table maps lowest_taxon_id to its full lineage
-    (kingdom, phylum, class, order, family, genus, species), each as
-    a taxon_class_id.
-  - The clade_list table maps named clades (e.g. "aves", "mammalia")
-    to their taxon_id.
-  - A genome is assigned to a clade if any of its lineage taxon_class_ids
-    matches a clade_list.taxon_id.
-  - When multiple clades match (e.g. both "chordata" and "aves"), the
-    most specific one (lowest count in clade_list, i.e. finest-grained)
-    is used.
+  - Load clade definitions from clade_settings.json (canonical source)
+  - Load taxonomy hierarchy from the taxonomy DB table for all live genomes
+  - For each genome, call assign_clade_and_species(lowest_taxon_id, ...)
+    which walks species -> genus -> family -> order -> class -> phylum ->
+    kingdom and returns the first matching clade from clade_settings.json
+  - Genomes with no clade match are labelled "Unassigned" and excluded
+  - Clades with fewer than MIN_CLADE_SIZE genomes are excluded from PCA
 
-Note: species.clade is NULL for all rows in the current DB snapshot
-(verified 2026-07-07). Clade assignment is therefore derived entirely
-from the taxonomy + clade_list join.
+Note: Homo sapiens gets assigned to mammalia rather than primates because
+humans have a separate pipeline and are not in clade_settings.json as a
+distinct clade entry. This is expected and correct per Anna (2026-07-08).
+
+Note: genebuild.busco is stored as a composite string in annotation_metrics
+and cannot be used directly as a PCA feature. Individual numeric sub-metrics
+(busco_completeness, busco_single_copy, etc.) are stored as separate rows
+and are used instead.
 """
 
 import logging
-from typing import Optional
+from typing import Dict, List, Optional
 
 import pandas as pd
+
 from metadata_app.backend.app.services.gsoc.module1.db_loader import (  # pylint: disable=import-error
     get_connection,
+)
+from metadata_app.backend.app.services.taxonomy_service import (  # pylint: disable=import-error
+    assign_clade_and_species,
+    load_clade_data,
 )
 
 logger = logging.getLogger(__name__)
 
-# Minimum number of genomes a clade must have (with at least one metric)
-# before it is included in PCA/outlier analysis. Clades smaller than this
-# do not have enough data points for meaningful statistics.
+# Minimum number of genomes a clade must have before it is included in
+# PCA/outlier analysis. Clades smaller than this don't have enough data
+# points for meaningful statistics.
 MIN_CLADE_SIZE = 10
 
-# Metrics pulled from annotation_metrics (BUSCO) and new_metrics (AGAT stats)
-# for use as PCA features. These were selected based on:
-#   - Availability: present in >95% of genomes that have new_metrics rows
-#   - Relevance: directly reflect annotation quality and completeness
-#   - Non-redundancy: correlated metrics (e.g. average_cds_length vs
-#     longest_cds_length) are not both included to avoid double-weighting
-_PCA_METRICS = [
-    "genebuild.busco",
+# Annotation metrics used as PCA features. These are individual numeric
+# rows already stored separately in annotation_metrics and new_metrics.
+# genebuild.busco is deliberately excluded because it is a composite
+# string, not a number. The sub-metrics below are the numeric equivalents.
+_ANNOTATION_PCA_METRICS = [
+    "genebuild.busco_completeness",
+    "genebuild.busco_single_copy",
+    "genebuild.busco_duplicated",
+    "genebuild.busco_fragmented",
+    "genebuild.busco_missing",
+]
+
+_NEW_METRICS_PCA = [
     "genebuild.stats.coding_genes",
     "genebuild.stats.total_transcripts",
     "genebuild.stats.transcripts_per_gene",
@@ -58,25 +70,32 @@ _PCA_METRICS = [
     "genebuild.stats.overlapping_coding_genes",
 ]
 
-_CLADE_QUERY = """
-SELECT
-    CONCAT(a.gca_chain, '.', a.gca_version) AS gca,
-    s.scientific_name,
+_TAXONOMY_QUERY = """
+SELECT DISTINCT
     s.lowest_taxon_id,
-    cl.clade,
-    cl.taxon_rank,
-    am.metrics_name,
-    am.metrics_value
-FROM assembly a
-JOIN species s
-    ON s.lowest_taxon_id = a.lowest_taxon_id
+    t.taxon_class_id,
+    t.taxon_class
+FROM species s
+JOIN assembly a ON a.lowest_taxon_id = s.lowest_taxon_id
 JOIN genebuild_status gs
     ON gs.assembly_id = a.assembly_id
     AND gs.gb_status = 'live'
-JOIN taxonomy t
-    ON t.lowest_taxon_id = s.lowest_taxon_id
-JOIN clade_list cl
-    ON cl.taxon_id = t.taxon_class_id
+JOIN taxonomy t ON t.lowest_taxon_id = s.lowest_taxon_id
+"""
+
+_ANNOTATION_METRICS_QUERY = """
+SELECT
+    CONCAT(a.gca_chain, '.', a.gca_version) AS gca,
+    s.lowest_taxon_id,
+    s.scientific_name,
+    gs.annotation_method,
+    am.metrics_name,
+    am.metrics_value
+FROM assembly a
+JOIN species s ON s.lowest_taxon_id = a.lowest_taxon_id
+JOIN genebuild_status gs
+    ON gs.assembly_id = a.assembly_id
+    AND gs.gb_status = 'live'
 LEFT JOIN annotation_metrics am
     ON am.assembly_id = a.assembly_id
     AND am.genebuild_status_id = gs.genebuild_status_id
@@ -84,7 +103,6 @@ LEFT JOIN annotation_metrics am
 GROUP BY
     a.assembly_id,
     gs.genebuild_status_id,
-    cl.clade_id,
     am.metrics_name
 """
 
@@ -104,38 +122,145 @@ JOIN new_metrics nm
 """
 
 
-def _build_placeholders(metrics: list) -> str:
+def _build_placeholders(metrics: List[str]) -> str:
     """Build a SQL IN clause placeholder string for a list of metric names."""
     return ", ".join(f"'{m}'" for m in metrics)
 
 
-def _assign_finest_clade(df: pd.DataFrame) -> pd.DataFrame:
+def _load_taxonomy_dict(config_path: Optional[str]) -> Dict[str, list]:
     """
-    When a genome matches multiple clades, keep only the finest-grained one.
+    Load the full taxonomy hierarchy from the DB for all live genomes.
 
-    Finest-grained = the clade with the fewest species in the DB (most
-    specific taxonomic group). This is determined by counting how many
-    distinct lowest_taxon_ids appear per clade in the loaded data, then
-    keeping the clade with the smallest count for each GCA.
+    Returns a dict mapping str(lowest_taxon_id) to a list of
+    {taxon_class, taxon_class_id} dicts, matching the format expected
+    by taxonomy_service.assign_clade_and_species().
+    """
+    with get_connection(config_path) as conn:
+        with conn.cursor() as cursor:
+            cursor.execute(_TAXONOMY_QUERY)
+            rows = cursor.fetchall()
+
+    taxonomy_dict: Dict[str, list] = {}
+    for row in rows:
+        tid = str(row["lowest_taxon_id"])
+        if tid not in taxonomy_dict:
+            taxonomy_dict[tid] = []
+        taxonomy_dict[tid].append(
+            {
+                "taxon_class": row["taxon_class"],
+                "taxon_class_id": row["taxon_class_id"],
+            }
+        )
+
+    logger.info("Loaded taxonomy hierarchy for %d taxa", len(taxonomy_dict))
+    return taxonomy_dict
+
+
+def _load_annotation_metrics(config_path: Optional[str]) -> pd.DataFrame:
+    """
+    Load annotation metrics (BUSCO sub-metrics) for all live genomes.
+
+    Returns a wide DataFrame with one row per genome and one column
+    per metric in _ANNOTATION_PCA_METRICS.
+    """
+    query = _ANNOTATION_METRICS_QUERY.format(
+        placeholders=_build_placeholders(_ANNOTATION_PCA_METRICS)
+    )
+    with get_connection(config_path) as conn:
+        with conn.cursor() as cursor:
+            cursor.execute(query)
+            rows = cursor.fetchall()
+
+    if not rows:
+        logger.warning("No annotation metrics rows returned.")
+        return pd.DataFrame()
+
+    df = pd.DataFrame(rows)
+    identity_cols = ["gca", "lowest_taxon_id", "scientific_name", "annotation_method"]
+    pivot = df.pivot_table(
+        index=identity_cols,
+        columns="metrics_name",
+        values="metrics_value",
+        aggfunc="first",
+    ).reset_index()
+    pivot.columns.name = None
+    return pivot
+
+
+def _load_new_metrics(config_path: Optional[str]) -> pd.DataFrame:
+    """
+    Load AGAT new_metrics for all live genomes.
+
+    Returns a wide DataFrame with one row per genome and one column
+    per metric in _NEW_METRICS_PCA.
+    """
+    query = _NEW_METRICS_QUERY.format(
+        placeholders=_build_placeholders(_NEW_METRICS_PCA)
+    )
+    with get_connection(config_path) as conn:
+        with conn.cursor() as cursor:
+            cursor.execute(query)
+            rows = cursor.fetchall()
+
+    if not rows:
+        logger.warning("No new_metrics rows returned.")
+        return pd.DataFrame()
+
+    df = pd.DataFrame(rows)
+    pivot = df.pivot_table(
+        index="gca",
+        columns="metrics_name",
+        values="metrics_value",
+        aggfunc="first",
+    ).reset_index()
+    pivot.columns.name = None
+    return pivot
+
+
+def _assign_clades(
+    base_df: pd.DataFrame,
+    taxonomy_dict: Dict[str, list],
+    clade_data: dict,
+) -> pd.DataFrame:
+    """
+    Assign clade to each genome using taxonomy_service.
+
+    Adds a clade and annotation_method column to base_df.
+    Genomes with no clade match get "Unassigned".
+    """
+    clades = []
+    for _, row in base_df.iterrows():
+        taxon_id = row["lowest_taxon_id"]
+        clade, _, _ = assign_clade_and_species(taxon_id, clade_data, taxonomy_dict)
+        clades.append(clade)
+    base_df = base_df.copy()
+    base_df["clade"] = clades
+    return base_df
+
+
+def _drop_small_clades(base_df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Remove genomes belonging to clades with fewer than MIN_CLADE_SIZE members.
 
     Args:
-        df: DataFrame with columns [gca, clade, ...], potentially with
-            multiple clade rows per GCA.
+        base_df: DataFrame with a clade column.
 
     Returns:
-        DataFrame with exactly one clade row per GCA.
+        Filtered DataFrame with small clades and Unassigned removed.
     """
-    clade_sizes = (
-        df.groupby("clade")["gca"]
-        .nunique()
-        .reset_index()
-        .rename(columns={"gca": "clade_size"})
-    )
-    df = df.merge(clade_sizes, on="clade", how="left")
-    df = df.sort_values("clade_size")
-    df = df.drop_duplicates(subset=["gca"], keep="first")
-    df = df.drop(columns=["clade_size"])
-    return df.reset_index(drop=True)
+    before = len(base_df)
+    base_df = base_df[base_df["clade"] != "Unassigned"]
+    clade_counts = base_df.groupby("clade")["gca"].nunique()
+    valid_clades = clade_counts[clade_counts >= MIN_CLADE_SIZE].index
+    result = base_df[base_df["clade"].isin(valid_clades)].reset_index(drop=True)
+    dropped = before - len(result)
+    if dropped:
+        logger.info(
+            "Dropped %d genomes (Unassigned or clades < %d members)",
+            dropped,
+            MIN_CLADE_SIZE,
+        )
+    return result
 
 
 def load_clade_metrics(  # pylint: disable=too-many-locals
@@ -144,9 +269,8 @@ def load_clade_metrics(  # pylint: disable=too-many-locals
     """
     Load a wide-format DataFrame of annotation metrics with clade assignments.
 
-    Each row represents one live-status genome with its clade assignment
-    and one metric value. The result is pivoted by the caller into a
-    genome x metric matrix for PCA.
+    Uses taxonomy_service.assign_clade_and_species() and clade_settings.json
+    (the canonical clade source) rather than the legacy clade_list DB table.
 
     Args:
         config_path: Path to db_config JSON. Defaults to the standard
@@ -154,82 +278,29 @@ def load_clade_metrics(  # pylint: disable=too-many-locals
 
     Returns:
         DataFrame with columns: gca, scientific_name, lowest_taxon_id,
-        clade, taxon_rank, and one column per metric in _PCA_METRICS.
-        Rows with no clade assignment are excluded.
-        Clades with fewer than MIN_CLADE_SIZE genomes are excluded.
+        annotation_method, clade, and one column per PCA metric.
+        Unassigned genomes and clades below MIN_CLADE_SIZE are excluded.
     """
-    annotation_metrics = [
-        m for m in _PCA_METRICS if not m.startswith("genebuild.stats")
-    ]
-    new_metrics_list = [m for m in _PCA_METRICS if m.startswith("genebuild.stats")]
+    logger.info("Loading clade settings from clade_settings.json")
+    clade_data = load_clade_data()
 
-    # Load BUSCO + clade assignment
-    query = _CLADE_QUERY.format(placeholders=_build_placeholders(annotation_metrics))
-    with get_connection(config_path) as conn:
-        with conn.cursor() as cursor:
-            cursor.execute(query)
-            rows = cursor.fetchall()
+    logger.info("Loading taxonomy hierarchy from DB")
+    taxonomy_dict = _load_taxonomy_dict(config_path)
 
-    if not rows:
-        logger.warning("No rows returned from clade metrics query.")
+    logger.info("Loading annotation metrics from DB")
+    base_df = _load_annotation_metrics(config_path)
+    if base_df.empty:
         return pd.DataFrame()
 
-    base_df = pd.DataFrame(rows)
-    logger.info("Loaded %d raw clade metric rows", len(base_df))
+    logger.info("Loading new_metrics from DB")
+    nm_df = _load_new_metrics(config_path)
+    if not nm_df.empty:
+        base_df = base_df.merge(nm_df, on="gca", how="left")
 
-    # Pivot annotation_metrics into columns
-    if "metrics_name" in base_df.columns and "metrics_value" in base_df.columns:
-        identity_cols = [
-            "gca",
-            "scientific_name",
-            "lowest_taxon_id",
-            "clade",
-            "taxon_rank",
-        ]
-        base_df = base_df.pivot_table(
-            index=identity_cols,
-            columns="metrics_name",
-            values="metrics_value",
-            aggfunc="first",
-        ).reset_index()
-        base_df.columns.name = None
+    logger.info("Assigning clades via taxonomy_service")
+    base_df = _assign_clades(base_df, taxonomy_dict, clade_data)
 
-    # Assign finest clade per genome
-    base_df = _assign_finest_clade(base_df)
-
-    # Load new_metrics (AGAT stats)
-    if new_metrics_list:
-        nm_query = _NEW_METRICS_QUERY.format(
-            placeholders=_build_placeholders(new_metrics_list)
-        )
-        with get_connection(config_path) as conn:
-            with conn.cursor() as cursor:
-                cursor.execute(nm_query)
-                nm_rows = cursor.fetchall()
-
-        if nm_rows:
-            nm_df = pd.DataFrame(nm_rows)
-            nm_pivot = nm_df.pivot_table(
-                index="gca",
-                columns="metrics_name",
-                values="metrics_value",
-                aggfunc="first",
-            ).reset_index()
-            nm_pivot.columns.name = None
-            base_df = base_df.merge(nm_pivot, on="gca", how="left")
-
-    # Drop clades below minimum size
-    clade_counts = base_df.groupby("clade")["gca"].nunique()
-    valid_clades = clade_counts[clade_counts >= MIN_CLADE_SIZE].index
-    before = len(base_df)
-    base_df = base_df[base_df["clade"].isin(valid_clades)].reset_index(drop=True)
-    dropped = before - len(base_df)
-    if dropped:
-        logger.info(
-            "Dropped %d genomes from clades with fewer than %d members",
-            dropped,
-            MIN_CLADE_SIZE,
-        )
+    base_df = _drop_small_clades(base_df)
 
     logger.info(
         "Final clade metrics DataFrame: %d genomes across %d clades",
