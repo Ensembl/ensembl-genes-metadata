@@ -58,6 +58,32 @@ _ASSEMBLY_METRIC_TO_COLUMN: Dict[str, str] = {
 
 # Required keys for a valid db_config.dev.json. "password" is intentionally
 # excluded since some local/dev configs use an empty/placeholder password.
+
+# Metrics from the new_metrics table (AGAT-derived stats). These are stored
+# separately from annotation_metrics and require their own join below.
+_NEW_METRICS_OF_INTEREST = [
+    "genebuild.stats.coding_genes",
+    "genebuild.stats.total_transcripts",
+    "genebuild.stats.transcripts_per_gene",
+    "genebuild.stats.average_cds_length",
+    "genebuild.stats.average_coding_intron_length",
+    "genebuild.stats.single_exon_coding_genes",
+    "genebuild.stats.longest_coding_gene_length",
+    "genebuild.stats.average_coding_exon_length",
+    "genebuild.stats.nc_non_coding_genes",
+]
+_NEW_METRIC_TO_COLUMN = {
+    "genebuild.stats.coding_genes": "coding_genes",
+    "genebuild.stats.total_transcripts": "total_transcripts",
+    "genebuild.stats.transcripts_per_gene": "transcripts_per_gene",
+    "genebuild.stats.average_cds_length": "average_cds_length",
+    "genebuild.stats.average_coding_intron_length": "average_coding_intron_length",
+    "genebuild.stats.single_exon_coding_genes": "single_exon_coding_genes",
+    "genebuild.stats.longest_coding_gene_length": "longest_coding_gene_length",
+    "genebuild.stats.average_coding_exon_length": "average_coding_exon_length",
+    "genebuild.stats.nc_non_coding_genes": "nc_non_coding_genes",
+}
+
 _REQUIRED_CONFIG_KEYS = ("host", "port", "user", "database")
 
 
@@ -100,7 +126,8 @@ SELECT
     gs.genebuild_version                         AS annotated_version,
     a.gca_version                                AS assembly_version,
 {_build_pivot_columns(_METRICS_OF_INTEREST, _METRIC_TO_COLUMN, "am")},
-{_build_pivot_columns(_ASSEMBLY_METRICS_OF_INTEREST, _ASSEMBLY_METRIC_TO_COLUMN, "asm")}
+{_build_pivot_columns(_ASSEMBLY_METRICS_OF_INTEREST, _ASSEMBLY_METRIC_TO_COLUMN, "asm")},
+{_build_pivot_columns(_NEW_METRICS_OF_INTEREST, _NEW_METRIC_TO_COLUMN, "nm")}
 FROM assembly a
 JOIN species s
     ON s.lowest_taxon_id = a.lowest_taxon_id
@@ -115,6 +142,10 @@ LEFT JOIN annotation_metrics am
 LEFT JOIN assembly_metrics asm
     ON asm.assembly_id = a.assembly_id
     AND asm.metrics_name IN ({_build_metrics_in_clause(_ASSEMBLY_METRICS_OF_INTEREST)})
+LEFT JOIN new_metrics nm
+    ON nm.assembly_id = a.assembly_id
+    AND nm.genebuild_status_id = gs.genebuild_status_id
+    AND nm.metrics_name IN ({_build_metrics_in_clause(_NEW_METRICS_OF_INTEREST)})
 GROUP BY
     a.assembly_id,
     gs.genebuild_status_id
