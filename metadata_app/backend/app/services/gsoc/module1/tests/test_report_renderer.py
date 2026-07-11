@@ -5,6 +5,8 @@ Unit tests for report_renderer.py.
 All tests use synthetic fixture data — no database connection required.
 """
 
+# pylint: disable=redefined-outer-name,import-outside-toplevel
+
 import csv
 from pathlib import Path
 
@@ -55,6 +57,14 @@ def full_report() -> GenomeReport:
         assembly_busco_complete=98.1,
         assembly_busco_extra={},
         coding_genes=20442,
+        total_transcripts=61225,
+        transcripts_per_gene=1.83,
+        average_cds_length=1603.0,
+        average_coding_intron_length=5560.0,
+        single_exon_coding_genes=2190,
+        longest_coding_gene_length=2513825,
+        average_coding_exon_length=157.0,
+        nc_non_coding_genes=9710,
         latest_annotated="Yes",
         annotated_version=29.0,
         assembly_version=29.0,
@@ -92,6 +102,14 @@ def sparse_report() -> GenomeReport:
         assembly_busco_complete=None,
         assembly_busco_extra={},
         coding_genes=None,
+        total_transcripts=None,
+        transcripts_per_gene=None,
+        average_cds_length=None,
+        average_coding_intron_length=None,
+        single_exon_coding_genes=None,
+        longest_coding_gene_length=None,
+        average_coding_exon_length=None,
+        nc_non_coding_genes=None,
         latest_annotated=None,
         annotated_version=None,
         assembly_version=None,
@@ -187,22 +205,27 @@ def test_render_txt_sparse_no_crash(
 
 
 def test_busco_color_none_returns_grey() -> None:
+    """None input returns the no-data grey colour."""
     assert _busco_color(None) == "#cccccc"
 
 
 def test_busco_color_high() -> None:
+    """A score of 95 returns the green colour."""
     assert _busco_color(95.0) == "#2ecc71"
 
 
 def test_busco_color_medium_high() -> None:
+    """A score of 90 returns the amber colour."""
     assert _busco_color(90.0) == "#f39c12"
 
 
 def test_busco_color_medium_low() -> None:
+    """A score of 75 returns the orange colour."""
     assert _busco_color(75.0) == "#e67e22"
 
 
 def test_busco_color_low() -> None:
+    """A score of 60 returns the red colour."""
     assert _busco_color(60.0) == "#e74c3c"
 
 
@@ -257,7 +280,7 @@ def test_plot_quality_summary_sparse_no_crash(
 # _draw_busco_bars (internal helper)
 
 
-def test_draw_busco_bars_no_crash_empty_string(tmp_path: Path) -> None:
+def test_draw_busco_bars_no_crash_empty_string() -> None:
     """_draw_busco_bars handles empty BUSCO string without crashing."""
     import matplotlib
 
@@ -269,7 +292,7 @@ def test_draw_busco_bars_no_crash_empty_string(tmp_path: Path) -> None:
     plt.close()
 
 
-def test_draw_busco_bars_no_crash_none(tmp_path: Path) -> None:
+def test_draw_busco_bars_no_crash_none() -> None:
     """_draw_busco_bars handles None BUSCO string without crashing."""
     import matplotlib
 

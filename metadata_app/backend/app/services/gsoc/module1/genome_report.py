@@ -136,8 +136,16 @@ class GenomeReport:  # pylint: disable=too-many-instance-attributes
     assembly_busco_version: Optional[str]
     assembly_busco_extra: Dict[str, float]
 
-    # Gene counts
+    # Gene counts and AGAT-derived stats from new_metrics
     coding_genes: Optional[int]
+    total_transcripts: Optional[int]
+    transcripts_per_gene: Optional[float]
+    average_cds_length: Optional[float]
+    average_coding_intron_length: Optional[float]
+    single_exon_coding_genes: Optional[int]
+    longest_coding_gene_length: Optional[int]
+    average_coding_exon_length: Optional[float]
+    nc_non_coding_genes: Optional[int]
 
     # Assembly version info
     latest_annotated: Optional[str]
@@ -264,6 +272,16 @@ def extract_genome_report(gca: str, anno_wide: pd.DataFrame) -> GenomeReport:
         assembly_busco_version=safe_str(row.get("assembly_busco_version")),
         assembly_busco_extra=assembly_busco_extra,
         coding_genes=safe_int(row.get("coding_genes")),
+        total_transcripts=safe_int(row.get("total_transcripts")),
+        transcripts_per_gene=safe_float(row.get("transcripts_per_gene")),
+        average_cds_length=safe_float(row.get("average_cds_length")),
+        average_coding_intron_length=safe_float(
+            row.get("average_coding_intron_length")
+        ),
+        single_exon_coding_genes=safe_int(row.get("single_exon_coding_genes")),
+        longest_coding_gene_length=safe_int(row.get("longest_coding_gene_length")),
+        average_coding_exon_length=safe_float(row.get("average_coding_exon_length")),
+        nc_non_coding_genes=safe_int(row.get("nc_non_coding_genes")),
         latest_annotated=safe_str(row.get("latest_annotated")),
         annotated_version=safe_float(row.get("annotated_version")),
         assembly_version=safe_float(row.get("assembly_version")),
