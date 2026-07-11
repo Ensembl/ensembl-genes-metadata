@@ -145,7 +145,9 @@ def _busco_chart_js(report: GenomeReport) -> str:
     message overlay instead of silently showing an empty/invisible chart.
     """
     protein_row = _busco_dataset_row(parse_busco_string(report.protein_busco_raw or ""))
-    assembly_row = _busco_dataset_row(parse_busco_string(report.assembly_busco_raw or ""))
+    assembly_row = _busco_dataset_row(
+        parse_busco_string(report.assembly_busco_raw or "")
+    )
 
     if (sum(protein_row) + sum(assembly_row)) == 0:
         return """
@@ -256,6 +258,14 @@ def render_html(  # pylint: disable=too-many-locals
         ("Assembly BUSCO Lineage", _fmt(report.assembly_busco_lineage)),
         ("Assembly BUSCO Version", _fmt(report.assembly_busco_version)),
         ("Coding Genes", _fmt(report.coding_genes)),
+        ("Total Transcripts", _fmt(report.total_transcripts)),
+        ("Transcripts per Gene", _fmt(report.transcripts_per_gene)),
+        ("Avg CDS Length (bp)", _fmt(report.average_cds_length)),
+        ("Avg Coding Intron Length (bp)", _fmt(report.average_coding_intron_length)),
+        ("Single Exon Coding Genes", _fmt(report.single_exon_coding_genes)),
+        ("Longest Coding Gene (bp)", _fmt(report.longest_coding_gene_length)),
+        ("Avg Coding Exon Length (bp)", _fmt(report.average_coding_exon_length)),
+        ("Non-Coding Genes", _fmt(report.nc_non_coding_genes)),
         ("Latest Annotated", _fmt(report.latest_annotated)),
         ("Annotated Version", _fmt(report.annotated_version)),
         ("Assembly Version", _fmt(report.assembly_version)),
