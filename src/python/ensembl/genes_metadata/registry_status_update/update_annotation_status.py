@@ -229,7 +229,7 @@ def get_status_updates(merged_df):
 
     # 5–6. last_genebuild_update corrections
     condition_missing_update = (
-        (df["gb_status"] == "live")
+        (df["gb_status_new"] == "live")
         & df["last_genebuild_update_registry"].isna()
         & df["last_genebuild_update_production"].notna()
     )
@@ -241,7 +241,7 @@ def get_status_updates(merged_df):
     ]
 
     condition_mismatch_update = (
-        (df["gb_status"] == "live")
+        (df["gb_status_new"] == "live")
         & df["last_genebuild_update_registry"].notna()
         & df["last_genebuild_update_production"].notna()
         & (
@@ -256,7 +256,7 @@ def get_status_updates(merged_df):
 
     # 7. Live but missing genebuild_version
     condition_missing_genebuild_version = (
-        (df["gb_status"] == "live")
+        (df["gb_status_new"] == "live")
         & df["genebuild_version"].isna()
         & df["gb_v_production"].notna()
     )
