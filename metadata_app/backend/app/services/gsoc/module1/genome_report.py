@@ -26,6 +26,7 @@ import pandas as pd
 from metadata_app.backend.app.services.gsoc.module1.busco_utils import (  # pylint: disable=import-error
     parse_busco_string,
     busco_quality_label,
+    busco_diff_label,
 )
 from metadata_app.backend.app.services.gsoc.module1.logging_utils import (  # pylint: disable=import-error
     get_logger,
@@ -127,6 +128,7 @@ class GenomeReport:  # pylint: disable=too-many-instance-attributes
     protein_busco_lineage: Optional[str]
     protein_busco_version: Optional[str]
     protein_busco_quality: str
+    protein_busco_diff_label: str
     protein_busco_extra: Dict[str, float]
 
     # Assembly BUSCO
@@ -269,6 +271,9 @@ def extract_genome_report(gca: str, anno_wide: pd.DataFrame) -> GenomeReport:
         protein_busco_lineage=safe_str(row.get("protein_busco_lineage")),
         protein_busco_version=safe_str(row.get("protein_busco_version")),
         protein_busco_quality=busco_quality_label(protein_busco_complete),
+        protein_busco_diff_label=busco_diff_label(
+            protein_busco_complete, assembly_busco_complete
+        ),
         protein_busco_extra=protein_busco_extra,
         assembly_busco_raw=assembly_busco_raw,
         assembly_busco_complete=assembly_busco_complete,

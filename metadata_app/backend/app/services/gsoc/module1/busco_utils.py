@@ -154,3 +154,60 @@ def busco_quality_label(complete_pct: Optional[float]) -> str:
         if complete_pct >= threshold:
             return label
     return QUALITY_POOR
+
+
+# Thresholds for protein vs assembly BUSCO difference flagging.
+# Based on Anna's rules (2026-07-08): if protein BUSCO is much lower
+# than assembly BUSCO, it suggests the annotation is underperforming
+# relative to what the assembly quality would predict.
+BUSCO_DIFF_EXCELLENT = 2.0
+BUSCO_DIFF_WARNING = 5.0
+BUSCO_DIFF_CRITICAL = 10.0
+
+DIFF_LABEL_EXCELLENT = "Excellent"
+DIFF_LABEL_ACCEPTABLE = "Acceptable"
+DIFF_LABEL_WARNING = "Investigate"
+DIFF_LABEL_CRITICAL = "Problematic"
+DIFF_LABEL_UNKNOWN = "Unknown"
+
+
+def busco_diff_label(
+    protein_pct: Optional[float],
+    assembly_pct: Optional[float],
+) -> str:
+    """
+    Classify the difference between protein and assembly BUSCO completeness.
+
+    When assembly BUSCO is high but protein BUSCO is significantly lower,
+    it suggests the annotation may be missing genes that the assembly
+    quality would predict should be annotatable.
+
+    Args:
+        protein_pct: Protein BUSCO completeness percentage (0-100).
+        assembly_pct: Assembly BUSCO completeness percentage (0-100).
+
+    Returns:
+        A label string reflecting how far protein BUSCO falls below
+        assembly BUSCO. Returns DIFF_LABEL_UNKNOWN if either value
+        is None.
+
+    Examples:
+        >>> busco_diff_label(97.0, 98.0)
+        'Excellent'
+        >>> busco_diff_label(92.0, 98.0)
+        'Investigate'
+        >>> busco_diff_label(85.0, 98.0)
+        'Problematic'
+    """
+    if protein_pct is None or assembly_pct is None:
+        return DIFF_LABEL_UNKNOWN
+
+    diff = assembly_pct - protein_pct
+
+    if diff < BUSCO_DIFF_EXCELLENT:
+        return DIFF_LABEL_EXCELLENT
+    if diff < BUSCO_DIFF_WARNING:
+        return DIFF_LABEL_ACCEPTABLE
+    if diff < BUSCO_DIFF_CRITICAL:
+        return DIFF_LABEL_WARNING
+    return DIFF_LABEL_CRITICAL

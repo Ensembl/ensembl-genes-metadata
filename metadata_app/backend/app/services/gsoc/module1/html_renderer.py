@@ -17,6 +17,9 @@ from metadata_app.backend.app.services.gsoc.module1.busco_utils import (  # pyli
     QUALITY_THRESHOLDS,
     QUALITY_UNKNOWN,
     parse_busco_string,
+    DIFF_LABEL_EXCELLENT,
+    DIFF_LABEL_CRITICAL,
+    DIFF_LABEL_WARNING,
 )
 from metadata_app.backend.app.services.gsoc.module1.genome_report import (  # pylint: disable=import-error
     GenomeReport,
@@ -75,6 +78,17 @@ def _busco_bar_color(pct: Optional[float]) -> str:
         if pct >= threshold:
             return color
     return _POOR_BAR_COLOR
+
+
+def _diff_label_style(label: str) -> str:
+    """Return inline CSS for the BUSCO differential label badge."""
+    styles = {
+        DIFF_LABEL_EXCELLENT: "color:#166534;background:#dcfce7",
+        "Acceptable": "color:#92400e;background:#fef3c7",
+        DIFF_LABEL_WARNING: "color:#9a3412;background:#ffedd5",
+        DIFF_LABEL_CRITICAL: "color:#7f1d1d;background:#fee2e2",
+    }
+    return styles.get(label, "color:#374151;background:#f3f4f6")
 
 
 def _fmt(val: object) -> str:
@@ -297,6 +311,7 @@ def render_html(  # pylint: disable=too-many-locals
         ("Protein BUSCO", _fmt(report.protein_busco_raw)),
         ("Protein BUSCO Lineage", _fmt(report.protein_busco_lineage)),
         ("Protein BUSCO Version", _fmt(report.protein_busco_version)),
+        ("Protein vs Assembly BUSCO", report.protein_busco_diff_label),
         ("Assembly BUSCO", _fmt(report.assembly_busco_raw)),
         ("Assembly BUSCO Lineage", _fmt(report.assembly_busco_lineage)),
         ("Assembly BUSCO Version", _fmt(report.assembly_busco_version)),
