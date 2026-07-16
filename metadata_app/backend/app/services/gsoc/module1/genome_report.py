@@ -159,6 +159,10 @@ class GenomeReport:  # pylint: disable=too-many-instance-attributes
     clade_median_busco: Optional[float] = field(default=None)
     clade_median_coding_genes: Optional[float] = field(default=None)
     clade_sample_size: Optional[int] = field(default=None)
+    # Outlier detection results from Module 2 clade analysis
+    is_outlier: Optional[bool] = field(default=None)
+    outlier_mad_score: Optional[float] = field(default=None)
+    outlier_features: Optional[str] = field(default=None)
 
 
 def _select_current_annotation_row(genome_rows: pd.DataFrame, gca: str) -> pd.Series:
@@ -294,5 +298,51 @@ def extract_genome_report(gca: str, anno_wide: pd.DataFrame) -> GenomeReport:
         report.scientific_name,
         report.protein_busco_complete,
         report.internal_clade,
+    )
+    return report
+
+
+def enrich_with_outlier_data(
+    report: GenomeReport,
+    outlier_results: "dict",
+) -> GenomeReport:
+    """
+    Populate outlier fields on a GenomeReport from Module 2 clade analysis results.
+
+    Args:
+        report: A GenomeReport produced by extract_genome_report().
+        outlier_results: Dict mapping clade name to list of OutlierResult,
+                         as returned by clade_analysis.run_clade_analysis().
+
+    Returns:
+        The same GenomeReport with is_outlier, outlier_mad_score, and
+        outlier_features populated if a matching result is found.
+        Returns the report unchanged if no match is found.
+    """
+    if not outlier_results:
+        return report
+
+    # Search across all clades since internal_clade may be None
+    # (species.clade is NULL in the current DB snapshot)
+    match = None
+    for clade_results in outlier_results.values():
+        match = next((r for r in clade_results if r.gca == report.gca), None)
+        if match:
+            break
+
+    if match is None:
+        return report
+
+    report.is_outlier = match.is_outlier
+    report.outlier_mad_score = round(match.mad_score, 3)
+    report.outlier_features = (
+        ", ".join(match.outlier_features) if match.outlier_features else None
+    )
+
+    logger.info(
+        "Outlier data added for %s: is_outlier=%s, mad_score=%s",
+        report.gca,
+        report.is_outlier,
+        report.outlier_mad_score,
     )
     return report

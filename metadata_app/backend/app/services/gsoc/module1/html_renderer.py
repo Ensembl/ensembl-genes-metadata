@@ -229,6 +229,49 @@ def render_html(  # pylint: disable=too-many-locals
         Path to the generated HTML file.
     """
     html_path = output_dir / f"{report.gca.replace('.', '_')}_report.html"
+
+    # Build outlier section if Module 2 data is available
+    if report.is_outlier is not None:
+        if report.is_outlier:
+            outlier_badge = (
+                "<span style='display:inline-block;padding:0.3rem 0.9rem;"
+                "border-radius:999px;font-size:0.85rem;font-weight:600;"
+                "color:#9a3412;background:#ffedd5'>&#9888; Outlier Detected</span>"
+            )
+            outlier_detail = (
+                f"<p style='margin-top:0.75rem;font-size:0.88rem;color:#475569'>"
+                f"MAD score: <strong>{report.outlier_mad_score}</strong> "
+                f"(threshold: 3.5)</p>"
+            )
+            if report.outlier_features:
+                outlier_detail += (
+                    f"<p style='margin-top:0.4rem;font-size:0.85rem;color:#64748b'>"
+                    f"Flagged metrics: {html.escape(report.outlier_features)}</p>"
+                )
+        else:
+            outlier_badge = (
+                "<span style='display:inline-block;padding:0.3rem 0.9rem;"
+                "border-radius:999px;font-size:0.85rem;font-weight:600;"
+                "color:#166534;background:#dcfce7'>&#10003; Within Normal Range</span>"
+            )
+            outlier_detail = (
+                f"<p style='margin-top:0.75rem;font-size:0.88rem;color:#475569'>"
+                f"MAD score: <strong>{report.outlier_mad_score}</strong> "
+                f"(threshold: 3.5)</p>"
+            )
+        clade_label = html.escape(_fmt(report.internal_clade))
+        outlier_section = f"""
+  <div class="section">
+    <h2>Clade Outlier Analysis</h2>
+    <p style="font-size:0.88rem;color:#475569;margin-bottom:0.75rem">
+      Compared against <strong>{clade_label}</strong> clade using PCA and
+      MAD-based outlier detection across annotation quality metrics.
+    </p>
+    {outlier_badge}
+    {outlier_detail}
+  </div>"""
+    else:
+        outlier_section = ""
     badge_style = _quality_badge_style(report.protein_busco_quality)
     protein_busco_pct = report.protein_busco_complete
     assembly_busco_pct = report.assembly_busco_complete
@@ -502,6 +545,7 @@ def render_html(  # pylint: disable=too-many-locals
     </div>
   </div>
 
+{outlier_section}
   <!-- Full metrics table -->
   <div class="section">
     <h2>All Metrics</h2>
