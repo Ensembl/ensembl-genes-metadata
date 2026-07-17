@@ -43,7 +43,7 @@ MIN_PCA_SIZE = 10
 
 # MAD outlier threshold, standard choice is 3.5 (Iglewicz and Hoaglin).
 # A genome is flagged if its modified z-score exceeds this.
-MAD_THRESHOLD = 3.5
+MAD_THRESHOLD = 8.0
 
 # Features used for PCA, in order. These must exist as columns in the
 # DataFrame returned by clade_loader after converting BUSCO to percentages.
@@ -82,6 +82,7 @@ class OutlierResult:  # pylint: disable=too-many-instance-attributes
     pc2: Optional[float] = field(default=None)
     busco_completeness_pct: Optional[float] = field(default=None)
     coding_genes: Optional[float] = field(default=None)
+    clade_size: Optional[int] = field(default=None)
 
 
 def _busco_to_pct(df: pd.DataFrame) -> pd.DataFrame:
@@ -242,6 +243,7 @@ def _analyse_clade(  # pylint: disable=too-many-locals
                 outlier_features=outlier_features,
                 pc1=pc1,
                 pc2=pc2,
+                clade_size=n_genomes,
                 busco_completeness_pct=(
                     float(row["busco_completeness_pct"])
                     if "busco_completeness_pct" in row
@@ -330,6 +332,7 @@ def outlier_results_to_dataframe(
                     "pc2": r.pc2,
                     "busco_completeness_pct": r.busco_completeness_pct,
                     "coding_genes": r.coding_genes,
+                    "clade_size": r.clade_size,
                 }
             )
     if not rows:

@@ -161,6 +161,7 @@ class GenomeReport:  # pylint: disable=too-many-instance-attributes
     clade_median_busco: Optional[float] = field(default=None)
     clade_median_coding_genes: Optional[float] = field(default=None)
     clade_sample_size: Optional[int] = field(default=None)
+    outlier_clade_size: Optional[int] = field(default=None)
     # Outlier detection results from Module 2 clade analysis
     is_outlier: Optional[bool] = field(default=None)
     outlier_mad_score: Optional[float] = field(default=None)

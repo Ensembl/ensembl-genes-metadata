@@ -278,8 +278,9 @@ def render_html(  # pylint: disable=too-many-locals
   <div class="section">
     <h2>Clade Outlier Analysis</h2>
     <p style="font-size:0.88rem;color:#475569;margin-bottom:0.75rem">
-      Compared against <strong>{clade_label}</strong> clade using PCA and
-      MAD-based outlier detection across annotation quality metrics.
+      Compared against <strong>{clade_label}</strong> clade
+      ({html.escape(str(report.outlier_clade_size or "unknown"))} genomes)
+      using PCA and MAD-based outlier detection across annotation quality metrics.
     </p>
     {outlier_badge}
     {outlier_detail}
