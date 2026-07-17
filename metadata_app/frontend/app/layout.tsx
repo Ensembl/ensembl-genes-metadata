@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils"
 import { ThemeProvider } from "@/components/theme-provider";
 import { META_THEME_COLORS, siteConfig } from "@/config/site"
 import { SiteHeader } from "@/components/ui/site_header"
+import Footer from "@/components/ui/footer"
 
 
 const inter = Inter({
@@ -81,6 +82,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
             <SiteHeader />
             <main>{children}</main>
           </ThemeProvider>
+        <Footer />
         </body>
       </html>
     </>
