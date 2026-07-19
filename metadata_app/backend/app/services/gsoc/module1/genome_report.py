@@ -344,11 +344,16 @@ def enrich_with_outlier_data(
     report.outlier_features = (
         ", ".join(match.outlier_features) if match.outlier_features else None
     )
+    report.outlier_clade_size = match.clade_size
+    if not report.internal_clade:
+        report.internal_clade = match.clade
 
     logger.info(
-        "Outlier data added for %s: is_outlier=%s, mad_score=%s",
+        "Outlier data added for %s: is_outlier=%s, mad_score=%s, clade=%s, size=%s",
         report.gca,
         report.is_outlier,
         report.outlier_mad_score,
+        report.internal_clade,
+        report.outlier_clade_size,
     )
     return report
