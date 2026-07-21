@@ -148,43 +148,6 @@ def get_parlance_name(sci_name: str, enscode) -> str:
 
     return parlance_name
 
-def create_prefix(registy_params, metadata_params) -> str:
-    """
-    It creates a unique species prefix. The prefix is the particle ENS plus a combination of 3 (or 4) random letters.
-    To ensure the uniqueness of the prefix, it checks the existing prefixes in the registry and metadata databases.
-
-    Returns:
-        str: unique species prefix
-    """
-    
-    # Getting existing prefix from registry db
-    conn = pymysql.connect(**registy_params)
-    cur  = conn.cursor()
-    cur.execute("SELECT DISTINCT species_prefix FROM assembly")
-    prefix_registry = cur.fetchall() 
-    cur.close()
-    
-    # Getting existing prefix from metadata db
-    conn = pymysql.connect(**metadata_params)
-    cur  = conn.cursor()
-    cur.execute("SELECT DISTINCT species_prefix FROM species")
-    prefix_metadata = cur.fetchall() 
-    cur.close()
-    
-    prefix_list = [item[0] for item in (prefix_registry + prefix_metadata) ]
-    existing_prefix  = list(set(prefix_list))
-    
-    prefix = ''
-    
-    while not prefix or prefix in existing_prefix:
-        letters = string.ascii_uppercase
-        prefix = 'ENS'+ ''.join([random.choice(letters) for i in range(3)])
-        
-        if len(existing_prefix)>=26^3:
-            prefix = 'ENS'+ ''.join([random.choice(letters) for i in range(4)])
-    
-    return prefix
-
 
 def main():
     """Module's entry point.
