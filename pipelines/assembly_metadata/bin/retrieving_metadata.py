@@ -54,32 +54,31 @@ def parse_data(data: Dict) -> Tuple[Dict[str, Dict[Any, Any]], Dict[str, Dict[An
         data (dict): original report obtained from NCBI API
 
     Returns:
-        list[dict]: a list of three dictionaries with relevant metadata to store in db
+        tuple[dict, dict, dict]: a tuple of three dictionaries with relevant metadata to store in db
     """
     # Stablish dictionary structure
-    data_dict: Dict[str, Dict[Any, Any]] = {'assembly': {}}
+    assembly_dic: Dict[str, Dict[Any, Any]] = {'assembly': {}}
 
-    data_dict_2: Dict[str, Dict[Any, Any]]  = {
+    organism_dict: Dict[str, Dict[Any, Any]]  = {
         'organism': {},
         'assembly_metrics': {},
         'bioproject': {}}
 
-    data_dict_3: Dict[str, Dict[Any, Any]] = {'species': {}}
+    taxonomy_dict: Dict[str, Dict[Any, Any]] = {'species': {}}
 
-    # Setting Optional keys first
-    try:
-        infra_type = list(data['reports'][0]['organism']['infraspecific_names'].keys())[0]
-        infra_name = list(data['reports'][0]['organism']['infraspecific_names'].values())[0].replace("'", "''")
-        if infra_type == 'sex':
-            logging.info("Assembly have incorrect infraspecific type: sex. Setting to empty")
-            infra_type = ""
-            infra_name = ""
-    except KeyError:
-        infra_name = ""
+    # Setting Optional keys-values first
+    infraspecific_names = data['reports'][0].get('organism', {}).get('infraspecific_names', {})
+    infra_type, infra_name = next(iter(infraspecific_names.items()), ("", ""))
+    if infra_name:
+        infra_name = infra_name.replace("'", "''")
+
+    if infra_type == 'sex':
+        logging.info("Assembly have incorrect infraspecific type: sex. Setting to empty")
         infra_type = ""
+        infra_name = ""
 
     # Building dictionaries for assembly metadata tables
-    data_dict['assembly'].update({
+    assembly_dic['assembly'].update({
         'lowest_taxon_id' : data['reports'][0]['organism']['tax_id'],
         'gca_chain' : data['reports'][0]['accession'].split('.')[0],
         'gca_version' : data['reports'][0]['accession'].split('.')[1],
@@ -98,23 +97,22 @@ def parse_data(data: Dict) -> Tuple[Dict[str, Dict[Any, Any]], Dict[str, Dict[An
     logging.info(warning)
     if warning != "NA":
         logging.info("Updating assembly JSON with warning data")
-        data_dict['assembly'].update({'is_current':warning[0]})
+        assembly_dic['assembly'].update({'is_current':warning[0]})
 
 
-    data_dict_3['species'].update({
+    taxonomy_dict['species'].update({
         'lowest_taxon_id' : data['reports'][0]['organism']['tax_id'],
         'scientific_name' : data['reports'][0]['organism']['organism_name'].replace("'", "''") ,
         'common_name' : data['reports'][0].get('organism').get('common_name', "").replace("'", "''")
     })
 
-    data_dict_2['organism'].update({
+    organism_dict['organism'].update({
+        'assembly_metrics':data['reports'][0]['assembly_stats'],
         'biosample_id' : data.get('reports', [{}])[0].get('assembly_info', {}).get('biosample', {}).get('accession', ""),
         'bioproject_id' : data['reports'][0]['assembly_info']['bioproject_accession'],
         'infra_type':infra_type,
         'infra_name':infra_name
     })
-
-    data_dict_2.update({'assembly_metrics':data['reports'][0]['assembly_stats']})
 
     # Parsing bioproject metadata
     bioproject_lineage = {}
@@ -129,9 +127,9 @@ def parse_data(data: Dict) -> Tuple[Dict[str, Dict[Any, Any]], Dict[str, Dict[An
             seen_accessions.add(accession)
             bioproject_lineage[accession] = title
 
-    data_dict_2.update({'bioproject':bioproject_lineage})
+    organism_dict.update({'bioproject':bioproject_lineage})
 
-    return data_dict, data_dict_2, data_dict_3
+    return assembly_dic, organism_dict, taxonomy_dict
 
 def main():
     """Module's entry-point
@@ -144,43 +142,40 @@ def main():
 
     parser.add_argument('--accession',
                         type=str,
+                        required=True,
                         help='GCA accession to retrieve metadata')
     parser.add_argument('--ncbi_url',
                         type=str,
+                        required=True,
                         help='NCBI API URL')
 
     args = parser.parse_args()
     logging.info(args)
     accession = args.accession.strip()
 
-    if args.ncbi_url:
-        ncbi_url = args.ncbi_url
-    else:
-        raise ValueError("NCBI API URL is required")
-
-    uri = f"{ncbi_url}/genome/accession/{accession}/dataset_report?filters.exclude_atypical=false&filters.assembly_version=all_assemblies"
+    uri = f"{args.ncbi_url}/genome/accession/{accession}/dataset_report?filters.exclude_atypical=false&filters.assembly_version=all_assemblies"
     logging.info("URI: %s",uri)
     response = connection_ncbi(uri)
     data = response.json()
     #logging.info(f"DATA: {data}")
 
     logging.info("Retrieved data for %s",accession)
-    dict1, dict2, dict3 = parse_data(data)
+    assembly_dict, organism_dict, taxonomy_dict = parse_data(data)
 
     logging.info("Saving data in JSON files")
     file1 = f"{accession}_assembly.json"
     with open(file1, 'w', encoding='utf-8') as file:
-        json.dump(dict1, file)
+        json.dump(assembly_dict, file)
     file.close()
 
     file2 = f"{accession}_metadata.tmp"
     with open(file2, 'w', encoding='utf-8') as file:
-        json.dump(dict2, file)
+        json.dump(organism_dict, file)
     file.close()
 
     file3 = f"{accession}_species.tmp"
     with open(file3, 'w', encoding='utf-8') as file:
-        json.dump(dict3, file)
+        json.dump(taxonomy_dict, file)
     file.close()
 
 if __name__ == '__main__':
