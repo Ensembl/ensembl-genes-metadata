@@ -41,9 +41,7 @@ def get_dtol():
             ],
         )
         df["gb_status"] = df["gb_status"].fillna("not_started")
-        df = df[~df["asm_name"].str.contains("alternate", case=False, na=False)]
         df = df.drop(columns=["asm_name"])
-        df = df[~df["asm_level"].str.lower().isin(["contig", "scaffold"])]
         df = df.drop_duplicates(subset=["gca", "gb_status"], keep="first")
 
         return df.to_dict(orient="records")
@@ -90,9 +88,7 @@ def get_tol():
             ],
         )
         df["gb_status"] = df["gb_status"].fillna("not_started")
-        df = df[~df["asm_name"].str.contains("alternate", case=False, na=False)]
         df = df.drop(columns=["asm_name"])
-        df = df[~df["asm_level"].str.lower().isin(["contig", "scaffold"])]
         df = df.drop_duplicates(subset=["gca", "gb_status"], keep="first")
 
         return df.to_dict(orient="records")
@@ -139,9 +135,7 @@ def get_erga():
             ],
         )
         df["gb_status"] = df["gb_status"].fillna("not_started")
-        df = df[~df["asm_name"].str.contains("alternate", case=False, na=False)]
         df = df.drop(columns=["asm_name"])
-        df = df[~df["asm_level"].str.lower().isin(["contig", "scaffold"])]
         df = df.drop_duplicates(subset=["gca", "gb_status"], keep="first")
         return df.to_dict(orient="records")
 
@@ -187,9 +181,7 @@ def get_asg():
             ],
         )
         df["gb_status"] = df["gb_status"].fillna("not_started")
-        df = df[~df["asm_name"].str.contains("alternate", case=False, na=False)]
         df = df.drop(columns=["asm_name"])
-        df = df[~df["asm_level"].str.lower().isin(["contig", "scaffold"])]
         df = df.drop_duplicates(subset=["gca", "gb_status"], keep="first")
         return df.to_dict(orient="records")
 
@@ -235,9 +227,7 @@ def get_erga_pilot():
             ],
         )
         df["gb_status"] = df["gb_status"].fillna("not_started")
-        df = df[~df["asm_name"].str.contains("alternate", case=False, na=False)]
         df = df.drop(columns=["asm_name"])
-        df = df[~df["asm_level"].str.lower().isin(["contig", "scaffold"])]
         df = df.drop_duplicates(subset=["gca", "gb_status"], keep="first")
         return df.to_dict(orient="records")
 
@@ -283,9 +273,7 @@ def get_erga_bge():
             ],
         )
         df["gb_status"] = df["gb_status"].fillna("not_started")
-        df = df[~df["asm_name"].str.contains("alternate", case=False, na=False)]
         df = df.drop(columns=["asm_name"])
-        df = df[~df["asm_level"].str.lower().isin(["contig", "scaffold"])]
         df = df.drop_duplicates(subset=["gca", "gb_status"], keep="first")
         return df.to_dict(orient="records")
 
@@ -331,9 +319,7 @@ def get_vgp():
             ],
         )
         df["gb_status"] = df["gb_status"].fillna("not_started")
-        df = df[~df["asm_name"].str.contains("alternate", case=False, na=False)]
         df = df.drop(columns=["asm_name"])
-        df = df[~df["asm_level"].str.lower().isin(["contig", "scaffold"])]
         df = df.drop_duplicates(subset=["gca", "gb_status"], keep="first")
         return df.to_dict(orient="records")
 
@@ -379,9 +365,7 @@ def get_ebp():
             ],
         )
         df["gb_status"] = df["gb_status"].fillna("not_started")
-        df = df[~df["asm_name"].str.contains("alternate", case=False, na=False)]
         df = df.drop(columns=["asm_name"])
-        df = df[~df["asm_level"].str.lower().isin(["contig", "scaffold"])]
         df = df.drop_duplicates(subset=["gca", "gb_status"], keep="first")
         return df.to_dict(orient="records")
 
@@ -427,9 +411,7 @@ def get_hprc():
             ],
         )
         df["gb_status"] = df["gb_status"].fillna("not_started")
-        df = df[~df["asm_name"].str.contains("alternate", case=False, na=False)]
         df = df.drop(columns=["asm_name"])
-        df = df[~df["asm_level"].str.lower().isin(["contig", "scaffold"])]
         df = df.drop_duplicates(subset=["gca", "gb_status"], keep="first")
         return df.to_dict(orient="records")
 
@@ -475,9 +457,7 @@ def get_cbp():
             ],
         )
         df["gb_status"] = df["gb_status"].fillna("not_started")
-        df = df[~df["asm_name"].str.contains("alternate", case=False, na=False)]
         df = df.drop(columns=["asm_name"])
-        df = df[~df["asm_level"].str.lower().isin(["contig", "scaffold"])]
         df = df.drop_duplicates(subset=["gca", "gb_status"], keep="first")
         return df.to_dict(orient="records")
 
@@ -523,9 +503,7 @@ def get_hprc():
             ],
         )
         df["gb_status"] = df["gb_status"].fillna("not_started")
-        df = df[~df["asm_name"].str.contains("alternate", case=False, na=False)]
         df = df.drop(columns=["asm_name"])
-        df = df[~df["asm_level"].str.lower().isin(["contig", "scaffold"])]
         df = df.drop_duplicates(subset=["gca", "gb_status"], keep="first")
         return df.to_dict(orient="records")
 
@@ -570,9 +548,7 @@ def get_laca():
             ],
         )
         df["gb_status"] = df["gb_status"].fillna("not_started")
-        df = df[~df["asm_name"].str.contains("alternate", case=False, na=False)]
         df = df.drop(columns=["asm_name"])
-        df = df[~df["asm_level"].str.lower().isin(["contig", "scaffold"])]
         df = df.drop_duplicates(subset=["gca", "gb_status"], keep="first")
         return df.to_dict(orient="records")
 
@@ -618,9 +594,7 @@ def get_aegis():
             ],
         )
         df["gb_status"] = df["gb_status"].fillna("not_started")
-        df = df[~df["asm_name"].str.contains("alternate", case=False, na=False)]
         df = df.drop(columns=["asm_name"])
-        df = df[~df["asm_level"].str.lower().isin(["contig", "scaffold"])]
         df = df.drop_duplicates(subset=["gca", "gb_status"], keep="first")
         return df.to_dict(orient="records")
 
@@ -666,9 +640,7 @@ def get_rodent2k():
             ],
         )
         df["gb_status"] = df["gb_status"].fillna("not_started")
-        df = df[~df["asm_name"].str.contains("alternate", case=False, na=False)]
         df = df.drop(columns=["asm_name"])
-        df = df[~df["asm_level"].str.lower().isin(["contig", "scaffold"])]
         df = df.drop_duplicates(subset=["gca", "gb_status"], keep="first")
         return df.to_dict(orient="records")
 
@@ -714,9 +686,7 @@ def get_atlasea():
             ],
         )
         df["gb_status"] = df["gb_status"].fillna("not_started")
-        df = df[~df["asm_name"].str.contains("alternate", case=False, na=False)]
         df = df.drop(columns=["asm_name"])
-        df = df[~df["asm_level"].str.lower().isin(["contig", "scaffold"])]
         df = df.drop_duplicates(subset=["gca", "gb_status"], keep="first")
         return df.to_dict(orient="records")
 
