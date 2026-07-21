@@ -16,8 +16,10 @@
 #  limitations under the License.
 
 """
-The module get the additional information for the species table. It will add the species_taxon_id, parlance_name 
-and species_prefix keys to the json-like (.tmp) species file.
+The module add species_taxon_id and parlance_name to the species main key to json-like (.tmp) species file.
+It retrieves the taxonomy classification and names to be store in the taxonomy and taxonomy_name tables.
+The module when used in the pipeline requires --json-path, --ncbi_url and --enscode.
+Additionally, to be used as standalone script to update the taxonomy tables, it requires --taxonomy_update, --taxon_id, and --ncbi_url.
 
 Raises:
     ValueError: invalid taxonomy rank
@@ -183,71 +185,6 @@ def create_prefix(registy_params, metadata_params) -> str:
     
     return prefix
 
-def get_species_prefix(taxon_id:str, registy_params, metadata_params) -> Optional[str]:
-    """
-    This function retrieves the species prefix from the assembly registry and metadata databases.
-    If the prefix is not found, it creates a new one. There are special cases where the prefix is predefined.
-    - Canis lupus (wolf) -> ENSCAF
-    - Canis lupus familiaris (Domestic dog) -> ENSCAF
-    - Heterocephalus glaber (naked mole rat) -> ENSHGL
-
-    Args:
-        taxon_id (str): lowest taxon id
-
-    Raises:
-        ValueError: _description_
-
-    Returns:
-        str: unique species prefix that already exist or a new one when no prefix is found.
-    """
-
-    # Special cases
-    special_cases = {
-        '9612': 'ENSCAF', # Canis lupus (wolf)
-        '9615' : 'ENSCAF', # Canis lupus familiaris (Domestic dog)
-        '10181': 'ENSHGL' #  Heterocephalus glaber (naked mole rat)
-        }
-
-    if str(taxon_id) in special_cases:
-        logging.info("The prefix is a special case")
-        species_prefix = special_cases.get(str(taxon_id))
-    else:
-
-        logging.info(f"search prefix or create a new one for {taxon_id}")
-
-        # Search prefix in DB (gb_assembly_registry)
-        conn = pymysql.connect(**registy_params)
-        cur  = conn.cursor()
-        query = f"SELECT DISTINCT species_prefix FROM assembly WHERE taxonomy = {taxon_id}"
-        cur.execute(query)
-        output_registry = cur.fetchall()
-        cur.close()
-
-        # Search prefix in DB (gb_assembly_metadata)
-        conn = pymysql.connect(**metadata_params)
-        cur  = conn.cursor()
-        query = f"SELECT DISTINCT species_prefix FROM species WHERE lowest_taxon_id = {taxon_id}"
-        cur.execute(query)
-        output_metadata = cur.fetchall()
-        cur.close()
-
-        # Combine output and get list of unique values
-        output = [item[0] for item in (output_registry + output_metadata) ]
-        prefix_list = list(set(output))
-
-        # no prefix, create new prefix
-        if len(prefix_list) == 0:
-            logging.info(f"Getting a new prefix for taxon id: {taxon_id}")
-            species_prefix = create_prefix(registy_params, metadata_params)
-        # unique prefix detected
-        elif len(prefix_list) == 1:
-            logging.info(f"Unique prefix detected for taxon id: {taxon_id}")
-            species_prefix = prefix_list[0]
-        # Multiple prefix detected, check species.
-        else:
-            raise ValueError(f"The taxon {taxon_id} is already registered but multiple prefix were detected: {prefix_list}")
-
-    return species_prefix
 
 def main():
     """Module's entry point.
@@ -255,18 +192,13 @@ def main():
     logging.basicConfig(filename="species_checker.log", level=logging.DEBUG,
                         filemode='w', format="%(asctime)s:%(levelname)s:%(message)s")
     parser = argparse.ArgumentParser(prog="species_checker.py",
-                                    description=
-                                    """
-                                    The module add species_taxon_id and parlance_name to the species main key to json-like (.tmp) species file.
-                                    It retrieves the taxonomy classification and names to be store in the taxonomy and taxonomy_name tables.
-                                    The module when used in the pipeline requires --json-path, --ncbi_url and --enscode.
-                                    Additionally, to be used as standalone script to update the taxonomy tables, it requires --taxonomy_update and --taxon_id.
-                                    """)
+                                    description="Update species related metadata.")
     parser.add_argument("--json-path",
                         type=str,
                         help="Path to the JSON-like (.tmp) species file")
     parser.add_argument('--ncbi_url',
                         type=str,
+                        required=True,
                         help='NCBI API URL')
     parser.add_argument('--enscode',
                         type=str,
@@ -279,10 +211,6 @@ def main():
                         help='Update taxonomy table')
 
     args = parser.parse_args()
-
-    # Loading NCBI API URL
-    if not args.ncbi_url:
-        raise ValueError("Please enter a valid URL for NCBI API")
 
     logging.info(f"Loading file: {args.json_path}")
 
@@ -306,7 +234,6 @@ def main():
             species_prefix = ""
             taxon_classification, taxon_name_classification = get_taxon_classification(taxon_data)
             taxon_classification_check=True
-            #species_prefix = get_species_prefix(species_dict['species']['lowest_taxon_id'], registy_params, metadata_params)
         else:
             logging.info("Taxon do not exist in taxonomy: invalid lowest taxon id or assembly should be suppressed")
             logging.info("Setting values to NA/NULL to later be detected by the integrity check")
