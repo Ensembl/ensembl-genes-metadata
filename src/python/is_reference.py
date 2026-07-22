@@ -22,15 +22,14 @@ whether each assembly is labeled as the reference assembly for its taxon.
 Usage
 -----
     # Pass accessions directly on the command line:
-    python check_reference.py GCA_004027535.1 GCA_000001405.29
+    python is_reference.py GCA_004027535.1 GCA_000001405.29
 
     # Or supply a file (one GCA per line, or a single-column CSV):
-    python check_reference.py --file gcas.txt
-    python check_reference.py --file gcas.csv
+    python is_reference.py --file gcas.txt
+    python is_reference.py --file gcas.csv
 
     # Choose a custom output path (default: reference_check.csv):
-    python check_reference.py --file gcas.txt --output my_results.csv
-
+    python is_reference.py --file gcas.txt --output my_results.csv
 Output columns
 --------------
     gca               - input accession
