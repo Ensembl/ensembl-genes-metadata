@@ -6,15 +6,11 @@ on:
     paths:
       - 'mkdocs/**'
       - 'docs/**'
-      - 'src/**'
-      - 'pyproject.toml'
       - 'mkdocs.yml'
   pull_request:
     paths:
       - 'mkdocs/**'
       - 'docs/**'
-      - 'src/**'
-      - 'pyproject.toml'
       - 'mkdocs.yml'
 
 jobs:

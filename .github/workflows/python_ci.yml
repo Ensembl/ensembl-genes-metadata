@@ -38,8 +38,7 @@ jobs:
 
       - name: Run pylint
         run: |
-          pylint --rcfile pyproject.toml src/python/ensembl/genes
-          pylint --rcfile pyproject.toml tests
+          pylint --rcfile pyproject.toml gb_prefect src/python
 
   mypy:
     runs-on: ubuntu-latest
@@ -54,8 +53,7 @@ jobs:
 
       - name: Run mypy
         run: |
-          mypy --config-file pyproject.toml src/python/ensembl/genes
-          mypy --config-file pyproject.toml tests
+          mypy --config-file pyproject.toml gb_prefect src/python
 
   black:
     runs-on: ubuntu-latest
@@ -89,9 +87,14 @@ jobs:
 
       - name: Run pytest with coverage
         run: |
-          coverage run -m pytest --junitxml=./reports/test_results.xml
-          coverage xml -o ./reports/coverage.xml
-          coverage report -m
+          mkdir -p reports
+          if find tests -name 'test_*.py' -o -name '*_test.py' 2>/dev/null | grep -q .; then
+            coverage run -m pytest --junitxml=./reports/test_results.xml
+            coverage xml -o ./reports/coverage.xml
+            coverage report -m
+          else
+            echo "No tests found under tests/ yet — skipping pytest run."
+          fi
 
       - name: Add coverage reports
         if: ${{ github.event_name == 'pull_request' }}
