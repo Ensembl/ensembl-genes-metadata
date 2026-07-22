@@ -51,7 +51,7 @@ The pipeline runs the following steps in sequence for each GCA accession:
 | 10 | `WRITE2DB_TOLID` | Writes the ToL ID to the metadata database |
 | 11 | `REPORT` | Generates a summary report and a CSV file for downstream BUSCO analyses |
 
-![Pipeline diagram](./diagram.png)
+![Pipeline diagram](./assembly_metadata_animated.svg)
 
 ---
 
