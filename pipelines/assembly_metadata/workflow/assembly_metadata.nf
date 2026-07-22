@@ -15,7 +15,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-nextflow.enable.dsl=2
+nextflow.enable.dsl = 2
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     IMPORT LOCAL MODULES AND CONFIGURATION
@@ -42,42 +42,15 @@ WORKFLOW: REGISTER NEW ASSEMBLIES IN DB
 */
 
 workflow ASSEMBLY_METADATA {
-    // help
-    if (params.help) {
-    log.info"""
-    ======================================================================
-            Nextflow Pipeline to run Assembly metadata pipeline
-    =======================================================================
-    
-    Usage: 
-    nextflow -C ensembl-genes-metadata/conf/assembly_pipeline.config \
-                run ensembl-genes-metadata/pipeline/assembly_pipeline.nf \
-                --enscode <ENSCODE> --output_dir <OutDir> --taxon <taxon>
-
-    Required arguments:
-    --enscode STR               ENSCODE directory path
-    --output_dir STR            Output directory path
-
-    Optional arguments:
-    --date STR                  Custom date to retrieve assemblies (optional)
-    --full_screen BOOLEAN       Run full screen mode, it will retrieve assemblies since 2019
-    --taxon INT                 NCBI taxon id. Default is 2759
-    --add_gca BOOLEAN           If option add_gca is set to true, it will use as input the GCA list provided by --gca_list
-    --gca_list STR              GCA list file path. Requires --add_gca to be used as input
-    --help BOOLEAN              Help option
-    """.stripIndent()
-
-    exit 0
-    }
 
     // print params
-    params.each{ k, v -> println "params.${k.padRight(25)} = ${v}" }
+    params.each { k, v -> println("params.${k.padRight(25)} = ${v}") }
 
     SET_DATE()
-    def last_update = SET_DATE.out.splitText() {it -> it.trim()}
+    def last_update = SET_DATE.out.splitText { it -> it.trim() }
 
     FETCH_GCA(params.taxon, last_update)
-    def gca = FETCH_GCA.out.splitText().map{it -> it.trim()}
+    def gca = FETCH_GCA.out.splitText().map { it -> it.trim() }
 
     def parse_metadata_out = PARSE_METADATA(gca)
 
@@ -98,5 +71,4 @@ workflow ASSEMBLY_METADATA {
     gca_list = WRITE2DB_TOLID.out.gca.map { it -> it.trim() }.collectFile(name: 'gca_list_to_report.txt', newLine: true)
 
     REPORT(gca_list, last_update)
-
 }
