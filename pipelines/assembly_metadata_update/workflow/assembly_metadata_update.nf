@@ -47,9 +47,6 @@ WORKFLOW: REGISTER NEW ASSEMBLIES IN DB
 
 workflow ASSEMBLY_METADATA_UPDATE {
 
-    // print params
-    params.each { k, v -> println("params.${k.padRight(25)} = ${v}") }
-
     FETCH_ASSEMBLIES(params.screen_date)
     def gca = FETCH_ASSEMBLIES.out.splitText().map { it -> it.trim() }
 
