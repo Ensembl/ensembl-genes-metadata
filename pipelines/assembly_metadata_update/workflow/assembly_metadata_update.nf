@@ -15,7 +15,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-nextflow.enable.dsl=2
+nextflow.enable.dsl = 2
 /*
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     IMPORT LOCAL MODULES AND CONFIGURATION
@@ -47,32 +47,8 @@ WORKFLOW: REGISTER NEW ASSEMBLIES IN DB
 
 workflow ASSEMBLY_METADATA_UPDATE {
 
-    main:
-    // help
-    if (params.help) {
-    log.info"""
-    ======================================================================
-            Nextflow Pipeline to run Assembly metadata pipeline
-    =======================================================================
-    
-    Usage: 
-    nextflow -C ensembl-genes-metadata/conf/assembly_pipeline.config \
-                run ensembl-genes-metadata/pipeline/assembly_pipeline.nf \
-                --enscode <ENSCODE> --output_dir <OutDir> --taxon <taxon>
-
-    Required arguments:
-    --output_dir STR            Output directory path
-
-    Optional arguments:
-    --screen_date STR           Custom date to retrieve assemblies and attempt update 
-    --full_screen BOOLEAN       Run full screen mode, it will retrieve assemblies since 2019
-    --gca_list STR              GCA list file path. Requires --add_gca to be used as input
-    --help BOOLEAN              Help option
-    """.stripIndent()
-    }
-
     // print params
-    params.each { k, v -> println "params.${k.padRight(25)} = ${v}" }
+    params.each { k, v -> println("params.${k.padRight(25)} = ${v}") }
 
     FETCH_ASSEMBLIES(params.screen_date)
     def gca = FETCH_ASSEMBLIES.out.splitText().map { it -> it.trim() }
@@ -80,24 +56,25 @@ workflow ASSEMBLY_METADATA_UPDATE {
     INTEGRITY_CHECKER(gca)
 
     INTEGRITY_CHECKER.out
-    .map { gca_value, stdout ->
-        def line = stdout.trim()
-        def parts = line.split(',')
-        def status = parts[0].trim()
-        def accession = parts[1].trim()
-        return [gca_value, status, accession] }
-    .branch { tuple ->
-        def (gca_value, status, accession) = tuple
-        correct: status == 'correct'
-            return gca_value     
-        taxonomy_update: status == 'taxonomy_update'
-            return [gca_value, accession] 
-        deleted: status == 'delete'
+        .map { gca_value, stdout ->
+            def line = stdout.trim()
+            def parts = line.split(',')
+            def status = parts[0].trim()
+            def accession = parts[1].trim()
+            return [gca_value, status, accession]
+        }
+        .branch { tuple ->
+            def (gca_value, status, accession) = tuple
+            correct: status == 'correct'
             return gca_value
-        check: status == 'check'
+            taxonomy_update: status == 'taxonomy_update'
+            return [gca_value, accession]
+            deleted: status == 'delete'
             return gca_value
-    }
-    .set { integrity_check_results }
+            check: status == 'check'
+            return gca_value
+        }
+        .set { integrity_check_results }
 
     INTEGRITY_TAXONOMY(integrity_check_results.taxonomy_update)
     INTEGRITY_WRITE2DB(INTEGRITY_TAXONOMY.out)
@@ -118,9 +95,9 @@ workflow ASSEMBLY_METADATA_UPDATE {
         .branch { tuple ->
             def (gca_value, attempt_update, metadata_json, old_taxon_id, new_taxon_id, status) = tuple
             pass: status == 'pass'
-                return [gca_value, attempt_update, metadata_json]
+            return [gca_value, attempt_update, metadata_json]
             failed: status == 'fail'
-                return [gca_value, attempt_update, metadata_json, old_taxon_id, new_taxon_id]
+            return [gca_value, attempt_update, metadata_json, old_taxon_id, new_taxon_id]
         }
         .set { taxonomy_check_results }
 
@@ -131,36 +108,34 @@ workflow ASSEMBLY_METADATA_UPDATE {
     WRITE2DB(species_checker_out)
     NEW_TAXONOMY(WRITE2DB.out.to_taxonomy)
 
-    def all_output = ASSEMBLY_STATUS.out.mix(ASSEMBLY_REFSEQ.out, ASSEMBLY_METRICS.out, ASSEMBLY_NAME.out, BIOPROJECT.out, TAXONOMY.out, NEW_TAXONOMY.out)
-    .splitCsv()
-    .map { row -> tuple(row[0].trim(), row[1].trim(), row[2].trim(), row[3].trim(), row[4].trim()) }
-    .multiMap { item ->
-        report: item
-        tracking: item
-    }
-    
+    def all_output = ASSEMBLY_STATUS.out
+        .mix(ASSEMBLY_REFSEQ.out, ASSEMBLY_METRICS.out, ASSEMBLY_NAME.out, BIOPROJECT.out, TAXONOMY.out, NEW_TAXONOMY.out)
+        .splitCsv()
+        .map { row -> tuple(row[0].trim(), row[1].trim(), row[2].trim(), row[3].trim(), row[4].trim()) }
+        .multiMap { item ->
+            report: item
+            tracking: item
+        }
+
     if (params.slack_report) {
-    REPORT_UPDATE(all_output.report)
+        REPORT_UPDATE(all_output.report)
     }
 
-    integrity_check_results.deleted
-        .collectFile(
-            name: "${params.output_dir}/deleted_GCAS_to_add.csv"
-        ) { gca_value -> "${gca_value}\n" }
+    integrity_check_results.deleted.collectFile(
+        name: "${params.output_dir}/deleted_GCAS_to_add.csv"
+    ) { gca_value -> "${gca_value}\n" }
 
-    integrity_check_results.check
-        .collectFile(
-            name: "${params.output_dir}/to_manually_check_GCAS.csv"
-        ) { gca_value -> "${gca_value}\n" }
+    integrity_check_results.check.collectFile(
+        name: "${params.output_dir}/to_manually_check_GCAS.csv"
+    ) { gca_value -> "${gca_value}\n" }
 
 
-    all_output.tracking
-    .collectFile(
-    name: "${params.output_dir}/report_track.csv",
-    seed: 'assembly,check_type,reporting,previous_value,new_value\n' ) { row -> row.join(',') + '\n' }
+    all_output.tracking.collectFile(
+        name: "${params.output_dir}/report_track.csv",
+        seed: 'assembly,check_type,reporting,previous_value,new_value\n',
+    ) { row -> row.join(',') + '\n' }
 
     workflow.onComplete {
-        log.info "Pipeline completed at: ${new Date().format('dd-MM-yyyy HH:mm:ss')}"
+        log.info("Pipeline completed at: ${new Date().format('dd-MM-yyyy HH:mm:ss')}")
     }
 }
-
