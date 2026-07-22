@@ -1,0 +1,73 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ensembl-genes-metadata"
+version = "0.1.0"
+description = "Nextflow pipelines and helper tools for managing metadata within Genebuild."
+readme = "README.md"
+license = { text = "Apache-2.0" }
+requires-python = ">=3.9"
+authors = [
+    { name = "Genebuild", email = "ensembl-genebuild@ebi.ac.uk" },
+]
+classifiers = [
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+]
+dependencies = [
+    "requests",
+    "pymysql",
+    "tenacity",
+    "slack_sdk",
+    "prefect",
+]
+
+[project.urls]
+Repository = "https://github.com/Ensembl/ensembl-genes-metadata"
+
+[project.optional-dependencies]
+cicd = [
+    "pytest",
+    "pytest-cov",
+    "coverage",
+    "pylint",
+    "mypy",
+]
+docs = [
+    "mkdocs",
+    "mkdocs-material",
+    "mkdocs-gen-files",
+    "mkdocstrings[python]",
+    "mkdocs-literate-nav",
+    "mkdocs-section-index",
+    "mkdocs-coverage",
+]
+
+[tool.setuptools.packages.find]
+include = ["gb_prefect*"]
+
+[tool.black]
+line-length = 110
+target-version = ["py39", "py310"]
+
+[tool.pylint.main]
+max-line-length = 110
+disable = [
+    "missing-module-docstring",
+    "too-few-public-methods",
+]
+
+[tool.mypy]
+python_version = "3.10"
+ignore_missing_imports = true
+warn_unused_configs = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.coverage.run]
+source = ["gb_prefect", "src/python"]
