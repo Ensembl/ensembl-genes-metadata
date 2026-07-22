@@ -15,33 +15,24 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-/*
-ASSEMBLY STATUS
-This process runs the assembly_status.py script to update assembly status in the database.
-Inputs:
-- gca: The GCA accession number for the assembly.
-- attempt_update: A flag indicating whether to attempt the update (true/false).
-- metadata_json: Path to the JSON file containing metadata for the assembly.
-Outputs:
-- asm_status_update: The standard output from the assembly_status.py script, a string indicating the result of the update operation.
-*/
 
-process ASSEMBLY_STATUS {
+process SPECIES_CHECKER {
     
     label 'python'
     tag "$gca"
+    publishDir "${params.output_dir}/nextflow_output/$gca", mode: 'copy'    
 
     input:
-    tuple val(gca), val(attempt_update), path(metadata_json)
+    tuple val(gca), val(attempt_update), path(metadata_json), val(old_taxon_id), val(new_taxon_id)
 
     output:
-    stdout emit: asm_status_update
+    tuple val(gca), val(attempt_update), path(metadata_json), path("taxonomy_${new_taxon_id}.json")
 
     when:
     attempt_update.trim() == 'true'
-
+    
     script:
     """
-    assembly_status.py --accession_json $metadata_json --accession $gca  --metadata_params ${params.metadata_params}
+    species_checker.py --taxon_id $new_taxon_id --ncbi_url $params.ncbi_url --taxonomy_update
     """
 }

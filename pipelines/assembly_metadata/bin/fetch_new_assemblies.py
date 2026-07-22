@@ -217,24 +217,31 @@ def main():
         except ValueError:
             raise ValueError("Please enter a valid date format (mm/dd/yyyy)")
     else:
-        logging.info(f"Default date ({DEFAULT_ASSEMBLY_DATE}) will be used to retrieve assemblies")
+        logging.info("Default date will be used to retrieve assemblies")
+    
+    ncbi_params, release_date = set_date(taxon, ncbi_params, args.date_update)
+    gca_list = fetch_gca_list(taxon, ncbi_params, ncbi_url)
 
-    ncbi_params, release_date = set_date(ncbi_params, args.date_update)
-    gca_list = fetch_gca_list(args.taxon, ncbi_params, args.ncbi_url)
+    out_path = "assemblies_to_register.txt"
 
-    if len(gca_list) > 0:
-        query = build_db_query(release_date)
-        accessions_to_register = get_gca_to_register(gca_list, query, metadata_params)
+    with open(out_path, "w") as f:
+        if len(gca_list) > 0:
+            db_query = build_db_query(release_date)
+            accessions_to_register = get_gca_register(
+                args.db, db_query, gca_list, metadata_params, registy_params
+            )
 
-        with open("assemblies_to_register.txt", 'w') as file:
             for accession in accessions_to_register:
                 print(accession)
-                file.write(accession + '\n')
+                f.write(f"{accession}\n")
 
-        logging.info(f'Accessions to register: {len(accessions_to_register)}. Please note that some assemblies might belong to unspecified species')
-
-    else:
-        logging.info(f'No assemblies found since {release_date}')
+            logging.info(
+                f"Accessions to register: {len(accessions_to_register)}. "
+                "Please note that some assemblies might belong to unspecified species"
+            )
+        else:
+            logging.info(f"No assemblies found since {release_date}")
+    
 
 if __name__ == '__main__':
     main()

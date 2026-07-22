@@ -233,6 +233,15 @@ def main():
         logging.info("Updating taxonomy name table")
         taxon_dict['taxonomy_name'] = taxon_name_classification
 
+        species_taxon_id, taxon_exists = species_taxon(taxon_data, args.taxon_id)
+
+        species = {
+            'lowest_taxon_id': args.taxon_id,
+            'species_taxon_id': species_taxon_id,
+            'scientific_name': taxon_data['reports'][0]['taxonomy']['current_scientific_name']['name'],
+            'common_name': taxon_data['reports'][0]['taxonomy'].get('curator_common_name','') }
+        taxon_dict['species'] = species
+
         # Saving results
         output_file_taxon = f"taxonomy_{args.taxon_id}.json"
         logging.info(f"Saving output: {output_file_taxon}")

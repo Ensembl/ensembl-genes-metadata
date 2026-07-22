@@ -18,7 +18,7 @@
 import argparse
 import json
 import logging
-from typing import Dict
+from typing import Dict, Any
 import pymysql
 
 
@@ -30,6 +30,20 @@ def execute_query(query, db_params):
     cursor.close()
     conn.close()
     return result
+
+def execute_write(query: str, db_params: Dict[str, Any]) -> int:
+    """
+    Execute INSERT/UPDATE/DELETE and commit.
+    Returns number of affected rows.
+    """
+    conn = pymysql.connect(**db_params)
+    try:
+        with conn.cursor() as cursor:
+            affected = cursor.execute(query)
+        conn.commit()
+        return affected
+    finally:
+        conn.close()
 
 def comparing_status(data, accession, metadata_params):
     """Compare assembly status from NCBI and Registry and generate update queries if needed.
@@ -57,11 +71,13 @@ def comparing_status(data, accession, metadata_params):
         logging.info(f"Assembly {accession} has warnings: {warning}. Update status based on warning.")
         query_update_status = f"UPDATE assembly a SET is_current = '{warning[0]}' WHERE CONCAT(a.gca_chain, '.', a.gca_version) = '{accession}';"
         logging.info(query_update_status)
+        affected = execute_write(query_update_status, metadata_params)
         output_line = f"{accession}, asm_status, true, {is_current}, {warning}"
     else:
         logging.info(f"Update needed for assembly {accession}: current status in Registry is {is_current}, status from NCBI is {assembly_status}")
         query_update_status = f"UPDATE assembly a SET is_current = '{assembly_status}' WHERE CONCAT(a.gca_chain, '.', a.gca_version) = '{accession}';"
         logging.info(query_update_status)
+        affected = execute_write(query_update_status, metadata_params)
         output_line = f"{accession}, asm_status, true, {is_current}, {assembly_status}"
 
     return output_line

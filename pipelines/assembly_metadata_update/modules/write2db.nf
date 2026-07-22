@@ -15,33 +15,25 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-/*
-ASSEMBLY STATUS
-This process runs the assembly_status.py script to update assembly status in the database.
-Inputs:
-- gca: The GCA accession number for the assembly.
-- attempt_update: A flag indicating whether to attempt the update (true/false).
-- metadata_json: Path to the JSON file containing metadata for the assembly.
-Outputs:
-- asm_status_update: The standard output from the assembly_status.py script, a string indicating the result of the update operation.
-*/
 
-process ASSEMBLY_STATUS {
-    
+process WRITE2DB {
+
     label 'python'
     tag "$gca"
+    publishDir "${params.output_dir}/nextflow_output/$gca", mode: 'copy'
 
     input:
-    tuple val(gca), val(attempt_update), path(metadata_json)
+    tuple val(gca), val(attempt_update), path(metadata_json), path(taxonomy_json)
 
     output:
-    stdout emit: asm_status_update
+    tuple val(gca), val(attempt_update), path(metadata_json), emit: to_taxonomy
+    path "${taxonomy_json.baseName}.last_id"
 
     when:
     attempt_update.trim() == 'true'
 
     script:
     """
-    assembly_status.py --accession_json $metadata_json --accession $gca  --metadata_params ${params.metadata_params}
+    write2db.py --file-path $taxonomy_json --metadata ${params.metadata_params} --config ${params.db_table_conf}
     """
 }

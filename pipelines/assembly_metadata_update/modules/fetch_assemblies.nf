@@ -15,6 +15,16 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+/*
+FETCH ASSEMBLIES
+This process receive a list of GCAS accessions from the user or fetches a list from the assembly metadata database based on a screem date.
+Inputs:
+- screen_date: The date to filter assemblies in the database.
+- gca_input: A flag indicating whether to use a user-provided list of GCA accessions (true/false).
+- gca_list: Path to the file containing a list of GCA accessions (if gca_input is true).
+Outputs:
+- stdout: The standard output from the fetch_assemblies.py script or the grep command, which is a list of GCA accessions to be processed.
+*/
 
 process FETCH_ASSEMBLIES {
 

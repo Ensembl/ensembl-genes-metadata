@@ -1,0 +1,1 @@
+../../assembly_metadata/bin/species_checker.py

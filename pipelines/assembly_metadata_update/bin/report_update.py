@@ -18,9 +18,9 @@
 import logging
 import argparse
 import json
-import pymysql
-from slack_sdk import WebClient
-from slack_sdk.errors import SlackApiError
+import pymysql # type: ignore
+from slack_sdk import WebClient # type: ignore
+from slack_sdk.errors import SlackApiError # type: ignore
 
 
 def execute_query(query, db_params):
@@ -35,7 +35,8 @@ def execute_query(query, db_params):
 def fetching_user(accession, metadata_params, slack_users):
 
     query_gb_user = f"""SELECT genebuilder, gb_status FROM genebuild_status
-                            WHERE gca_accession = '{accession}' """
+                            WHERE gca_accession = '{accession}' and 
+                            gb_status in ('in_progress', 'check_busco', 'completed', 'pre_released')"""
     try:
         genebuilder, gb_status = execute_query(query_gb_user, metadata_params)[0]
         slack_id = slack_users[genebuilder]
@@ -52,6 +53,7 @@ def slack_message(accession, gb_status, check_type, previous_value, current_valu
     custom_message = f"""Accession {accession} with status: {gb_status} has been updated.
     {check_type}: {previous_value} -> {current_value}
     """
+    logging.info(f"Slack message: {custom_message}")
 
     return custom_message
 
@@ -125,7 +127,7 @@ def main():
     
     slack_id, gb_status = fetching_user(args.accession, args.metadata_params, slack_users)
 
-    if slack_id is not None and gb_status is not None:
+    if slack_id is not None and gb_status is not None and args.check_type in ('asm_status', 'refseq_check'):
     
         custom_message = slack_message(args.accession, gb_status, args.check_type, args.previous_value, args.current_value)
 

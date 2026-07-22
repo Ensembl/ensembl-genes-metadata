@@ -28,28 +28,29 @@ Outputs:
 process FETCH_GCA {
 
     label 'python'
-    tag "update:$last_update"
+    tag "update:${last_update}"
+    publishDir "${params.output_dir}/nextflow_output/", mode: 'copy'
 
     input:
     val taxon
     val last_update
 
     output:
-    stdout
+    path "assemblies_to_register.txt", emit: asm_file
+    stdout emit: gca
 
     script:
     if (params.add_gca) {
         """
-        grep '^GCA_' ${params.gca_list}
-        """
+        grep '^GCA_' ${params.gca_list} | tee assemblies_to_register.txt || touch assemblies_to_register.txt
+    """
     }
     else {
         """
         fetch_new_assemblies.py \
-        --taxon $taxon --date_update $last_update \
+        --taxon ${taxon} --date_update ${last_update} \
         --metadata ${params.metadata_params} \
         --ncbi ${params.ncbi_params} --ncbi_url ${params.ncbi_url}
         """
     }
-
 }

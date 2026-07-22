@@ -16,32 +16,32 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 /*
-ASSEMBLY STATUS
-This process runs the assembly_status.py script to update assembly status in the database.
+ASSEMBLY_METRICS
+This process runs the assembly_metrics.py script to update assembly metrics in the database. 
 Inputs:
 - gca: The GCA accession number for the assembly.
 - attempt_update: A flag indicating whether to attempt the update (true/false).
 - metadata_json: Path to the JSON file containing metadata for the assembly.
 Outputs:
-- asm_status_update: The standard output from the assembly_status.py script, a string indicating the result of the update operation.
+- asm_metrics_update: The standard output from the assembly_metrics.py script, a string indicating the result of the update operation.
+
 */
 
-process ASSEMBLY_STATUS {
-    
+process ASSEMBLY_METRICS {
     label 'python'
     tag "$gca"
-
+    
     input:
     tuple val(gca), val(attempt_update), path(metadata_json)
 
     output:
-    stdout emit: asm_status_update
+    stdout emit: asm_metrics_update
 
     when:
     attempt_update.trim() == 'true'
 
     script:
     """
-    assembly_status.py --accession_json $metadata_json --accession $gca  --metadata_params ${params.metadata_params}
+    assembly_metrics.py --accession_json $metadata_json --accession $gca  --metadata_params ${params.metadata_params}
     """
 }
