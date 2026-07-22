@@ -50,7 +50,7 @@ nextflow run \
     {enscode}/ensembl-genes-metadata/pipelines/assembly_metadata/main.nf \
         --output_dir {outdir} \
         --enscode {enscode} \
-        --date {date_slash}
+        --date {date_slash} -with-dag
 """
 
     append_log(log, f"[{datetime.now()}] INFO: sbatch script:\n{sbatch_script}\n")
