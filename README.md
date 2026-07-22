@@ -4,7 +4,7 @@
 
 ## Nextflow Pipelines
 
-- [Assembly Metadata Registry](./assembly_metadata/README.md): Nextflow pipeline to update the MySQL Genebuild assembly metadata database.
+- [Assembly Metadata Registry](./pipelines/assembly_metadata/README.md): Nextflow pipeline to update the MySQL Genebuild assembly metadata database.
 - Assembly Metadata Updates: *coming soon*
 
 ## Prefect
