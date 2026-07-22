@@ -24,7 +24,7 @@ readme = "README.md"
 authors = [
     {name = "Ensembl", email = "dev@ensembl.org"},
 ]
-license = "Apache-2.0"
+license = {text = "Apache-2.0"}
 keywords = [
     "ensembl",
     "bioinformatics",
