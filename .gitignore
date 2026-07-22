@@ -1,0 +1,8 @@
+reports/
+.coverage
+build/
+dist/
+*.egg-info/
+__pycache__/
+*.pyc
+.mypy_cache/
