@@ -18,7 +18,7 @@ CREATE TABLE assembly (
 ) ENGINE=MyISAM AUTO_INCREMENT=1 DEFAULT CHARSET=latin1;
 
 
-DROP TABLE IF EXISTS assembly_metrics
+DROP TABLE IF EXISTS assembly_metrics;
 
 CREATE TABLE assembly_metrics (
   asm_metrics_id int NOT NULL AUTO_INCREMENT,
@@ -31,7 +31,7 @@ CREATE TABLE assembly_metrics (
 ) ENGINE=MyISAM AUTO_INCREMENT=1 DEFAULT CHARSET=latin1;
 
 
-DROP TABLE IF EXISTS species
+DROP TABLE IF EXISTS species;
 
 CREATE TABLE species (
   species_id int NOT NULL AUTO_INCREMENT,
@@ -46,7 +46,7 @@ CREATE TABLE species (
   FOREIGN KEY (`lowest_taxon_id`) REFERENCES assembly(`lowest_taxon_id`)
 ) ENGINE=MyISAM AUTO_INCREMENT=1 DEFAULT CHARSET=latin1;
 
-DROP TABLE IF EXISTS species_prefix
+DROP TABLE IF EXISTS species_prefix;
 
 CREATE TABLE species_prefix (
 	prefix_id int(10) NOT NULL AUTO_INCREMENT,
@@ -57,7 +57,7 @@ CREATE TABLE species_prefix (
 	CONSTRAINT species_prefix UNIQUE (lowest_taxon_id, prefix)
 ) ENGINE=MyISAM AUTO_INCREMENT=1 DEFAULT CHARSET=latin1;
 
-DROP TABLE IF EXISTS taxonomy
+DROP TABLE IF EXISTS taxonomy;
 
 CREATE TABLE taxonomy (
   taxon_clsf_id int NOT NULL AUTO_INCREMENT,
@@ -71,7 +71,7 @@ CREATE TABLE taxonomy (
 ) ENGINE=MyISAM AUTO_INCREMENT=1 DEFAULT CHARSET=latin1;
 
 
-DROP TABLE IF EXISTS taxonomy_name
+DROP TABLE IF EXISTS taxonomy_name;
 
 CREATE TABLE taxonomy_name (
   taxonomy_name_id int NOT NULL AUTO_INCREMENT,
@@ -83,7 +83,7 @@ CREATE TABLE taxonomy_name (
 ) ENGINE=MyISAM AUTO_INCREMENT=1 DEFAULT CHARSET=latin1;
 
 
-DROP TABLE IF EXISTS organism
+DROP TABLE IF EXISTS organism;
 
 CREATE TABLE organism (
   organism_id int NOT NULL AUTO_INCREMENT,
@@ -98,7 +98,7 @@ CREATE TABLE organism (
 ) ENGINE=MyISAM AUTO_INCREMENT=1 DEFAULT CHARSET=latin1;
 
 
-DROP TABLE IF EXISTS bioproject ;
+DROP TABLE IF EXISTS bioproject;
 
 CREATE TABLE bioproject (
   lineage_id int NOT NULL AUTO_INCREMENT,
@@ -109,7 +109,7 @@ CREATE TABLE bioproject (
   CONSTRAINT lineage UNIQUE (assembly_id, bioproject_id)
 ) ENGINE=MyISAM AUTO_INCREMENT=1 DEFAULT CHARSET=latin1;
 
-DROP TABLE IF EXISTS main_bioproject
+DROP TABLE IF EXISTS main_bioproject;
 
 CREATE TABLE main_bioproject (
   bioproject_id varchar(50) NOT NULL,
@@ -120,7 +120,7 @@ CREATE TABLE main_bioproject (
 ) ENGINE=MyISAM AUTO_INCREMENT=1 DEFAULT CHARSET=latin1;
 
 
-DROP TABLE IF EXISTS custom_group
+DROP TABLE IF EXISTS custom_group;
 
 CREATE TABLE custom_group (
   group_id int NOT NULL AUTO_INCREMENT,
@@ -131,7 +131,7 @@ CREATE TABLE custom_group (
   CONSTRAINT group_item UNIQUE (group_name, item)
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
 
-DROP TABLE IF EXISTS stable_space
+DROP TABLE IF EXISTS stable_space;
 
 CREATE TABLE stable_space (
   stable_space_id int NOT NULL,
@@ -140,7 +140,7 @@ CREATE TABLE stable_space (
   PRIMARY KEY (`stable_space_id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
 
-DROP TABLE IF EXISTS stable_space_species_log
+DROP TABLE IF EXISTS stable_space_species_log;
 
 CREATE TABLE stable_space_species_log (
 	lowest_taxon_id int(15) NOT NULL,
@@ -154,7 +154,7 @@ CREATE TABLE stable_space_species_log (
 	CONSTRAINT species_space_gca UNIQUE (lowest_taxon_id, gca_accession)
 ) ENGINE=MyISAM AUTO_INCREMENT=1 DEFAULT CHARSET=latin1;
 
-DROP TABLE IF EXISTS genebuilder
+DROP TABLE IF EXISTS genebuilder;
 
 CREATE TABLE genebuilder (
   genebuilder_id int NOT NULL,
@@ -162,7 +162,7 @@ CREATE TABLE genebuilder (
   PRIMARY KEY (`genebuilder_id`)
 ) ENGINE=MyISAM AUTO_INCREMENT=1 DEFAULT CHARSET=latin1;
 
-DROP TABLE IF EXISTS genebuild_status
+DROP TABLE IF EXISTS genebuild_status;
 
 CREATE TABLE genebuild_status (
   genebuild_status_id int NOT NULL AUTO_INCREMENT,
@@ -185,7 +185,7 @@ CREATE TABLE genebuild_status (
 ) ENGINE=MyISAM AUTO_INCREMENT=1 DEFAULT CHARSET=latin1;
 
 
-DROP TABLE IF EXISTS genebuild_metrics
+DROP TABLE IF EXISTS genebuild_metrics;
 
 CREATE TABLE genebuild_metrics (
   gb_metrics_id int NOT NULL AUTO_INCREMENT,
