@@ -1,7 +1,7 @@
 import argparse
 import sys
 from pathlib import Path
-from prefect import flow # type: ignore
+from prefect import flow  # type: ignore
 from datetime import datetime
 
 
@@ -10,6 +10,7 @@ if str(PACKAGE_ROOT) not in sys.path:
     sys.path.insert(0, str(PACKAGE_ROOT))
 
 from gb_prefect.tasks.registry import register_assemblies
+
 
 @flow(name="gb_registry", log_prints=True)
 def gb_registry_flow(
@@ -28,13 +29,18 @@ def gb_registry_flow(
         dry_run=dry_run,
     )
 
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--dry-run", action="store_true", help="Create the Nextflow command without running it.")
+    parser.add_argument(
+        "--dry-run", action="store_true", help="Create the Nextflow command without running it."
+    )
     parser.add_argument("--date", required=True, help="Date for the registry run (e.g., MM-DD-YYYY).")
     parser.add_argument("--outdir", required=True, help="Base output directory.")
     parser.add_argument("--enscode", required=True, help="Path to ENSCODE directory.")
-    parser.add_argument("--asm_venv", required=True, help="Path to the assembly registry virtual environment.")
+    parser.add_argument(
+        "--asm_venv", required=True, help="Path to the assembly registry virtual environment."
+    )
     args = parser.parse_args()
 
     try:
@@ -43,8 +49,10 @@ if __name__ == "__main__":
         raise ValueError(f"Date '{args.date}' is not in MM-DD-YYYY format")
 
     date_fmt = datetime.strptime(args.date, "%m-%d-%Y").strftime("%Y-%m-%d")
-    gb_registry_flow(date=args.date,
-                     outdir=f"{args.outdir}/{date_fmt}",
-                     enscode=args.enscode,
-                     asm_venv=args.asm_venv,
-                     dry_run=args.dry_run)
+    gb_registry_flow(
+        date=args.date,
+        outdir=f"{args.outdir}/{date_fmt}",
+        enscode=args.enscode,
+        asm_venv=args.asm_venv,
+        dry_run=args.dry_run,
+    )

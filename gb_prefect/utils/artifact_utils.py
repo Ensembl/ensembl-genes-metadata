@@ -42,6 +42,7 @@ def create_busco_run_artifact(
         markdown=markdown,
     )
 
+
 def create_registry_run_artifact(
     date: str,
     outdir: str,

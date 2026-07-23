@@ -16,10 +16,11 @@
 #  limitations under the License.
 
 import argparse
-import pymysql #type:ignore
+import pymysql  # type:ignore
 import logging
 import json
 import os
+
 
 def execute_query(query, db_params):
     conn = pymysql.connect(**db_params)
@@ -29,6 +30,7 @@ def execute_query(query, db_params):
     cursor.close()
     conn.close()
     return result
+
 
 def delete_assembly(assembly_id: int, metadata_params: dict):
     """
@@ -49,6 +51,7 @@ def delete_assembly(assembly_id: int, metadata_params: dict):
     logging.info(f"Records for assembly_id {assembly_id} were deleted")
     con.close()
 
+
 def records_checker(accession: str, metadata_params: dict, delete_records: bool = False) -> str:
     """
     Check whether an accession has the expected metadata records.
@@ -62,7 +65,9 @@ def records_checker(accession: str, metadata_params: dict, delete_records: bool 
         accession,
     )
 
-    query_assembly_id =  f"SELECT assembly_id FROM assembly WHERE CONCAT(gca_chain, '.', gca_version) = '{accession}';"
+    query_assembly_id = (
+        f"SELECT assembly_id FROM assembly WHERE CONCAT(gca_chain, '.', gca_version) = '{accession}';"
+    )
 
     logging.info(query_assembly_id)
     rows = execute_query(query_assembly_id, metadata_params)
@@ -79,13 +84,13 @@ def records_checker(accession: str, metadata_params: dict, delete_records: bool 
         "FROM assembly "
         f"WHERE CONCAT(gca_chain, '.', gca_version) = '{accession}'"
     )
-    
-    lowest_taxon_id = execute_query(query_lowest_taxon_id, metadata_params)[0][0]
 
+    lowest_taxon_id = execute_query(query_lowest_taxon_id, metadata_params)[0][0]
 
     logging.info(
         "Checking records for assembly_id %s in assembly_metrics, organism and bioproject tables",
-        assembly_id,)
+        assembly_id,
+    )
 
     metrics_count = execute_query(
         f"SELECT COUNT(*) FROM assembly_metrics WHERE assembly_id = '{assembly_id}'",
@@ -105,10 +110,10 @@ def records_checker(accession: str, metadata_params: dict, delete_records: bool 
     )[0][0]
     bioproject_ok = bioproject_count >= 1
 
-
     logging.info(
-        "Checking records for lowest_taxon_id %s in species and taxonomy table", 
-        assembly_id,)
+        "Checking records for lowest_taxon_id %s in species and taxonomy table",
+        assembly_id,
+    )
 
     taxonomy_count = execute_query(
         f"SELECT COUNT(*) FROM taxonomy WHERE lowest_taxon_id = '{lowest_taxon_id}'",
@@ -127,13 +132,14 @@ def records_checker(accession: str, metadata_params: dict, delete_records: bool 
     # Taxonomy names records
     taxonomy_name_count = execute_query(
         f"SELECT COUNT(*) FROM taxonomy_name WHERE taxon_class_id = '{lowest_taxon_id}'",
-        metadata_params,)[0][0]
+        metadata_params,
+    )[0][0]
 
     if all_ok:
-        status = 'correct'
+        status = "correct"
 
         if taxonomy_name_count == 0:
-            status = 'taxonomy_update'
+            status = "taxonomy_update"
             accession = lowest_taxon_id
 
     if not all_ok:
@@ -156,37 +162,45 @@ def records_checker(accession: str, metadata_params: dict, delete_records: bool 
 
         if genebuild_count == 0:
 
-            status = 'delete'
+            status = "delete"
             logging.info(f"Accession {accession} has missing data in {', '.join(missing)}.")
 
             if delete_records:
                 delete_assembly(assembly_id, metadata_params)
-        
+
         else:
-            status = 'check'
-            logging.info(f"Accession {accession} has missing data in {', '.join(missing)}. But there is an annotation records, review manually.")
+            status = "check"
+            logging.info(
+                f"Accession {accession} has missing data in {', '.join(missing)}. But there is an annotation records, review manually."
+            )
 
     return status, accession
+
 
 def main():
     """
     Module's entry point
     """
 
-    logging.basicConfig(filename="clean_gca_records.log", level=logging.DEBUG, filemode='w',
-                        format="%(asctime)s:%(levelname)s:%(message)s")
+    logging.basicConfig(
+        filename="clean_gca_records.log",
+        level=logging.DEBUG,
+        filemode="w",
+        format="%(asctime)s:%(levelname)s:%(message)s",
+    )
 
-    parser = argparse.ArgumentParser(prog='clean_gca_records.py',
-        description='Clean records from metadata database based on GCA records completeness o a list of GCA accessions')
-    parser.add_argument('--accession',
-                        help='GCA accession')
-    parser.add_argument('--delete',
-                        default=False,
-                        action='store_true',
-                        help='Delete records with missing data')
-    parser.add_argument('--metadata',
-                        help='Path to metadata database connection parameters',
-                        )
+    parser = argparse.ArgumentParser(
+        prog="clean_gca_records.py",
+        description="Clean records from metadata database based on GCA records completeness o a list of GCA accessions",
+    )
+    parser.add_argument("--accession", help="GCA accession")
+    parser.add_argument(
+        "--delete", default=False, action="store_true", help="Delete records with missing data"
+    )
+    parser.add_argument(
+        "--metadata",
+        help="Path to metadata database connection parameters",
+    )
 
     args = parser.parse_args()
     logging.info(args)
@@ -195,13 +209,14 @@ def main():
         if not os.path.exists(args.metadata):
             raise ValueError("Metadata params json file does not exist")
         else:
-            with open(args.metadata, 'r') as f:
+            with open(args.metadata, "r") as f:
                 metadata_params = json.load(f)
                 f.close()
 
     status, accession = records_checker(args.accession, metadata_params, args.delete)
 
     print(f"{status},{accession}")
+
 
 if __name__ == "__main__":
     main()

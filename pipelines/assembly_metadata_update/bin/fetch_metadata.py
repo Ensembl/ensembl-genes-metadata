@@ -18,7 +18,7 @@
 
 import logging
 import argparse
-import requests #type: ignore
+import requests  # type: ignore
 from datetime import datetime
 import json
 from tenacity import retry, stop_after_attempt, wait_random
@@ -47,15 +47,12 @@ def get_ncbi_json(accession, ncbi_url, attempt_update):
         query_update_status = f"UPDATE assembly a SET is_current = 'suppressed' WHERE CONCAT(a.gca_chain, '.', a.gca_version) = '{accession}';"
         print(query_update_status)
         attempt_update = False
-    
+
     return data, attempt_update
 
 
-
 def main():
-    parser = argparse.ArgumentParser(
-        description="Fetch assembly metadata from NCBI API"
-    )
+    parser = argparse.ArgumentParser(description="Fetch assembly metadata from NCBI API")
     parser.add_argument(
         "--accession",
         type=str,
@@ -82,11 +79,11 @@ def main():
         json.dump(data, json_file, indent=4)
     logging.info(f"Metadata for assembly {accession} saved to {accession}_metadata.json")
 
-    if attempt_update==True:
-        print('true')
-    elif attempt_update==False:
-        print('false')
+    if attempt_update == True:
+        print("true")
+    elif attempt_update == False:
+        print("false")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

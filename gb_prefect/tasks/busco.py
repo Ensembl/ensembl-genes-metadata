@@ -30,10 +30,11 @@ def run_nextflow_busco(
         if dry_run:
             enscode = "<ENSCODE>"
         else:
-            raise ValueError("ENSCODE is required when dry_run=False. Pass enscode=..., set ENSCODE, or run with dry_run=True.")
+            raise ValueError(
+                "ENSCODE is required when dry_run=False. Pass enscode=..., set ENSCODE, or run with dry_run=True."
+            )
     append_log(log, f"[{datetime.now()}] INFO: ENSCODE set to {enscode}.\n")
 
-    
     sbatch_script = f"""#!/bin/bash
 #SBATCH --job-name=busco_genome_{csv_stem}_{date}
 #SBATCH --output={outdir}/busco_genome_slurm_%j.out
@@ -88,7 +89,7 @@ nextflow run {enscode}/ensembl-genes-nf/pipelines/statistics/main.nf \
             rc=rc,
             dry_run=dry_run,
         )
-            
+
     return {
         "returncode": rc,
         "command": sbatch_script,

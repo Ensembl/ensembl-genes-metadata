@@ -18,9 +18,10 @@
 import logging
 import argparse
 import os
-import pymysql #type: ignore
+import pymysql  # type: ignore
 from datetime import datetime
 import json
+
 
 def execute_query(query, db_params):
     conn = pymysql.connect(**db_params)
@@ -31,16 +32,17 @@ def execute_query(query, db_params):
     conn.close()
     return result
 
+
 def fetch_gca_list(metadata_params, full_screen, screen_date):
-    """ Get a list of GCAs to check their status and metadata
+    """Get a list of GCAs to check their status and metadata
     Args:
         metadata_params (dict): dictionary containing the connecting params for the gb_assembly_metadata database
-        full_screen (boolean): if true it will update all the available records in the DB. Otherwise, it will update vertebrate or assemblies from the biodiversity projects 
+        full_screen (boolean): if true it will update all the available records in the DB. Otherwise, it will update vertebrate or assemblies from the biodiversity projects
         screen_date (str): date to filter assemblies released after the given date (format YYYY-MM-DD)
     Returns:
         list: GCAs list
     """
-    
+
     if full_screen:
         logging.info("Running in full screen mode")
         query_get_gca_list = """
@@ -66,78 +68,82 @@ def fetch_gca_list(metadata_params, full_screen, screen_date):
 
         ));
         """
-        
-    #Get list from assembly_metadata and parse
+
+    # Get list from assembly_metadata and parse
     fetch_gca = execute_query(query_get_gca_list, metadata_params)
     gca_list = [gca[0] for gca in fetch_gca]
     logging.info(f"Total number of assemblies to check: {len(gca_list)}")
-    
+
     return gca_list
 
+
 def main():
-    """module's entry-point
-    """
-    
-    logging.basicConfig(filename="fetch_assemblies.log", level=logging.DEBUG, filemode='w',
-                    format="%(asctime)s:%(levelname)s:%(message)s")
-            
-    parser = argparse.ArgumentParser(prog='fetch_assemblies.py', 
-                                    description='Fetch a list of GCAs to run an update of metadata.')
-    
-    parser.add_argument('--metadata',
-                        type=str,
-                        help="Path to the metadata database params in json format")
-    parser.add_argument('--full_screen',
-                        action='store_true',
-                        help="If set, it will update all the available records in the DB")
-    parser.add_argument('--screen_date',
-                        type=str,
-                        default='2019-01-01',
-                        help="If set, it will update all the records released after the given date (format YYYY-MM-DD). Default is 2019-01-01")
-    
+    """module's entry-point"""
+
+    logging.basicConfig(
+        filename="fetch_assemblies.log",
+        level=logging.DEBUG,
+        filemode="w",
+        format="%(asctime)s:%(levelname)s:%(message)s",
+    )
+
+    parser = argparse.ArgumentParser(
+        prog="fetch_assemblies.py", description="Fetch a list of GCAs to run an update of metadata."
+    )
+
+    parser.add_argument("--metadata", type=str, help="Path to the metadata database params in json format")
+    parser.add_argument(
+        "--full_screen",
+        action="store_true",
+        help="If set, it will update all the available records in the DB",
+    )
+    parser.add_argument(
+        "--screen_date",
+        type=str,
+        default="2019-01-01",
+        help="If set, it will update all the records released after the given date (format YYYY-MM-DD). Default is 2019-01-01",
+    )
 
     args = parser.parse_args()
     logging.info(args)
-    
 
     if args.metadata:
         if not os.path.exists(args.metadata):
             raise ValueError("Please enter a valid file path for metadata database parameters")
         else:
-            with open(args.metadata, 'r') as file:
+            with open(args.metadata, "r") as file:
                 metadata_params = json.load(file)
-    
-        
+
     if args.screen_date:
-        if not datetime.strptime(args.screen_date, '%Y-%m-%d'):
+        if not datetime.strptime(args.screen_date, "%Y-%m-%d"):
             raise ValueError("Please enter a valid date format (YYYY-MM-DD)")
         else:
-            logging.info(f"Custom date provided to retrieve assemblies: {args.screen_date}")    
+            logging.info(f"Custom date provided to retrieve assemblies: {args.screen_date}")
     else:
         logging.info("Default date will be used to retrieve assemblies: 2019-01-01")
 
-    
     if args.full_screen:
         logging.info("Full screen mode activated")
     else:
         logging.info("Only high priority assemblies (vertebrates or relevant bioprojects) will be processed")
 
-    
     gca_list = fetch_gca_list(metadata_params, args.full_screen, args.screen_date)
-    
-    
+
     if len(gca_list) > 0:
-        
-        with open(f"assemblies_to_update_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt", 'w') as file:
+
+        with open(f"assemblies_to_update_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt", "w") as file:
             for gca in gca_list:
                 print(gca)
-                file.write(gca + '\n')
+                file.write(gca + "\n")
         file.close()
-            
-        logging.info(f'Accessions to register: {len(gca_list)}. Please note that some assemblies might belong to unspecified species')
-    
-    else:
-        logging.info(f'No assemblies found since {args.screen_date}')
 
-if __name__ == '__main__':
+        logging.info(
+            f"Accessions to register: {len(gca_list)}. Please note that some assemblies might belong to unspecified species"
+        )
+
+    else:
+        logging.info(f"No assemblies found since {args.screen_date}")
+
+
+if __name__ == "__main__":
     main()

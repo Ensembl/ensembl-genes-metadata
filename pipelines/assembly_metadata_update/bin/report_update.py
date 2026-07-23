@@ -18,9 +18,9 @@
 import logging
 import argparse
 import json
-import pymysql # type: ignore
-from slack_sdk import WebClient # type: ignore
-from slack_sdk.errors import SlackApiError # type: ignore
+import pymysql  # type: ignore
+from slack_sdk import WebClient  # type: ignore
+from slack_sdk.errors import SlackApiError  # type: ignore
 
 
 def execute_query(query, db_params):
@@ -31,6 +31,7 @@ def execute_query(query, db_params):
     cursor.close()
     conn.close()
     return result
+
 
 def fetching_user(accession, metadata_params, slack_users):
 
@@ -48,6 +49,7 @@ def fetching_user(accession, metadata_params, slack_users):
 
     return slack_id, gb_status
 
+
 def slack_message(accession, gb_status, check_type, previous_value, current_value):
 
     custom_message = f"""Accession {accession} with status: {gb_status} has been updated.
@@ -56,6 +58,7 @@ def slack_message(accession, gb_status, check_type, previous_value, current_valu
     logging.info(f"Slack message: {custom_message}")
 
     return custom_message
+
 
 def slack_communication_dm(slack_bot_token, slack_id, custom_message):
 
@@ -72,69 +75,70 @@ def slack_communication_dm(slack_bot_token, slack_id, custom_message):
         client.chat_postMessage(
             channel=dm_channel_id,
             text=message,
-            link_names=True, 
+            link_names=True,
         )
-    
+
     except SlackApiError as e:
         logging.error(f"Slack error: {e.response['error']}")
 
 
 def main():
-    """ Module's entry point
-    """
+    """Module's entry point"""
 
-    logging.basicConfig(filename="slack_reporting.log", level=logging.DEBUG, filemode='w',
-                    format="%(asctime)s:%(levelname)s:%(message)s")
-    
-    parser = argparse.ArgumentParser(prog='report_update.py',
-                                    description="Retrieve metadata from NCBI API for a given GCA accession and store it in JSON files to be inserted in the database.")
-    
-    parser.add_argument('--accession',
-                        type=str,
-                        required=True,
-                        help='GCA accession to retrieve metadata.')
-    parser.add_argument('--check_type',
-                        type=str,
-                        required=True,
-                        help='Type of update check. Possible values: asm_status, refseq, etc.')
-    parser.add_argument('--previous_value',
-                        type=str,
-                        required=True,
-                        help='Original value previously stored in the registry.')
-    parser.add_argument('--current_value',
-                        type=str,
-                        required=True,
-                        help='Current value previously stored in the registry.')
-    parser.add_argument('--slack_params',
-                        type=json.loads,
-                        required=True,
-                        help='Slack bot connection params.')
-    parser.add_argument('--slack_users',
-                        type=str,
-                        required=True,
-                        help='Path to json file with username and slack IDs.')
-    parser.add_argument('--metadata_params',
-                        type=json.loads,
-                        required=True,
-                        help='JSON/Dict format of gb_assembly_metadata connections params.')
-    
+    logging.basicConfig(
+        filename="slack_reporting.log",
+        level=logging.DEBUG,
+        filemode="w",
+        format="%(asctime)s:%(levelname)s:%(message)s",
+    )
+
+    parser = argparse.ArgumentParser(
+        prog="report_update.py",
+        description="Retrieve metadata from NCBI API for a given GCA accession and store it in JSON files to be inserted in the database.",
+    )
+
+    parser.add_argument("--accession", type=str, required=True, help="GCA accession to retrieve metadata.")
+    parser.add_argument(
+        "--check_type",
+        type=str,
+        required=True,
+        help="Type of update check. Possible values: asm_status, refseq, etc.",
+    )
+    parser.add_argument(
+        "--previous_value", type=str, required=True, help="Original value previously stored in the registry."
+    )
+    parser.add_argument(
+        "--current_value", type=str, required=True, help="Current value previously stored in the registry."
+    )
+    parser.add_argument("--slack_params", type=json.loads, required=True, help="Slack bot connection params.")
+    parser.add_argument(
+        "--slack_users", type=str, required=True, help="Path to json file with username and slack IDs."
+    )
+    parser.add_argument(
+        "--metadata_params",
+        type=json.loads,
+        required=True,
+        help="JSON/Dict format of gb_assembly_metadata connections params.",
+    )
 
     args = parser.parse_args()
     logging.info(args)
 
     with open(args.slack_users) as json_file:
         slack_users = json.load(json_file)
-    
+
     slack_id, gb_status = fetching_user(args.accession, args.metadata_params, slack_users)
 
-    if slack_id is not None and gb_status is not None and args.check_type in ('asm_status', 'refseq_check'):
-    
-        custom_message = slack_message(args.accession, gb_status, args.check_type, args.previous_value, args.current_value)
+    if slack_id is not None and gb_status is not None and args.check_type in ("asm_status", "refseq_check"):
 
-        slack_communication_dm(args.slack_params['slack_bot_token'], slack_id, custom_message)
-        
+        custom_message = slack_message(
+            args.accession, gb_status, args.check_type, args.previous_value, args.current_value
+        )
+
+        slack_communication_dm(args.slack_params["slack_bot_token"], slack_id, custom_message)
+
         logging.info(custom_message)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

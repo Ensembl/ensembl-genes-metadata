@@ -20,7 +20,8 @@ import json
 import logging
 from typing import Dict, Any, List, Tuple
 import re
-import pymysql # type: ignore
+import pymysql  # type: ignore
+
 
 def execute_query(query, db_params):
     conn = pymysql.connect(**db_params)
@@ -30,6 +31,7 @@ def execute_query(query, db_params):
     cursor.close()
     conn.close()
     return result
+
 
 def execute_write(query: str, db_params: Dict[str, Any]) -> int:
     """
@@ -45,18 +47,22 @@ def execute_write(query: str, db_params: Dict[str, Any]) -> int:
     finally:
         conn.close()
 
+
 def getting_metrics_registry(assembly_id, metadata_params):
 
-    query_asm_metrics = f"SELECT metrics_name, metrics_value FROM assembly_metrics WHERE assembly_id = '{assembly_id}';"
+    query_asm_metrics = (
+        f"SELECT metrics_name, metrics_value FROM assembly_metrics WHERE assembly_id = '{assembly_id}';"
+    )
     logging.info(query_asm_metrics)
 
-    asm_metrics_registry_tuple  = execute_query(query_asm_metrics, metadata_params)
+    asm_metrics_registry_tuple = execute_query(query_asm_metrics, metadata_params)
 
     asm_metrics_registry = {}
     for metric in asm_metrics_registry_tuple:
         asm_metrics_registry[metric[0]] = metric[1]
 
     return asm_metrics_registry
+
 
 def normalise_value(metric_name: str, value: Any) -> Any:
     """
@@ -94,6 +100,7 @@ def normalise_value(metric_name: str, value: Any) -> Any:
     # Fallback: compare as-is
     return value
 
+
 def sql_escape(value: Any) -> str:
     """
     Minimal SQL string escaping for single quotes.
@@ -102,6 +109,7 @@ def sql_escape(value: Any) -> str:
     if value is None:
         return "NULL"
     return str(value).replace("'", "''")
+
 
 def generate_metric_upserts(
     accession: str,
@@ -148,43 +156,51 @@ def generate_metric_upserts(
 
     return output_line_list
 
+
 def main():
-    """ Module's entry point
-    """
+    """Module's entry point"""
 
-    logging.basicConfig(filename="update_assembly_metrics.log", level=logging.DEBUG, filemode='w',
-                    format="%(asctime)s:%(levelname)s:%(message)s")
+    logging.basicConfig(
+        filename="update_assembly_metrics.log",
+        level=logging.DEBUG,
+        filemode="w",
+        format="%(asctime)s:%(levelname)s:%(message)s",
+    )
 
-    parser = argparse.ArgumentParser(prog='update_assembly_metrics.py',
-                                    description="Compare and update assembly metrics between NCBI data and Registry database.")
+    parser = argparse.ArgumentParser(
+        prog="update_assembly_metrics.py",
+        description="Compare and update assembly metrics between NCBI data and Registry database.",
+    )
 
-    parser.add_argument('--accession_json',
-                        type=str,
-                        required=True,
-                        help='Path to JSON file with assembly metadata retrieved from NCBI API')
-    parser.add_argument('--accession',
-                        type=str,
-                        required=True,
-                        help='GCA accession to retrieve metadata')
-    parser.add_argument('--metadata_params',
-                        type=str,
-                        required=True,
-                        help='Database connection parameters for metadata database in JSON format')
-    
+    parser.add_argument(
+        "--accession_json",
+        type=str,
+        required=True,
+        help="Path to JSON file with assembly metadata retrieved from NCBI API",
+    )
+    parser.add_argument("--accession", type=str, required=True, help="GCA accession to retrieve metadata")
+    parser.add_argument(
+        "--metadata_params",
+        type=str,
+        required=True,
+        help="Database connection parameters for metadata database in JSON format",
+    )
 
     args = parser.parse_args()
     logging.info(args)
 
     accession = args.accession.strip()
 
-    with open(args.accession_json, 'r') as json_file:
+    with open(args.accession_json, "r") as json_file:
         data = json.load(json_file)
-    
-    with open(args.metadata_params, 'r') as params_file:
+
+    with open(args.metadata_params, "r") as params_file:
         metadata_params = json.load(params_file)
 
     # Getting assembly_id from registry to use in metrics queries
-    query_assembly_id = f"SELECT assembly_id FROM assembly WHERE CONCAT(gca_chain, '.', gca_version) = '{accession}'"
+    query_assembly_id = (
+        f"SELECT assembly_id FROM assembly WHERE CONCAT(gca_chain, '.', gca_version) = '{accession}'"
+    )
     assembly_id = execute_query(query_assembly_id, metadata_params)[0][0]
     logging.info(f"Assembly {accession} has assembly_id: {assembly_id}")
 
@@ -192,17 +208,19 @@ def main():
     asm_metrics_registry = getting_metrics_registry(assembly_id, metadata_params)
 
     # Getting metrics from NCBI report
-    assembly_metrics_ncbi = data['reports'][0]['assembly_stats']
-    
+    assembly_metrics_ncbi = data["reports"][0]["assembly_stats"]
+
     output_line_list = generate_metric_upserts(
-    accession=accession,
-    ncbi=assembly_metrics_ncbi,
-    registry=asm_metrics_registry,
-    assembly_id=assembly_id,
-    metadata_params=metadata_params)
+        accession=accession,
+        ncbi=assembly_metrics_ncbi,
+        registry=asm_metrics_registry,
+        assembly_id=assembly_id,
+        metadata_params=metadata_params,
+    )
 
     for output_line in output_line_list:
         print(output_line)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

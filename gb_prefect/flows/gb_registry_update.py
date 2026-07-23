@@ -1,7 +1,7 @@
 import argparse
 import sys
 from pathlib import Path
-from prefect import flow # type: ignore
+from prefect import flow  # type: ignore
 from datetime import datetime
 from typing import Optional
 
@@ -11,6 +11,7 @@ if str(PACKAGE_ROOT) not in sys.path:
     sys.path.insert(0, str(PACKAGE_ROOT))
 
 from gb_prefect.tasks.registry_update import update_assemblies
+
 
 @flow(name="gb_registry_update", log_prints=True)
 def gb_registry_update_flow(
@@ -25,8 +26,8 @@ def gb_registry_update_flow(
     if not date:
         date = datetime.now().strftime("%Y-%m-%d")
     else:
-        date = datetime.strptime(date,"%Y-%m-%d").strftime("%Y-%m-%d")
-    
+        date = datetime.strptime(date, "%Y-%m-%d").strftime("%Y-%m-%d")
+
     return update_assemblies(
         gca_list=gca_list,
         outdir=f"{outdir}/asm_update_{date}",
@@ -37,26 +38,37 @@ def gb_registry_update_flow(
         dry_run=dry_run,
     )
 
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--gca-list", required=True, help="Path to the file containing the list of GCA accessions to update.")
+    parser.add_argument(
+        "--gca-list", required=True, help="Path to the file containing the list of GCA accessions to update."
+    )
     parser.add_argument("--outdir", required=True, help="Base output directory.")
-    parser.add_argument("--asm_venv", required=True, help="Path to the assembly registry virtual environment.")
-    parser.add_argument("--slack-report", action="store_true", help="Whether to send a Slack report after the Nextflow run.")
+    parser.add_argument(
+        "--asm_venv", required=True, help="Path to the assembly registry virtual environment."
+    )
+    parser.add_argument(
+        "--slack-report", action="store_true", help="Whether to send a Slack report after the Nextflow run."
+    )
     parser.add_argument("--enscode", required=True, help="Path to ENSCODE directory.")
     parser.add_argument("--date", required=False, help="Date for the registry run (e.g., YYYY-MM-DD).")
-    parser.add_argument("--dry-run", action="store_true", help="Create the Nextflow command without running it.")
+    parser.add_argument(
+        "--dry-run", action="store_true", help="Create the Nextflow command without running it."
+    )
     args = parser.parse_args()
-    
+
     if not args.date:
         date = datetime.now().strftime("%Y-%m-%d")
     else:
-        date = datetime.strptime(args.date,"%Y-%m-%d")
+        date = datetime.strptime(args.date, "%Y-%m-%d")
 
-    gb_registry_update_flow(date=date,
-                     outdir=f"{args.outdir}/asm_update_{date}",
-                     gca_list=args.gca_list,
-                     enscode=args.enscode,
-                     asm_venv=args.asm_venv,
-                     slack_report=args.slack_report,
-                     dry_run=args.dry_run)
+    gb_registry_update_flow(
+        date=date,
+        outdir=f"{args.outdir}/asm_update_{date}",
+        gca_list=args.gca_list,
+        enscode=args.enscode,
+        asm_venv=args.asm_venv,
+        slack_report=args.slack_report,
+        dry_run=args.dry_run,
+    )

@@ -32,13 +32,14 @@ Returns:
 import json
 import argparse
 import logging
-import pymysql #type: ignore
-import requests #type: ignore
+import pymysql  # type: ignore
+import requests  # type: ignore
 import string
 import random
 import os
 from tenacity import retry, stop_after_attempt, wait_random
 from typing import Optional
+
 
 @retry(stop=stop_after_attempt(10), wait=wait_random(min=1, max=20))
 def connection_ncbi(uri: str) -> requests.Response:
@@ -46,7 +47,8 @@ def connection_ncbi(uri: str) -> requests.Response:
     response.raise_for_status()
     return response
 
-def get_taxon_data(taxon_id:str, ncbi_url) -> dict:
+
+def get_taxon_data(taxon_id: str, ncbi_url) -> dict:
     """It connects to the NCBI API to retrieve the taxonomy data of the lowest taxon id.
 
     Args:
@@ -63,6 +65,7 @@ def get_taxon_data(taxon_id:str, ncbi_url) -> dict:
 
     return taxon_data
 
+
 def get_taxon_classification(taxon_data) -> tuple[dict, dict]:
     """
     This function retrieves the taxonomy classification of the lowest taxon id.
@@ -72,16 +75,19 @@ def get_taxon_classification(taxon_data) -> tuple[dict, dict]:
         lowest_taxon_id (str): the taxonomy id of the assembly, it is obtained from the assembly NCBI report
 
     """
-    classification = taxon_data['reports'][0]['taxonomy']['classification']
+    classification = taxon_data["reports"][0]["taxonomy"]["classification"]
 
     classification_dic = {}
     classification_name_dic = {}
     for rank in classification:
-        if rank not in ['domain', 'superkingdom']:
-            classification_dic.update({classification[rank]['id']: rank})
-            classification_name_dic.update({classification[rank]['id']: classification[rank]['name'].replace("'", "''")})
+        if rank not in ["domain", "superkingdom"]:
+            classification_dic.update({classification[rank]["id"]: rank})
+            classification_name_dic.update(
+                {classification[rank]["id"]: classification[rank]["name"].replace("'", "''")}
+            )
 
     return classification_dic, classification_name_dic
+
 
 def species_taxon(taxon_data, taxon_id) -> tuple[int, bool]:
     """
@@ -100,31 +106,43 @@ def species_taxon(taxon_data, taxon_id) -> tuple[int, bool]:
 
     taxon_exists = True
     try:
-        taxonomy = taxon_data['reports'][0]['taxonomy']['rank']
-        if taxonomy in ['SUBSPECIES', 'STRAIN', 'VARIETAS', 'GENOTYPE', 'ISOLATE', 'FORMA', 'FORMA_SPECIALIS', 'CLADE']:
-            species_taxon_id = taxon_data['reports'][0]['taxonomy']['classification']['species']['id']
+        taxonomy = taxon_data["reports"][0]["taxonomy"]["rank"]
+        if taxonomy in [
+            "SUBSPECIES",
+            "STRAIN",
+            "VARIETAS",
+            "GENOTYPE",
+            "ISOLATE",
+            "FORMA",
+            "FORMA_SPECIALIS",
+            "CLADE",
+        ]:
+            species_taxon_id = taxon_data["reports"][0]["taxonomy"]["classification"]["species"]["id"]
             logging.info("The assembly is a infraspecific taxon %s", taxonomy)
-        elif taxonomy == 'SPECIES':
+        elif taxonomy == "SPECIES":
             species_taxon_id = taxon_id
             logging.info("The assembly is a species taxon rank ")
         else:
             raise ValueError(f"Incorrect taxonomy ({taxonomy})")
     except KeyError:
-        if 'errors' in taxon_data['reports'][0]:
-            species_taxon_id = 0 #Set species taxon as zero to be identified by the reporting module
+        if "errors" in taxon_data["reports"][0]:
+            species_taxon_id = 0  # Set species taxon as zero to be identified by the reporting module
             taxon_exists = False
             logging.info("Taxon %s is not a recognized NCBI Taxonomy name", taxon_id)
-        elif 'taxonomy' in taxon_data['reports'][0]:
-            logging.info('Taxon do not have Rank available, retrieving information from another section of the report')
-            species_taxon_id = taxon_data['reports'][0]['taxonomy']['classification']['species']['id']
+        elif "taxonomy" in taxon_data["reports"][0]:
+            logging.info(
+                "Taxon do not have Rank available, retrieving information from another section of the report"
+            )
+            species_taxon_id = taxon_data["reports"][0]["taxonomy"]["classification"]["species"]["id"]
         else:
             raise KeyError("Taxon %s retrieves an unexpected report", taxonomy)
 
     return species_taxon_id, taxon_exists
 
+
 def get_parlance_name(sci_name: str, enscode) -> str:
     """
-    Search in the snp_static.txt file from the core_meta_update repository the parlance name 
+    Search in the snp_static.txt file from the core_meta_update repository the parlance name
     for the scientific name provided
 
     Args:
@@ -139,7 +157,7 @@ def get_parlance_name(sci_name: str, enscode) -> str:
     data_dict = {}
 
     logging.info("Reading parlance name file (snp_static.txt) to look for a match")
-    with open(parlance_file, 'r') as file:
+    with open(parlance_file, "r") as file:
         for line in file:
             key, value = line.rsplit("\t", 1)
             data_dict[key.strip()] = value.strip()
@@ -150,28 +168,21 @@ def get_parlance_name(sci_name: str, enscode) -> str:
 
 
 def main():
-    """Module's entry point.
-    """
-    logging.basicConfig(filename="species_checker.log", level=logging.DEBUG,
-                        filemode='w', format="%(asctime)s:%(levelname)s:%(message)s")
-    parser = argparse.ArgumentParser(prog="species_checker.py",
-                                    description="Update species related metadata.")
-    parser.add_argument("--json-path",
-                        type=str,
-                        help="Path to the JSON-like (.tmp) species file")
-    parser.add_argument('--ncbi_url',
-                        type=str,
-                        required=True,
-                        help='NCBI API URL')
-    parser.add_argument('--enscode',
-                        type=str,
-                        help='ENSCODE path' )
-    parser.add_argument('--taxon_id',
-                        type=int,
-                        help='Lowest taxon id of the species ')
-    parser.add_argument('--taxonomy_update',
-                        action='store_true',
-                        help='Update taxonomy table')
+    """Module's entry point."""
+    logging.basicConfig(
+        filename="species_checker.log",
+        level=logging.DEBUG,
+        filemode="w",
+        format="%(asctime)s:%(levelname)s:%(message)s",
+    )
+    parser = argparse.ArgumentParser(
+        prog="species_checker.py", description="Update species related metadata."
+    )
+    parser.add_argument("--json-path", type=str, help="Path to the JSON-like (.tmp) species file")
+    parser.add_argument("--ncbi_url", type=str, required=True, help="NCBI API URL")
+    parser.add_argument("--enscode", type=str, help="ENSCODE path")
+    parser.add_argument("--taxon_id", type=int, help="Lowest taxon id of the species ")
+    parser.add_argument("--taxonomy_update", action="store_true", help="Update taxonomy table")
 
     args = parser.parse_args()
 
@@ -179,7 +190,7 @@ def main():
 
     # Loading Species dictionary
     if not args.taxonomy_update:
-        with open(args.json_path, 'r') as file:
+        with open(args.json_path, "r") as file:
             species_dict = json.load(file)
         file.close()
 
@@ -190,35 +201,40 @@ def main():
     if not args.taxonomy_update:
         logging.info(f"Getting key values for the species: {species_dict['species']['scientific_name']}")
         # Get taxon data from NCBI API
-        taxon_data = get_taxon_data(species_dict['species']['lowest_taxon_id'], args.ncbi_url)
-        species_taxon_id, taxon_exists = species_taxon(taxon_data, species_dict['species']['lowest_taxon_id'])
+        taxon_data = get_taxon_data(species_dict["species"]["lowest_taxon_id"], args.ncbi_url)
+        species_taxon_id, taxon_exists = species_taxon(taxon_data, species_dict["species"]["lowest_taxon_id"])
         if taxon_exists:
-            parlance_name = get_parlance_name(species_dict['species']['scientific_name'], args.enscode)
+            parlance_name = get_parlance_name(species_dict["species"]["scientific_name"], args.enscode)
             species_prefix = ""
             taxon_classification, taxon_name_classification = get_taxon_classification(taxon_data)
-            taxon_classification_check=True
+            taxon_classification_check = True
         else:
-            logging.info("Taxon do not exist in taxonomy: invalid lowest taxon id or assembly should be suppressed")
+            logging.info(
+                "Taxon do not exist in taxonomy: invalid lowest taxon id or assembly should be suppressed"
+            )
             logging.info("Setting values to NA/NULL to later be detected by the integrity check")
             parlance_name = ""
             species_prefix = ""
             taxon_classification = {}
-            taxon_classification_check=False
+            taxon_classification_check = False
 
         # Update species dictionary with new values
         logging.info("Updating keys for species table")
-        species_dict['species'].update({
-            'species_taxon_id': species_taxon_id,
-            'parlance_name': parlance_name,
-            'species_prefix': species_prefix})
+        species_dict["species"].update(
+            {
+                "species_taxon_id": species_taxon_id,
+                "parlance_name": parlance_name,
+                "species_prefix": species_prefix,
+            }
+        )
         if taxon_classification_check:
-            species_dict['taxonomy']= taxon_classification
-            species_dict['taxonomy'].update({'lowest_taxon_id': species_dict['species']['lowest_taxon_id']})
+            species_dict["taxonomy"] = taxon_classification
+            species_dict["taxonomy"].update({"lowest_taxon_id": species_dict["species"]["lowest_taxon_id"]})
 
         # Saving results
-        output_file = os.path.basename(args.json_path).replace('.tmp', '.json')
+        output_file = os.path.basename(args.json_path).replace(".tmp", ".json")
         logging.info(f"Saving output: {output_file}")
-        with open(output_file, 'w') as file:
+        with open(output_file, "w") as file:
             json.dump(species_dict, file)
         file.close()
 
@@ -226,28 +242,30 @@ def main():
     if args.taxonomy_update and args.taxon_id:
         logging.info("Updating taxonomy table")
         taxon_dict = {}
-        taxon_data = get_taxon_data(args.taxon_id , args.ncbi_url)
+        taxon_data = get_taxon_data(args.taxon_id, args.ncbi_url)
         taxon_classification, taxon_name_classification = get_taxon_classification(taxon_data)
-        taxon_dict['taxonomy'] = taxon_classification
-        taxon_dict['taxonomy'].update({'lowest_taxon_id': args.taxon_id})
+        taxon_dict["taxonomy"] = taxon_classification
+        taxon_dict["taxonomy"].update({"lowest_taxon_id": args.taxon_id})
         logging.info("Updating taxonomy name table")
-        taxon_dict['taxonomy_name'] = taxon_name_classification
+        taxon_dict["taxonomy_name"] = taxon_name_classification
 
         species_taxon_id, taxon_exists = species_taxon(taxon_data, args.taxon_id)
 
         species = {
-            'lowest_taxon_id': args.taxon_id,
-            'species_taxon_id': species_taxon_id,
-            'scientific_name': taxon_data['reports'][0]['taxonomy']['current_scientific_name']['name'],
-            'common_name': taxon_data['reports'][0]['taxonomy'].get('curator_common_name','') }
-        taxon_dict['species'] = species
+            "lowest_taxon_id": args.taxon_id,
+            "species_taxon_id": species_taxon_id,
+            "scientific_name": taxon_data["reports"][0]["taxonomy"]["current_scientific_name"]["name"],
+            "common_name": taxon_data["reports"][0]["taxonomy"].get("curator_common_name", ""),
+        }
+        taxon_dict["species"] = species
 
         # Saving results
         output_file_taxon = f"taxonomy_{args.taxon_id}.json"
         logging.info(f"Saving output: {output_file_taxon}")
-        with open(output_file_taxon, 'w') as file:
+        with open(output_file_taxon, "w") as file:
             json.dump(taxon_dict, file)
         file.close()
+
 
 if __name__ == "__main__":
     main()

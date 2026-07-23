@@ -1,13 +1,14 @@
 import argparse
 import sys
 from pathlib import Path
-from prefect import flow # type: ignore
+from prefect import flow  # type: ignore
 
 PACKAGE_ROOT = Path(__file__).resolve().parents[2]
 if str(PACKAGE_ROOT) not in sys.path:
     sys.path.insert(0, str(PACKAGE_ROOT))
 
 from gb_prefect.tasks.is_reference import is_reference
+
 
 @flow(name="gb_is_reference", log_prints=True)
 def gb_is_reference_flow(
@@ -23,12 +24,15 @@ def gb_is_reference_flow(
         asm_venv=asm_venv,
     )
 
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--file-path", required=True, help="Path to the input file to check.")
     parser.add_argument("--output-path", required=True, help="Directory where output and logs will be saved.")
     parser.add_argument("--enscode", required=True, help="Path to ENSCODE directory.")
-    parser.add_argument("--asm_venv", required=True, help="Path to the assembly registry virtual environment.")
+    parser.add_argument(
+        "--asm_venv", required=True, help="Path to the assembly registry virtual environment."
+    )
     args = parser.parse_args()
 
     gb_is_reference_flow(

@@ -1,5 +1,5 @@
-from prefect import task # type: ignore
-from prefect.states import Failed, Completed # type: ignore
+from prefect import task  # type: ignore
+from prefect.states import Failed, Completed  # type: ignore
 from gb_prefect.utils.logging_utils import append_log
 from gb_prefect.utils.shell_utils import run_cmd_bash_capture
 from gb_prefect.utils.artifact_utils import create_registry_run_artifact
@@ -9,15 +9,14 @@ import os
 import re
 
 
-
 @task(log_prints=True)
 def is_reference(
     file_path: str,
     output_path: str,
-    enscode:str,
+    enscode: str,
     asm_venv: str,
 ):
-    
+
     outdir_path = Path(output_path)
     output_file = outdir_path / f"{Path(file_path).stem}_output.csv"
     log = outdir_path / f"log_flow_is_reference_{datetime.now().strftime('%Y-%m-%d')}.log"
@@ -28,7 +27,7 @@ def is_reference(
     enscode = enscode or os.environ.get("ENSCODE")
     if not enscode:
         raise ValueError("ENSCODE is required.")
-    
+
     append_log(log, f"[{datetime.now()}] INFO: ENSCODE set to {enscode}.\n")
 
     sbatch_script = f"""#!/bin/bash
@@ -48,7 +47,7 @@ python {enscode}/ensembl-genes-metadata/src/python/is_reference.py \
     command_file.write_text(sbatch_script)
     command_file.chmod(0o755)
 
-    sbatch_result = run_cmd_bash_capture(f"sbatch --wait {command_file}", log_path=log) 
+    sbatch_result = run_cmd_bash_capture(f"sbatch --wait {command_file}", log_path=log)
     rc = sbatch_result.returncode
 
     job_id_match = re.search(r"Submitted batch job (\d+)", sbatch_result.stdout)
@@ -71,9 +70,3 @@ python {enscode}/ensembl-genes-metadata/src/python/is_reference.py \
     else:
         append_log(log, f"[{datetime.now()}] INFO: SLURM job completed successfully.\n")
         return str(output_file)
-    
-
-
-
-
-    

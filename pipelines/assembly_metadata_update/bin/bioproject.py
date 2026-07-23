@@ -19,7 +19,8 @@ import argparse
 import json
 import logging
 from typing import Dict, Any
-import pymysql # type: ignore
+import pymysql  # type: ignore
+
 
 def execute_query(query, db_params):
     conn = pymysql.connect(**db_params)
@@ -29,6 +30,7 @@ def execute_query(query, db_params):
     cursor.close()
     conn.close()
     return result
+
 
 def execute_write(query: str, db_params: Dict[str, Any]) -> int:
     """
@@ -43,6 +45,7 @@ def execute_write(query: str, db_params: Dict[str, Any]) -> int:
         return affected
     finally:
         conn.close()
+
 
 def comparing_bioproject(data, accession, metadata_params):
     """Compare bioprojects from NCBI and Registry and generate insert queries if needed.
@@ -66,7 +69,9 @@ def comparing_bioproject(data, accession, metadata_params):
     for item in bioprojects_registry:
         bioproject_list.append(item[0])
 
-    query_assembly_id = f"SELECT assembly_id FROM assembly WHERE CONCAT(gca_chain, '.', gca_version) = '{accession}'"
+    query_assembly_id = (
+        f"SELECT assembly_id FROM assembly WHERE CONCAT(gca_chain, '.', gca_version) = '{accession}'"
+    )
     logging.info(query_assembly_id)
     assembly_id = execute_query(query_assembly_id, metadata_params)[0][0]
     logging.info(assembly_id)
@@ -75,10 +80,10 @@ def comparing_bioproject(data, accession, metadata_params):
     bioproject_lineage = {}
     seen_accessions = set()
 
-    bioproject_dict = data['reports'][0]['assembly_info']['bioproject_lineage'][0]['bioprojects']
+    bioproject_dict = data["reports"][0]["assembly_info"]["bioproject_lineage"][0]["bioprojects"]
     for item in bioproject_dict:
-        bio_accession = item['accession']
-        title = item['title'].replace("'", "")
+        bio_accession = item["accession"]
+        title = item["title"].replace("'", "")
         # Check if accession is not seen before
         if bio_accession not in seen_accessions:
             seen_accessions.add(bio_accession)
@@ -95,55 +100,60 @@ def comparing_bioproject(data, accession, metadata_params):
             title = bioproject_lineage[bioproject]
             logging.info(f"Insert bioproject {bioproject} - {title} for assembly {accession}")
             query_insert_bioproject = f"""INSERT INTO bioproject (assembly_id, bioproject_id) 
-            VALUES ('{assembly_id}', '{bioproject}');"""     
+            VALUES ('{assembly_id}', '{bioproject}');"""
             logging.info(query_insert_bioproject)
             affected = execute_write(query_insert_bioproject, metadata_params)
 
-        bioproject_line = '-'.join(missing_bioprojects)        
+        bioproject_line = "-".join(missing_bioprojects)
         output_line = f"{accession}, bioproject_check, false, NA, {bioproject_line}"
     else:
         logging.info(f"No bioproject insert needed for assembly {accession}")
         output_line = f"{accession}, bioproject_check, false, NA, NA"
 
     return output_line
-    
+
 
 def main():
-    """ Module's entry point
-    """
+    """Module's entry point"""
 
-    logging.basicConfig(filename="update_bioproject.log", level=logging.DEBUG, filemode='w',
-                    format="%(asctime)s:%(levelname)s:%(message)s")
+    logging.basicConfig(
+        filename="update_bioproject.log",
+        level=logging.DEBUG,
+        filemode="w",
+        format="%(asctime)s:%(levelname)s:%(message)s",
+    )
 
-    parser = argparse.ArgumentParser(prog='bioproject.py',
-                                    description="Checks if the GCA has been added to other bioproject.")
-    parser.add_argument('--accession_json',
-                        type=str,
-                        required=True,
-                        help='Path to JSON file with assembly metadata retrieved from NCBI API')
-    parser.add_argument('--accession',
-                        type=str,
-                        required=True,
-                        help='GCA accession to retrieve metadata')
-    parser.add_argument('--metadata_params',
-                        type=str,
-                        required=True,
-                        help='Database connection parameters for metadata database in JSON format')
-    
+    parser = argparse.ArgumentParser(
+        prog="bioproject.py", description="Checks if the GCA has been added to other bioproject."
+    )
+    parser.add_argument(
+        "--accession_json",
+        type=str,
+        required=True,
+        help="Path to JSON file with assembly metadata retrieved from NCBI API",
+    )
+    parser.add_argument("--accession", type=str, required=True, help="GCA accession to retrieve metadata")
+    parser.add_argument(
+        "--metadata_params",
+        type=str,
+        required=True,
+        help="Database connection parameters for metadata database in JSON format",
+    )
 
     args = parser.parse_args()
     logging.info(args)
 
     accession = args.accession.strip()
 
-    with open(args.accession_json, 'r') as json_file:
+    with open(args.accession_json, "r") as json_file:
         data = json.load(json_file)
-    
-    with open(args.metadata_params, 'r') as params_file:
+
+    with open(args.metadata_params, "r") as params_file:
         metadata_params = json.load(params_file)
 
     output_line = comparing_bioproject(data, accession, metadata_params)
     print(output_line)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

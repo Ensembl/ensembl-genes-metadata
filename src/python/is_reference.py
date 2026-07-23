@@ -49,13 +49,14 @@ from pathlib import Path
 import requests
 
 NCBI_BASE = "https://api.ncbi.nlm.nih.gov/datasets/v2"
-RETRY_WAIT = 2   # seconds between retries
+RETRY_WAIT = 2  # seconds between retries
 MAX_RETRIES = 3
 
 
 # ---------------------------------------------------------------------------
 # API helpers
 # ---------------------------------------------------------------------------
+
 
 def _get(url: str) -> dict:
     """GET a URL with simple retry logic; raise on persistent failure."""
@@ -95,10 +96,7 @@ def get_reference_for_taxon(taxon_id: str) -> dict | None:
     Return the first reference-assembly report for taxon_id, or None if
     no reference exists.
     """
-    url = (
-        f"{NCBI_BASE}/genome/taxon/{taxon_id}/dataset_report"
-        f"?filters.reference_only=true"
-    )
+    url = f"{NCBI_BASE}/genome/taxon/{taxon_id}/dataset_report" f"?filters.reference_only=true"
     data = _get(url)
 
     total = data.get("total_count", 0)
@@ -183,7 +181,6 @@ def write_csv(rows: list[dict], output_path: str) -> None:
         writer.writerows(rows)
 
 
-
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Check whether GCA accessions are reference assemblies (NCBI).",
@@ -197,12 +194,14 @@ def parse_args() -> argparse.Namespace:
         help="One or more GCA accession(s) to check.",
     )
     parser.add_argument(
-        "--file", "-f",
+        "--file",
+        "-f",
         metavar="PATH",
         help="Text or CSV file with one GCA accession per line / first column.",
     )
     parser.add_argument(
-        "--output", "-o",
+        "--output",
+        "-o",
         default="reference_check.csv",
         metavar="PATH",
         help="Output CSV file path (default: reference_check.csv).",
@@ -220,10 +219,7 @@ def main() -> None:
         accessions += load_accessions_from_file(args.file)
 
     if not accessions:
-        sys.exit(
-            "No accessions provided. "
-            "Pass them on the command line or use --file."
-        )
+        sys.exit("No accessions provided. " "Pass them on the command line or use --file.")
 
     # Deduplicate while preserving order
     seen: set[str] = set()

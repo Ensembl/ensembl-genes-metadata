@@ -1,7 +1,7 @@
 import argparse
 import sys
 from pathlib import Path
-from prefect import flow # type: ignore
+from prefect import flow  # type: ignore
 from typing import Optional
 
 PACKAGE_ROOT = Path(__file__).resolve().parents[2]
@@ -18,7 +18,7 @@ def genome_busco_flow(
     asm_venv: str,
     enscode: Optional[str] = None,
     dry_run: bool = False,
-    create_artifact: bool = True,   
+    create_artifact: bool = True,
 ):
     return run_nextflow_busco(
         csv_file=csv_file,
@@ -36,12 +36,18 @@ if __name__ == "__main__":
     parser.add_argument("--outdir", required=True, help="Output directory.")
     parser.add_argument("--asm-venv", required=True, help="Path to the asm_metadata virtual environment.")
     parser.add_argument("--enscode", help="ENSCODE value.")
-    parser.add_argument("--dry-run", action="store_true", help="Create the Nextflow command without running it.")
-    parser.add_argument("--create-artifact", action="store_true", help="Create artifact after running the pipeline.")
+    parser.add_argument(
+        "--dry-run", action="store_true", help="Create the Nextflow command without running it."
+    )
+    parser.add_argument(
+        "--create-artifact", action="store_true", help="Create artifact after running the pipeline."
+    )
     args = parser.parse_args()
 
-    genome_busco_flow(csv_file=args.csv_file, 
-                      outdir=args.outdir, 
-                      asm_venv=args.asm_venv,
-                      enscode=args.enscode,
-                      dry_run=args.dry_run)
+    genome_busco_flow(
+        csv_file=args.csv_file,
+        outdir=args.outdir,
+        asm_venv=args.asm_venv,
+        enscode=args.enscode,
+        dry_run=args.dry_run,
+    )

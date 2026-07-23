@@ -1,5 +1,5 @@
-from prefect import task # type: ignore
-from prefect.states import Failed, Completed # type: ignore
+from prefect import task  # type: ignore
+from prefect.states import Failed, Completed  # type: ignore
 from gb_prefect.utils.logging_utils import append_log
 from gb_prefect.utils.shell_utils import run_cmd_bash_capture
 from gb_prefect.utils.artifact_utils import create_registry_run_artifact
@@ -8,9 +8,10 @@ from datetime import datetime
 import os
 import re
 
+
 @task(log_prints=True)
 def update_assemblies(
-    gca_list: str, 
+    gca_list: str,
     outdir: str,
     asm_venv: str,
     slack_report: bool = True,
@@ -29,7 +30,9 @@ def update_assemblies(
         if dry_run:
             enscode = "<ENSCODE>"
         else:
-            raise ValueError("ENSCODE is required when dry_run=False. Pass enscode=..., set ENSCODE, or run with dry_run=True.")
+            raise ValueError(
+                "ENSCODE is required when dry_run=False. Pass enscode=..., set ENSCODE, or run with dry_run=True."
+            )
     append_log(log, f"[{datetime.now()}] INFO: ENSCODE set to {enscode}.\n")
 
     sbatch_script = f"""#!/bin/bash

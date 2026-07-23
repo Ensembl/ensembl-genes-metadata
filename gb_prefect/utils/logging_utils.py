@@ -15,7 +15,4 @@ def append_log(path: Path, msg: str) -> None:
 def filter_stderr(s: str) -> str:
     if not s:
         return ""
-    return "\n".join(
-        line for line in s.splitlines()
-        if not IGNORE.search(line)
-    ).strip()
+    return "\n".join(line for line in s.splitlines() if not IGNORE.search(line)).strip()

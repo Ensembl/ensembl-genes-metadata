@@ -31,6 +31,7 @@ def execute_query(query, db_params):
     conn.close()
     return result
 
+
 def execute_write(query: str, db_params: Dict[str, Any]) -> int:
     """
     Execute INSERT/UPDATE/DELETE and commit.
@@ -45,6 +46,7 @@ def execute_write(query: str, db_params: Dict[str, Any]) -> int:
     finally:
         conn.close()
 
+
 def comparing_status(data, accession, metadata_params):
     """Compare assembly status from NCBI and Registry and generate update queries if needed.
     Args:
@@ -56,16 +58,20 @@ def comparing_status(data, accession, metadata_params):
     """
 
     # Getting info from Registry
-    query_status = f"SELECT is_current FROM assembly WHERE CONCAT(gca_chain, '.', gca_version) = '{accession}'"
+    query_status = (
+        f"SELECT is_current FROM assembly WHERE CONCAT(gca_chain, '.', gca_version) = '{accession}'"
+    )
     is_current = execute_query(query_status, metadata_params)[0][0]
 
     # Getting info from NCBI
-    assembly_status = data['reports'][0].get('assembly_info').get('assembly_status')
-    warning = data['reports'][0].get('assembly_info').get('atypical', {}).get('warnings', "NA")
+    assembly_status = data["reports"][0].get("assembly_info").get("assembly_status")
+    warning = data["reports"][0].get("assembly_info").get("atypical", {}).get("warnings", "NA")
 
     # Comparing and generating update queries
     if assembly_status == is_current and warning == "NA":
-        logging.info(f"No update needed for assembly {accession}. Current status in Registry and NCBI is {is_current}")
+        logging.info(
+            f"No update needed for assembly {accession}. Current status in Registry and NCBI is {is_current}"
+        )
         output_line = f"{accession}, asm_status, false, NA, NA"
     elif warning != "NA":
         logging.info(f"Assembly {accession} has warnings: {warning}. Update status based on warning.")
@@ -74,7 +80,9 @@ def comparing_status(data, accession, metadata_params):
         affected = execute_write(query_update_status, metadata_params)
         output_line = f"{accession}, asm_status, true, {is_current}, {warning}"
     else:
-        logging.info(f"Update needed for assembly {accession}: current status in Registry is {is_current}, status from NCBI is {assembly_status}")
+        logging.info(
+            f"Update needed for assembly {accession}: current status in Registry is {is_current}, status from NCBI is {assembly_status}"
+        )
         query_update_status = f"UPDATE assembly a SET is_current = '{assembly_status}' WHERE CONCAT(a.gca_chain, '.', a.gca_version) = '{accession}';"
         logging.info(query_update_status)
         affected = execute_write(query_update_status, metadata_params)
@@ -82,44 +90,50 @@ def comparing_status(data, accession, metadata_params):
 
     return output_line
 
-    
+
 def main():
-    """ Module's entry point
-    """
+    """Module's entry point"""
 
-    logging.basicConfig(filename="update_assembly_status.log", level=logging.DEBUG, filemode='w',
-                    format="%(asctime)s:%(levelname)s:%(message)s")
+    logging.basicConfig(
+        filename="update_assembly_status.log",
+        level=logging.DEBUG,
+        filemode="w",
+        format="%(asctime)s:%(levelname)s:%(message)s",
+    )
 
-    parser = argparse.ArgumentParser(prog='update_assembly_status.py',
-                                    description="Retrieve metadata from NCBI API for a given GCA accession and store it in JSON files to be inserted in the database.")
+    parser = argparse.ArgumentParser(
+        prog="update_assembly_status.py",
+        description="Retrieve metadata from NCBI API for a given GCA accession and store it in JSON files to be inserted in the database.",
+    )
 
-    parser.add_argument('--accession_json',
-                        type=str,
-                        required=True,
-                        help='Path to JSON file with assembly metadata retrieved from NCBI API')
-    parser.add_argument('--accession',
-                        type=str,
-                        required=True,
-                        help='GCA accession to retrieve metadata')
-    parser.add_argument('--metadata_params',
-                        type=str,
-                        required=True,
-                        help='Database connection parameters for metadata database in JSON format')
-    
+    parser.add_argument(
+        "--accession_json",
+        type=str,
+        required=True,
+        help="Path to JSON file with assembly metadata retrieved from NCBI API",
+    )
+    parser.add_argument("--accession", type=str, required=True, help="GCA accession to retrieve metadata")
+    parser.add_argument(
+        "--metadata_params",
+        type=str,
+        required=True,
+        help="Database connection parameters for metadata database in JSON format",
+    )
 
     args = parser.parse_args()
     logging.info(args)
 
     accession = args.accession.strip()
 
-    with open(args.accession_json, 'r') as json_file:
+    with open(args.accession_json, "r") as json_file:
         data = json.load(json_file)
-    
-    with open(args.metadata_params, 'r') as params_file:
+
+    with open(args.metadata_params, "r") as params_file:
         metadata_params = json.load(params_file)
 
     output_line = comparing_status(data, accession, metadata_params)
     print(output_line)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()
