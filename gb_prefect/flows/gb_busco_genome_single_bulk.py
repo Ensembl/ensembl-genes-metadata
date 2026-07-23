@@ -1,12 +1,11 @@
 import argparse
 import pathlib
-import sys
 from datetime import datetime
 from typing import Optional
 
 from prefect import flow  # type: ignore
-from gb_prefect.tasks.busco import run_nextflow_busco  # pylint: disable=wrong-import-position
-from gb_prefect.utils.stats_split_csv import split_csv  # pylint: disable=wrong-import-position
+from gb_prefect.tasks.busco import run_nextflow_busco
+from gb_prefect.utils.stats_split_csv import split_csv
 
 
 @flow(name="BUSCO_genome_single_bulk", log_prints=True)

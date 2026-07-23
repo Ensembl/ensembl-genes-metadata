@@ -1,10 +1,8 @@
 import argparse
-import sys
-from pathlib import Path
 from typing import Optional
 
 from prefect import flow  # type: ignore
-from gb_prefect.tasks.busco import run_nextflow_busco  # pylint: disable=wrong-import-position
+from gb_prefect.tasks.busco import run_nextflow_busco
 
 
 @flow(name="BUSCO_genome", log_prints=True)

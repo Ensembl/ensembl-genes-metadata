@@ -1,10 +1,8 @@
 import argparse
-import sys
 from datetime import datetime
-from pathlib import Path
 
 from prefect import flow  # type: ignore
-from gb_prefect.tasks.registry import register_assemblies  # pylint: disable=wrong-import-position
+from gb_prefect.tasks.registry import register_assemblies
 
 
 @flow(name="gb_registry", log_prints=True)

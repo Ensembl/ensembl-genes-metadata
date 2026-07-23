@@ -1,9 +1,7 @@
 import argparse
-import sys
-from pathlib import Path
 
 from prefect import flow  # type: ignore
-from gb_prefect.tasks.is_reference import is_reference  # pylint: disable=wrong-import-position
+from gb_prefect.tasks.is_reference import is_reference
 
 
 @flow(name="gb_is_reference", log_prints=True)
