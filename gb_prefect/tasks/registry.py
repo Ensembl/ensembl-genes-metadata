@@ -1,12 +1,15 @@
+import re
+from datetime import datetime
+from pathlib import Path
+from typing import Optional
+
 from prefect import task  # type: ignore
 from prefect.states import Failed, Completed  # type: ignore
+
+from gb_prefect.utils.enscode_utils import resolve_enscode
 from gb_prefect.utils.logging_utils import append_log
 from gb_prefect.utils.shell_utils import run_cmd_bash_capture
 from gb_prefect.utils.artifact_utils import create_registry_run_artifact
-from pathlib import Path
-from datetime import datetime
-import os
-import re
 
 
 @task(log_prints=True)
@@ -18,6 +21,7 @@ def register_assemblies(
     dry_run: bool = False,
     create_artifact: bool = True,
 ):
+    """Build and submit the SLURM job that runs the assembly registry Nextflow pipeline."""
     outdir_path = Path(outdir)
     parsed_date = datetime.strptime(date, "%m-%d-%Y")
     date_fmt = parsed_date.strftime("%Y-%m-%d")

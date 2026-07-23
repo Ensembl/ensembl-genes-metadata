@@ -1,12 +1,12 @@
-from prefect import task  # type: ignore
-from prefect.states import Failed, Completed  # type: ignore
-from gb_prefect.utils.logging_utils import append_log
-from gb_prefect.utils.shell_utils import run_cmd_bash_capture
-from gb_prefect.utils.artifact_utils import create_registry_run_artifact
-from pathlib import Path
-from datetime import datetime
 import os
 import re
+from datetime import datetime
+from pathlib import Path
+
+from prefect import task  # type: ignore
+
+from gb_prefect.utils.logging_utils import append_log
+from gb_prefect.utils.shell_utils import run_cmd_bash_capture
 
 
 @task(log_prints=True)
@@ -16,7 +16,7 @@ def is_reference(
     enscode: str,
     asm_venv: str,
 ):
-
+    """Build and submit the SLURM job that runs the is_reference check script."""
     outdir_path = Path(output_path)
     output_file = outdir_path / f"{Path(file_path).stem}_output.csv"
     log = outdir_path / f"log_flow_is_reference_{datetime.now().strftime('%Y-%m-%d')}.log"

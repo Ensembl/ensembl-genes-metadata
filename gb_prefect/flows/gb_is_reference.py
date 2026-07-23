@@ -1,13 +1,9 @@
 import argparse
 import sys
 from pathlib import Path
+
 from prefect import flow  # type: ignore
-
-PACKAGE_ROOT = Path(__file__).resolve().parents[2]
-if str(PACKAGE_ROOT) not in sys.path:
-    sys.path.insert(0, str(PACKAGE_ROOT))
-
-from gb_prefect.tasks.is_reference import is_reference
+from gb_prefect.tasks.is_reference import is_reference  # pylint: disable=wrong-import-position
 
 
 @flow(name="gb_is_reference", log_prints=True)
@@ -17,6 +13,7 @@ def gb_is_reference_flow(
     enscode: str,
     asm_venv: str,
 ):
+    """Run the is_reference check script for file_path via a SLURM job."""
     return is_reference(
         file_path=file_path,
         output_path=output_path,

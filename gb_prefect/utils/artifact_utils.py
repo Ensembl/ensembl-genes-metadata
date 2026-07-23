@@ -10,6 +10,7 @@ def create_busco_run_artifact(
     rc: int,
     dry_run: bool,
 ) -> None:
+    """Publish a Prefect markdown artifact summarizing a BUSCO Nextflow run."""
     status = "SUCCESS" if rc == 0 else f"FAILED (rc={rc})"
     dry_run_badge = " *(dry run)*" if dry_run else ""
     markdown = f"""\
@@ -52,6 +53,7 @@ def create_registry_run_artifact(
     rc: int,
     dry_run: bool,
 ) -> None:
+    """Publish a Prefect markdown artifact summarizing an assembly registry Nextflow run."""
     status = "SUCCESS" if rc == 0 else f"FAILED (rc={rc})"
     dry_run_badge = " *(dry run)*" if dry_run else ""
     markdown = f"""\

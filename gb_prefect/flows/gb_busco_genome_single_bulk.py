@@ -1,16 +1,12 @@
 import argparse
-from datetime import datetime
 import pathlib
 import sys
-from prefect import flow  # type: ignore
+from datetime import datetime
 from typing import Optional
 
-PACKAGE_ROOT = pathlib.Path(__file__).resolve().parents[2]
-if str(PACKAGE_ROOT) not in sys.path:
-    sys.path.insert(0, str(PACKAGE_ROOT))
-
-from gb_prefect.tasks.busco import run_nextflow_busco
-from gb_prefect.utils.stats_split_csv import split_csv
+from prefect import flow  # type: ignore
+from gb_prefect.tasks.busco import run_nextflow_busco  # pylint: disable=wrong-import-position
+from gb_prefect.utils.stats_split_csv import split_csv  # pylint: disable=wrong-import-position
 
 
 @flow(name="BUSCO_genome_single_bulk", log_prints=True)
@@ -22,7 +18,7 @@ def genome_busco_master_flow(
     create_artifact: bool = True,
     dry_run: bool = False,
 ):
-
+    """Split csv_file into per-row CSVs and run the BUSCO Nextflow pipeline on each in parallel."""
     nxf_outdir = str(pathlib.Path(outdir) / f"busco_genome_{datetime.now().strftime('%Y%m%d_%H%M%S')}")
 
     csv_files = split_csv(csv_file, nxf_outdir)

@@ -1,15 +1,10 @@
 import argparse
 import sys
-from pathlib import Path
-from prefect import flow  # type: ignore
 from datetime import datetime
+from pathlib import Path
 
-
-PACKAGE_ROOT = Path(__file__).resolve().parents[2]
-if str(PACKAGE_ROOT) not in sys.path:
-    sys.path.insert(0, str(PACKAGE_ROOT))
-
-from gb_prefect.tasks.registry import register_assemblies
+from prefect import flow  # type: ignore
+from gb_prefect.tasks.registry import register_assemblies  # pylint: disable=wrong-import-position
 
 
 @flow(name="gb_registry", log_prints=True)
@@ -20,7 +15,7 @@ def gb_registry_flow(
     asm_venv: str,
     dry_run: bool = False,
 ):
-
+    """Run the assembly registry Nextflow pipeline for the given date."""
     return register_assemblies(
         date=date,
         outdir=f"{outdir}/{date}",
@@ -45,8 +40,8 @@ if __name__ == "__main__":
 
     try:
         parsed_date = datetime.strptime(args.date, "%m-%d-%Y")
-    except ValueError:
-        raise ValueError(f"Date '{args.date}' is not in MM-DD-YYYY format")
+    except ValueError as exc:
+        raise ValueError(f"Date '{args.date}' is not in MM-DD-YYYY format") from exc
 
     date_fmt = datetime.strptime(args.date, "%m-%d-%Y").strftime("%Y-%m-%d")
     gb_registry_flow(

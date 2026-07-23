@@ -1,11 +1,14 @@
+import re
+from datetime import datetime
+from pathlib import Path
+from typing import Optional
+
 from prefect import task  # type: ignore
+
 from gb_prefect.utils.artifact_utils import create_busco_run_artifact
+from gb_prefect.utils.enscode_utils import resolve_enscode
 from gb_prefect.utils.logging_utils import append_log
 from gb_prefect.utils.shell_utils import run_cmd_bash_capture
-from datetime import datetime
-import os
-import re
-from pathlib import Path
 
 
 @task(log_prints=True)

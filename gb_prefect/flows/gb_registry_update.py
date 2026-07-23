@@ -1,16 +1,11 @@
 import argparse
 import sys
-from pathlib import Path
-from prefect import flow  # type: ignore
 from datetime import datetime
+from pathlib import Path
 from typing import Optional
 
-
-PACKAGE_ROOT = Path(__file__).resolve().parents[2]
-if str(PACKAGE_ROOT) not in sys.path:
-    sys.path.insert(0, str(PACKAGE_ROOT))
-
-from gb_prefect.tasks.registry_update import update_assemblies
+from prefect import flow  # type: ignore
+from gb_prefect.tasks.registry_update import update_assemblies  # pylint: disable=wrong-import-position
 
 
 @flow(name="gb_registry_update", log_prints=True)
@@ -23,6 +18,7 @@ def gb_registry_update_flow(
     enscode: Optional[str] = None,
     dry_run: bool = False,
 ):
+    """Run the assembly metadata update Nextflow pipeline for the given GCA list."""
     if not date:
         date = datetime.now().strftime("%Y-%m-%d")
     else:

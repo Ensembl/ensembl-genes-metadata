@@ -70,6 +70,7 @@ def _get(url: str) -> dict:
                 raise
             print(f"  [warn] attempt {attempt} failed ({exc}); retrying …", file=sys.stderr)
             time.sleep(RETRY_WAIT)
+    raise RuntimeError(f"Failed to fetch {url} after {MAX_RETRIES} attempts")
 
 
 def get_assembly_info(accession: str) -> dict:
@@ -77,7 +78,10 @@ def get_assembly_info(accession: str) -> dict:
     Return a dict with keys: taxon_id, species_name.
     Raises if the accession is not found.
     """
-    url = f"{NCBI_BASE}/genome/accession/{accession}/dataset_report?filters.exclude_atypical=false&filters.assembly_version=all_assemblies"
+    url = (
+        f"{NCBI_BASE}/genome/accession/{accession}/dataset_report"
+        "?filters.exclude_atypical=false&filters.assembly_version=all_assemblies"
+    )
     data = _get(url)
 
     reports = data.get("reports", [])
@@ -135,12 +139,9 @@ def check_assembly(accession: str) -> dict:
             # current_reference: prefer the GCA accession
             row["current_reference"] = ref_gca or ref_paired or "Unknown"
 
-            if accession in (ref_gca, ref_paired):
-                row["is_reference"] = True
-            else:
-                row["is_reference"] = False
+            row["is_reference"] = "True" if accession in (ref_gca, ref_paired) else "False"
 
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:  # noqa: BLE001  pylint: disable=broad-exception-caught
         row["is_reference"] = "Error"
         row["current_reference"] = f"Error: {exc}"
         print(f"  [error] {accession}: {exc}", file=sys.stderr)
@@ -158,7 +159,7 @@ def load_accessions_from_file(path: str) -> list[str]:
     if not p.exists():
         sys.exit(f"File not found: {path}")
 
-    lines = p.read_text().splitlines()
+    lines = p.read_text(encoding="utf-8").splitlines()
     accessions = []
     for line in lines:
         # Strip BOM, whitespace, quotes
@@ -174,6 +175,7 @@ def load_accessions_from_file(path: str) -> list[str]:
 
 
 def write_csv(rows: list[dict], output_path: str) -> None:
+    """Write the result rows to output_path as a CSV file."""
     fieldnames = ["gca", "species_name", "taxon_id", "is_reference", "current_reference"]
     with open(output_path, "w", newline="", encoding="utf-8") as fh:
         writer = csv.DictWriter(fh, fieldnames=fieldnames)
@@ -182,6 +184,7 @@ def write_csv(rows: list[dict], output_path: str) -> None:
 
 
 def parse_args() -> argparse.Namespace:
+    """Parse command-line arguments."""
     parser = argparse.ArgumentParser(
         description="Check whether GCA accessions are reference assemblies (NCBI).",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -219,7 +222,7 @@ def main() -> None:
         accessions += load_accessions_from_file(args.file)
 
     if not accessions:
-        sys.exit("No accessions provided. " "Pass them on the command line or use --file.")
+        sys.exit("No accessions provided. Pass them on the command line or use --file.")
 
     # Deduplicate while preserving order
     seen: set[str] = set()

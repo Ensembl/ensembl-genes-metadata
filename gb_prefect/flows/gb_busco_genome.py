@@ -1,14 +1,10 @@
 import argparse
 import sys
 from pathlib import Path
-from prefect import flow  # type: ignore
 from typing import Optional
 
-PACKAGE_ROOT = Path(__file__).resolve().parents[2]
-if str(PACKAGE_ROOT) not in sys.path:
-    sys.path.insert(0, str(PACKAGE_ROOT))
-
-from gb_prefect.tasks.busco import run_nextflow_busco
+from prefect import flow  # type: ignore
+from gb_prefect.tasks.busco import run_nextflow_busco  # pylint: disable=wrong-import-position
 
 
 @flow(name="BUSCO_genome", log_prints=True)
@@ -20,6 +16,7 @@ def genome_busco_flow(
     dry_run: bool = False,
     create_artifact: bool = True,
 ):
+    """Run the BUSCO genome-statistics Nextflow pipeline for a single CSV file."""
     return run_nextflow_busco(
         csv_file=csv_file,
         outdir=outdir,
