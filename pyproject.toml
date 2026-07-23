@@ -36,6 +36,8 @@ cicd = [
     "coverage",
     "pylint",
     "mypy",
+    "black==24.10.0",
+    "types-requests",
 ]
 docs = [
     "mkdocs",
@@ -56,6 +58,9 @@ target-version = ["py39", "py310"]
 
 [tool.pylint.main]
 max-line-length = 110
+max-args = 8
+max-positional-arguments = 8
+max-locals = 20
 disable = [
     "missing-module-docstring",
     "too-few-public-methods",
