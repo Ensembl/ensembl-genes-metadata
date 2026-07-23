@@ -132,3 +132,26 @@ All files are pylint 10/10, mypy clean, and black formatted. The only mypy suppr
 **Genomes missing from clade analysis**: some genomes in the registry do not have individual BUSCO sub-metric rows in annotation_metrics (only the composite string). These genomes are absent from the clade analysis pipeline because we need the numeric sub-metrics for PCA. This affects older annotations that predate the individual metric loading.
 
 **Clade assignment for humans**: Homo sapiens is assigned to mammalia rather than primates because humans have a separate genebuild pipeline and are not in clade_settings.json as a distinct clade entry. This is expected and correct per Anna.
+
+## MAD threshold — how it works and how to change it
+
+The outlier detection uses a modified MAD (Median Absolute Deviation) score per feature. For each genome, the score is computed as:
+The constant 0.6745 makes the MAD score equivalent to a standard z-score under a normal distribution. A genome is flagged as an outlier if its maximum MAD score across all features exceeds the threshold.
+
+The current threshold is **8.0**, defined as `MAD_THRESHOLD` in `clade_analysis.py`:
+
+```python
+MAD_THRESHOLD = 8.0
+```
+
+To change it, update this constant. Lower values flag more genomes as outliers; higher values are more conservative. The value of 8.0 was chosen after observing that the default threshold of 3.5 produced false positive rates of 40-50% in some clades due to tight clustering. Some clades (particularly mammalia) still show high outlier rates at 8.0 because the clade clusters tightly around 98-99% BUSCO completeness, making even minor deviations appear extreme by MAD. Further tuning may be needed as more data is added to the registry.
+
+## Notes on N/A fields in per-genome reports
+
+Some fields in the per-genome HTML reports display N/A for certain genomes. These are genuine data gaps in the registry rather than code issues:
+
+**FTP Link**: not all genomes have an FTP path stored in the registry. This field is populated from the existing anno_wide data and will show N/A if the registry does not have an FTP entry for that genome.
+
+**Clade (card)**: the `species.clade` column is NULL for all rows in the current registry snapshot. Clade assignment is handled via `taxonomy_service` and `clade_settings.json` for Module 2 outlier detection, and the clade card in the per-genome report is populated from the outlier results when Module 2 is run. If a genome is not present in the clade analysis (e.g. it lacks individual BUSCO sub-metric rows), the clade card will remain N/A.
+
+**Latest Annotated / Annotated Version**: these fields are NULL for many genomes in the registry and will show N/A where not populated.
