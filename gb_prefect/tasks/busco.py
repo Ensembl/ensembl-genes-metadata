@@ -16,11 +16,11 @@ def run_nextflow_busco(
     csv_file: str,
     outdir: str,
     asm_venv: str,
-    enscode: str = None,
+    enscode: Optional[str] = None,
     dry_run: bool = False,
     create_artifact: bool = True,
 ):
-
+    """Build and submit the SLURM job that runs the BUSCO genome-statistics Nextflow pipeline."""
     date = datetime.now().strftime("%Y-%m-%d")
     outdir_path = Path(outdir)
     csv_stem = Path(csv_file).stem
@@ -28,14 +28,7 @@ def run_nextflow_busco(
     command_file = outdir_path / f"busco_genome_nextflow_command_{csv_stem}_{date}.sh"
     log.parent.mkdir(parents=True, exist_ok=True)
 
-    enscode = enscode or os.environ.get("ENSCODE")
-    if not enscode:
-        if dry_run:
-            enscode = "<ENSCODE>"
-        else:
-            raise ValueError(
-                "ENSCODE is required when dry_run=False. Pass enscode=..., set ENSCODE, or run with dry_run=True."
-            )
+    enscode = resolve_enscode(enscode, dry_run)
     append_log(log, f"[{datetime.now()}] INFO: ENSCODE set to {enscode}.\n")
 
     sbatch_script = f"""#!/bin/bash

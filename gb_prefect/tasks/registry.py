@@ -17,7 +17,7 @@ def register_assemblies(
     date: str,
     outdir: str,
     asm_venv: str,
-    enscode: str = None,
+    enscode: Optional[str] = None,
     dry_run: bool = False,
     create_artifact: bool = True,
 ):
@@ -30,14 +30,7 @@ def register_assemblies(
     command_file = outdir_path / f"register_assemblies_command_{date_fmt}.sh"
     log.parent.mkdir(parents=True, exist_ok=True)
 
-    enscode = enscode or os.environ.get("ENSCODE")
-    if not enscode:
-        if dry_run:
-            enscode = "<ENSCODE>"
-        else:
-            raise ValueError(
-                "ENSCODE is required when dry_run=False. Pass enscode=..., set ENSCODE, or run with dry_run=True."
-            )
+    enscode = resolve_enscode(enscode, dry_run)
     append_log(log, f"[{datetime.now()}] INFO: ENSCODE set to {enscode}.\n")
 
     sbatch_script = f"""#!/bin/bash

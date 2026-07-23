@@ -55,13 +55,13 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if not args.date:
-        date = datetime.now().strftime("%Y-%m-%d")
+        run_date = datetime.now().strftime("%Y-%m-%d")
     else:
-        date = datetime.strptime(args.date, "%Y-%m-%d")
+        run_date = datetime.strptime(args.date, "%Y-%m-%d").strftime("%Y-%m-%d")
 
     gb_registry_update_flow(
-        date=date,
-        outdir=f"{args.outdir}/asm_update_{date}",
+        date=run_date,
+        outdir=f"{args.outdir}/asm_update_{run_date}",
         gca_list=args.gca_list,
         enscode=args.enscode,
         asm_venv=args.asm_venv,

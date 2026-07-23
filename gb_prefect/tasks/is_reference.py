@@ -1,10 +1,10 @@
-import os
 import re
 from datetime import datetime
 from pathlib import Path
 
 from prefect import task  # type: ignore
 
+from gb_prefect.utils.enscode_utils import resolve_enscode
 from gb_prefect.utils.logging_utils import append_log
 from gb_prefect.utils.shell_utils import run_cmd_bash_capture
 
@@ -24,10 +24,7 @@ def is_reference(
     output_file.parent.mkdir(parents=True, exist_ok=True)
     log.parent.mkdir(parents=True, exist_ok=True)
 
-    enscode = enscode or os.environ.get("ENSCODE")
-    if not enscode:
-        raise ValueError("ENSCODE is required.")
-
+    enscode = resolve_enscode(enscode, dry_run=False)
     append_log(log, f"[{datetime.now()}] INFO: ENSCODE set to {enscode}.\n")
 
     sbatch_script = f"""#!/bin/bash
@@ -67,6 +64,6 @@ python {enscode}/ensembl-genes-metadata/src/python/is_reference.py \
 
     if rc != 0:
         raise RuntimeError(f"SLURM job failed with return code {rc}. Check logs for details.")
-    else:
-        append_log(log, f"[{datetime.now()}] INFO: SLURM job completed successfully.\n")
-        return str(output_file)
+
+    append_log(log, f"[{datetime.now()}] INFO: SLURM job completed successfully.\n")
+    return str(output_file)

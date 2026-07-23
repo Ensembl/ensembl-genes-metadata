@@ -18,8 +18,8 @@ def update_assemblies(
     outdir: str,
     asm_venv: str,
     slack_report: bool = True,
-    date: str = None,
-    enscode: str = None,
+    date: Optional[str] = None,
+    enscode: Optional[str] = None,
     dry_run: bool = False,
     create_artifact: bool = True,
 ):
@@ -30,14 +30,7 @@ def update_assemblies(
     command_file = outdir_path / f"update_assemblies_command_{date}.sh"
     log.parent.mkdir(parents=True, exist_ok=True)
 
-    enscode = enscode or os.environ.get("ENSCODE")
-    if not enscode:
-        if dry_run:
-            enscode = "<ENSCODE>"
-        else:
-            raise ValueError(
-                "ENSCODE is required when dry_run=False. Pass enscode=..., set ENSCODE, or run with dry_run=True."
-            )
+    enscode = resolve_enscode(enscode, dry_run)
     append_log(log, f"[{datetime.now()}] INFO: ENSCODE set to {enscode}.\n")
 
     sbatch_script = f"""#!/bin/bash
