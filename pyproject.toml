@@ -64,6 +64,7 @@ max-locals = 20
 disable = [
     "missing-module-docstring",
     "too-few-public-methods",
+    "duplicate-code",
 ]
 
 [tool.mypy]
