@@ -202,7 +202,13 @@ def _analyse_clade(  # pylint: disable=too-many-locals
         try:
             pc_coords = _run_pca(feature_matrix)
         except Exception as exc:  # pylint: disable=broad-except
-            logger.warning("PCA failed for clade %s: %s", clade_name, exc)
+            logger.warning(
+                "PCA failed for clade %s (%d genomes, %d features): %s",
+                clade_name,
+                n_genomes,
+                len(available_features),
+                exc,
+            )
 
     # MAD scores on each feature independently to find which ones are unusual
     feature_mad_scores = np.zeros((n_genomes, len(available_features)))

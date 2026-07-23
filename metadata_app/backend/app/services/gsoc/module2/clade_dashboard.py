@@ -347,6 +347,7 @@ def render_clade_dashboard(
         <strong>{len(clades)}</strong> clades</span>
   <span><strong style="color:#9a3412">{total_outliers}</strong> outliers flagged
         ({round(total_outliers/total_genomes*100, 1)}% overall)</span>
+  <span style="color:#94a3b8;font-size:0.8rem">Genomes with a maximum modified MAD score &gt; 8.0 are flagged as outliers</span>
   <span style="margin-left:auto;color:#94a3b8">Generated {generated}</span>
 </div>
 

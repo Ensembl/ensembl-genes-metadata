@@ -28,6 +28,8 @@ and cannot be used directly as a PCA feature. Individual numeric sub-metrics
 and are used instead.
 """
 
+# pylint: disable=duplicate-code
+
 import logging
 from typing import Dict, List, Optional
 
