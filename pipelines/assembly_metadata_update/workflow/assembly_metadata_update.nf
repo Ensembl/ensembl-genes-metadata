@@ -47,7 +47,10 @@ WORKFLOW: REGISTER NEW ASSEMBLIES IN DB
 
 workflow ASSEMBLY_METADATA_UPDATE {
 
-    FETCH_ASSEMBLIES(params.screen_date)
+    // screen_date is unused (and left unset) in --gca_input mode; substitute a
+    // placeholder so a null value is never passed into the process input.
+    def screen_date_value = params.gca_input ? 'NA' : params.screen_date
+    FETCH_ASSEMBLIES(screen_date_value)
     def gca = FETCH_ASSEMBLIES.out.splitText().map { it -> it.trim() }
 
     INTEGRITY_CHECKER(gca)
