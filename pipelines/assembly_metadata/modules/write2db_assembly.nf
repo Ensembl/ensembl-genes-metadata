@@ -19,17 +19,18 @@ limitations under the License.
 process WRITE2DB_ASSEMBLY {
 
     label 'python'
-    tag "$gca"
-    publishDir "${params.output_dir}/nextflow_output/$gca", mode: 'copy'
+    tag "${gca}"
+    publishDir "${params.output_dir}/nextflow_output/${gca}", mode: 'copy'
 
     input:
     tuple val(gca), path(assembly), path(metadata_tmp), path(species_tmp)
+    path write2db_script
 
     output:
     tuple val(gca), path(metadata_tmp), path("${assembly.baseName}.last_id"), path(species_tmp)
 
     script:
     """
-    write2db.py --file-path $assembly --metadata ${params.metadata_params} --config ${params.db_table_conf}
+    python ${write2db_script} --file-path ${assembly} --metadata ${params.metadata_params} --config ${params.db_table_conf}
     """
 }

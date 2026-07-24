@@ -17,20 +17,20 @@ limitations under the License.
 */
 
 process INTEGRITY_TAXONOMY {
-    
+
     label 'python'
-    tag "$gca"
-    publishDir "${params.output_dir}/nextflow_output/$gca", mode: 'copy'
-    
+    tag "${gca}"
+    publishDir "${params.output_dir}/nextflow_output/${gca}", mode: 'copy'
 
     input:
     tuple val(gca), val(taxon_id)
+    path species_checker_script
 
     output:
     tuple val(gca), path("taxonomy_${taxon_id}.json")
 
     script:
     """
-    species_checker.py --taxon_id $taxon_id --ncbi_url $params.ncbi_url --taxonomy_update
+    python ${species_checker_script} --taxon_id ${taxon_id} --ncbi_url ${params.ncbi_url} --taxonomy_update
     """
 }

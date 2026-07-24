@@ -30,17 +30,18 @@ Outputs:
 process SPECIES_CHECKER {
 
     label 'python'
-    tag "$gca"
-    publishDir "${params.output_dir}/nextflow_output/$gca", mode: 'copy'
+    tag "${gca}"
+    publishDir "${params.output_dir}/nextflow_output/${gca}", mode: 'copy'
 
     input:
     tuple val(gca), path(species_tmp), path(last_id)
+    path species_checker_script
 
     output:
     tuple val(gca), path("${species_tmp.baseName}.json")
 
     script:
     """
-    species_checker.py --json-path $species_tmp --ncbi_url ${params.ncbi_url} --enscode ${params.enscode}
+    python ${species_checker_script} --json-path ${species_tmp} --ncbi_url ${params.ncbi_url} --enscode ${params.enscode}
     """
 }

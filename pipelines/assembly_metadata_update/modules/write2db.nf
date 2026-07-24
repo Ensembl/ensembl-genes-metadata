@@ -19,11 +19,12 @@ limitations under the License.
 process WRITE2DB {
 
     label 'python'
-    tag "$gca"
-    publishDir "${params.output_dir}/nextflow_output/$gca", mode: 'copy'
+    tag "${gca}"
+    publishDir "${params.output_dir}/nextflow_output/${gca}", mode: 'copy'
 
     input:
     tuple val(gca), val(attempt_update), path(metadata_json), path(taxonomy_json)
+    path write2db_script
 
     output:
     tuple val(gca), val(attempt_update), path(metadata_json), emit: to_taxonomy
@@ -34,6 +35,6 @@ process WRITE2DB {
 
     script:
     """
-    write2db.py --file-path $taxonomy_json --metadata ${params.metadata_params} --config ${params.db_table_conf}
+    python ${write2db_script} --file-path ${taxonomy_json} --metadata ${params.metadata_params} --config ${params.db_table_conf}
     """
 }

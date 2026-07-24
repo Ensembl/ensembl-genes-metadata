@@ -17,22 +17,23 @@ limitations under the License.
 */
 
 process SPECIES_CHECKER {
-    
+
     label 'python'
-    tag "$gca"
-    publishDir "${params.output_dir}/nextflow_output/$gca", mode: 'copy'    
+    tag "${gca}"
+    publishDir "${params.output_dir}/nextflow_output/${gca}", mode: 'copy'
 
     input:
     tuple val(gca), val(attempt_update), path(metadata_json), val(old_taxon_id), val(new_taxon_id)
+    path species_checker_script
 
     output:
     tuple val(gca), val(attempt_update), path(metadata_json), path("taxonomy_${new_taxon_id}.json")
 
     when:
     attempt_update.trim() == 'true'
-    
+
     script:
     """
-    species_checker.py --taxon_id $new_taxon_id --ncbi_url $params.ncbi_url --taxonomy_update
+    python ${species_checker_script} --taxon_id ${new_taxon_id} --ncbi_url ${params.ncbi_url} --taxonomy_update
     """
 }

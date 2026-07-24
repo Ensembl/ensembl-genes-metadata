@@ -19,18 +19,19 @@ limitations under the License.
 process WRITE2DB_TOLID {
 
     label 'python'
-    tag "$gca"
-    publishDir "${params.output_dir}/nextflow_output/$gca", mode: 'copy'
+    tag "${gca}"
+    publishDir "${params.output_dir}/nextflow_output/${gca}", mode: 'copy'
 
     input:
     tuple val(gca), path(tolid)
+    path write2db_script
 
     output:
-    val gca, emit: gca 
-    path "${tolid.baseName}.last_id", emit:last_id
+    val gca, emit: gca
+    path "${tolid.baseName}.last_id", emit: last_id
 
     script:
     """
-    write2db.py --file-path $tolid --update --metadata ${params.metadata_params} --config ${params.db_table_conf}
+    python ${write2db_script} --file-path ${tolid} --update --metadata ${params.metadata_params} --config ${params.db_table_conf}
     """
 }
