@@ -1,7 +1,7 @@
 "use client";
 
 import { type ColumnDef, type HeaderContext } from "@tanstack/react-table";
-import { ArrowUpDown } from "lucide-react";
+import {ArrowUpDown, Badge, BadgeCheck} from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export type Assemblies = {
@@ -14,11 +14,14 @@ export type Assemblies = {
   lowest_taxon_id: number;
   internal_clade: string;
   is_current: string;
+  gb_status: string;
+  other_version_live: string;
   "assembly.busco": string;
   "assembly.busco_dataset": string;
   short_read_paired_end_illumina_lowest: number;
   short_read_paired_end_illumina: number;
   lowest_aligned_count: number;
+  long_read_pacbio: number;
 };
 
 function sortableHeader(label: string) {
@@ -64,7 +67,7 @@ export const columns: ColumnDef<Assemblies>[] = [
   },
   {
     accessorKey: "lowest_taxon_id",
-    header: sortableHeader("Lowest Taxon ID"),
+    header: sortableHeader("Taxon ID"),
   },
   {
     accessorKey: "internal_clade",
@@ -74,17 +77,7 @@ export const columns: ColumnDef<Assemblies>[] = [
     accessorKey: "is_current",
     header: sortableHeader("Latest GCA"),
   },
-  {
-    id: "assembly_busco",
-    accessorFn: (row) => row["assembly.busco"],
-    header: sortableHeader("Assembly BUSCO"),
-  },
-  {
-    id: "assembly_busco_dataset",
-    accessorFn: (row) => row["assembly.busco_dataset"],
-    header: sortableHeader("Assembly BUSCO lineage"),
-  },
-  {
+    {
     accessorKey: "lowest_aligned_count",
     header: sortableHeader("Transcr. reg. lowest"),
   },
@@ -96,4 +89,36 @@ export const columns: ColumnDef<Assemblies>[] = [
     accessorKey: "short_read_paired_end_illumina",
     header: sortableHeader("RNA genus"),
   },
+    {
+    accessorKey: "long_read_pacbio",
+    header: sortableHeader("PacBio genus"),
+  },
+    {
+    accessorKey: "gb_status",
+    header: sortableHeader("Status"),
+  },
+    {
+  accessorKey: "other_version_live",
+  header: "Other version live",
+  cell: ({ row }) => (
+    <div className="flex justify-center items-center w-full">
+      {row.getValue("other_version_live") === "yes" ? (
+        <BadgeCheck className="h-5 w-5 text-foreground" />
+      ) : (
+        <Badge className="h-5 w-5 text-foreground" />
+      )}
+    </div>
+  ),
+},
+  {
+    id: "assembly_busco",
+    accessorFn: (row) => row["assembly.busco"],
+    header: sortableHeader("gBUSCO"),
+  },
+  {
+    id: "assembly_busco_dataset",
+    accessorFn: (row) => row["assembly.busco_dataset"],
+    header: sortableHeader(" gBUSCO lineage"),
+  },
+
 ];

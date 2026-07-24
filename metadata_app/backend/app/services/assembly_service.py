@@ -17,6 +17,49 @@ from metadata_app.backend.app.services.get_transcriptomic_data_ENA_service impor
 )
 
 
+def check_other_version_live(gca: str) -> str:
+    """
+    Check whether any version of the given GCA accession is live.
+
+    Example:
+        Input: full gca string expl: GCA_123456789.1
+        Checks: gca string without version expl: GCA_123456789.%
+        Returns:
+            "yes" if any version is live
+            "no" otherwise
+    """
+    try:
+        with get_db_connection("meta") as conn:
+            if conn is None:
+                logging.error("Failed to obtain metadata database connection.")
+                return "no"
+            cursor = conn.cursor()
+            gca_base = gca.rsplit(".", 1)[0]
+
+            query = """
+                    SELECT 1
+                    FROM genebuild_status
+                    WHERE SUBSTRING_INDEX(gca_accession, '.', 1) = %s
+                      AND gb_status = 'live'
+                    LIMIT 1
+                    """
+
+            cursor.execute(query, (gca_base,))
+            result = cursor.fetchone()
+
+            logging.info(
+                "Checked for live versions of %s: %s",
+                gca,
+                "found" if result else "not found",
+            )
+
+            return "yes" if result else "no"
+
+    except Exception:
+        logging.exception("Error checking live version for %s", gca)
+        return "no"
+
+
 def get_filtered_assemblies(
     bioproject_id,
     metric_thresholds,
@@ -226,20 +269,6 @@ def get_filtered_assemblies(
         df["release_date"] = pd.to_datetime(df["release_date"], errors="coerce")
         df["gca"] = df["gca_chain"].astype(str) + "." + df["gca_version"].astype(str)
 
-        # Flag assemblies that have another live version on the same GCA chain.
-        live_gca_sets = (
-            df.loc[df["gb_status"] == "live"]
-            .groupby("gca_chain")["gca"]
-            .agg(lambda series: set(series))
-            .to_dict()
-        )
-        df["other_version_live"] = [
-            "yes"
-            if len(live_gca_sets.get(gca_chain, set()) - {gca}) > 0
-            else "no"
-            for gca_chain, gca in zip(df["gca_chain"], df["gca"])
-        ]
-
         # Clean genome_coverage
         logging.info(f"Cleaning genome coverage")
         df["metrics_value"] = df.apply(
@@ -298,7 +327,6 @@ def get_filtered_assemblies(
             "infra_name",
             "is_current",
             "gb_status",
-            "other_version_live",
             "pipeline",
             "metrics_name",
         ]
@@ -309,8 +337,6 @@ def get_filtered_assemblies(
             logging.info("\n" + duplicates.head(20).to_string())
 
         df = df.drop_duplicates(subset=index_cols, keep="first")
-        print("duplicte drop")
-        print(df.head(20))
         df_wide = df.pivot(
             index=[
                 "bioproject_id",
@@ -328,7 +354,6 @@ def get_filtered_assemblies(
                 "infra_name",
                 "is_current",
                 "gb_status",
-                "other_version_live",
                 "pipeline",
             ],
             columns="metrics_name",
@@ -366,16 +391,16 @@ def get_filtered_assemblies(
             return "No assemblies meet the given thresholds.", None, None, None, None
 
         # Re-attach taxonomy-derived columns on the wide frame for downstream merges.
-        df_wide[["internal_clade", "species_taxon_id", "genus_taxon_id", "pipeline"]] = (
-            pd.DataFrame(
-                df_wide.apply(
-                    lambda r: assign_clade_and_species(
-                        r["lowest_taxon_id"], clade_data, taxonomy_dict
-                    ),
-                    axis=1,
-                ).tolist(),
-                index=df_wide.index,
-            )
+        df_wide[
+            ["internal_clade", "species_taxon_id", "genus_taxon_id", "pipeline"]
+        ] = pd.DataFrame(
+            df_wide.apply(
+                lambda r: assign_clade_and_species(
+                    r["lowest_taxon_id"], clade_data, taxonomy_dict
+                ),
+                axis=1,
+            ).tolist(),
+            index=df_wide.index,
         )
 
         logging.info(f"Added clade data")
@@ -440,7 +465,6 @@ def get_filtered_assemblies(
                 logging.warning("No transcriptomic data retrieved from ENA")
 
         # Filter non annoteted assemblies only
-
         if non_annotated:
             logging.info(f"Filtring for non-annotated assemblies")
             df_wide = df_wide
@@ -468,12 +492,14 @@ def get_filtered_assemblies(
         df_wide.drop(columns=columns_to_drop, inplace=True, errors="ignore")
         df_wide = df_wide.drop_duplicates(subset=["gca"], keep="first")
 
+        # Flag assemblies that have another live version on the same GCA chain.
+        df_wide["other_version_live"] = df_wide["gca"].apply(check_other_version_live)
+
         # Create GCA list
         df_gca_list = df_wide[["gca"]]
         logging.info(f"Created gca_list")
 
         df_wide = df_wide.astype(object).where(pd.notna(df_wide), None)
-        print(df_wide)
         return df_wide, df_gca_list, taxonomy_dict
 
     except HTTPException:
