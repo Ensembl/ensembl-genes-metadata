@@ -255,7 +255,7 @@ def render_html(  # pylint: disable=too-many-locals
             outlier_detail = (
                 f"<p style='margin-top:0.75rem;font-size:0.88rem;color:#475569'>"
                 f"MAD score: <strong>{report.outlier_mad_score}</strong> "
-                f"(threshold: 3.5)</p>"
+                f"(threshold: 8.0)</p>"
             )
             if report.outlier_features:
                 outlier_detail += (
@@ -271,7 +271,7 @@ def render_html(  # pylint: disable=too-many-locals
             outlier_detail = (
                 f"<p style='margin-top:0.75rem;font-size:0.88rem;color:#475569'>"
                 f"MAD score: <strong>{report.outlier_mad_score}</strong> "
-                f"(threshold: 3.5)</p>"
+                f"(threshold: 8.0)</p>"
             )
         clade_label = html.escape(_fmt(report.internal_clade))
         outlier_section = f"""

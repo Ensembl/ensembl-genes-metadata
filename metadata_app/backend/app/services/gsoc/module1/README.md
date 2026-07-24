@@ -116,7 +116,7 @@ Every file is run through pylint, mypy, and black before being committed. The on
 
 - **Multiple annotations per GCA**: right now if a genome has more than one annotation attempt in the database, we just pick the most recently updated one and log a warning. This is a stopgap, not the final design. The better options being discussed are either showing all annotations for a genome broken out by method, or generating a separate report per annotation. Not decided yet.
 - **BUSCO sub-metrics**: the database actually stores duplication, fragmentation, and other BUSCO sub-scores as their own clean columns (not just buried inside the composite string we currently parse). We have not pivoted these in yet, but doing so would let us flag high duplication directly instead of relying on string parsing.
-- **AGAT / new metrics**: gene/transcript/exon counts and length distributions from AGAT are not yet pulled into the reports. This needs a schema investigation session.
+- **AGAT / new metrics**: gene/transcript/exon counts and length distributions from AGAT are now pulled into the reports via a LEFT JOIN on the `new_metrics` table in `db_loader.py`. 9 stats are currently included: coding genes, total transcripts, transcripts per gene, average CDS length, average coding intron length, single exon coding genes, longest coding gene length, average coding exon length, and non-coding genes.
 
 ## Testing
 
