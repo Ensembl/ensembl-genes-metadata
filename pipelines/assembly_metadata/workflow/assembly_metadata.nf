@@ -43,8 +43,8 @@ WORKFLOW: REGISTER NEW ASSEMBLIES IN DB
 
 workflow ASSEMBLY_METADATA {
 
-    // print params
-    params.each { k, v -> println("params.${k.padRight(25)} = ${v}") }
+    def write2db_script = file("${projectDir}/../../src/python/write2db.py")
+    def species_checker_script = file("${projectDir}/../../src/python/species_checker.py")
 
     SET_DATE()
     def last_update = SET_DATE.out.splitText { it -> it.trim() }
@@ -54,19 +54,19 @@ workflow ASSEMBLY_METADATA {
 
     def parse_metadata_out = PARSE_METADATA(gca)
 
-    def write2db_assembly_out = WRITE2DB_ASSEMBLY(parse_metadata_out)
+    def write2db_assembly_out = WRITE2DB_ASSEMBLY(parse_metadata_out, write2db_script)
 
     def update_keys_out = UPDATE_KEYS_METADATA(write2db_assembly_out)
 
-    def write2db_metadata_out = WRITE2DB_METADATA(update_keys_out)
+    def write2db_metadata_out = WRITE2DB_METADATA(update_keys_out, write2db_script)
 
-    def species_checker_out = SPECIES_CHECKER(write2db_metadata_out)
+    def species_checker_out = SPECIES_CHECKER(write2db_metadata_out, species_checker_script)
 
-    def write2db_species_out = WRITE2DB_SPECIES(species_checker_out)
+    def write2db_species_out = WRITE2DB_SPECIES(species_checker_out, write2db_script)
 
     def get_tolid_out = GET_TOLID(write2db_species_out)
 
-    WRITE2DB_TOLID(get_tolid_out)
+    WRITE2DB_TOLID(get_tolid_out, write2db_script)
 
     gca_list = WRITE2DB_TOLID.out.gca.map { it -> it.trim() }.collectFile(name: 'gca_list_to_report.txt', newLine: true)
 

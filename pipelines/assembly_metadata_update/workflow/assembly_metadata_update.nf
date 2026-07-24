@@ -47,6 +47,9 @@ WORKFLOW: REGISTER NEW ASSEMBLIES IN DB
 
 workflow ASSEMBLY_METADATA_UPDATE {
 
+    def write2db_script = file("${projectDir}/../../src/python/write2db.py")
+    def species_checker_script = file("${projectDir}/../../src/python/species_checker.py")
+
     // screen_date is unused (and left unset) in --gca_input mode; substitute a
     // placeholder so a null value is never passed into the process input.
     def screen_date_value = params.gca_input ? 'NA' : params.screen_date
@@ -76,8 +79,8 @@ workflow ASSEMBLY_METADATA_UPDATE {
         }
         .set { integrity_check_results }
 
-    INTEGRITY_TAXONOMY(integrity_check_results.taxonomy_update)
-    INTEGRITY_WRITE2DB(INTEGRITY_TAXONOMY.out)
+    INTEGRITY_TAXONOMY(integrity_check_results.taxonomy_update, species_checker_script)
+    INTEGRITY_WRITE2DB(INTEGRITY_TAXONOMY.out, write2db_script)
 
     def gca_accession = integrity_check_results.correct.mix(INTEGRITY_WRITE2DB.out.gca_to_update)
 
@@ -104,8 +107,8 @@ workflow ASSEMBLY_METADATA_UPDATE {
 
     TAXONOMY(taxonomy_check_results.pass)
 
-    def species_checker_out = SPECIES_CHECKER(taxonomy_check_results.failed)
-    WRITE2DB(species_checker_out)
+    def species_checker_out = SPECIES_CHECKER(taxonomy_check_results.failed, species_checker_script)
+    WRITE2DB(species_checker_out, write2db_script)
     NEW_TAXONOMY(WRITE2DB.out.to_taxonomy)
 
     def all_output = ASSEMBLY_STATUS.out
