@@ -26,6 +26,9 @@ Outputs:
 */
 
 process SET_DATE {
+
+    label 'python'
+
     output:
     stdout
 
@@ -36,11 +39,11 @@ process SET_DATE {
         """
     else if(params.full_screen && !params.date)
         """
-            mysql -h ${params.metadata_db.host} -u ${params.metadata_db.user} -p${params.metadata_db.password} ${params.metadata_db.database} -NB -e "SELECT DATE_FORMAT(date_value, '%m/%d/%Y') from update_date WHERE update_type = 'full_screen';"
+            set_date.py --metadata ${params.metadata_params} --full_screen
         """
     else if(!params.date && !params.full_screen)
         """
-            mysql -h ${params.metadata_db.host} -u ${params.metadata_db.user} -p${params.metadata_db.password} ${params.metadata_db.database} -NB -e "SELECT DATE_FORMAT(DATE_SUB(date_value, INTERVAL 1 DAY), '%m/%d/%Y') from update_date WHERE update_type = 'regular_update';"
+            set_date.py --metadata ${params.metadata_params}
         """
     else
         error "Invalid parameters to set up date"
