@@ -42,6 +42,11 @@ import os
 from typing import Dict, Tuple, Any
 
 
+def escape_value(value) -> str:
+    """Escape a value for safe embedding inside a single-quoted SQL string literal."""
+    return pymysql.converters.escape_string(str(value))
+
+
 def check_dict_structure(input_dict) -> bool:
     """This functions checks the structure of the dictionary to,
     identify if the data is a dictionary or a list of dictionary
@@ -139,7 +144,7 @@ def insert_query(data_dict: Dict, table_name: str, table_conf, metadata_params) 
         if dkey is None or dkey == "None":
             logging.info(f"{table_name} is a per_row table without dkey {dkey}")
             for key, value in data_dict.items():
-                value_item = f"('{key}', '{value}')"
+                value_item = f"('{escape_value(key)}', '{escape_value(value)}')"
                 value_list.append(value_item)
                 values_string = ", ".join(value_list)
 
@@ -150,10 +155,12 @@ def insert_query(data_dict: Dict, table_name: str, table_conf, metadata_params) 
             for key, value in data_dict.items():
                 if key != dkey:
                     if table_conf[table_name]["method"] in ["per_row"]:
-                        value_item = f"('{dkey_value}', '{key}', '{value}')"
+                        value_item = (
+                            f"('{escape_value(dkey_value)}', '{escape_value(key)}', '{escape_value(value)}')"
+                        )
                     elif table_conf[table_name]["method"] in ["per_row_key"]:
                         logging.info(f"{table_name} is an attribute table (key only) ")
-                        value_item = f"('{dkey_value}', '{key}')"
+                        value_item = f"('{escape_value(dkey_value)}', '{escape_value(key)}')"
                     else:
                         raise ValueError(
                             f"Invalid value in table config - method: {table_conf[table_name]['method'] } "
@@ -167,7 +174,9 @@ def insert_query(data_dict: Dict, table_name: str, table_conf, metadata_params) 
         # crete basic query
         logging.info(f"Creating basic query for table {table_name}")
         table_var_string = ", ".join(list(data_dict.keys()))
-        values_strings = ",".join([f"'{value}'" for value in list(data_dict.values())]).replace("''", "NULL")
+        values_strings = ",".join([f"'{escape_value(value)}'" for value in list(data_dict.values())]).replace(
+            "''", "NULL"
+        )
         return f"""INSERT INTO {table_name} ({table_var_string}) VALUES ({values_strings}) ;"""
 
 
@@ -187,7 +196,7 @@ def update_query(data_dict: Dict, table_name: str, table_conf) -> str:
         if table_conf[table_name]["ukey"] == key:
             condition = f"{key} = {value}"
         else:
-            update_list.append(f"{key} = '{value}'")
+            update_list.append(f"{key} = '{escape_value(value)}'")
 
     update_values = ",".join(update_list)
 
@@ -273,11 +282,16 @@ def retrieve_row_id(data_dict: Dict, table_name: str, table_conf, metadata_param
         for key, value in data_dict.items():
             if key != dkey:
                 if table_conf[table_name]["method"] in ["per_row"] and dkey_value != "None":
-                    condition_string = f"{columns[0]} = '{dkey_value}' AND {columns[1]} =  '{key}' AND {columns[2]} = '{value}'"
+                    condition_string = (
+                        f"{columns[0]} = '{escape_value(dkey_value)}' AND {columns[1]} =  '{escape_value(key)}' "
+                        f"AND {columns[2]} = '{escape_value(value)}'"
+                    )
                 elif table_conf[table_name]["method"] in ["per_row_key"]:
-                    condition_string = f"{columns[0]} = '{dkey_value}' AND {columns[1]} =  '{key}'"
+                    condition_string = f"{columns[0]} = '{escape_value(dkey_value)}' AND {columns[1]} =  '{escape_value(key)}'"
                 elif table_conf[table_name]["method"] in ["per_row"] and dkey_value == "None":
-                    condition_string = f"{columns[0]} =  '{key}' AND {columns[1]} = '{value}'"
+                    condition_string = (
+                        f"{columns[0]} =  '{escape_value(key)}' AND {columns[1]} = '{escape_value(value)}'"
+                    )
                 else:
                     raise ValueError(
                         f"Invalid value in table config - method: {table_conf[table_name]['method'] } "
@@ -298,11 +312,20 @@ def retrieve_row_id(data_dict: Dict, table_name: str, table_conf, metadata_param
                 elif last_id_tmp == () and table_conf[table_name]["method"] in ["per_row"]:
                     logging.info("Failed to retrieve value for last id. Inserting missing data")
                     if table_name == "taxonomy":
-                        query_missing_insert = f"UPDATE {table_name} SET {columns[1]} = '{key}' WHERE {columns[0]} = '{dkey_value}' AND {columns[2]} = '{value}' ;"
+                        query_missing_insert = (
+                            f"UPDATE {table_name} SET {columns[1]} = '{escape_value(key)}' "
+                            f"WHERE {columns[0]} = '{escape_value(dkey_value)}' AND {columns[2]} = '{escape_value(value)}' ;"
+                        )
                     elif table_name == "taxonomy_name":
-                        query_missing_insert = f"INSERT INTO {table_name} ({columns[0]}, {columns[1]}) VALUES ('{key}', '{value}') ;"
+                        query_missing_insert = (
+                            f"INSERT INTO {table_name} ({columns[0]}, {columns[1]}) "
+                            f"VALUES ('{escape_value(key)}', '{escape_value(value)}') ;"
+                        )
                     else:
-                        query_missing_insert = f"INSERT INTO {table_name} ({columns[0]}, {columns[1]}, {columns[2]}) VALUES ('{dkey_value}', '{key}', '{value}') ;"
+                        query_missing_insert = (
+                            f"INSERT INTO {table_name} ({columns[0]}, {columns[1]}, {columns[2]}) "
+                            f"VALUES ('{escape_value(dkey_value)}', '{escape_value(key)}', '{escape_value(value)}') ;"
+                        )
                     logging.info("Insert/update query: %s", query_missing_insert)
                     conn = pymysql.connect(**metadata_params)
                     cur = conn.cursor()
@@ -317,7 +340,7 @@ def retrieve_row_id(data_dict: Dict, table_name: str, table_conf, metadata_param
         # Building conditionals based on uniqueness constrain
         condition_list = []
         for key in constraint:
-            condition_list.append(f"{key[0]} = '{data_dict[key[0]]}'")
+            condition_list.append(f"{key[0]} = '{escape_value(data_dict[key[0]])}'")
 
         condition_string = " AND ".join(condition_list)
 
