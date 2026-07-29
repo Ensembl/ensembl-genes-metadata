@@ -18,11 +18,11 @@
 import requests  # type: ignore
 import argparse
 import json
-from tenacity import retry, stop_after_attempt, wait_random # type: ignore
+from tenacity import retry, stop_after_attempt, wait_random  # type: ignore
 import logging
 import os
 
-from gb_metadata.db_utils import fetch_one_row, execute_query
+from gb_metadata.db_utils import fetch_one_row
 
 
 @retry(stop=stop_after_attempt(5), wait=wait_random(min=1, max=10))

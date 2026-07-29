@@ -177,8 +177,6 @@ def create_csv_busco(gca_list, bioprojects, metadata_params):
             file.write(f"{gca},{taxon_id}\n")
 
 
-
-
 def main():
     logging.basicConfig(
         filename="create_report.log",
@@ -232,7 +230,9 @@ def main():
 
     current_date = date.today()
     logging.info(f"Store last update date ({current_date}) in assembly metadata DB")
-    update_query = f"UPDATE update_date SET date_value = '{current_date}' WHERE update_type = 'regular_update';"
+    update_query = (
+        f"UPDATE update_date SET date_value = '{current_date}' WHERE update_type = 'regular_update';"
+    )
     execute_write(update_query, metadata_params)
 
 

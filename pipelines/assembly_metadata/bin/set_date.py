@@ -62,10 +62,14 @@ def main():
         metadata_params = json.load(file)
 
     if args.full_screen:
-        query_full_screen = "SELECT DATE_FORMAT(date_value, '%m/%d/%Y') FROM update_date WHERE update_type = 'full_screen'"
+        query_full_screen = (
+            "SELECT DATE_FORMAT(date_value, '%m/%d/%Y') FROM update_date WHERE update_type = 'full_screen'"
+        )
         date_value = fetch_one_row(query_full_screen, metadata_params, "full_screen update date")[0]
     else:
-        query_regular_date = "SELECT DATE_FORMAT(DATE_SUB(date_value, INTERVAL 1 DAY), '%m/%d/%Y') FROM update_date WHERE update_type = 'regular_update'"
+        query_regular_date = (
+            "SELECT DATE_FORMAT(DATE_SUB(date_value, INTERVAL 1 DAY), '%m/%d/%Y') FROM update_date WHERE update_type = 'regular_update'"
+        )
         date_value = fetch_one_row(query_regular_date, metadata_params, "regular update date")[0]
 
     print(date_value)

@@ -141,7 +141,8 @@ def records_checker(accession: str, metadata_params: dict, delete_records: bool 
                     "assembly": f"DELETE FROM assembly WHERE assembly_id = '{assembly_id}'",
                     "assembly_metrics": f"DELETE FROM assembly_metrics WHERE assembly_id = '{assembly_id}'",
                     "organism": f"DELETE FROM organism WHERE assembly_id = '{assembly_id}'",
-                    "bioproject": f"DELETE FROM bioproject WHERE assembly_id = '{assembly_id}'"}
+                    "bioproject": f"DELETE FROM bioproject WHERE assembly_id = '{assembly_id}'",
+                }
                 for table, query in query_dic.items():
                     logging.info(f"Deleting records from {table} for assembly_id {assembly_id}")
                     execute_query(query, metadata_params)

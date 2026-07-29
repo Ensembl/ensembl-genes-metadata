@@ -27,8 +27,7 @@ import pymysql  # type: ignore
 
 
 def execute_query(query: str, db_params: Dict[str, Any]) -> Tuple[Tuple[Any, ...], ...]:
-    """Run a query and return every row.
-    """
+    """Run a query and return every row."""
     logging.info("QUERY: %s", query)
     with pymysql.connect(**db_params) as conn:
         with conn.cursor() as cursor:
@@ -37,8 +36,7 @@ def execute_query(query: str, db_params: Dict[str, Any]) -> Tuple[Tuple[Any, ...
 
 
 def execute_write(query: str, db_params: Dict[str, Any]) -> int:
-    """Execute an INSERT/UPDATE/DELETE and commit. Returns the number of affected rows.
-    """
+    """Execute an INSERT/UPDATE/DELETE and commit. Returns the number of affected rows."""
     logging.info("QUERY: %s", query)
     with pymysql.connect(**db_params) as conn:
         with conn.cursor() as cursor:

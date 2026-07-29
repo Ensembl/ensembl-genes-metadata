@@ -211,9 +211,7 @@ def main():
     with open(out_path, "w") as f:
         if len(gca_list) > 0:
             db_query = build_db_query(release_date)
-            accessions_to_register = get_gca_to_register(
-                gca_list, db_query, metadata_params
-            )
+            accessions_to_register = get_gca_to_register(gca_list, db_query, metadata_params)
 
             for accession in accessions_to_register:
                 print(accession)
