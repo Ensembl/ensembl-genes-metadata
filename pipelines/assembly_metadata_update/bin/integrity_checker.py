@@ -16,40 +16,11 @@
 #  limitations under the License.
 
 import argparse
-import pymysql  # type:ignore
 import logging
 import json
 import os
 
-
-def execute_query(query, db_params):
-    conn = pymysql.connect(**db_params)
-    cursor = conn.cursor()
-    cursor.execute(query)
-    result = cursor.fetchall()
-    cursor.close()
-    conn.close()
-    return result
-
-
-def delete_assembly(assembly_id: int, metadata_params: dict):
-    """
-    Delete records from metadata database for a given assembly_id.
-    Affects assembly, assembly_metrics, organism and bioproject tables
-
-    Args:
-        assembly_id (int): Assembly ID to be deleted
-    """
-    con = pymysql.connect(**metadata_params)
-    cur = con.cursor()
-
-    # Delete records from all metadata tables
-    cur.execute(f"DELETE FROM assembly WHERE assembly_id = '{assembly_id}'")
-    cur.execute(f"DELETE FROM assembly_metrics WHERE assembly_id = '{assembly_id}'")
-    cur.execute(f"DELETE FROM organism WHERE assembly_id = '{assembly_id}'")
-    cur.execute(f"DELETE FROM bioproject WHERE assembly_id = '{assembly_id}'")
-    logging.info(f"Records for assembly_id {assembly_id} were deleted")
-    con.close()
+from gb_metadata.db_utils import execute_query
 
 
 def records_checker(accession: str, metadata_params: dict, delete_records: bool = False) -> str:
@@ -166,7 +137,14 @@ def records_checker(accession: str, metadata_params: dict, delete_records: bool 
             logging.info(f"Accession {accession} has missing data in {', '.join(missing)}.")
 
             if delete_records:
-                delete_assembly(assembly_id, metadata_params)
+                query_dic = {
+                    "assembly": f"DELETE FROM assembly WHERE assembly_id = '{assembly_id}'",
+                    "assembly_metrics": f"DELETE FROM assembly_metrics WHERE assembly_id = '{assembly_id}'",
+                    "organism": f"DELETE FROM organism WHERE assembly_id = '{assembly_id}'",
+                    "bioproject": f"DELETE FROM bioproject WHERE assembly_id = '{assembly_id}'"}
+                for table, query in query_dic.items():
+                    logging.info(f"Deleting records from {table} for assembly_id {assembly_id}")
+                    execute_query(query, metadata_params)
 
         else:
             status = "check"

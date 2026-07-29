@@ -18,19 +18,10 @@
 import logging
 import argparse
 import json
-import pymysql  # type: ignore
 from slack_sdk import WebClient  # type: ignore
 from slack_sdk.errors import SlackApiError  # type: ignore
 
-
-def execute_query(query, db_params):
-    conn = pymysql.connect(**db_params)
-    cursor = conn.cursor()
-    cursor.execute(query)
-    result = cursor.fetchall()
-    cursor.close()
-    conn.close()
-    return result
+from gb_metadata.db_utils import execute_query
 
 
 def fetching_user(accession, metadata_params, slack_users):

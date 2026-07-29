@@ -18,33 +18,8 @@
 import argparse
 import json
 import logging
-from typing import Dict, Any
-import pymysql  # type: ignore
 
-
-def execute_query(query, db_params):
-    conn = pymysql.connect(**db_params)
-    cursor = conn.cursor()
-    cursor.execute(query)
-    result = cursor.fetchall()
-    cursor.close()
-    conn.close()
-    return result
-
-
-def execute_write(query: str, db_params: Dict[str, Any]) -> int:
-    """
-    Execute INSERT/UPDATE/DELETE and commit.
-    Returns number of affected rows.
-    """
-    conn = pymysql.connect(**db_params)
-    try:
-        with conn.cursor() as cursor:
-            affected = cursor.execute(query)
-        conn.commit()
-        return affected
-    finally:
-        conn.close()
+from gb_metadata.db_utils import execute_query, execute_write
 
 
 def check_taxon_id(data, accession, metadata_params):

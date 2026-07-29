@@ -18,19 +18,10 @@
 import logging
 import argparse
 import os
-import pymysql  # type: ignore
 from datetime import datetime
 import json
 
-
-def execute_query(query, db_params):
-    conn = pymysql.connect(**db_params)
-    cursor = conn.cursor()
-    cursor.execute(query)
-    result = cursor.fetchall()
-    cursor.close()
-    conn.close()
-    return result
+from gb_metadata.db_utils import execute_query
 
 
 def fetch_gca_list(metadata_params, full_screen, screen_date):

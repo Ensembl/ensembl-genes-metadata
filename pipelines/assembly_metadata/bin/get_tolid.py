@@ -17,30 +17,12 @@
 
 import requests  # type: ignore
 import argparse
-import pymysql  # type: ignore
 import json
-from tenacity import retry, stop_after_attempt, wait_random
+from tenacity import retry, stop_after_attempt, wait_random # type: ignore
 import logging
 import os
 
-
-def connect_db(query: str, metadata_params) -> tuple:
-    """
-    Connect to the assembly metadata database and execute a query
-
-    Args:
-        query (str): query to be executed
-
-    Returns:
-        tuple: results from the query's execution
-    """
-    logging.info(f"Querying metadata database with: {query}")
-    con = pymysql.connect(**metadata_params)
-    with con.cursor() as cursor:
-        cursor.execute(query)
-        data = cursor.fetchone()
-    con.close()
-    return data
+from gb_metadata.db_utils import fetch_one_row, execute_query
 
 
 @retry(stop=stop_after_attempt(5), wait=wait_random(min=1, max=10))
@@ -108,13 +90,13 @@ def main():
     gca_chain = args.accession.split(".")[0]
     gca_version = args.accession.split(".")[1]
     query_taxon = f'SELECT assembly.assembly_id, species.species_taxon_id FROM assembly INNER JOIN species ON species.lowest_taxon_id = assembly.lowest_taxon_id WHERE gca_chain = "{gca_chain}" AND gca_version = "{gca_version}"'
-    assembly_id, taxon = connect_db(query_taxon, metadata_params)
+    assembly_id, taxon = fetch_one_row(query_taxon, metadata_params, context=args.accession)
 
     tolid = get_tolid(taxon)
 
     logging.info(f"Connecting to metadata database to retrieve organism_id for {args.accession}")
     query_organism = f'SELECT organism_id FROM organism WHERE assembly_id = "{assembly_id}"'
-    organism_id = connect_db(query_organism, metadata_params)
+    organism_id = fetch_one_row(query_organism, metadata_params, context=f"organism_id of {args.accession}")
 
     dtol_json = {"organism": {"organism_id": organism_id[0], "tol_prefix": tolid}}
 

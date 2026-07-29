@@ -30,30 +30,7 @@ import argparse
 import json
 import logging
 
-import pymysql  # type: ignore
-
-
-def get_full_screen_date(metadata_params: dict) -> str:
-    """Retrieve the date recorded for the last full-screen update."""
-    query = "SELECT DATE_FORMAT(date_value, '%m/%d/%Y') FROM update_date WHERE update_type = 'full_screen'"
-    with pymysql.connect(**metadata_params) as conn:
-        with conn.cursor() as cur:
-            cur.execute(query)
-            row = cur.fetchone()
-    return row[0]
-
-
-def get_regular_update_date(metadata_params: dict) -> str:
-    """Retrieve the date to use for a regular update: one day before the last recorded update."""
-    query = (
-        "SELECT DATE_FORMAT(DATE_SUB(date_value, INTERVAL 1 DAY), '%m/%d/%Y') FROM update_date "
-        "WHERE update_type = 'regular_update'"
-    )
-    with pymysql.connect(**metadata_params) as conn:
-        with conn.cursor() as cur:
-            cur.execute(query)
-            row = cur.fetchone()
-    return row[0]
+from gb_metadata.db_utils import fetch_one_row
 
 
 def main():
@@ -85,9 +62,11 @@ def main():
         metadata_params = json.load(file)
 
     if args.full_screen:
-        date_value = get_full_screen_date(metadata_params)
+        query_full_screen = "SELECT DATE_FORMAT(date_value, '%m/%d/%Y') FROM update_date WHERE update_type = 'full_screen'"
+        date_value = fetch_one_row(query_full_screen, metadata_params, "full_screen update date")[0]
     else:
-        date_value = get_regular_update_date(metadata_params)
+        query_regular_date = "SELECT DATE_FORMAT(DATE_SUB(date_value, INTERVAL 1 DAY), '%m/%d/%Y') FROM update_date WHERE update_type = 'regular_update'"
+        date_value = fetch_one_row(query_regular_date, metadata_params, "regular update date")[0]
 
     print(date_value)
 

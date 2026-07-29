@@ -32,10 +32,11 @@ The script generates a report in a text file and a CSV file for BUSCO genome ana
 
 import logging
 import argparse
-import pymysql  # type: ignore
 import json
 import os
 from datetime import date
+
+from gb_metadata.db_utils import execute_query, execute_write
 
 
 def load_json(filepath):
@@ -50,14 +51,6 @@ def load_file_lines(filepath):
         raise FileNotFoundError(f"{filepath} does not exist")
     with open(filepath, "r") as file:
         return [line.strip() for line in file if line.strip()]
-
-
-def execute_query(metadata_params, query):
-    logging.info(f"QUERY: {query}")
-    conn = pymysql.connect(**metadata_params)
-    with conn.cursor() as cur:
-        cur.execute(query)
-        return cur.fetchall()
 
 
 def fetch_report_data(metadata_params, gca_list, bioprojects):
@@ -124,7 +117,7 @@ def fetch_report_data(metadata_params, gca_list, bioprojects):
     report_data["gca_list"] = gca_list
     # Populate the rest of the report
     for key, query in queries.items():
-        report_data[key] = execute_query(metadata_params, query)
+        report_data[key] = execute_query(query, metadata_params)
     return report_data
 
 
@@ -177,28 +170,13 @@ def create_csv_busco(gca_list, bioprojects, metadata_params):
     and asm_type = 'haploid' and assembly.is_current = 'current' 
     and CONCAT(assembly.GCA_chain, '.', assembly.gca_version) IN ({gca_string});
     """
-    output = execute_query(metadata_params, get_data_query)
+    output = execute_query(get_data_query, metadata_params)
 
     with open("gca_to_run_ncbi.csv", "a") as file:
         for gca, taxon_id in output:
             file.write(f"{gca},{taxon_id}\n")
 
 
-def update_date(metadata_params):
-    current_date = date.today()
-    logging.info(f"Store last update date ({current_date}) in assembly metadata DB")
-    try:
-        connection = pymysql.connect(**metadata_params)
-        with connection:
-            with connection.cursor() as cursor:
-                update_query = (
-                    """UPDATE update_date SET date_value = %s WHERE update_type = 'regular_update';"""
-                )
-                cursor.execute(update_query, (current_date,))
-                logging.info("Update Successful")
-    except Exception as e:
-        logging.error(f"Failed to update date: {e}")
-        raise
 
 
 def main():
@@ -252,7 +230,10 @@ def main():
     logging.info("Getting shorlisted gca for Busco genome ")
     create_csv_busco(gca_list, args.bioprojects, metadata_params)
 
-    update_date(metadata_params)
+    current_date = date.today()
+    logging.info(f"Store last update date ({current_date}) in assembly metadata DB")
+    update_query = f"UPDATE update_date SET date_value = '{current_date}' WHERE update_type = 'regular_update';"
+    execute_write(update_query, metadata_params)
 
 
 if __name__ == "__main__":

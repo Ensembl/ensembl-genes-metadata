@@ -34,11 +34,12 @@ Returns:
 import requests  # type: ignore
 import json
 from datetime import datetime
-import pymysql  # type: ignore
 import argparse
 import logging
 from tenacity import retry, stop_after_attempt, wait_random  # type: ignore
 from typing import Dict, List, Any, Tuple, Optional
+
+from gb_metadata.db_utils import execute_query
 
 DEFAULT_ASSEMBLY_DATE = "01/01/2019"
 
@@ -144,25 +145,6 @@ def build_db_query(release_date: str) -> str:
     """
 
 
-def fetch_records_db(db_params: Dict[str, Any], query: str) -> List[str]:
-    """Fetch assemblies that have been registered after the last update.
-
-    Args:
-        db_params (dict): database connection parameters
-        query (str): mysql query to retrieve data
-
-    Returns:
-        list: list of GCA accessions recorded after the last update date
-    """
-    with pymysql.connect(**db_params) as conn:
-        with conn.cursor() as cur:
-            cur.execute(query)
-            output = cur.fetchall()
-            reg_gca = [row[0] for row in output]
-
-    return reg_gca
-
-
 def get_gca_to_register(gca_list: set, query: str, metadata_params: Dict[str, Any]) -> List[str]:
     """Return GCA accessions from NCBI not yet present in the metadata database.
 
@@ -175,7 +157,9 @@ def get_gca_to_register(gca_list: set, query: str, metadata_params: Dict[str, An
         list: accessions to register
     """
     logging.info("Getting assemblies from assembly metadata database")
-    records_metadata = fetch_records_db(metadata_params, query=query)
+
+    results_metadata = execute_query(query, metadata_params)
+    records_metadata = [row[0] for row in results_metadata]
     return list(gca_list - set(records_metadata))
 
 
@@ -219,16 +203,16 @@ def main():
     else:
         logging.info("Default date will be used to retrieve assemblies")
 
-    ncbi_params, release_date = set_date(taxon, ncbi_params, args.date_update)
-    gca_list = fetch_gca_list(taxon, ncbi_params, ncbi_url)
+    ncbi_params, release_date = set_date(args.taxon, ncbi_params, args.date_update)
+    gca_list = fetch_gca_list(args.taxon, ncbi_params, args.ncbi_url)
 
     out_path = "assemblies_to_register.txt"
 
     with open(out_path, "w") as f:
         if len(gca_list) > 0:
             db_query = build_db_query(release_date)
-            accessions_to_register = get_gca_register(
-                args.db, db_query, gca_list, metadata_params, registy_params
+            accessions_to_register = get_gca_to_register(
+                gca_list, db_query, metadata_params
             )
 
             for accession in accessions_to_register:
