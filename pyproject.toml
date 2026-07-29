@@ -49,8 +49,18 @@ docs = [
     "mkdocs-coverage",
 ]
 
-[tool.setuptools.packages.find]
-include = ["gb_prefect*"]
+[tool.setuptools]
+packages = [
+    "gb_prefect",
+    "gb_prefect.flows",
+    "gb_prefect.tasks",
+    "gb_prefect.utils",
+    "gb_prefect.models",
+    "gb_metadata",
+]
+
+[tool.setuptools.package-dir]
+gb_metadata = "src/python"
 
 [tool.black]
 line-length = 110
