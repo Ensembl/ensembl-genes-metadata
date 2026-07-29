@@ -28,10 +28,6 @@ import pymysql  # type: ignore
 
 def execute_query(query: str, db_params: Dict[str, Any]) -> Tuple[Tuple[Any, ...], ...]:
     """Run a query and return every row.
-
-    Previously duplicated (byte-identical) across assembly_name.py, assembly_metrics.py,
-    assembly_refseq.py, assembly_status.py, bioproject.py, taxonomy.py,
-    integrity_checker.py, fetch_assemblies.py, and report_update.py.
     """
     logging.info("QUERY: %s", query)
     with pymysql.connect(**db_params) as conn:
@@ -42,9 +38,6 @@ def execute_query(query: str, db_params: Dict[str, Any]) -> Tuple[Tuple[Any, ...
 
 def execute_write(query: str, db_params: Dict[str, Any]) -> int:
     """Execute an INSERT/UPDATE/DELETE and commit. Returns the number of affected rows.
-
-    Previously duplicated (byte-identical) across assembly_metrics.py, assembly_name.py,
-    assembly_status.py, bioproject.py, assembly_refseq.py, and taxonomy.py.
     """
     logging.info("QUERY: %s", query)
     with pymysql.connect(**db_params) as conn:
