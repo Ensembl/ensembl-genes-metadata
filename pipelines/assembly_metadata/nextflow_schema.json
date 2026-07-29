@@ -1,0 +1,129 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "$id": "https://raw.githubusercontent.com/Ensembl/ensembl-genes-metadata/main/pipelines/assembly_metadata/nextflow_schema.json",
+    "title": "Assembly Metadata Pipeline",
+    "description": "Nextflow pipeline to fetch and register assembly metadata into the Ensembl metadata database.",
+    "type": "object",
+    "definitions": {
+        "input_output_options": {
+            "title": "Input/output options",
+            "type": "object",
+            "fa_icon": "fas fa-terminal",
+            "description": "Define where the pipeline should find input data and save output data.",
+            "required": ["enscode", "output_dir"],
+            "properties": {
+                "enscode": {
+                    "type": "string",
+                    "description": "Path to the ENSCODE directory.",
+                    "fa_icon": "fas fa-folder"
+                },
+                "output_dir": {
+                    "type": "string",
+                    "description": "Path to the output directory where results will be saved.",
+                    "fa_icon": "fas fa-folder-open"
+                }
+            }
+        },
+        "assembly_options": {
+            "title": "Assembly options",
+            "type": "object",
+            "fa_icon": "fas fa-dna",
+            "description": "Options controlling which assemblies are fetched.",
+            "properties": {
+                "taxon": {
+                    "type": "integer",
+                    "default": 2759,
+                    "description": "NCBI taxon ID used to filter assemblies. Default is 2759 (Eukaryota).",
+                    "fa_icon": "fas fa-sitemap"
+                },
+                "date": {
+                    "type": "string",
+                    "description": "Custom date to retrieve assemblies released after this date. Format: MM/DD/YYYY.",
+                    "pattern": "^(0[1-9]|1[0-2])\\/(0[1-9]|[12][0-9]|3[01])\\/\\d{4}$",
+                    "fa_icon": "fas fa-calendar-alt"
+                },
+                "full_screen": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "When true, retrieves all assemblies since 2019 regardless of date.",
+                    "fa_icon": "fas fa-expand"
+                },
+                "add_gca": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "When true, uses a user-provided GCA list as input instead of fetching from NCBI.",
+                    "fa_icon": "fas fa-list"
+                },
+                "gca_list": {
+                    "type": "string",
+                    "description": "Path to a file containing a list of GCA accessions to process. Requires --add_gca.",
+                    "fa_icon": "fas fa-file-alt"
+                }
+            }
+        },
+        "ncbi_options": {
+            "title": "NCBI options",
+            "type": "object",
+            "fa_icon": "fas fa-cloud",
+            "description": "Options for the NCBI Datasets API.",
+            "properties": {
+                "ncbi_url": {
+                    "type": "string",
+                    "default": "https://api.ncbi.nlm.nih.gov/datasets/v2",
+                    "description": "Base URL for the NCBI Datasets API.",
+                    "fa_icon": "fas fa-link"
+                },
+                "ncbi_params": {
+                    "type": "string",
+                    "description": "Path to the JSON file containing NCBI API query parameters.",
+                    "fa_icon": "fas fa-file-code"
+                }
+            }
+        },
+        "database_options": {
+            "title": "Database options",
+            "type": "object",
+            "fa_icon": "fas fa-database",
+            "description": "Options for the metadata database connection.",
+            "properties": {
+                "metadata_params": {
+                    "type": "string",
+                    "description": "Path to the JSON file containing metadata database connection parameters (host, user, password, port, database).",
+                    "fa_icon": "fas fa-file-code"
+                },
+                "db_table_conf": {
+                    "type": "string",
+                    "description": "Path to the JSON file containing database table configuration.",
+                    "fa_icon": "fas fa-file-code"
+                },
+                "registry_params": {
+                    "type": "string",
+                    "description": "Path to the JSON file containing Ensembl registry connection parameters.",
+                    "fa_icon": "fas fa-file-code"
+                }
+            }
+        },
+        "generic_options": {
+            "title": "Generic options",
+            "type": "object",
+            "fa_icon": "fas fa-file-import",
+            "description": "Less common options for the pipeline.",
+            "properties": {
+                "help": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Display help text.",
+                    "fa_icon": "fas fa-question-circle",
+                    "hidden": true
+                }
+            }
+        }
+    },
+    "allOf": [
+        { "$ref": "#/definitions/input_output_options" },
+        { "$ref": "#/definitions/assembly_options" },
+        { "$ref": "#/definitions/ncbi_options" },
+        { "$ref": "#/definitions/database_options" },
+        { "$ref": "#/definitions/generic_options" }
+    ]
+}
