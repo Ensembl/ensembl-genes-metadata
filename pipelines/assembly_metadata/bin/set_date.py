@@ -47,10 +47,7 @@ def main():
         description="Determine the date to use when fetching new assemblies.",
     )
     parser.add_argument(
-        "--metadata", 
-        type=str, 
-        required=True, 
-        help="Path to the metadata database params in json format"
+        "--metadata", type=str, required=True, help="Path to the metadata database params in json format"
     )
     parser.add_argument(
         "--full_screen",
@@ -66,8 +63,7 @@ def main():
 
     if args.full_screen:
         query_full_screen = (
-            "SELECT DATE_FORMAT(date_value, '%m/%d/%Y') "
-            "FROM update_date WHERE update_type = 'full_screen'"
+            "SELECT DATE_FORMAT(date_value, '%m/%d/%Y') " "FROM update_date WHERE update_type = 'full_screen'"
         )
         date_value = fetch_one_row(query_full_screen, metadata_params, "full_screen update date")[0]
     else:
