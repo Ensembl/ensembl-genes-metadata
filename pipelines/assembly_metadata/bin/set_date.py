@@ -47,12 +47,15 @@ def main():
         description="Determine the date to use when fetching new assemblies.",
     )
     parser.add_argument(
-        "--metadata", type=str, required=True, help="Path to the metadata database params in json format"
+        "--metadata", 
+        type=str, 
+        required=True, 
+        help="Path to the metadata database params in json format"
     )
     parser.add_argument(
         "--full_screen",
         action="store_true",
-        help="If set, retrieve the full-screen update date instead of the regular update date",
+        help="If set, retrieve the full-screen update date",
     )
 
     args = parser.parse_args()
