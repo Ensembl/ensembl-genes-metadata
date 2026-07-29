@@ -19,7 +19,8 @@
 The module add species_taxon_id and parlance_name to the species main key to json-like (.tmp) species file.
 It retrieves the taxonomy classification and names to be store in the taxonomy and taxonomy_name tables.
 The module when used in the pipeline requires --json-path, --ncbi_url and --enscode.
-Additionally, to be used as standalone script to update the taxonomy tables, it requires --taxonomy_update, --taxon_id, and --ncbi_url.
+Additionally, to be used as standalone script to update the taxonomy tables, it requires
+--taxonomy_update, --taxon_id, and --ncbi_url.
 
 Raises:
     ValueError: invalid taxonomy rank
@@ -29,26 +30,24 @@ Returns:
     str: a json file with the species information
 """
 
-import json
 import argparse
+import json
 import logging
-import pymysql  # type: ignore
-import requests  # type: ignore
-import string
-import random
 import os
-from tenacity import retry, stop_after_attempt, wait_random
-from typing import Optional
+
+import requests  # type: ignore
+from tenacity import retry, stop_after_attempt, wait_random  # type: ignore
 
 
 @retry(stop=stop_after_attempt(10), wait=wait_random(min=1, max=20))
 def connection_ncbi(uri: str) -> requests.Response:
-    response = requests.get(uri)
+    """Connect to the NCBI API and return the HTTP response."""
+    response = requests.get(uri, timeout=30)
     response.raise_for_status()
     return response
 
 
-def get_taxon_data(taxon_id: str, ncbi_url) -> dict:
+def get_taxon_data(taxon_id: int, ncbi_url: str) -> dict:
     """It connects to the NCBI API to retrieve the taxonomy data of the lowest taxon id.
 
     Args:
@@ -59,7 +58,7 @@ def get_taxon_data(taxon_id: str, ncbi_url) -> dict:
         dict: response from NCBI API
     """
     uri = f"{ncbi_url}/taxonomy/taxon/{taxon_id}/dataset_report"
-    logging.info(f"URI: {uri}")
+    logging.info("URI: %s", uri)
     response = connection_ncbi(uri)
     taxon_data = response.json()
 
@@ -68,12 +67,14 @@ def get_taxon_data(taxon_id: str, ncbi_url) -> dict:
 
 def get_taxon_classification(taxon_data) -> tuple[dict, dict]:
     """
-    This function retrieves the taxonomy classification of the lowest taxon id.
+    This function retrieves the taxonomy classification from the NCBI API response.
     It returns the classification dictionary that will be user to update the taxonomy table.
 
     Args:
-        lowest_taxon_id (str): the taxonomy id of the assembly, it is obtained from the assembly NCBI report
+        taxon_data (dict): NCBI API response containing taxonomy information for the lowest taxon id.
 
+    Returns:
+        tuple[dict, dict]: classification dictionary and classification name dictionary
     """
     classification = taxon_data["reports"][0]["taxonomy"]["classification"]
 
@@ -98,7 +99,8 @@ def species_taxon(taxon_data, taxon_id) -> tuple[int, bool]:
         lowest_taxon_id (str): the taxonomy id of the assembly, it is obtained from the assembly NCBI report
 
     Raises:
-        ValueError: when the provided value is not a valid taxonomy rank. Valid values are species taxon ID or infraspecific taxon ID
+        ValueError: when the provided value is not a valid taxonomy rank. Valid values are
+            species taxon ID or infraspecific taxon ID
 
     Returns:
         str: species taxon id, it could be the same lowest taxon id value
@@ -124,7 +126,7 @@ def species_taxon(taxon_data, taxon_id) -> tuple[int, bool]:
             logging.info("The assembly is a species taxon rank ")
         else:
             raise ValueError(f"Incorrect taxonomy ({taxonomy})")
-    except KeyError:
+    except KeyError as exc:
         if "errors" in taxon_data["reports"][0]:
             species_taxon_id = 0  # Set species taxon as zero to be identified by the reporting module
             taxon_exists = False
@@ -135,7 +137,7 @@ def species_taxon(taxon_data, taxon_id) -> tuple[int, bool]:
             )
             species_taxon_id = taxon_data["reports"][0]["taxonomy"]["classification"]["species"]["id"]
         else:
-            raise KeyError("Taxon %s retrieves an unexpected report", taxonomy)
+            raise KeyError(f"Taxon {taxon_id} retrieves an unexpected report") from exc
 
     return species_taxon_id, taxon_exists
 
@@ -157,7 +159,7 @@ def get_parlance_name(sci_name: str, enscode) -> str:
     data_dict = {}
 
     logging.info("Reading parlance name file (snp_static.txt) to look for a match")
-    with open(parlance_file, "r") as file:
+    with open(parlance_file, "r", encoding="utf-8") as file:
         for line in file:
             key, value = line.rsplit("\t", 1)
             data_dict[key.strip()] = value.strip()
@@ -165,6 +167,80 @@ def get_parlance_name(sci_name: str, enscode) -> str:
     parlance_name = data_dict.get(sci_name, "")
 
     return parlance_name
+
+
+def update_species_metadata(args) -> None:
+    """Update the species JSON file with taxonomy classification and parlance name."""
+    with open(args.json_path, "r", encoding="utf-8") as file:
+        species_dict = json.load(file)
+
+    if not args.enscode:
+        raise ValueError("Please enter a valid path for ENSCODE")
+
+    logging.info("Getting key values for the species: %s", species_dict["species"]["scientific_name"])
+    # Get taxon data from NCBI API
+    taxon_data = get_taxon_data(species_dict["species"]["lowest_taxon_id"], args.ncbi_url)
+    species_taxon_id, taxon_exists = species_taxon(taxon_data, species_dict["species"]["lowest_taxon_id"])
+    if taxon_exists:
+        parlance_name = get_parlance_name(species_dict["species"]["scientific_name"], args.enscode)
+        species_prefix = ""
+        taxon_classification, _ = get_taxon_classification(taxon_data)
+        taxon_classification_check = True
+    else:
+        logging.info(
+            "Taxon do not exist in taxonomy: invalid lowest taxon id or assembly should be suppressed"
+        )
+        logging.info("Setting values to NA/NULL to later be detected by the integrity check")
+        parlance_name = ""
+        species_prefix = ""
+        taxon_classification = {}
+        taxon_classification_check = False
+
+    # Update species dictionary with new values
+    logging.info("Updating keys for species table")
+    species_dict["species"].update(
+        {
+            "species_taxon_id": species_taxon_id,
+            "parlance_name": parlance_name,
+            "species_prefix": species_prefix,
+        }
+    )
+    if taxon_classification_check:
+        species_dict["taxonomy"] = taxon_classification
+        species_dict["taxonomy"].update({"lowest_taxon_id": species_dict["species"]["lowest_taxon_id"]})
+
+    # Saving results
+    output_file = os.path.basename(args.json_path).replace(".tmp", ".json")
+    logging.info("Saving output: %s", output_file)
+    with open(output_file, "w", encoding="utf-8") as file:
+        json.dump(species_dict, file)
+
+
+def update_taxonomy_tables(args) -> None:
+    """Update the taxonomy and taxonomy_name tables, used as a standalone script."""
+    logging.info("Updating taxonomy table")
+    taxon_dict = {}
+    taxon_data = get_taxon_data(args.taxon_id, args.ncbi_url)
+    taxon_classification, taxon_name_classification = get_taxon_classification(taxon_data)
+    taxon_dict["taxonomy"] = taxon_classification
+    taxon_dict["taxonomy"].update({"lowest_taxon_id": args.taxon_id})
+    logging.info("Updating taxonomy name table")
+    taxon_dict["taxonomy_name"] = taxon_name_classification
+
+    species_taxon_id, _ = species_taxon(taxon_data, args.taxon_id)
+
+    taxon_dict["species"] = {
+        "lowest_taxon_id": args.taxon_id,
+        "species_taxon_id": species_taxon_id,
+        "scientific_name": taxon_data["reports"][0]["taxonomy"]["current_scientific_name"]["name"],
+        "common_name": taxon_data["reports"][0]["taxonomy"].get("curator_common_name", ""),
+    }
+
+    # Saving results
+    output_file_taxon = f"taxonomy_{args.taxon_id}.json"
+    logging.info("Saving output: %s", output_file_taxon)
+    with open(output_file_taxon, "w", encoding="utf-8") as file:
+        json.dump(taxon_dict, file)
 
 
 def main():
@@ -186,85 +262,14 @@ def main():
 
     args = parser.parse_args()
 
-    logging.info(f"Loading file: {args.json_path}")
+    logging.info("Loading file: %s", args.json_path)
 
-    # Loading Species dictionary
     if not args.taxonomy_update:
-        with open(args.json_path, "r") as file:
-            species_dict = json.load(file)
-        file.close()
-
-    if not args.enscode and not args.taxonomy_update:
-        raise ValueError("Please enter a valid path for ENSCODE")
-
-    # Retrieve missing information to add keys to species json
-    if not args.taxonomy_update:
-        logging.info(f"Getting key values for the species: {species_dict['species']['scientific_name']}")
-        # Get taxon data from NCBI API
-        taxon_data = get_taxon_data(species_dict["species"]["lowest_taxon_id"], args.ncbi_url)
-        species_taxon_id, taxon_exists = species_taxon(taxon_data, species_dict["species"]["lowest_taxon_id"])
-        if taxon_exists:
-            parlance_name = get_parlance_name(species_dict["species"]["scientific_name"], args.enscode)
-            species_prefix = ""
-            taxon_classification, taxon_name_classification = get_taxon_classification(taxon_data)
-            taxon_classification_check = True
-        else:
-            logging.info(
-                "Taxon do not exist in taxonomy: invalid lowest taxon id or assembly should be suppressed"
-            )
-            logging.info("Setting values to NA/NULL to later be detected by the integrity check")
-            parlance_name = ""
-            species_prefix = ""
-            taxon_classification = {}
-            taxon_classification_check = False
-
-        # Update species dictionary with new values
-        logging.info("Updating keys for species table")
-        species_dict["species"].update(
-            {
-                "species_taxon_id": species_taxon_id,
-                "parlance_name": parlance_name,
-                "species_prefix": species_prefix,
-            }
-        )
-        if taxon_classification_check:
-            species_dict["taxonomy"] = taxon_classification
-            species_dict["taxonomy"].update({"lowest_taxon_id": species_dict["species"]["lowest_taxon_id"]})
-
-        # Saving results
-        output_file = os.path.basename(args.json_path).replace(".tmp", ".json")
-        logging.info(f"Saving output: {output_file}")
-        with open(output_file, "w") as file:
-            json.dump(species_dict, file)
-        file.close()
+        update_species_metadata(args)
 
     # Update taxonomy table, this is used as a standalone script
     if args.taxonomy_update and args.taxon_id:
-        logging.info("Updating taxonomy table")
-        taxon_dict = {}
-        taxon_data = get_taxon_data(args.taxon_id, args.ncbi_url)
-        taxon_classification, taxon_name_classification = get_taxon_classification(taxon_data)
-        taxon_dict["taxonomy"] = taxon_classification
-        taxon_dict["taxonomy"].update({"lowest_taxon_id": args.taxon_id})
-        logging.info("Updating taxonomy name table")
-        taxon_dict["taxonomy_name"] = taxon_name_classification
-
-        species_taxon_id, taxon_exists = species_taxon(taxon_data, args.taxon_id)
-
-        species = {
-            "lowest_taxon_id": args.taxon_id,
-            "species_taxon_id": species_taxon_id,
-            "scientific_name": taxon_data["reports"][0]["taxonomy"]["current_scientific_name"]["name"],
-            "common_name": taxon_data["reports"][0]["taxonomy"].get("curator_common_name", ""),
-        }
-        taxon_dict["species"] = species
-
-        # Saving results
-        output_file_taxon = f"taxonomy_{args.taxon_id}.json"
-        logging.info(f"Saving output: {output_file_taxon}")
-        with open(output_file_taxon, "w") as file:
-            json.dump(taxon_dict, file)
-        file.close()
+        update_taxonomy_tables(args)
 
 
 if __name__ == "__main__":
