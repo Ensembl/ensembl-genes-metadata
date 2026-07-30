@@ -25,7 +25,6 @@ limitations under the License.
 include { FETCH_ASSEMBLIES } from '../modules/fetch_assemblies.nf'
 include { INTEGRITY_CHECKER } from '../modules/integrity_checker.nf'
 include { INTEGRITY_TAXONOMY } from '../modules/integrity_taxonomy.nf'
-include { INTEGRITY_WRITE2DB } from '../modules/integrity_write2db.nf'
 include { FETCH_METADATA } from '../modules/fetch_metadata.nf'
 include { ASSEMBLY_STATUS } from '../modules/assembly_status.nf'
 include { ASSEMBLY_REFSEQ } from '../modules/assembly_refseq.nf'
@@ -34,7 +33,7 @@ include { ASSEMBLY_NAME } from '../modules/assembly_name.nf'
 include { BIOPROJECT } from '../modules/bioproject.nf'
 include { TAXONOMY_CHECK } from '../modules/taxonomy_check.nf'
 include { SPECIES_CHECKER } from '../modules/species_checker.nf'
-include { WRITE2DB } from '../modules/write2db.nf'
+include { WRITE2DB ; WRITE2DB as INTEGRITY_WRITE2DB } from '../modules/write2db.nf'
 include { TAXONOMY ; TAXONOMY as NEW_TAXONOMY } from '../modules/taxonomy.nf'
 include { REPORT_UPDATE } from '../modules/report_update.nf'
 
@@ -80,9 +79,11 @@ workflow ASSEMBLY_METADATA_UPDATE {
         .set { integrity_check_results }
 
     INTEGRITY_TAXONOMY(integrity_check_results.taxonomy_update, species_checker_script)
-    INTEGRITY_WRITE2DB(INTEGRITY_TAXONOMY.out, write2db_script)
 
-    def gca_accession = integrity_check_results.correct.mix(INTEGRITY_WRITE2DB.out.gca_to_update)
+    def integrity_write2db_in = INTEGRITY_TAXONOMY.out.map { gca_value, taxonomy_json -> tuple(gca_value, taxonomy_json, []) }
+    INTEGRITY_WRITE2DB(integrity_write2db_in, write2db_script)
+
+    def gca_accession = integrity_check_results.correct.mix(INTEGRITY_WRITE2DB.out.map { gca_value, _last_id, _passthrough -> gca_value })
 
     def fetch_metadata_out = FETCH_METADATA(gca_accession)
 
@@ -108,8 +109,14 @@ workflow ASSEMBLY_METADATA_UPDATE {
     TAXONOMY(taxonomy_check_results.pass)
 
     def species_checker_out = SPECIES_CHECKER(taxonomy_check_results.failed, species_checker_script)
-    WRITE2DB(species_checker_out, write2db_script)
-    NEW_TAXONOMY(WRITE2DB.out.to_taxonomy)
+
+    def write2db_in = species_checker_out
+        .filter { _gca_value, attempt_update, _metadata_json, _taxonomy_json -> attempt_update.trim() == 'true' }
+        .map { gca_value, attempt_update, metadata_json, taxonomy_json -> tuple(gca_value, taxonomy_json, [attempt_update, metadata_json]) }
+    WRITE2DB(write2db_in, write2db_script)
+
+    def write2db_to_taxonomy = WRITE2DB.out.map { gca_value, _last_id, passthrough -> tuple(gca_value, passthrough[0], passthrough[1]) }
+    NEW_TAXONOMY(write2db_to_taxonomy)
 
     def all_output = ASSEMBLY_STATUS.out
         .mix(ASSEMBLY_REFSEQ.out, ASSEMBLY_METRICS.out, ASSEMBLY_NAME.out, BIOPROJECT.out, TAXONOMY.out, NEW_TAXONOMY.out)

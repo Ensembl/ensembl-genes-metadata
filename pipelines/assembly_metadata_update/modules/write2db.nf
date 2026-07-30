@@ -16,6 +16,23 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+/*
+WRITE2DB
+Shared process that writes a taxonomy JSON file to the DB via write2db.py.
+Used both for the integrity-check taxonomy update and the post taxonomy-check
+update path; call-site-specific data that needs to ride alongside (e.g.
+attempt_update/metadata_json) is threaded through as an opaque passthrough
+value rather than being known to this process.
+Inputs:
+- gca: The GCA accession.
+- taxonomy_json: The taxonomy JSON file to write to the DB.
+- passthrough: Opaque call-site data to forward unchanged alongside the output.
+Outputs:
+- gca: The GCA accession.
+- ${taxonomy_json.baseName}.last_id: The last processed ID.
+- passthrough: The call-site data, forwarded unchanged.
+*/
+
 process WRITE2DB {
 
     label 'python'
@@ -23,15 +40,11 @@ process WRITE2DB {
     publishDir "${params.output_dir}/nextflow_output/${gca}", mode: 'copy'
 
     input:
-    tuple val(gca), val(attempt_update), path(metadata_json), path(taxonomy_json)
+    tuple val(gca), path(taxonomy_json), val(passthrough)
     path write2db_script
 
     output:
-    tuple val(gca), val(attempt_update), path(metadata_json), emit: to_taxonomy
-    path "${taxonomy_json.baseName}.last_id"
-
-    when:
-    attempt_update.trim() == 'true'
+    tuple val(gca), path("${taxonomy_json.baseName}.last_id"), val(passthrough)
 
     script:
     """
