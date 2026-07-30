@@ -25,14 +25,16 @@ nextflow.enable.dsl = 2
 include { SET_DATE } from '../modules/set_date.nf'
 include { FETCH_GCA } from '../modules/fetch_gca.nf'
 include { PARSE_METADATA } from '../modules/parse_metadata.nf'
-include { WRITE2DB_ASSEMBLY } from '../modules/write2db_assembly.nf'
 include { UPDATE_KEYS_METADATA } from '../modules/update_keys_metadata.nf'
-include { WRITE2DB_METADATA } from '../modules/write2db_metadata.nf'
 include { SPECIES_CHECKER } from '../modules/species_checker.nf'
-include { WRITE2DB_SPECIES } from '../modules/write2db_species.nf'
 include { GET_TOLID } from '../modules/get_tolid.nf'
-include { WRITE2DB_TOLID } from '../modules/write2db_tolid.nf'
 include { REPORT } from '../modules/report.nf'
+include {
+    WRITE2DB as WRITE2DB_ASSEMBLY ;
+    WRITE2DB as WRITE2DB_METADATA ;
+    WRITE2DB as WRITE2DB_SPECIES ;
+    WRITE2DB as WRITE2DB_TOLID
+} from '../modules/write2db.nf'
 
 
 /*
@@ -54,21 +56,28 @@ workflow ASSEMBLY_METADATA {
 
     def parse_metadata_out = PARSE_METADATA(gca)
 
-    def write2db_assembly_out = WRITE2DB_ASSEMBLY(parse_metadata_out, write2db_script)
+    def write2db_assembly_in = parse_metadata_out.map { gca_value, assembly, metadata_tmp, species_tmp -> tuple(gca_value, assembly, [metadata_tmp, species_tmp]) }
+    WRITE2DB_ASSEMBLY(write2db_assembly_in, write2db_script, false)
+    def write2db_assembly_out = WRITE2DB_ASSEMBLY.out.map { gca_value, last_id, extra -> tuple(gca_value, extra[0], last_id, extra[1]) }
 
     def update_keys_out = UPDATE_KEYS_METADATA(write2db_assembly_out)
 
-    def write2db_metadata_out = WRITE2DB_METADATA(update_keys_out, write2db_script)
+    def write2db_metadata_in = update_keys_out.map { gca_value, metadata_json, species_tmp -> tuple(gca_value, metadata_json, [species_tmp]) }
+    WRITE2DB_METADATA(write2db_metadata_in, write2db_script, false)
+    def write2db_metadata_out = WRITE2DB_METADATA.out.map { gca_value, last_id, extra -> tuple(gca_value, extra[0], last_id) }
 
     def species_checker_out = SPECIES_CHECKER(write2db_metadata_out, species_checker_script)
 
-    def write2db_species_out = WRITE2DB_SPECIES(species_checker_out, write2db_script)
+    def write2db_species_in = species_checker_out.map { gca_value, species_json -> tuple(gca_value, species_json, []) }
+    WRITE2DB_SPECIES(write2db_species_in, write2db_script, false)
+    def write2db_species_out = WRITE2DB_SPECIES.out.map { gca_value, last_id, _extra -> tuple(gca_value, last_id) }
 
     def get_tolid_out = GET_TOLID(write2db_species_out)
 
-    WRITE2DB_TOLID(get_tolid_out, write2db_script)
+    def write2db_tolid_in = get_tolid_out.map { gca_value, tolid_json -> tuple(gca_value, tolid_json, []) }
+    WRITE2DB_TOLID(write2db_tolid_in, write2db_script, true)
 
-    gca_list = WRITE2DB_TOLID.out.gca.map { it -> it.trim() }.collectFile(name: 'gca_list_to_report.txt', newLine: true)
+    gca_list = WRITE2DB_TOLID.out.map { gca_value, _last_id, _extra -> gca_value }.map { it -> it.trim() }.collectFile(name: 'gca_list_to_report.txt', newLine: true)
 
     REPORT(gca_list, last_update)
 }
