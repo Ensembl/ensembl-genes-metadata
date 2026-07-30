@@ -18,17 +18,15 @@ limitations under the License.
 
 
 process TAXONOMY_CHECK {
-    
+
     label 'python'
-    tag "$gca"
+    tag "${gca}"
 
     input:
     tuple val(gca), val(attempt_update), path(metadata_json)
 
     output:
-    tuple val(gca), val(attempt_update), path(metadata_json), 
-          env(OLD_TAXON_ID), env(NEW_TAXON_ID), env(STATUS), 
-          emit: taxonomy_check
+    tuple val(gca), val(attempt_update), path(metadata_json), env('OLD_TAXON_ID'), env('NEW_TAXON_ID'), env('STATUS'), emit: taxonomy_check
 
     when:
     attempt_update.trim() == 'true'
@@ -36,32 +34,11 @@ process TAXONOMY_CHECK {
     script:
     """
     # Run the script and capture output
-    OUTPUT=\$(taxonomy.py --accession_json $metadata_json --accession $gca \
+    OUTPUT=\$(taxonomy.py --accession_json ${metadata_json} --accession ${gca} \
              --metadata_params ${params.metadata_params} --taxonomy_check)
-    
-    # Parse the comma-separated output
-    export OLD_TAXON_ID=\$(echo \$OUTPUT | cut -d',' -f1)
-    export NEW_TAXON_ID=\$(echo \$OUTPUT | cut -d',' -f2)
-    export STATUS=\$(echo \$OUTPUT | cut -d',' -f3)
+
+    # Parse the comma-separated output (old_taxon_id,new_taxon_id,status)
+    IFS=',' read -r OLD_TAXON_ID NEW_TAXON_ID STATUS <<< "\$OUTPUT"
+    export OLD_TAXON_ID NEW_TAXON_ID STATUS
     """
 }
-
-// process TAXONOMY_CHECK {
-    
-//     label 'python'
-//     tag "$gca"
-    
-//     when:
-//     attempt_update.trim() == 'true'
-
-//     input:
-//     tuple val(gca), val(attempt_update), path(metadata_json)
-
-//     output:
-//     tuple val(gca), val(attempt_update), path(metadata_json), stdout, emit: taxonomy_check
-
-//     script:
-//     """
-//     taxonomy.py --accession_json $metadata_json --accession $gca  --metadata_params ${params.metadata_params} --taxonomy_check
-//     """
-// }
