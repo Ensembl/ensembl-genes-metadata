@@ -15,21 +15,13 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-import requests  # type: ignore
 import argparse
 import json
-from tenacity import retry, stop_after_attempt, wait_random  # type: ignore
 import logging
 import os
 
 from gb_metadata.db_utils import fetch_one_row
-
-
-@retry(stop=stop_after_attempt(5), wait=wait_random(min=1, max=10))
-def connection_TolID(uri: str) -> requests.Response:
-    response = requests.get(uri)
-    response.raise_for_status()
-    return response
+from gb_metadata.utils import connection_api
 
 
 def get_tolid(taxon: int) -> str:
@@ -44,7 +36,7 @@ def get_tolid(taxon: int) -> str:
 
     logging.info(f"Connecting to ToLID API to retrieve prefix for taxon {taxon}")
     uri = f"https://id.tol.sanger.ac.uk/api/v2/species?taxonomyId={taxon}"
-    response = connection_TolID(uri)
+    response = connection_api(uri)
     data = response.json()
     logging.info(f"Response from ToLID API: {data}")
 

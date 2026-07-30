@@ -35,16 +35,7 @@ import json
 import logging
 import os
 
-import requests  # type: ignore
-from tenacity import retry, stop_after_attempt, wait_random  # type: ignore
-
-
-@retry(stop=stop_after_attempt(10), wait=wait_random(min=1, max=20))
-def connection_ncbi(uri: str) -> requests.Response:
-    """Connect to the NCBI API and return the HTTP response."""
-    response = requests.get(uri, timeout=30)
-    response.raise_for_status()
-    return response
+from gb_metadata.utils import connection_api
 
 
 def get_taxon_data(taxon_id: int, ncbi_url: str) -> dict:
@@ -59,7 +50,7 @@ def get_taxon_data(taxon_id: int, ncbi_url: str) -> dict:
     """
     uri = f"{ncbi_url}/taxonomy/taxon/{taxon_id}/dataset_report"
     logging.info("URI: %s", uri)
-    response = connection_ncbi(uri)
+    response = connection_api(uri)
     taxon_data = response.json()
 
     return taxon_data
