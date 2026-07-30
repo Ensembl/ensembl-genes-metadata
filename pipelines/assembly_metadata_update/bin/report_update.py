@@ -43,8 +43,9 @@ def fetching_user(accession, metadata_params, slack_users):
 
 def slack_message(accession, gb_status, check_type, previous_value, current_value):
 
-    custom_message = f"""Accession {accession} with status: {gb_status} has been updated.
+    custom_message = f"""Your accession {accession}'s metadata has been updated. 
     {check_type}: {previous_value} -> {current_value}
+    gb_status: {gb_status}.
     """
     logging.info(f"Slack message: {custom_message}")
 
@@ -52,6 +53,7 @@ def slack_message(accession, gb_status, check_type, previous_value, current_valu
 
 
 def slack_communication_dm(slack_bot_token, slack_id, custom_message):
+
 
     client = WebClient(token=slack_bot_token)
 
