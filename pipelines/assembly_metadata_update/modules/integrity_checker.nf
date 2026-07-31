@@ -29,6 +29,6 @@ process INTEGRITY_CHECKER {
 
     script:
     """
-    integrity_checker.py  --accession $gca --metadata ${params.metadata_params} --delete
+    integrity_checker.py  --accession $gca --metadata '${params.metadata_params_string}' --delete
     """
 }

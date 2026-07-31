@@ -51,6 +51,6 @@ process WRITE2DB {
     script:
     def flag = update_flag ? '--update' : ''
     """
-    python ${write2db_script} --file-path ${file_to_write} ${flag} --metadata ${params.metadata_params} --config ${params.db_table_conf}
+    python ${write2db_script} --file-path ${file_to_write} ${flag} --metadata '${params.metadata_params_string}' --config ${params.db_table_conf}
     """
 }

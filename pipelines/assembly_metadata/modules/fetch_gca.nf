@@ -49,7 +49,7 @@ process FETCH_GCA {
         """
         fetch_new_assemblies.py \
         --taxon ${taxon} --date_update ${last_update} \
-        --metadata ${params.metadata_params} \
+        --metadata '${params.metadata_params_string}' \
         --ncbi ${params.ncbi_params} --ncbi_url ${params.ncbi_url}
         """
     }

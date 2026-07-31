@@ -42,6 +42,6 @@ process BIOPROJECT {
 
     script:
     """
-    bioproject.py --accession_json $metadata_json --accession $gca  --metadata_params ${params.metadata_params}
+    bioproject.py --accession_json $metadata_json --accession $gca  --metadata_params '${params.metadata_params_string}'
     """
 }

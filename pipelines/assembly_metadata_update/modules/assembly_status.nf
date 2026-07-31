@@ -42,6 +42,6 @@ process ASSEMBLY_STATUS {
 
     script:
     """
-    assembly_status.py --accession_json $metadata_json --accession $gca  --metadata_params ${params.metadata_params}
+    assembly_status.py --accession_json $metadata_json --accession $gca  --metadata_params '${params.metadata_params_string}'
     """
 }

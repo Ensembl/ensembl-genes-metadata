@@ -32,6 +32,6 @@ process TAXONOMY {
 
     script:
     """
-    taxonomy.py --accession_json $metadata_json --accession $gca  --metadata_params ${params.metadata_params} --taxonomy_update
+    taxonomy.py --accession_json $metadata_json --accession $gca  --metadata_params '${params.metadata_params_string}' --taxonomy_update
     """
 }

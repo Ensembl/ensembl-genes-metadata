@@ -42,6 +42,6 @@ process ASSEMBLY_METRICS {
 
     script:
     """
-    assembly_metrics.py --accession_json $metadata_json --accession $gca  --metadata_params ${params.metadata_params}
+    assembly_metrics.py --accession_json $metadata_json --accession $gca  --metadata_params '${params.metadata_params_string}'
     """
 }

@@ -45,7 +45,7 @@ process FETCH_ASSEMBLIES {
     }
     else {
     """
-    fetch_assemblies.py --metadata ${params.metadata_params} --screen_date $screen_date
+    fetch_assemblies.py --metadata '${params.metadata_params_string}' --screen_date $screen_date
     """
     }
 

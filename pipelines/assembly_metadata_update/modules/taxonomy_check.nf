@@ -35,7 +35,7 @@ process TAXONOMY_CHECK {
     """
     # Run the script and capture output
     OUTPUT=\$(taxonomy.py --accession_json ${metadata_json} --accession ${gca} \
-             --metadata_params ${params.metadata_params} --taxonomy_check)
+             --metadata_params '${params.metadata_params_string}' --taxonomy_check)
 
     # Parse the comma-separated output (old_taxon_id,new_taxon_id,status)
     IFS=',' read -r OLD_TAXON_ID NEW_TAXON_ID STATUS <<< "\$OUTPUT"

@@ -48,6 +48,6 @@ process WRITE2DB {
 
     script:
     """
-    python ${write2db_script} --file-path ${taxonomy_json} --metadata ${params.metadata_params} --config ${params.db_table_conf}
+    python ${write2db_script} --file-path ${taxonomy_json} --metadata '${params.metadata_params_string}' --config ${params.db_table_conf}
     """
 }

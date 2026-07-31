@@ -40,12 +40,12 @@ process SET_DATE {
     }
     else if (params.full_screen && !params.date) {
         """
-            set_date.py --metadata ${params.metadata_params} --full_screen
+            set_date.py --metadata '${params.metadata_params_string}' --full_screen
         """
     }
     else if (!params.date && !params.full_screen) {
         """
-            set_date.py --metadata ${params.metadata_params}
+            set_date.py --metadata '${params.metadata_params_string}'
         """
     }
     else {
