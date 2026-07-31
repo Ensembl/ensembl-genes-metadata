@@ -181,7 +181,10 @@ def main():
     parser.add_argument("--taxon", default=2759, type=int, help="Valid Taxon id: Eukaryota - 2759")
     parser.add_argument("--date_update", type=str, help="Last update date")
     parser.add_argument(
-        "--metadata", type=json.loads, required=True, help="JSON string with metadata database connection parameters"
+        "--metadata",
+        type=json.loads,
+        required=True,
+        help="JSON string with metadata database connection parameters",
     )
     parser.add_argument("--ncbi", type=str, required=True, help="Path to the NCBI API params in json format")
     parser.add_argument("--ncbi_url", type=str, required=True, help="NCBI API URL")
