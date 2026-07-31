@@ -71,10 +71,9 @@
             "fa_icon": "fas fa-database",
             "description": "Options for the metadata database connection.",
             "properties": {
-                "metadata_params": {
+                "metadata_params_string": {
                     "type": "string",
-                    "default": "$projectDir/data/metadata_params.json",
-                    "description": "Path to the JSON file containing metadata database connection parameters (host, user, password, port, database).",
+                    "description": "JSON string with metadata database connection parameters (host, user, password, port, database).",
                     "fa_icon": "fas fa-file-code"
                 },
                 "db_table_conf": {
@@ -107,18 +106,12 @@
                     "type": "string",
                     "description": "JSON string with Slack bot connection parameters, e.g. '{\"slack_bot_token\": \"xoxb-...\"}'. Requires --slack_report.",
                     "fa_icon": "fas fa-robot"
-                },
-                "metadata_params_string": {
-                    "type": "string",
-                    "description": "JSON string (rather than file path) with the metadata database connection parameters, used when sending Slack reports. Requires --slack_report.",
-                    "fa_icon": "fas fa-file-code"
                 }
             },
             "dependentRequired": {
                 "slack_report": [
                     "slack_user",
-                    "slack_params",
-                    "metadata_params_string"
+                    "slack_params"
                 ]
             }
         }
