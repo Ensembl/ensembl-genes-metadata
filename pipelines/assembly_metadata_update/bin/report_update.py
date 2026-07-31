@@ -54,7 +54,6 @@ def slack_message(accession, gb_status, check_type, previous_value, current_valu
 
 def slack_communication_dm(slack_bot_token, slack_id, custom_message):
 
-
     client = WebClient(token=slack_bot_token)
 
     message = f"""
