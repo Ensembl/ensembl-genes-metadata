@@ -205,7 +205,7 @@ def main():
     else:
         logging.info("Default date will be used to retrieve assemblies")
 
-    ncbi_params, release_date = set_date(args.taxon, ncbi_params, args.date_update)
+    ncbi_params, release_date = set_date(ncbi_params, args.date_update)
     gca_list = fetch_gca_list(args.taxon, ncbi_params, args.ncbi_url)
 
     out_path = "assemblies_to_register.txt"
