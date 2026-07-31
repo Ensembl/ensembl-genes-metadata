@@ -60,6 +60,7 @@ gb_metadata = "src/python"
 [tool.black]
 line-length = 110
 target-version = ["py39", "py310"]
+extend-exclude = "^/gb_prefect/"
 
 [tool.pylint.main]
 max-line-length = 110

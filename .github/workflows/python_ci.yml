@@ -38,7 +38,7 @@ jobs:
 
       - name: Run pylint
         run: |
-          pylint --rcfile pyproject.toml gb_prefect src/python
+          pylint --rcfile pyproject.toml src/python
 
   mypy:
     runs-on: ubuntu-latest
@@ -53,7 +53,7 @@ jobs:
 
       - name: Run mypy
         run: |
-          mypy --config-file pyproject.toml gb_prefect src/python
+          mypy --config-file pyproject.toml src/python
 
   black:
     runs-on: ubuntu-latest
