@@ -15,11 +15,19 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+/*
+INTEGRITY CHECKER
+This process checks the integrity of the metadata for a given GCA accession using the integrity_checker.py script.
+Inputs:
+- gca: The GCA accession for which to check integrity.
+Outputs:
+- stdout: The standard output from the integrity_checker.py script. 
+*/
 
 process INTEGRITY_CHECKER {
-    
+
     label 'python'
-    tag "$gca"
+    tag "${gca}"
 
     input:
     val gca
@@ -29,6 +37,6 @@ process INTEGRITY_CHECKER {
 
     script:
     """
-    integrity_checker.py  --accession $gca --metadata '${params.metadata_params_string}' --delete
+    integrity_checker.py  --accession ${gca} --metadata '${params.metadata_params_string}' --delete
     """
 }

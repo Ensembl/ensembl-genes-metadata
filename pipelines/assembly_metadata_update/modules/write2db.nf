@@ -20,9 +20,7 @@ limitations under the License.
 WRITE2DB
 Shared process that writes a taxonomy JSON file to the DB via write2db.py.
 Used both for the integrity-check taxonomy update and the post taxonomy-check
-update path; call-site-specific data that needs to ride alongside (e.g.
-attempt_update/metadata_json) is threaded through as an opaque passthrough
-value rather than being known to this process.
+update path.
 Inputs:
 - gca: The GCA accession.
 - taxonomy_json: The taxonomy JSON file to write to the DB.

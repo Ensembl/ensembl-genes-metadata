@@ -15,12 +15,22 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+/*
+TAXONOMY UPDATE
+This process updates the taxonomy information for a given GCA accession using the taxonomy.py script.
+Inputs:
+- gca: The GCA accession for which to update taxonomy information.
+- attempt_update: A flag indicating whether to attempt an update (true/false).
+- metadata_json: The JSON file containing the metadata information.
+Outputs:
+- stdout: The standard output from the taxonomy.py script.
+*/
 
 process TAXONOMY {
-    
+
     label 'python'
-    tag "$gca"
-    
+    tag "${gca}"
+
     input:
     tuple val(gca), val(attempt_update), path(metadata_json)
 
@@ -32,6 +42,6 @@ process TAXONOMY {
 
     script:
     """
-    taxonomy.py --accession_json $metadata_json --accession $gca  --metadata_params '${params.metadata_params_string}' --taxonomy_update
+    taxonomy.py --accession_json ${metadata_json} --accession ${gca}  --metadata_params '${params.metadata_params_string}' --taxonomy_update
     """
 }

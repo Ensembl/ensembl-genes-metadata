@@ -15,7 +15,18 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-
+/*
+TAXONOMY CHECK
+This process checks the taxonomy information for a given GCA accession using the taxonomy.py script.
+Inputs:
+- gca: The GCA accession for which to check taxonomy information.
+- attempt_update: A flag indicating whether to attempt an update (true/false).
+- metadata_json: The JSON file containing the metadata information.
+Outputs:
+- OLD_TAXON_ID: The previous taxon ID before the update.
+- NEW_TAXON_ID: The new taxon ID after the update.
+- STATUS: The status of the taxonomy check.
+*/
 
 process TAXONOMY_CHECK {
 

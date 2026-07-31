@@ -15,6 +15,15 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+/*
+INTEGRITY TAXONOMY
+This process checks the integrity of the taxonomy for a given GCA accession using the species_checker.py script.
+Inputs:
+- gca: The GCA accession for which to check taxonomy.
+- taxon_id: The taxon ID associated with the GCA accession.
+Outputs:
+- taxonomy_${taxon_id}.json: The JSON file containing the taxonomy information.
+*/
 
 process INTEGRITY_TAXONOMY {
 

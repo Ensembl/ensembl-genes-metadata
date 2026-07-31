@@ -15,6 +15,18 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+/*
+SPECIES CHECKER
+This process checks the species information for a given GCA accession using the species_checker.py script.
+Inputs:
+- gca: The GCA accession for which to check species information.
+- attempt_update: A flag indicating whether to attempt an update (true/false).
+- metadata_json: The JSON file containing the metadata information.
+- old_taxon_id: The previous taxon ID before the update.
+- new_taxon_id: The new taxon ID after the update.
+Outputs:
+- taxonomy_${new_taxon_id}.json: The JSON file containing the updated taxonomy information.
+*/
 
 process SPECIES_CHECKER {
 
