@@ -11,12 +11,18 @@
 
 - [Genebuild Metadata Prefect](./gb_prefect/README.md): Prefect flows that submit the Nextflow pipelines above (and other scripts) as SLURM jobs.
 
+
 ## Web App
 - Genebuild Web App: *coming soon*
 
+## src
+
+- [MySQL schema](./src/mysql/assembly_registry.sql): DDL for the Genebuild assembly metadata database — `assembly`, `species`, `taxonomy`, `organism`, `bioproject`, `genebuild_status`, and related tables.
+- [Python (`gb_metadata`)](./src/python/README.md): shared Python package used by both pipelines' `bin/` scripts (DB connection helpers, species/taxonomy checking, DB write logic), plus a standalone reference-assembly checker.
+
 ## Requirements
 
-- [Nextflow](https://www.nextflow.io/) >= 24.04.03
+- [Nextflow](https://www.nextflow.io/) >= 24.10.0
 - Singularity >= 3.7.0
 - Java 11 or later
 - Access to a SLURM cluster
