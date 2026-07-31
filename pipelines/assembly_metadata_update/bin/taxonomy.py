@@ -24,12 +24,17 @@ from gb_metadata.db_utils import execute_query, execute_write
 
 def taxonomy_checker(taxon_id: str, metadata_params: dict) -> bool:
 
-    # Taxonomy hierarchy check
     taxonomy_count = execute_query(
         f"SELECT COUNT(*) FROM taxonomy WHERE lowest_taxon_id = '{taxon_id}'",
         metadata_params,
     )[0][0]
-    return taxonomy_count == 7
+    check = taxonomy_count == 7
+
+    if check == False:
+        query = f"DELETE FROM taxonomy WHERE lowest_taxon_id = '{taxon_id}'"
+        execute_write(query, metadata_params)
+
+    return check
 
 
 def check_taxon_id(data, accession, metadata_params):
