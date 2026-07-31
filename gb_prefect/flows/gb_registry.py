@@ -11,6 +11,7 @@ def gb_registry_flow(
     outdir: str,
     enscode: str,
     asm_venv: str,
+    metadata_params_string: str,
     dry_run: bool = False,
 ):
     """Run the assembly registry Nextflow pipeline for the given date."""
@@ -19,6 +20,7 @@ def gb_registry_flow(
         outdir=f"{outdir}/{date}",
         enscode=enscode,
         asm_venv=asm_venv,
+        metadata_params_string=metadata_params_string,
         dry_run=dry_run,
     )
 
@@ -34,6 +36,11 @@ if __name__ == "__main__":
     parser.add_argument(
         "--asm_venv", required=True, help="Path to the assembly registry virtual environment."
     )
+    parser.add_argument(
+        "--metadata-params-string",
+        required=True,
+        help="JSON string with metadata database connection parameters.",
+    )
     args = parser.parse_args()
 
     try:
@@ -47,5 +54,6 @@ if __name__ == "__main__":
         outdir=f"{args.outdir}/{date_fmt}",
         enscode=args.enscode,
         asm_venv=args.asm_venv,
+        metadata_params_string=args.metadata_params_string,
         dry_run=args.dry_run,
     )

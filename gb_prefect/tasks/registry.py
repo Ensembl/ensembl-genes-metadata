@@ -17,6 +17,7 @@ def register_assemblies(
     date: str,
     outdir: str,
     asm_venv: str,
+    metadata_params_string: str,
     enscode: Optional[str] = None,
     dry_run: bool = False,
     create_artifact: bool = True,
@@ -50,7 +51,8 @@ nextflow run \
     {enscode}/ensembl-genes-metadata/pipelines/assembly_metadata/main.nf \
         --output_dir {outdir} \
         --enscode {enscode} \
-        --date {date_slash} -with-dag
+        --date {date_slash} \
+        --metadata_params_string '{metadata_params_string}' -with-dag
 """
 
     append_log(log, f"[{datetime.now()}] INFO: sbatch script:\n{sbatch_script}\n")

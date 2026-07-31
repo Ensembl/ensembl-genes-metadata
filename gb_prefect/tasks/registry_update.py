@@ -17,13 +17,18 @@ def update_assemblies(
     gca_list: str,
     outdir: str,
     asm_venv: str,
+    metadata_params_string: str,
     slack_report: bool = True,
+    slack_params: Optional[str] = None,
     date: Optional[str] = None,
     enscode: Optional[str] = None,
     dry_run: bool = False,
     create_artifact: bool = True,
 ):
     """Build and submit the SLURM job that runs the assembly metadata update Nextflow pipeline."""
+    if slack_report and not slack_params:
+        raise ValueError("slack_params is required when slack_report is True")
+
     date = date or datetime.now().strftime("%Y-%m-%d")
     outdir_path = Path(outdir)
     log = outdir_path / f"log_flow_update_assemblies_{date}.log"
@@ -32,6 +37,8 @@ def update_assemblies(
 
     enscode = resolve_enscode(enscode, dry_run)
     append_log(log, f"[{datetime.now()}] INFO: ENSCODE set to {enscode}.\n")
+
+    slack_params_flag = f"--slack_params '{slack_params}' \\\n    " if slack_params else ""
 
     sbatch_script = f"""#!/bin/bash
 #SBATCH --job-name=asm_registry_update_{date}
@@ -46,14 +53,14 @@ source {asm_venv}/bin/activate
 
 cd {outdir}
 
-nextflow -C {enscode}/ensembl-genes-metadata/pipelines/assembly_metadata_update/nexflow.config \
+nextflow -C {enscode}/ensembl-genes-metadata/pipelines/assembly_metadata_update/nextflow.config \
 run {enscode}/ensembl-genes-metadata/pipelines/assembly_metadata_update/main.nf \
-    --screen_date 2026-01-15 \
     --output_dir {outdir} \
     --gca_list {gca_list} \
     --gca_input true \
+    --metadata_params_string '{metadata_params_string}' \
     --slack_report {str(slack_report).lower()} \
-    -with-report \
+    {slack_params_flag}-with-report \
     -with-dag {outdir}/assembly_update_dag_{date}.png
 """
 

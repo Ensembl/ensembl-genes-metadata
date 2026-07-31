@@ -11,7 +11,9 @@ def gb_registry_update_flow(
     gca_list: str,
     outdir: str,
     asm_venv: str,
+    metadata_params_string: str,
     slack_report: bool = True,
+    slack_params: Optional[str] = None,
     date: Optional[str] = None,
     enscode: Optional[str] = None,
     dry_run: bool = False,
@@ -26,7 +28,9 @@ def gb_registry_update_flow(
         gca_list=gca_list,
         outdir=f"{outdir}/asm_update_{date}",
         asm_venv=asm_venv,
+        metadata_params_string=metadata_params_string,
         slack_report=slack_report,
+        slack_params=slack_params,
         date=date,
         enscode=enscode,
         dry_run=dry_run,
@@ -44,6 +48,16 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--slack-report", action="store_true", help="Whether to send a Slack report after the Nextflow run."
+    )
+    parser.add_argument(
+        "--slack-params",
+        required=False,
+        help="JSON string with Slack bot connection parameters. Required if --slack-report is set.",
+    )
+    parser.add_argument(
+        "--metadata-params-string",
+        required=True,
+        help="JSON string with metadata database connection parameters.",
     )
     parser.add_argument("--enscode", required=True, help="Path to ENSCODE directory.")
     parser.add_argument("--date", required=False, help="Date for the registry run (e.g., YYYY-MM-DD).")
@@ -63,6 +77,8 @@ if __name__ == "__main__":
         gca_list=args.gca_list,
         enscode=args.enscode,
         asm_venv=args.asm_venv,
+        metadata_params_string=args.metadata_params_string,
         slack_report=args.slack_report,
+        slack_params=args.slack_params,
         dry_run=args.dry_run,
     )
