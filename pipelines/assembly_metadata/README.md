@@ -93,7 +93,7 @@ Maps assembly metadata fields to the corresponding database tables and write met
 |-----------|-------------|
 | `--output_dir` | Path to the directory where pipeline results will be stored |
 | `--enscode` | Path to the directory containing Ensembl repositories (`$ENSCODE`) |
-| `--metadata_params` | String-json with database credentials file |
+| `--metadata_params_string` | JSON string with database credentials |
 
 ### Assembly options
 
