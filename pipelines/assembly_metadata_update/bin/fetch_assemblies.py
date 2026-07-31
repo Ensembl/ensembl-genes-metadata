@@ -17,7 +17,6 @@
 
 import logging
 import argparse
-import os
 from datetime import datetime
 import json
 
@@ -82,7 +81,11 @@ def main():
         prog="fetch_assemblies.py", description="Fetch a list of GCAs to run an update of metadata."
     )
 
-    parser.add_argument("--metadata", type=str, help="Path to the metadata database params in json format")
+    parser.add_argument(
+        "--metadata", 
+        type=json.loads, 
+        required=True, help="JSON string with metadata database connection parameters"
+    )
     parser.add_argument(
         "--full_screen",
         action="store_true",
@@ -98,12 +101,7 @@ def main():
     args = parser.parse_args()
     logging.info(args)
 
-    if args.metadata:
-        if not os.path.exists(args.metadata):
-            raise ValueError("Please enter a valid file path for metadata database parameters")
-        else:
-            with open(args.metadata, "r") as file:
-                metadata_params = json.load(file)
+    metadata_params = args.metadata
 
     if args.screen_date:
         if not datetime.strptime(args.screen_date, "%Y-%m-%d"):

@@ -18,7 +18,6 @@
 import argparse
 import logging
 import json
-import os
 
 from gb_metadata.db_utils import execute_query
 
@@ -178,19 +177,15 @@ def main():
     )
     parser.add_argument(
         "--metadata",
-        help="Path to metadata database connection parameters",
+        type=json.loads,
+        required=True,
+        help="JSON string with metadata database connection parameters",
     )
 
     args = parser.parse_args()
     logging.info(args)
 
-    if args.metadata:
-        if not os.path.exists(args.metadata):
-            raise ValueError("Metadata params json file does not exist")
-        else:
-            with open(args.metadata, "r") as f:
-                metadata_params = json.load(f)
-                f.close()
+    metadata_params = args.metadata
 
     status, accession = records_checker(args.accession, metadata_params, args.delete)
 

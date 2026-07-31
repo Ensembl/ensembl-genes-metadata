@@ -434,17 +434,10 @@ def load_input_data(args: argparse.Namespace) -> Tuple[Dict, Dict, Dict]:
         logging.info("Input data is empty. Data was expected in the file")
         raise ValueError("Input file is empty. Data expected or empty option was not provided")
 
-    # Check Configuration File
-    if not args.config or not os.path.exists(args.config):
-        raise ValueError(f"Please provide a valid --config file path, got: {args.config!r}")
     with open(args.config, encoding="utf-8") as file:
         table_conf = json.load(file)
 
-    # Check metadata DB params
-    if not args.metadata or not os.path.exists(args.metadata):
-        raise ValueError(f"Please provide a valid --metadata file path, got: {args.metadata!r}")
-    with open(args.metadata, encoding="utf-8") as file:
-        metadata_params = json.load(file)
+    metadata_params = args.metadata
 
     return input_data, table_conf, metadata_params
 
@@ -513,9 +506,9 @@ def main():
     )
     parser.add_argument(
         "--metadata",
-        type=str,
+        type=json.loads,
         required=True,
-        help="Path to the JSON file containing the metadata parameters",
+        help="JSON string containing the metadata DB connection parameters",
     )
     # Parsing arguments
     args = parser.parse_args()

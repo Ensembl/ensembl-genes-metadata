@@ -39,13 +39,6 @@ from datetime import date
 from gb_metadata.db_utils import execute_query, execute_write
 
 
-def load_json(filepath):
-    if not os.path.exists(filepath):
-        raise FileNotFoundError(f"{filepath} does not exist")
-    with open(filepath, "r") as f:
-        return json.load(f)
-
-
 def load_file_lines(filepath):
     if not os.path.exists(filepath):
         raise FileNotFoundError(f"{filepath} does not exist")
@@ -189,7 +182,9 @@ def main():
         prog="create_report.py", description="Create a report of the recently registered assemblies"
     )
     parser.add_argument("--file-list", help="Path to txt file with a list of GCA accessions", required=True)
-    parser.add_argument("--metadata", help="Path to metadata database connection parameters", required=True)
+    parser.add_argument(
+        "--metadata", type=json.loads, required=True, help="JSON string with metadata database connection parameters"
+    )
     parser.add_argument("--update-date", help="Date used to update database", required=True)
     parser.add_argument(
         "--bioprojects",
@@ -213,7 +208,7 @@ def main():
     logging.info(f"Script arguments: {args}")
 
     gca_list = load_file_lines(args.file_list)
-    metadata_params = load_json(args.metadata)
+    metadata_params = args.metadata
 
     report_data = fetch_report_data(metadata_params, gca_list, args.bioprojects)
     report_data["gca_list"] = gca_list

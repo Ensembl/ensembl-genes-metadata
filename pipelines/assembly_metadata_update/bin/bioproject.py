@@ -110,9 +110,9 @@ def main():
     parser.add_argument("--accession", type=str, required=True, help="GCA accession to retrieve metadata")
     parser.add_argument(
         "--metadata_params",
-        type=str,
+        type=json.loads,
         required=True,
-        help="Database connection parameters for metadata database in JSON format",
+        help="JSON string with metadata database connection parameters",
     )
 
     args = parser.parse_args()
@@ -123,8 +123,7 @@ def main():
     with open(args.accession_json, "r") as json_file:
         data = json.load(json_file)
 
-    with open(args.metadata_params, "r") as params_file:
-        metadata_params = json.load(params_file)
+    metadata_params = args.metadata_params
 
     output_line = comparing_bioproject(data, accession, metadata_params)
     print(output_line)

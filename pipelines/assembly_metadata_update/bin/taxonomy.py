@@ -150,9 +150,9 @@ def main():
     parser.add_argument("--accession", type=str, required=True, help="GCA accession to retrieve metadata")
     parser.add_argument(
         "--metadata_params",
-        type=str,
+        type=json.loads,
         required=True,
-        help="Database connection parameters for metadata database in JSON format",
+        help="JSON string with metadata database connection parameters",
     )
     parser.add_argument(
         "--taxonomy_check",
@@ -173,8 +173,7 @@ def main():
     with open(args.accession_json, "r") as json_file:
         data = json.load(json_file)
 
-    with open(args.metadata_params, "r") as params_file:
-        metadata_params = json.load(params_file)
+    metadata_params = args.metadata_params
 
     if not (args.taxonomy_check or args.taxonomy_update):
         raise ValueError("Select at least one mode: --taxonomy_check and/or --taxonomy_update.")

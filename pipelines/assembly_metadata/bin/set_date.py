@@ -47,7 +47,7 @@ def main():
         description="Determine the date to use when fetching new assemblies.",
     )
     parser.add_argument(
-        "--metadata", type=str, required=True, help="Path to the metadata database params in json format"
+        "--metadata", type=json.loads, required=True, help="JSON string with metadata database connection parameters"
     )
     parser.add_argument(
         "--full_screen",
@@ -58,8 +58,7 @@ def main():
     args = parser.parse_args()
     logging.info(args)
 
-    with open(args.metadata, "r", encoding="utf-8") as file:
-        metadata_params = json.load(file)
+    metadata_params = args.metadata
 
     if args.full_screen:
         query_full_screen = (

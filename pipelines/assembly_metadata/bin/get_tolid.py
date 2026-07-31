@@ -18,7 +18,6 @@
 import argparse
 import json
 import logging
-import os
 
 from gb_metadata.db_utils import fetch_one_row
 from gb_metadata.utils import connection_api
@@ -64,17 +63,14 @@ def main():
     )
     parser.add_argument("--accession", type=str, help="Full GCA assembly accession")
 
-    parser.add_argument("--metadata", help="JSON file with metadata database connection parameters")
+    parser.add_argument(
+        "--metadata", type=json.loads, required=True, help="JSON string with metadata database connection parameters"
+    )
 
     args = parser.parse_args()
     logging.info(args)
 
-    if args.metadata:
-        if os.path.exists(args.metadata):
-            with open(args.metadata, "r") as file:
-                metadata_params = json.load(file)
-        else:
-            raise ValueError("Metadata params json file does not exist")
+    metadata_params = args.metadata
 
     logging.info(
         f"Connecting to metadata database to retrieve lowest_taxon_id and assembly_id for {args.accession}"
