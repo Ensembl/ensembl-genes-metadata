@@ -15,21 +15,28 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+/*
+INTEGRITY CHECKER
+This process checks the integrity of the metadata for a given GCA accession using the integrity_checker.py script.
+Inputs:
+- gca: The GCA accession for which to check integrity.
+Outputs:
+- stdout: The standard output from the integrity_checker.py script. 
+*/
 
-process WRITE2DB_METADATA {
+process INTEGRITY_CHECKER {
 
     label 'python'
-    tag "$gca"
-    publishDir "${params.output_dir}/nextflow_output/$gca", mode: 'copy'
+    tag "${gca}"
 
     input:
-    tuple val(gca), path(metadata), path(species_tmp)
+    val gca
 
     output:
-    tuple val(gca), path(species_tmp), path("${metadata.baseName}.last_id")
+    tuple val(gca), stdout
 
     script:
     """
-    write2db.py --file-path $metadata --metadata ${params.metadata_params} --config ${params.db_table_conf}
+    integrity_checker.py  --accession ${gca} --metadata '${params.metadata_params_string}' --delete
     """
 }
