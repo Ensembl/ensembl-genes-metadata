@@ -51,11 +51,6 @@ docs = [
 
 [tool.setuptools]
 packages = [
-    "gb_prefect",
-    "gb_prefect.flows",
-    "gb_prefect.tasks",
-    "gb_prefect.utils",
-    "gb_prefect.models",
     "gb_metadata",
 ]
 
@@ -86,4 +81,4 @@ warn_unused_configs = true
 testpaths = ["tests"]
 
 [tool.coverage.run]
-source = ["gb_prefect", "src/python"]
+source = ["src/python"]
