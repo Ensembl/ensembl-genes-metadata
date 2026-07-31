@@ -116,7 +116,6 @@ def parse_data(
 
     organism_dict["organism"].update(
         {
-            "assembly_metrics": data["reports"][0]["assembly_stats"],
             "biosample_id": data.get("reports", [{}])[0]
             .get("assembly_info", {})
             .get("biosample", {})
@@ -126,6 +125,8 @@ def parse_data(
             "infra_name": infra_name,
         }
     )
+
+    organism_dict["assembly_metrics"].update(data["reports"][0]["assembly_stats"])
 
     # Parsing bioproject metadata
     bioproject_lineage = {}
