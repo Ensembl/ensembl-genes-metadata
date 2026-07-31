@@ -47,7 +47,10 @@ def main():
         description="Determine the date to use when fetching new assemblies.",
     )
     parser.add_argument(
-        "--metadata", type=json.loads, required=True, help="JSON string with metadata database connection parameters"
+        "--metadata",
+        type=json.loads,
+        required=True,
+        help="JSON string with metadata database connection parameters",
     )
     parser.add_argument(
         "--full_screen",

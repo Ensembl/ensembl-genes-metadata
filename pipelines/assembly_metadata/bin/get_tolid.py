@@ -64,7 +64,10 @@ def main():
     parser.add_argument("--accession", type=str, help="Full GCA assembly accession")
 
     parser.add_argument(
-        "--metadata", type=json.loads, required=True, help="JSON string with metadata database connection parameters"
+        "--metadata",
+        type=json.loads,
+        required=True,
+        help="JSON string with metadata database connection parameters",
     )
 
     args = parser.parse_args()

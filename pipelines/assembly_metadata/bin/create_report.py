@@ -183,7 +183,10 @@ def main():
     )
     parser.add_argument("--file-list", help="Path to txt file with a list of GCA accessions", required=True)
     parser.add_argument(
-        "--metadata", type=json.loads, required=True, help="JSON string with metadata database connection parameters"
+        "--metadata",
+        type=json.loads,
+        required=True,
+        help="JSON string with metadata database connection parameters",
     )
     parser.add_argument("--update-date", help="Date used to update database", required=True)
     parser.add_argument(
