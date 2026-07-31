@@ -74,19 +74,6 @@ Steps 6 run in parallel for every accession that reached Phase 2. Each compariso
 
 The pipeline requires JSON configuration files located in the `data/` directory. Template files with empty values are provided.
 
-### `data/metadata_params.json`
-
-Connection parameters for the Ensembl assembly metadata MySQL database.
-
-```json
-{
-    "host": "your-db-host",
-    "user": "your-db-user",
-    "password": "your-db-password",
-    "port": 3306,
-    "database": "your-db-name"
-}
-```
 
 ### `data/db_table_conf.json`
 
@@ -111,6 +98,15 @@ Maps genebuilder usernames to Slack user IDs, used by `REPORT_UPDATE` to identif
 | Parameter | Description |
 |-----------|-------------|
 | `--output_dir` | Path to the directory where pipeline results will be stored |
+| `--metadata_params_string` | String-json with database credentials file |
+
+
+### Default options
+
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `--ncbi_url` | `https://api.ncbi.nlm.nih.gov/datasets/v2` | NCBI Datasets API base URL |
+| `--db_table_conf` | `data/db_table_conf.json` | Path to database table configuration file |
 
 ### Assembly options
 
@@ -122,27 +118,14 @@ Maps genebuilder usernames to Slack user IDs, used by `REPORT_UPDATE` to identif
 
 > **Note:** Exactly one of `--screen_date` or `--gca_input`/`--gca_list` must be provided — the pipeline fails fast with a clear error if neither or both are set.
 
-### NCBI options
-
-| Parameter | Default | Description |
-|-----------|---------|-------------|
-| `--ncbi_url` | `https://api.ncbi.nlm.nih.gov/datasets/v2` | NCBI Datasets API base URL |
-
-### Database options
-
-| Parameter | Default | Description |
-|-----------|---------|-------------|
-| `--metadata_params` | `data/metadata_params.json` | Path to metadata database credentials file |
-| `--db_table_conf` | `data/db_table_conf.json` | Path to database table configuration file |
 
 ### Slack reporting options
 
 | Parameter | Default | Description |
 |-----------|---------|-------------|
-| `--slack_report` | `false` | When set, sends a Slack DM to the genebuilder assigned to an assembly whenever its metadata is updated. Requires `--slack_user`, `--slack_params` and `--metadata_params_string` |
+| `--slack_report` | `false` | When set, sends a Slack DM to the genebuilder assigned to an assembly whenever its metadata is updated. Requires `--slack_user` and `--slack_params` |
 | `--slack_user` | `data/slack_user.json` | Path to the JSON file mapping genebuilder usernames to Slack user IDs |
 | `--slack_params` | `null` | Slack bot connection parameters, as an inline JSON string, e.g. `'{"slack_bot_token": "xoxb-..."}'` |
-| `--metadata_params_string` | `null` | Same content as `--metadata_params`, but passed as an inline JSON string rather than a file path (required by the Slack reporting step) |
 
 ---
 
@@ -157,8 +140,8 @@ nextflow run $ENSCODE/ensembl-genes-metadata/pipelines/assembly_metadata_update/
 ### Screen the database since a given date
 
 ```bash
-nextflow -C $ENSCODE/ensembl-genes-metadata/pipelines/assembly_metadata_update/nextflow.config \
-    run $ENSCODE/ensembl-genes-metadata/pipelines/assembly_metadata_update/main.nf \
+nextflow run $ENSCODE/ensembl-genes-metadata/pipelines/assembly_metadata_update/main.nf \
+    --metadata_params_string '{"host":"host","user":"user", "password":"password", "port": port, "database" : "database"}' \
     --output_dir /path/to/output/dir \
     --screen_date 2024-01-01
 ```
@@ -174,8 +157,8 @@ GCA_000003745.2
 ```
 
 ```bash
-nextflow -C $ENSCODE/ensembl-genes-metadata/pipelines/assembly_metadata_update/nextflow.config \
-    run $ENSCODE/ensembl-genes-metadata/pipelines/assembly_metadata_update/main.nf \
+nextflow run $ENSCODE/ensembl-genes-metadata/pipelines/assembly_metadata_update/main.nf \
+    --metadata_params_string '{"host":"host","user":"user", "password":"password", "port": port, "database" : "database"}' \
     --output_dir /path/to/output/dir \
     --gca_input \
     --gca_list /path/to/gca_list.txt 
@@ -184,8 +167,8 @@ nextflow -C $ENSCODE/ensembl-genes-metadata/pipelines/assembly_metadata_update/n
 ### With Slack reporting enabled
 
 ```bash
-nextflow -C $ENSCODE/ensembl-genes-metadata/pipelines/assembly_metadata_update/nextflow.config \
-    run $ENSCODE/ensembl-genes-metadata/pipelines/assembly_metadata_update/main.nf \
+nextflow run $ENSCODE/ensembl-genes-metadata/pipelines/assembly_metadata_update/main.nf \
+    --metadata_params_string '{"host":"host","user":"user", "password":"password", "port": port, "database" : "database"}' \
     --output_dir /path/to/output/dir \
     --screen_date 2024-01-01 \
     --slack_report \

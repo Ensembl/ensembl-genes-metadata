@@ -57,21 +57,8 @@ The pipeline runs the following steps in sequence for each GCA accession:
 
 ## Configuration Files
 
-The pipeline requires three JSON configuration files located in the `data/` directory. Template files with empty values are provided.
+The pipeline requires two JSON configuration files located in the `data/` directory. Template files with empty values are provided.
 
-### `data/metadata_params.json`
-
-Connection parameters for the Ensembl assembly metadata MySQL database.
-
-```json
-{
-    "host": "your-db-host",
-    "user": "your-db-user",
-    "password": "your-db-password",
-    "port": 3306,
-    "database": "your-db-name"
-}
-```
 
 ### `data/ncbi_params.json`
 
@@ -106,6 +93,7 @@ Maps assembly metadata fields to the corresponding database tables and write met
 |-----------|-------------|
 | `--output_dir` | Path to the directory where pipeline results will be stored |
 | `--enscode` | Path to the directory containing Ensembl repositories (`$ENSCODE`) |
+| `--metadata_params` | String-json with database credentials file |
 
 ### Assembly options
 
@@ -125,7 +113,6 @@ Maps assembly metadata fields to the corresponding database tables and write met
 |-----------|---------|-------------|
 | `--ncbi_url` | `https://api.ncbi.nlm.nih.gov/datasets/v2` | NCBI Datasets API base URL |
 | `--ncbi_params` | `data/ncbi_params.json` | Path to NCBI API parameters file |
-| `--metadata_params` | `data/metadata_params.json` | Path to metadata database credentials file |
 | `--db_table_conf` | `data/db_table_conf.json` | Path to database table configuration file |
 
 ---
@@ -154,6 +141,7 @@ nextflow -C ${ENSCODE}/ensembl-genes-metadata/pipelines/assembly_metadata/nextfl
 ```bash
 nextflow -C ${ENSCODE}/ensembl-genes-metadata/pipelines/assembly_metadata/nextflow.config \
     run ${ENSCODE}/ensembl-genes-metadata/pipelines/assembly_metadata/main.nf \
+    --metadata_params_string '{"host":"host","user":"user", "password":"password", "port": port, "database" : "database"}' \
     --output_dir /path/to/output/dir \
     --enscode ${ENSCODE} \
     --date 01/01/2024
@@ -164,6 +152,7 @@ nextflow -C ${ENSCODE}/ensembl-genes-metadata/pipelines/assembly_metadata/nextfl
 ```bash
 nextflow -C ${ENSCODE}/ensembl-genes-metadata/pipelines/assembly_metadata/nextflow.config \
     run ${ENSCODE}/ensembl-genes-metadata/pipelines/assembly_metadata/main.nf \
+    --metadata_params_string '{"host":"host","user":"user", "password":"password", "port": port, "database" : "database"}' \
     --output_dir /path/to/output/dir \
     --enscode ${ENSCODE} \
     --full_screen
@@ -182,6 +171,7 @@ GCA_000003745.2
 ```bash
 nextflow -C ${ENSCODE}/ensembl-genes-metadata/pipelines/assembly_metadata/nextflow.config \
     run ${ENSCODE}/ensembl-genes-metadata/pipelines/assembly_metadata/main.nf \
+    --metadata_params_string '{"host":"host","user":"user", "password":"password", "port": port, "database" : "database"}' \
     --output_dir /path/to/output/dir \
     --enscode ${ENSCODE} \
     --add_gca \
