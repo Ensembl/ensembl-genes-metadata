@@ -86,9 +86,9 @@
             "fa_icon": "fas fa-database",
             "description": "Options for the metadata database connection.",
             "properties": {
-                "metadata_params": {
+                "metadata_params_string": {
                     "type": "string",
-                    "description": "Path to the JSON file containing metadata database connection parameters (host, user, password, port, database).",
+                    "description": "JSON string with metadata database connection parameters (host, user, password, port, database).",
                     "fa_icon": "fas fa-file-code"
                 },
                 "db_table_conf": {
