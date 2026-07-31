@@ -22,6 +22,16 @@ import logging
 from gb_metadata.db_utils import execute_query, execute_write
 
 
+def taxonomy_checker(taxon_id: str, metadata_params: dict) -> bool:
+
+    # Taxonomy hierarchy check
+    taxonomy_count = execute_query(
+        f"SELECT COUNT(*) FROM taxonomy WHERE lowest_taxon_id = '{taxon_id}'",
+        metadata_params,
+    )[0][0]
+    return taxonomy_count == 7
+
+
 def check_taxon_id(data, accession, metadata_params):
 
     # Taxon ID in NCBI
@@ -35,7 +45,11 @@ def check_taxon_id(data, accession, metadata_params):
 
     if taxon_id_ncbi == taxon_id:
         logging.info(f"No update needed for taxon ID of assembly {accession}")
-        taxon_id_check = "pass"
+        if taxonomy_checker(taxon_id, metadata_params):
+            taxon_id_check = "pass"
+        else:
+            logging.info(f"Taxonomy hierarchy check failed for taxon ID of assembly {accession}")
+            taxon_id_check = "fail"
     else:
         logging.info(
             f"Update needed for taxon ID of assembly {accession}: current taxon ID in Registry is {taxon_id}, taxon ID from NCBI is {taxon_id_ncbi}"
@@ -47,7 +61,10 @@ def check_taxon_id(data, accession, metadata_params):
 
         if taxon_count == 1:
             logging.info(f"New species taxon id exists in registry: {taxon_id_ncbi}")
-            taxon_id_check = "pass"
+            if taxonomy_checker(taxon_id_ncbi, metadata_params):
+                taxon_id_check = "pass"
+            else:
+                taxon_id_check = "fail"
 
         elif taxon_count == 0:
             logging.info(
