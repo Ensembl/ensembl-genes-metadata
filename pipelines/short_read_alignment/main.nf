@@ -89,17 +89,8 @@ include { CHECK_BAM } from './modules/check_bam.nf'
 workflow SHORT_READ_ALIGNMENT {
     take:
     csvFile
-    bam2cram
-    mergeTissue
-    stranded
-    bam2bigWig
 
     main:
-    // Validate input parameters
-    validateParameters()
-
-    // Print summary of supplied parameters
-    log.info(paramsSummaryLog(workflow))
     ch_versions_file = channel.empty()
     paired_sample = ""
     def data 
@@ -135,15 +126,15 @@ workflow SHORT_READ_ALIGNMENT {
     def downloadedFastqFiles=DOWNLOAD_FASTQS(genomeAndDataToAlign).fastq_file_output
     .map {meta, fastq1, fastq2 -> return tuple(meta + [fastq1: fastq1, fastq2: fastq2]) }
     ch_versions_file = ch_versions_file.mix(DOWNLOAD_FASTQS.out.versions_file)
-    def processReads = downloadedFastqFiles.branch { meta, _fastq1, _fastq2 ->
+    def processReads = downloadedFastqFiles.branch { meta  ->
         def platform = meta.platform?.toString()?.toLowerCase()
 
         star    : platform == 'illumina'
-        minimap : platform in ['pacbio', 'pacbio_smrt', 'ONT']
+        minimap : platform in ['pacbio', 'pacbio_smrt', 'ont']
     }
     if (processReads.star) {
         log.info("Illumina data detected. Using STAR for alignment.")
-        def genomeIndexParams = STAR_INDEX_PARAMS(processReads).genome_stats_output
+        def genomeIndexParams = STAR_INDEX_PARAMS(processReads.star).genome_stats_output
         ch_versions_file = ch_versions_file.mix(STAR_INDEX_PARAMS.out.versions_file)
 
         def genomeIndexShortData = STAR_INDEX_GENOME(genomeIndexParams).genome_index_output
@@ -167,7 +158,7 @@ workflow SHORT_READ_ALIGNMENT {
     if (processReads.minimap) {
         log.info("PacBio data detected. Using Minimap2 for alignment.")
 
-        def genomeIndexLongData = MINIMAP2_INDEX_GENOME(processReads).minimap_index
+        def genomeIndexLongData = MINIMAP2_INDEX_GENOME(processReads.minimap).minimap_index
         ch_versions_file = ch_versions_file.mix(MINIMAP2_INDEX_GENOME.out.versions_file)
 
         def alignMinimapOutput = MINIMAP2(genomeIndexLongData).minimap_alignment
@@ -190,7 +181,8 @@ workflow SHORT_READ_ALIGNMENT {
     // Collect all aligned BAMs
     def output2process = starOutput.mix(minimapOutput)
     output2process.each { dataRow -> dataRow.view() }
-    if (mergeTissue){
+    def mergedBam
+    if (params.mergeTissue){
         output2process
         .map { meta, bamFile ->
             def groupMeta = meta.subMap('taxonId', 'tissue_name', 'platform')
@@ -235,18 +227,18 @@ workflow SHORT_READ_ALIGNMENT {
         }
     //Define a finalBam channel to hold the final BAM files after merging or flattening
     def bamForDownstream = mergeTissue ? mergedBam : output2process        
-    if (stranded){
+    if (params.stranded){
         def bamToStrand=bamForDownstream
         def strandOutput=BAM2STRAND(bamToStrand).aligned_output
         ch_versions_file = ch_versions_file.mix(BAM2STRAND.out.versions_file)
 
-        if(bam2bigWig){
+        if(params.bam2bigWig){
             BAM2BIGWIG(strandOutput)
             ch_versions_file = ch_versions_file.mix(BAM2BIGWIG.out.versions_file)
         }
     
     } else {
-    if(bam2bigWig){
+    if(params.bam2bigWig){
             def bamToBigWig=bamForDownstream
             //bamForDownstream.map { row ->
             //def (taxon_id, genomeDir, tissue, platform, output_dir, bamFile) = row
@@ -256,7 +248,7 @@ workflow SHORT_READ_ALIGNMENT {
             ch_versions_file = ch_versions_file.mix(BAM2BIGWIG.out.versions_file)
         }
     }
-    if (bam2cram){
+    if (params.bam2cram){
         def bamToCram=bamForDownstream
         def cramFile = BAM2CRAM(bamToCram).cram_output
         ch_versions_file = ch_versions_file.mix(BAM2CRAM.out.versions_file)
@@ -269,11 +261,19 @@ workflow SHORT_READ_ALIGNMENT {
         ch_versions_file = ch_versions_file.mix(INDEX_CRAM.out.versions_file)
     }
 
-    if( !stranded && !bam2cram && !bam2bigWig ) {
+    if( !params.stranded && !params.bam2cram && !params.bam2bigWig ) {
     println "❌ No processing options selected (stranded, bam2cram, bam2bigWig)."
 }
 
 
 }  
 
-
+workflow {
+    log.info("Pipeline started at: ${new Date().format('dd-MM-yyyy HH:mm:ss')}")
+    // Validate input parameters
+    validateParameters()
+    // Print summary of supplied parameters
+    log.info(paramsSummaryLog(workflow))
+    // Execute main workflow
+    SHORT_READ_ALIGNMENT(params.csvFile)
+}
