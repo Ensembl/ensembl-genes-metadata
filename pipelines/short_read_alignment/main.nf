@@ -71,9 +71,11 @@ include { MINIMAP2 } from './modules/minimap2.nf'
 include { SAM2BAM } from './modules/sam2bam.nf'
 include { MERGE_BAM_PER_TISSUE } from './modules/merge_bam_per_tissue.nf'
 include { BAM2STRAND } from './modules/bam2strand.nf'
-include { INDEXING_FILES as INDEX_BAM } from './modules/indexing_files.nf'
 include { INDEXING_FILES as INDEX_CRAM } from './modules/indexing_files.nf'
 include { INDEXING_FILES as INDEX_BIGWIG } from './modules/indexing_files.nf'
+include { INDEXING_FILES as INDEX_BAM_STAR } from './modules/indexing_files.nf'
+include { INDEXING_FILES as INDEX_BAM_MINIMAP } from './modules/indexing_files.nf'
+include { INDEXING_FILES as INDEX_BAM_MERGED } from './modules/indexing_files.nf'
 include { BAM2CRAM } from './modules/bam2cram.nf'
 include { BAM2BIGWIG } from './modules/bam2bigWig.nf'
 include { DELETE_FASTQ as DELETE_FASTQ_STAR } from './modules/delete_fastq.nf'
@@ -82,6 +84,7 @@ include { CHECK_BAM as CHECK_BAM_STAR } from './modules/check_bam.nf'
 include { CHECK_BAM as CHECK_BAM_MINIMAP } from './modules/check_bam.nf'
 include { CHECK_BAM as CHECK_BAM_MERGED } from './modules/check_bam.nf'
 include { COLLECT_SOFTWARE_VERSIONS } from './modules/collect_software_versions.nf'
+include { WRITE_REPORT } from './modules/write_report.nf'
 
 
 /*
@@ -124,14 +127,14 @@ workflow SHORT_READ_ALIGNMENT {
     def minimapOutput
 
     def genomeAndDataToAlign = FETCH_GENOME(data).fasta_file_output
-    .map {meta, genomeFile -> return tuple(meta + [fasta_file: genomeFile]) }
+    .map {meta, genomeFile -> return [meta + [fasta_file: genomeFile]] }
     ch_versions_file = ch_versions_file.mix(FETCH_GENOME.out.versions_file)
 
     def downloadedFastqFiles=DOWNLOAD_FASTQS(genomeAndDataToAlign).fastq_file_output
-    .map {meta, fastq1, fastq2 -> return tuple(meta + [fastq1: fastq1, fastq2: fastq2]) }
+    .map {meta, fastq1, fastq2 -> return [meta + [fastq1: fastq1, fastq2: fastq2]] }
     ch_versions_file = ch_versions_file.mix(DOWNLOAD_FASTQS.out.versions_file)
     def processReads = downloadedFastqFiles.branch { meta  ->
-        def platform = meta.platform?.toString()?.toLowerCase()
+        def platform = meta.instrument_platform?.toString()?.toLowerCase()
 
         star    : platform == 'illumina'
         minimap : platform in ['pacbio', 'pacbio_smrt', 'ont']
@@ -142,7 +145,7 @@ workflow SHORT_READ_ALIGNMENT {
         ch_versions_file = ch_versions_file.mix(STAR_INDEX_PARAMS.out.versions_file)
 
         def genomeIndexShortData = STAR_INDEX_GENOME(genomeIndexParams).genome_index_output
-        .map {meta, genomeDir -> return tuple(meta + [genome_dir: genomeDir]) }
+        .map {meta, genomeDir -> return [meta + [genome_dir: genomeDir]] }
         ch_versions_file = ch_versions_file.mix(STAR_INDEX_GENOME.out.versions_file)
 
         def alignStarOutput = STAR(genomeIndexShortData).star_output
@@ -155,8 +158,8 @@ workflow SHORT_READ_ALIGNMENT {
         def alignedFiles = DELETE_FASTQ_STAR(checkedBamStar).aligned_output
         ch_versions_file = ch_versions_file.mix(DELETE_FASTQ_STAR.out.versions_file)
         
-        starOutput = INDEX_BAM(alignedFiles, 'bai').aligned_output
-        ch_versions_file = ch_versions_file.mix(INDEX_BAM.out.versions_file)
+        starOutput = INDEX_BAM_STAR(alignedFiles, 'bai').aligned_output
+        ch_versions_file = ch_versions_file.mix(INDEX_BAM_STAR.out.versions_file)
     }
 
     if (processReads.minimap) {
@@ -178,8 +181,8 @@ workflow SHORT_READ_ALIGNMENT {
         sam2bamOutput = SAM2BAM(cleanFile).sam_output
         ch_versions_file = ch_versions_file.mix(SAM2BAM.out.versions_file)
 
-        minimapOutput = INDEX_BAM(sam2bamOutput, 'bai').aligned_output
-        ch_versions_file = ch_versions_file.mix(INDEX_BAM.out.versions_file)
+        minimapOutput = INDEX_BAM_MINIMAP(sam2bamOutput, 'bai').aligned_output
+        ch_versions_file = ch_versions_file.mix(INDEX_BAM_MINIMAP.out.versions_file)
     }            
 
     // Collect all aligned BAMs
@@ -222,8 +225,8 @@ workflow SHORT_READ_ALIGNMENT {
         checkedMergedBam = CHECK_BAM_MERGED(finalBam).good_bam
         ch_versions_file = ch_versions_file.mix(CHECK_BAM_MERGED.out.versions_file)
 
-        mergedBam = INDEX_BAM(checkedMergedBam, 'bai').aligned_output
-        ch_versions_file = ch_versions_file.mix(INDEX_BAM.out.versions_file)
+        mergedBam = INDEX_BAM_MERGED(checkedMergedBam, 'bai').aligned_output
+        ch_versions_file = ch_versions_file.mix(INDEX_BAM_MERGED.out.versions_file)
         mergedBam.each { dataRow -> dataRow.view() }
 
         } else{
@@ -264,7 +267,14 @@ workflow SHORT_READ_ALIGNMENT {
         INDEX_CRAM (cramFile,'crai') //indexCramFile
         ch_versions_file = ch_versions_file.mix(INDEX_CRAM.out.versions_file)
     }
+    def reportInput = bamForDownstream
+    .map { meta, bam -> meta }
+    .collect()
+    WRITE_REPORT(reportInput)
+    ch_versions_file = ch_versions_file.mix(WRITE_REPORT.out.versions_file)
 
+    // Merge into single file and publish
+    COLLECT_SOFTWARE_VERSIONS(ch_versions_file.collect())
     if( !params.stranded && !params.bam2cram && !params.bam2bigWig ) {
     println "❌ No processing options selected (stranded, bam2cram, bam2bigWig)."
 }
