@@ -107,7 +107,7 @@ workflow SHORT_READ_ALIGNMENT {
                 .map { row ->
                     [
                         taxonId : row.get('taxon_id'),
-                        gca : row.get('gca'),
+                        gca : row.get('assembly_accession'),
                         instrument_platform : row.get('platform'),
                         paired : row.get('paired')?.toBoolean(),
                         tissue_name : row.get('tissue'),
@@ -116,7 +116,7 @@ workflow SHORT_READ_ALIGNMENT {
                         md5_1_sum : row.get('md5_1'),
                         pair2_path : paired_sample ? row.get('pair2') : null,
                         md5_2 : paired_sample ? row.get('md5_2') : null,
-                        genome_file: row.get('genome_file')
+                        genome_file: row.get('genome_file') || params.genomeFile
                     ]
                 }
     data.view { row -> "DATA: ${row}" }        
@@ -139,8 +139,8 @@ workflow SHORT_READ_ALIGNMENT {
         star    : platform == 'illumina'
         minimap : platform in ['pacbio', 'pacbio_smrt', 'ont']
     }
-    if (processReads.star) {
-        log.info("Illumina data detected. Using STAR for alignment.")
+    //if (processReads.star) {
+        //log.info("Illumina data detected. Using STAR for alignment.")
         def genomeIndexParams = STAR_INDEX_PARAMS(processReads.star).genome_stats_output
         ch_versions_file = ch_versions_file.mix(STAR_INDEX_PARAMS.out.versions_file)
 
@@ -160,10 +160,10 @@ workflow SHORT_READ_ALIGNMENT {
         
         starOutput = INDEX_BAM_STAR(alignedFiles, 'bai').aligned_output
         ch_versions_file = ch_versions_file.mix(INDEX_BAM_STAR.out.versions_file)
-    }
+    //}
 
-    if (processReads.minimap) {
-        log.info("PacBio data detected. Using Minimap2 for alignment.")
+    //if (processReads.minimap) {
+        //log.info("PacBio data detected. Using Minimap2 for alignment.")
 
         def genomeIndexLongData = MINIMAP2_INDEX_GENOME(processReads.minimap).minimap_index
         ch_versions_file = ch_versions_file.mix(MINIMAP2_INDEX_GENOME.out.versions_file)
@@ -183,7 +183,7 @@ workflow SHORT_READ_ALIGNMENT {
 
         minimapOutput = INDEX_BAM_MINIMAP(sam2bamOutput, 'bai').aligned_output
         ch_versions_file = ch_versions_file.mix(INDEX_BAM_MINIMAP.out.versions_file)
-    }            
+    //}            
 
     // Collect all aligned BAMs
     def output2process = starOutput.mix(minimapOutput)

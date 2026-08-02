@@ -40,7 +40,7 @@ process WRITE_REPORT {
     //conda "$projectDir/pipelines/nextflow/modules/download_fastqs/environment.yml"
 
     input:
-    tuple val(meta)
+    val(meta)
 
     output:
     path "versions.yml", emit: versions_file

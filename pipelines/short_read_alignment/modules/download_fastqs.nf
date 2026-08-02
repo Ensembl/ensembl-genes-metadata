@@ -40,7 +40,7 @@ process DOWNLOAD_FASTQS {
     //conda "$projectDir/pipelines/nextflow/modules/download_fastqs/environment.yml"
 
     input:
-    tuple val(meta)
+    val(meta)
 
     //tuple val(taxon_id), val(gca), val(platform), val(paired), val(tissue), val(run_accession), val(genomeDir),  val(url1), val(md5_1), val(url2),  val(md5_2)
 
