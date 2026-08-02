@@ -40,6 +40,9 @@ process BAM2BIGWIG {
     //tuple val(taxon_id), val(genomeDir), val(tissue), val(platform), val(output_dir), path(bam_file1),  path(bam_file2)
     tuple val(meta), path(bam_file1),  path(bam_file2)
 
+    output:
+    path("versions.yml"), emit: versions_file
+    
     script:
     def bam_basename = bam_file1.baseName  // strips .bam 
     //def bam2_provided = bam_file2 ? true : false
