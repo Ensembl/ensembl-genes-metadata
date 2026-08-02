@@ -77,7 +77,10 @@ include { INDEXING_FILES as INDEX_BIGWIG } from './modules/indexing_files.nf'
 include { BAM2CRAM } from './modules/bam2cram.nf'
 include { BAM2BIGWIG } from './modules/bam2bigWig.nf'
 include { DELETE_FASTQ } from './modules/delete_fastq.nf'
-include { CHECK_BAM } from './modules/check_bam.nf'
+include { CHECK_BAM as CHECK_BAM_STAR } from './modules/check_bam.nf'
+include { CHECK_BAM as CHECK_BAM_MINIMAP } from './modules/check_bam.nf'
+include { CHECK_BAM as CHECK_BAM_MERGED } from './modules/check_bam.nf'
+include { COLLECT_SOFTWARE_VERSIONS } from './modules/collect_software_versions.nf'
 
 
 /*
@@ -145,8 +148,8 @@ workflow SHORT_READ_ALIGNMENT {
         .map {meta, output_dir, bamFile -> return tuple(meta + [output_dir: output_dir], bamFile) }
         ch_versions_file = ch_versions_file.mix(STAR.out.versions_file)
 
-        def checkedBamStar = CHECK_BAM(alignStarOutput).good_bam
-        ch_versions_file = ch_versions_file.mix(CHECK_BAM.out.versions_file)
+        def checkedBamStar = CHECK_BAM_STAR(alignStarOutput).good_bam
+        ch_versions_file = ch_versions_file.mix(CHECK_BAM_STAR.out.versions_file)
 
         def alignedFiles = DELETE_FASTQ(checkedBamStar).aligned_output
         ch_versions_file = ch_versions_file.mix(DELETE_FASTQ.out.versions_file)
@@ -165,8 +168,8 @@ workflow SHORT_READ_ALIGNMENT {
         .map {meta, output_dir, bamFile -> return tuple(meta + [output_dir: output_dir], bamFile) }
         ch_versions_file = ch_versions_file.mix(MINIMAP2.out.versions_file)
 
-        def checkedBamMinimap = CHECK_BAM(alignMinimapOutput).good_bam
-        ch_versions_file = ch_versions_file.mix(CHECK_BAM.out.versions_file)
+        def checkedBamMinimap = CHECK_BAM_MINIMAP(alignMinimapOutput).good_bam
+        ch_versions_file = ch_versions_file.mix(CHECK_BAM_MINIMAP.out.versions_file)
 
         def cleanFile = DELETE_FASTQ(checkedBamMinimap).aligned_output
         ch_versions_file = ch_versions_file.mix(DELETE_FASTQ.out.versions_file)
@@ -215,8 +218,8 @@ workflow SHORT_READ_ALIGNMENT {
         .map {meta, output_dir, bamFile -> return tuple(meta + [output_dir: output_dir], bamFile) }
         ch_versions_file = ch_versions_file.mix(MERGE_BAM_PER_TISSUE.out.versions_file)
 
-        checkedMergedBam = CHECK_BAM(finalBam).good_bam
-        ch_versions_file = ch_versions_file.mix(CHECK_BAM.out.versions_file)
+        checkedMergedBam = CHECK_BAM_MERGED(finalBam).good_bam
+        ch_versions_file = ch_versions_file.mix(CHECK_BAM_MERGED.out.versions_file)
 
         mergedBam = INDEX_BAM(checkedMergedBam, 'bai').aligned_output
         ch_versions_file = ch_versions_file.mix(INDEX_BAM.out.versions_file)
@@ -226,7 +229,7 @@ workflow SHORT_READ_ALIGNMENT {
             finalBam = output2process.flatten()
         }
     //Define a finalBam channel to hold the final BAM files after merging or flattening
-    def bamForDownstream = mergeTissue ? mergedBam : output2process        
+    def bamForDownstream = params.mergeTissue ? mergedBam : output2process        
     if (params.stranded){
         def bamToStrand=bamForDownstream
         def strandOutput=BAM2STRAND(bamToStrand).aligned_output
