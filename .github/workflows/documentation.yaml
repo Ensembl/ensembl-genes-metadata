@@ -63,7 +63,7 @@ jobs:
             mkdocs-minify-plugin \
             mkdocs-git-revision-date-localized-plugin
 
-      - name: Build MkDocs Site
+      - name: Build Sphinx Site
         if: steps.mkdocs.outputs.found == 'true'
         run: |
           zensical build --config-file mkdocs.yml --strict
