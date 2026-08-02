@@ -1,0 +1,44 @@
+# DELETE_FASTQ
+
+Delete downloaded FASTQ files after a successful alignment.
+This process removes compressed FASTQ (.fastq.gz) files from the sample
+directory to free disk space. It assumes the alignment has completed
+successfully and the BAM file has been generated.
+
+## Process Details
+
+| Property | Value |
+|----------|-------|
+| Process | `DELETE_FASTQ` |
+| Label | `'default'` |
+| Tag | `$meta.run_accession` |
+
+## Inputs
+
+### Nextflow interface
+
+```nextflow
+//tuple val(taxon_id), val(genomeDir),  val(tissue),  path(aligned_file)
+//tuple val(taxon_id), val(genomeDir), val(tissue),val(platform),  val(output_dir), path(aligned_file)
+//tuple val(taxon_id), val(genomeDir), val(tissue), val(platform), val(run_accession), path(aligned_file)
+tuple val(meta), path(aligned_file)
+```
+
+## Outputs
+
+### Nextflow interface
+
+```nextflow
+//tuple val(taxon_id), val(genomeDir), val(tissue), val(platform), val(run_accession), path(aligned_file)
+//tuple val(taxon_id), val(genomeDir), val(tissue), val(platform), val(output_dir), path(aligned_file)
+tuple val(meta), path(aligned_file) , emit:aligned_output
+path "versions.yml", emit: versions_file
+```
+
+## Implementation Summary
+
+- Generate software version report
+
+## Source
+
+`/Users/ftricomi/Downloads/ensembl-genes-metadata/pipelines/short_read_alignment/modules/delete_fastq.nf`

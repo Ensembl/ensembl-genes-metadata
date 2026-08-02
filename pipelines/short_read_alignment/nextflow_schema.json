@@ -1,0 +1,104 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://raw.githubusercontent.com/nf-core/testpipeline/master/nextflow_schema.json",
+    "title": "Ensembl-genes-metadata pipeline parameters",
+    "description": "Describe input parameters and pipeline options",
+    "type": "object",
+    "$defs": {
+        "main_parameters": {
+            "title": "Input/output options",
+            "type": "object",
+            "fa_icon": "fas fa-terminal",
+            "description": "Define where the pipeline should find input data and save output data.",
+            "required": ["csvFile", "outDir"],
+    "properties": {
+        "help": {
+            "type": "boolean",
+            "description": "Display help text.",
+            "fa_icon": "fas fa-question-circle",
+            "hidden": true
+        },
+        "bam2cram": {
+            "type": "boolean",
+            "default": true,
+            "description": "Option to convert BAM files to CRAM format."
+        },
+        "mergeTissue": {
+            "type": "boolean",
+            "default": true,
+            "description": "Option to merge tissue-specific BAM files into a single file."
+        },
+        "stranded": {
+            "type": "boolean",
+            "default": true,
+            "description": "Option to produce stranded BAM files."
+        },
+        "bam2bigWig": {
+            "type": "boolean",
+            "default": true,
+            "description": "Option to convert BAM files to BigWig format."
+        },
+        "cleanOutputDir": {
+            "type": "boolean",
+            "default": true,
+            "description": "Option to clean the output directory after running the pipeline."
+        },
+        "csvFile": {
+            "type": "string",
+            "format": "file-path",
+            "exists": true,
+            "mimetype": "text/csv",
+            "schema": "assets/schema_input.json",
+            "description": "Path to the input CSV metadata file."
+        },
+        "ftpBaseUrl": {
+            "type": "string",
+            "default": "ftp://ftp.sra.ebi.ac.uk/vol1/fastq",
+            "description": "Base URL for the FTP server where FASTQ files are stored."
+        },
+        "ncbiBaseUrl": {
+            "type": "string",
+            "default": "https://api.ncbi.nlm.nih.gov/datasets/v2alpha/genome/accession/",
+            "description": "Base URL for the NCBI Datasets API."
+        },
+        "enscode": {
+            "type": "string"
+        },
+        "cleanCache": {
+            "type": "boolean",
+            "description": "Option to clean the cache directory after running the pipeline."
+        },
+        "outDir": {
+            "type": "string",
+            "description": "Output directory for the pipeline results."
+        },
+        "cacheDir": {
+            "type": "string",
+            "default": "/cache",
+            "description": "Directory for caching files."
+        },
+        "files_latency": {
+            "type": "integer",
+            "default": 60,
+            "description": "Latency in seconds for file operations."
+        },
+        "max_intron_size": {
+            "type": "integer",
+            "default": 100000,
+            "description": "STAR option max_intron_size."
+        },
+        "genome_file": {
+            "type": "string",
+            "description": "Path for genome file."
+        }
+
+    }
+}
+},
+
+"allOf": [
+        {
+            "$ref": "#/$defs/main_parameters"
+        }
+    ]
+}

@@ -1,0 +1,43 @@
+# SAM2BAM
+
+Convert a SAM alignment file to BAM format and generate a BAM index.
+The process uses samtools to convert the SAM output produced by
+Minimap2 into a compressed BAM file and creates the corresponding
+BAM index (.bai) for downstream analyses.
+
+## Process Details
+
+| Property | Value |
+|----------|-------|
+| Process | `SAM2BAM` |
+| Label | `'samtools'` |
+| Tag | `${meta.run_accession}` |
+| storeDir | `"${params.outDir}/${meta.taxon_id}/${meta.run_accession}/alignment/"` |
+
+## Inputs
+
+### Nextflow interface
+
+```nextflow
+//tuple val(taxon_id), val(genomeDir), val(tissue),val(platform),  val(run_accession), path(sam_file)
+tuple val(meta), path(sam_file)
+```
+
+## Outputs
+
+### Nextflow interface
+
+```nextflow
+//tuple val(taxon_id), val(genomeDir), val(gca), val(platform), val(paired), val(tissue), val(run_accession), path("*.bam")
+//tuple val(taxon_id), val(genomeDir), val(tissue),val(platform),  val(run_accession), path("*.bam")
+tuple val(meta), path("*.bam"), emit:sam_output
+path "versions.yml", emit: versions_file
+```
+
+## Implementation Summary
+
+- Generate software version report
+
+## Source
+
+`/Users/ftricomi/Downloads/ensembl-genes-metadata/pipelines/short_read_alignment/modules/sam2bam.nf`

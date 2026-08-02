@@ -1,0 +1,65 @@
+#!/usr/bin/env nextflow
+/*
+See the NOTICE file distributed with this work for additional information
+regarding copyright ownership.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+/*
+ * CHECK_BAM
+ *
+ * Validate a BAM file using samtools quickcheck.
+ *
+ * Input:
+ *   - meta: metadata map containing taxon_id, platform, tissue, etc.
+ *   - bamFile: BAM file to validate
+ *
+ * Output:
+ *   - Validated BAM file (if valid)
+ *   - Software versions
+ *
+ * The process uses samtools quickcheck to check the integrity of the input BAM file.
+ * If the BAM file is valid, it is passed to the next step; otherwise, an error is raised.
+ */
+process CHECK_BAM {
+    label "samtools"
+    tag "${meta.tissue}"
+    afterScript "sleep $params.files_latency"  // Needed because of file system latency
+
+
+    input:
+
+    tuple val(meta), path(bamFile)
+
+    output:
+    tuple val(meta), path("${meta.tissue}.bam"), emit: good_bam
+    path "versions.yml", emit: versions_file
+
+    script:
+    """
+    samtools quickcheck -v ${bamFile}
+    if [ \$? -eq 0 ]; then
+        echo "BAM file is valid"
+    else
+        echo "BAM file is invalid"
+        exit 1
+    fi
+    cat <<-END_VERSIONS > versions.yml
+    "${task.process}":
+        samtools: \$(samtools --version | head -n 1 | awk '{print \$2}') 
+    END_VERSIONS
+    """
+}
+
+
+

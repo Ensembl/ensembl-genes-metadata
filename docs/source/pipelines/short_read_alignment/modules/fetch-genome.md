@@ -1,0 +1,44 @@
+# FETCH_GENOME
+
+This process fetches the genome file for a given GCA accession.
+If a genome file is provided as part of the metadata,
+it uses that file instead of downloading it.
+The fetched genome file is saved with the name "genome.fna".
+
+## Process Details
+
+| Property | Value |
+|----------|-------|
+| Process | `FETCH_GENOME` |
+| Label | `'fetch_file'` |
+| Tag | `${meta.gca}:genome` |
+| storeDir | `"${params.outDir}/${meta.taxon_id}/${meta.gca}"` |
+| maxForks | `1` |
+
+## Inputs
+
+### Nextflow interface
+
+```nextflow
+val meta
+//tuple val(taxon_id), val(gca), val(platform), val(paired), val(tissue), val(run_accession), val(url1), val(md5_1), val(url2),  val(md5_2)
+```
+
+## Outputs
+
+### Nextflow interface
+
+```nextflow
+tuple val(meta), path("*.fna"), emit: fasta_file_output
+path "versions.yml", emit: versions_file
+//tuple val(taxon_id), val(gca), val(platform), val(paired), val(tissue), val(run_accession), val("${params.outDir}/$taxon_id/$gca/"), val(url1), val(md5_1), val(url2), val(md5_2)
+```
+
+## Implementation Summary
+
+- Copy output files
+- Generate software version report
+
+## Source
+
+`/Users/ftricomi/Downloads/ensembl-genes-metadata/pipelines/short_read_alignment/modules/fetch_genome.nf`

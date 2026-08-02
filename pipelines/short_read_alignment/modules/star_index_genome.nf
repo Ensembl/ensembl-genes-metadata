@@ -1,0 +1,77 @@
+#!/usr/bin/env nextflow
+/*
+See the NOTICE file distributed with this work for additional information
+regarding copyright ownership.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+
+process STAR_INDEX_GENOME {
+    label 'star'
+    tag "${meta.taxon_id}:${meta.gca}"
+    publishDir "${meta.fasta_file.parent}", mode: 'copy'
+    afterScript "sleep $params.files_latency"  // Needed because of file system latency
+    maxForks 1
+
+    input:
+    //tuple val(taxon_id), val(genomeDir), val(gca), val(platform), val(paired), val(tissue), val(run_accession), val(pair1), val(pair2)
+    tuple val(meta),path(statsJson)
+
+
+
+    output:
+    //tuple val(taxon_id), val(genomeDir), val(platform),  val(tissue), val(run_accession), val(pair1), val(pair2)
+    tuple val(meta), path("${meta.fasta_file.parent}/Genome"), emit: genome_index_output
+    path "versions.yml", emit: versions_file
+    
+    when: meta.platform?.toString()?.toLowerCase() == 'illumina'
+
+    script:
+    def stats = new groovy.json.JsonSlurper().parse(statsJson)
+    def genomeDir = meta.fasta_file.parent
+    def limitBAMsortRAM = (task.memory.toBytes() * 0.8) as long
+    //def genomeDirPath= new File(genomeDir)
+    //def genomeIndexFile = genomeDirPath.listFiles()?.find { it.name.endsWith('Genome') }
+    //log.info("Genome index file: ${genomeIndexFile?.absolutePath}")
+    
+    //def genomefilePath = genomeDirPath.listFiles()?.find { it.name.endsWith('.fna') }
+
+    
+    """
+    if [ ! -s "${genomeDir}/Genome" ]; then
+        rm -rf ${genomeDir}/_STARtmp && \
+        STAR --runThreadN ${task.cpus} --runMode genomeGenerate \
+            --outFileNamePrefix ${genomeDir} \
+            --genomeDir ${genomeDir} \
+            --genomeSAindexNbases ${stats.genomeSAindexNbases} \
+            --genomeChrBinNbits ${stats.genomeChrBinNbits} \
+            --genomeFastaFiles ${meta.fasta_file} \
+            --outTmpDir _STARtmp \
+            --limitBAMsortRAM ${limitBAMsortRAM};   
+    fi
+    
+    } else {
+    
+    echo "Genome index already exists, skipping STAR genomeGenerate step."
+    
+    } 
+
+    cat <<-END_VERSIONS > versions.yml
+    "${task.process}":
+    star : $(STAR --version | awk '{print $2}')
+    END_VERSIONS  
+    """ 
+}
+
+
