@@ -15,7 +15,21 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-
+/*
+    * BAM2CRAM
+    *
+    * Convert aligned BAM files to CRAM format using samtools.
+    *
+    * Input:
+    *   - meta: metadata map containing taxon_id, genomeDir, tissue, platform, output_dir, etc.
+    *   - aligned_file: path to the input BAM file
+    *
+    * Output:
+    *   - CRAM file (.cram)
+    *   - Software versions
+    *
+    * The module uses samtools view to convert BAM to CRAM format and creates a symbolic link to the output CRAM file.
+    */
 process BAM2CRAM {
     tag "$aligned_file"
     label 'samtools'

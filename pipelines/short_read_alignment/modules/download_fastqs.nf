@@ -16,12 +16,20 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-/*This process downloads the FASTQ files for a given run accession. 
-It checks if the files already exist in the specified output directory and skips the download if they do. 
-The downloaded FASTQ files are saved with the names "<run_accession>_1.fastq.gz" and "<run_accession>_2.fastq.gz" (if paired-end). 
-The process also creates symbolic links to the downloaded files in the current working directory for easy access. 
-The process takes a tuple containing metadata information as input and outputs a tuple containing the same metadata along with the paths to the downloaded FASTQ files.*/
-
+/*
+    * DOWNLOAD_FASTQS
+    *
+    * Download FASTQ files from ENA using the download_fastq.py script.
+    *
+    * Input:
+    *   - meta: metadata map containing taxon_id, run_accession, url1, md5_1, url2, md5_2, paired, etc.
+    *
+    * Output:
+    *   - FASTQ files (_1.fastq.gz and optionally _2.fastq.gz)
+    *   - Software versions
+    *
+    * The module checks if the FASTQ files already exist before downloading to avoid redundant downloads.
+    */
 
 process DOWNLOAD_FASTQS {
     label "python"

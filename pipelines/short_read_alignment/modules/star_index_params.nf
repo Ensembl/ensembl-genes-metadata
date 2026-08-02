@@ -16,7 +16,21 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-
+/*
+    * STAR_INDEX_PARAMS
+    *
+    * Generate genome statistics using the star_genome_stats.py script.
+    *
+    * Input:
+    *   - meta: metadata map containing taxon_id, gca, fasta_file, etc.
+    *
+    * Output:
+    *   - Genome statistics in JSON format (stats.json)
+    *   - Software versions
+    *
+    * The module uses the star_genome_stats.py script to generate genome statistics
+    * and creates a versions.yml file with the software versions used.
+    */
 process STAR_INDEX_PARAMS {
     label 'python'
     tag "${meta.taxon_id}:${meta.gca}"

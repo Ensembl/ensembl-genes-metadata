@@ -16,7 +16,21 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-
+/*
+    * STAR_INDEX_GENOME
+    *
+    * Generate STAR genome index for RNA-seq alignment.
+    *
+    * Input:
+    *   - meta: metadata map containing taxon_id, gca, fasta_file, etc.
+    *   - statsJson: path to the JSON file containing genome statistics
+    *
+    * Output:
+    *   - Genome index directory
+    *   - Software versions
+    *
+    * The module uses STAR to generate the genome index and creates a symbolic link to the output index directory.
+    */  
 process STAR_INDEX_GENOME {
     label 'star'
     tag "${meta.taxon_id}:${meta.gca}"

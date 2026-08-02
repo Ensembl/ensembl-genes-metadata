@@ -16,8 +16,21 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 /*
-The process
-*/
+    * INDEXING_FILES
+    *
+    * Index aligned files (BAM or CRAM) using samtools.
+    *
+    * Input:
+    *   - meta: metadata map containing taxon_id, genomeDir, tissue, platform, output_dir, etc.
+    *   - aligned_file: path to the input aligned file (BAM or CRAM)
+    *   - extension: file extension for the index file (e.g., 'bai' for BAM, 'crai' for CRAM)
+    *
+    * Output:
+    *   - Indexed aligned file
+    *   - Software versions
+    *
+    * The module uses samtools index to create an index for the aligned file and creates a symbolic link to the output index file.
+    */
 process INDEXING_FILES {
     tag "${meta.run_accession}"
     label 'samtools'
