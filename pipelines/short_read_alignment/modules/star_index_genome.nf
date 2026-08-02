@@ -83,7 +83,7 @@ process STAR_INDEX_GENOME {
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-    star : $(STAR --version | awk '{print $2}')
+    star : \$(STAR --version 2>&1)
     END_VERSIONS  
     """ 
 }

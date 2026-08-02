@@ -76,8 +76,8 @@ process DOWNLOAD_FASTQS {
         
         cat <<-END_VERSIONS > versions.yml
             "${task.process}":
-            download_fastq.py: $(download_fastq.py --version | awk '{print $2}')
-            python: $(python --version | sed 's/Python //')
+            download_fastq.py: \$(download_fastq.py --version 2>&1)
+            python: \$(python --version | sed 's/Python //')
         END_VERSIONS
         """    
         }

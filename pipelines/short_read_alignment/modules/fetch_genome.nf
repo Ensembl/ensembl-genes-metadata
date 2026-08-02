@@ -57,13 +57,11 @@ process FETCH_GENOME {
         fi
         
         # Create versions file
-        PYTHON_VERSION=\$(python --version 2>&1 | awk '{print \$2}')
-        FETCH_GENOME_VERSION=\$(fetch_genome.py  --version 2>&1 || echo "unknown")
 
         cat <<-END_VERSIONS > versions.yml
         "${task.process}":
-            fetch_genome.py: $(fetch_genome.py --version | awk '{print $2}')
-            python: $(python --version | sed 's/Python //')
+            fetch_genome.py: \$(fetch_genome.py --version 2>&1)
+            python: \$(python --version | sed 's/Python //')
         END_VERSIONS
         
     """

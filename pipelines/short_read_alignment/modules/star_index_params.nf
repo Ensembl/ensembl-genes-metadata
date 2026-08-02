@@ -50,8 +50,8 @@ process STAR_INDEX_PARAMS {
     genome_stats.py ${meta.fasta_file} > stats.json
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        star_genome_stats.py: $(star_genome_stats.py --version | awk '{print $2}')
-        python: §$(python --version | sed 's/Python //')
+        star_genome_stats.py: \$(star_genome_stats.py --version 2>&1)
+        python: \$(python --version | sed 's/Python //')
     END_VERSIONS
     """
 }
