@@ -76,7 +76,8 @@ include { INDEXING_FILES as INDEX_CRAM } from './modules/indexing_files.nf'
 include { INDEXING_FILES as INDEX_BIGWIG } from './modules/indexing_files.nf'
 include { BAM2CRAM } from './modules/bam2cram.nf'
 include { BAM2BIGWIG } from './modules/bam2bigWig.nf'
-include { DELETE_FASTQ } from './modules/delete_fastq.nf'
+include { DELETE_FASTQ as DELETE_FASTQ_STAR } from './modules/delete_fastq.nf'
+include { DELETE_FASTQ as DELETE_FASTQ_MINIMAP } from './modules/delete_fastq.nf'
 include { CHECK_BAM as CHECK_BAM_STAR } from './modules/check_bam.nf'
 include { CHECK_BAM as CHECK_BAM_MINIMAP } from './modules/check_bam.nf'
 include { CHECK_BAM as CHECK_BAM_MERGED } from './modules/check_bam.nf'
@@ -151,8 +152,8 @@ workflow SHORT_READ_ALIGNMENT {
         def checkedBamStar = CHECK_BAM_STAR(alignStarOutput).good_bam
         ch_versions_file = ch_versions_file.mix(CHECK_BAM_STAR.out.versions_file)
 
-        def alignedFiles = DELETE_FASTQ(checkedBamStar).aligned_output
-        ch_versions_file = ch_versions_file.mix(DELETE_FASTQ.out.versions_file)
+        def alignedFiles = DELETE_FASTQ_STAR(checkedBamStar).aligned_output
+        ch_versions_file = ch_versions_file.mix(DELETE_FASTQ_STAR.out.versions_file)
         
         starOutput = INDEX_BAM(alignedFiles, 'bai').aligned_output
         ch_versions_file = ch_versions_file.mix(INDEX_BAM.out.versions_file)
@@ -171,8 +172,8 @@ workflow SHORT_READ_ALIGNMENT {
         def checkedBamMinimap = CHECK_BAM_MINIMAP(alignMinimapOutput).good_bam
         ch_versions_file = ch_versions_file.mix(CHECK_BAM_MINIMAP.out.versions_file)
 
-        def cleanFile = DELETE_FASTQ(checkedBamMinimap).aligned_output
-        ch_versions_file = ch_versions_file.mix(DELETE_FASTQ.out.versions_file)
+        def cleanFile = DELETE_FASTQ_MINIMAP(checkedBamMinimap).aligned_output
+        ch_versions_file = ch_versions_file.mix(DELETE_FASTQ_MINIMAP.out.versions_file)
 
         sam2bamOutput = SAM2BAM(cleanFile).sam_output
         ch_versions_file = ch_versions_file.mix(SAM2BAM.out.versions_file)
