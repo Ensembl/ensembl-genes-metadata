@@ -39,7 +39,7 @@ process FETCH_GENOME {
     
     script:
     """
-    if [[ -f "${meta.genome_file}" ]]; then
+    if [[ -f "${meta.genome_file}" ]] && [[ -f "${params.outDir}/${meta.taxon_id}/${meta.gca}/genome.fna" ]]; then
             echo "Using provided genome file: ${meta.genome_file}"
             cp -L "${meta.genome_file}" genome.fna
         else
