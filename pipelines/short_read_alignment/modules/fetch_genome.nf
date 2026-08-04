@@ -39,9 +39,9 @@ process FETCH_GENOME {
     
     script:
     """
-    if [[ -f "${meta.genome_file}" ]] && [[ -f "${params.outDir}/${meta.taxon_id}/${meta.gca}/genome.fna" ]]; then
-            echo "Using provided genome file: ${meta.genome_file}"
-            cp -L "${meta.genome_file}" genome.fna
+    if [[ -f "${meta.fasta_file}" ]] && [[ -f "${params.outDir}/${meta.taxon_id}/${meta.gca}/genome.fna" ]]; then
+            echo "Using provided genome file: ${meta.fasta_file}"
+            cp -L "${meta.fasta_file}" genome.fna
         else
             fetch_genome.py \
                 --output_dir . \
