@@ -116,7 +116,7 @@ workflow SHORT_READ_ALIGNMENT {
                         md5_1_sum : row.get('md5_1'),
                         pair2_path : paired_sample ? row.get('pair2') : null,
                         md5_2 : paired_sample ? row.get('md5_2') : null,
-                        genome_file: row.get('genome_file') || params.genomeFile
+                        genome_file: row.get('genome_file') || params.genome_file
                     ]
                 }
     data.view { row -> "DATA: ${row}" }        

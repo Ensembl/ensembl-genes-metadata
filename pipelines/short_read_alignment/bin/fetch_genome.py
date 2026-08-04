@@ -24,12 +24,13 @@ import zipfile
 import shutil
 import re
 import time
+from typing import Union
 from urllib.error import HTTPError
 import requests
 
 
 
-def download_ncbi_assembly_report(gca: str, dest_folder: str | Path = ".") -> Path:
+def download_ncbi_assembly_report(gca: str, dest_folder: Union[str, Path] = ".") -> Path:
     """Download the assembly report from NCBI for a given GCA accession."""
     num = gca.split("_")[1].split(".")[0]
 
@@ -67,7 +68,7 @@ def download_ncbi_assembly_report(gca: str, dest_folder: str | Path = ".") -> Pa
 
 def download_and_extract(#pylint: disable=too-many-locals
     url: str,
-    output_dir: str | Path,
+    output_dir: Union[str, Path],
     max_retries: int = 8,
     timeout: int = 60,
 ) -> bool:
