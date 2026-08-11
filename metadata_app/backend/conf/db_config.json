@@ -9,7 +9,7 @@
     "meta_write": {
         "host": "mysql-ens-genebuild-prod-1",
         "user": "ensadmin",
-        "password": "",
+        "password": "ensembl",
         "database": "gb_assembly_metadata",
         "port": 4527},
 
