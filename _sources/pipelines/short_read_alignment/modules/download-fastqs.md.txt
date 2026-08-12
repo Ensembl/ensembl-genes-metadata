@@ -1,0 +1,46 @@
+# DOWNLOAD_FASTQS
+
+DOWNLOAD_FASTQS
+Download FASTQ files from ENA using the download_fastq.py script.
+Input:
+- meta: metadata map containing taxon_id, run_accession, url1, md5_1, url2, md5_2, paired, etc.
+Output:
+- FASTQ files (_1.fastq.gz and optionally _2.fastq.gz)
+- Software versions
+The module checks if the FASTQ files already exist before downloading to avoid redundant downloads.
+
+## Process Details
+
+| Property | Value |
+|----------|-------|
+| Process | `DOWNLOAD_FASTQS` |
+| Label | `python` |
+| Tag | `$meta.taxon_id:$meta.run_accession` |
+| maxForks | `25` |
+
+## Inputs
+
+### Nextflow interface
+
+```nextflow
+val(meta)
+//tuple val(taxon_id), val(gca), val(platform), val(paired), val(tissue), val(run_accession), val(genomeDir),  val(url1), val(md5_1), val(url2),  val(md5_2)
+```
+
+## Outputs
+
+### Nextflow interface
+
+```nextflow
+tuple val(meta), path("*_1.fastq.gz"), path("*_2.fastq.gz", optional: true) , emit: fastq_file_output
+path "versions.yml", emit: versions_file
+```
+
+## Implementation Summary
+
+- Generate software version report
+- Create symbolic links
+
+## Source
+
+`/home/runner/work/ensembl-genes-metadata/ensembl-genes-metadata/pipelines/short_read_alignment/modules/download_fastqs.nf`
