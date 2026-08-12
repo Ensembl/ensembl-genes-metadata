@@ -33,7 +33,7 @@ limitations under the License.
  */
 process CHECK_BAM {
     label "samtools"
-    tag "${meta.tissue}"
+    tag "${meta.taxon_id}"
     afterScript "sleep $params.files_latency"  // Needed because of file system latency
 
 
@@ -42,18 +42,12 @@ process CHECK_BAM {
     tuple val(meta), path(bamFile)
 
     output:
-    tuple val(meta), path("${meta.tissue}.bam"), emit: good_bam
+    tuple val(meta), path(bamFile), emit: good_bam
     path "versions.yml", emit: versions_file
 
     script:
     """
     samtools quickcheck -v ${bamFile}
-    if [ \$? -eq 0 ]; then
-        echo "BAM file is valid"
-    else
-        echo "BAM file is invalid"
-        exit 1
-    fi
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         samtools: \$(samtools --version | head -n 1 | awk '{print \$2}') 

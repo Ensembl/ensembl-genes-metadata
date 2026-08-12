@@ -39,7 +39,7 @@ Consider using the following parameters for STAR alignment:
 process STAR {
     tag "$meta.run_accession"
     label 'star'
-    publishDir "${params.outDir}/$meta.taxon_id/$meta.run_accession/alignment/", mode: 'copy'
+    publishDir "$meta.alignment_dir", mode: 'copy'
     afterScript "sleep $params.files_latency"  // Needed because of file system latency
 
     input:
@@ -49,24 +49,24 @@ process STAR {
     output:
     //tuple val(taxon_id), val(genomeDir), val(gca), val(platform), val(paired), val(tissue), val(run_accession), path("*_Aligned.sortedByCoord.out.bam")
     //tuple val(taxon_id), val(genomeDir), val(tissue), val(platform), val(run_accession), path("*.bam")
-    tuple val(meta), val("${params.outDir}/${meta.taxon_id}/${meta.run_accession}/alignment"), path("${meta.run_accession}_Aligned.sortedByCoord.out.bam"), emit: star_output
+    tuple val(meta), path("${meta.run_accession}_Aligned.sortedByCoord.out.bam"), emit: star_output
     path "versions.yml", emit: versions_file
     
     script:
-    def starTmpDir =  "${params.outDir}/${meta.taxon_id}/${meta.run_accession}/alignment/tmp"
+    def starTmpDir =  "${meta.alignment_dir}/tmp"
     def outFileNamePrefix = "${meta.run_accession}_"
     //def outFileNamePrefix = "${params.outDir}/${meta.taxon_id}/${meta.run_accession}/alignmenti/${meta.run_accession}_"
     def limitBAMsortRAM = (task.memory.toBytes() * 0.9) as long
     """
-    if [ ! -s "${params.outDir}/$meta.taxon_id/$meta.run_accession/alignment/${meta.run_accession}_Aligned.sortedByCoord.out.bam" ]; then
+    if [ ! -s "$meta.alignment_dir/${meta.run_accession}_Aligned.sortedByCoord.out.bam" ]; then
     rm -rf ${starTmpDir}
-    mkdir -p ${params.outDir}/${meta.taxon_id}/${meta.run_accession}/alignment/
+    mkdir -p ${meta.alignment_dir}
     STAR \
     --runThreadN ${task.cpus} \
     --twopassMode Basic \
     --runMode alignReads \
     --genomeDir ${meta.genome_dir} \
-    --readFilesIn ${meta.pair1_path} ${meta.pair2_path} \
+    --readFilesIn ${meta.fastq1} ${meta.fastq2} \
     --outFileNamePrefix ${outFileNamePrefix} \
     --readFilesCommand zcat \
     --outSAMattrRGline "ID:${meta.run_accession}" \
@@ -75,12 +75,11 @@ process STAR {
     --limitSjdbInsertNsj ${params.limitSjdbInsertNsj} \
     --outFilterIntronMotifs RemoveNoncanonicalUnannotated \
     --outSAMstrandField intronMotif \
-    --limitBAMsortRAM ${limitBAMsortRAM} \
-    cp ${outFileNamePrefix}* ${params.outDir}/${meta.taxon_id}/${meta.run_accession}/alignment/
+    --limitBAMsortRAM ${limitBAMsortRAM} 
     
     else
     echo "skip file exists"
-    ln -s ${params.outDir}/${meta.taxon_id}/${meta.run_accession}/alignment/*.bam ./
+    ln -s ${meta.alignment_dir}/*.bam ./
     fi
 
     STAR_VERSION=\$(STAR --version | head -n1)

@@ -24,7 +24,8 @@ Outputs:- software_versions.yml: merged versions file containing software versio
 */
 // Single process to merge all versions
 process COLLECT_SOFTWARE_VERSIONS {
-    publishDir "${params.outdir}/pipeline_info", mode: 'copy'
+    label 'default'
+    publishDir "${params.outDir}/pipeline_info", mode: 'copy'
 
     input:
     path 'versions_*.yml'

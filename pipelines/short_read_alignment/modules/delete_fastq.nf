@@ -40,7 +40,8 @@ process DELETE_FASTQ {
 
     script:
     """
-    rm -f ${params.outDir}/${meta.taxon_id}/${meta.run_accession}/*.gz
+    rm -f ${meta.fastq1}
+    rm -f ${meta.fastq2}
     echo "${meta.run_accession} deleted"
         cat <<-END_VERSIONS > versions.yml
     "${task.process}":

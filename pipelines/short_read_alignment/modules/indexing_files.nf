@@ -32,9 +32,9 @@ limitations under the License.
     * The module uses samtools index to create an index for the aligned file and creates a symbolic link to the output index file.
     */
 process INDEXING_FILES {
-    tag "${meta.run_accession}"
+    tag "${meta.taxon_id}"
     label 'samtools'
-    publishDir "${params.outDir}/${meta.taxon_id}/${meta.output_dir}/alignment", mode: 'copy'
+    publishDir "${meta.alignment_dir}", mode: 'copy'
     afterScript "sleep $params.files_latency"  // Needed because of file system latency
 //
     input:
@@ -51,9 +51,9 @@ process INDEXING_FILES {
     script:
     //def output_dir="${params.outDir}/${meta.taxon_id}/${meta.output_dir}/alignment"
     """
-    if [ ! -s "${meta.output_dir}/${aligned_file}.${extension}" ] || [ ! -s "${meta.output_dir}/${aligned_file}.csi" ]; then
+    if [ ! -s "${meta.alignment_dir}/${aligned_file}.${extension}" ] || [ ! -s "${meta.alignment_dir}/${aligned_file}.csi" ]; then
     samtools index -c  \
-    ${meta.output_dir}/${aligned_file} ${meta.output_dir}/${aligned_file}.${extension} \
+    ${meta.alignment_dir}/${aligned_file} ${meta.output_dir}/${aligned_file}.${extension} \
     -@ ${task.cpus}
     echo "${meta.output_dir}/${aligned_file}.${extension}"
     else

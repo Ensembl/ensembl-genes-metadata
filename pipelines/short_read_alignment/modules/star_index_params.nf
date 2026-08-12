@@ -47,7 +47,7 @@ process STAR_INDEX_PARAMS {
 
     script:
     """
-    genome_stats.py ${meta.fasta_file} > stats.json
+    star_genome_stats.py  ${meta.fasta_file} > stats.json
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         star_genome_stats.py: \$(star_genome_stats.py --version 2>&1)

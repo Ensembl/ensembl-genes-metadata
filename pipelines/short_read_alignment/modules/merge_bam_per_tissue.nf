@@ -36,7 +36,7 @@ process MERGE_BAM_PER_TISSUE {
     label "samtools"
     tag "${meta.tissue}"
     maxForks 2
-    storeDir "${params.outDir}/$meta.taxon_id/$meta.platform/$meta.tissue/alignment"
+    storeDir "${meta.alignment_dir}"
     afterScript "sleep $params.files_latency"  // Needed because of file system latency
 
 
@@ -48,18 +48,18 @@ process MERGE_BAM_PER_TISSUE {
     output:
     //tuple val(taxon_id), val(genomeDir), val(tissue), val(platform), \
     //val("${params.outDir}/$taxon_id/$platform/$tissue/alignment"),path("${tissue}.bam")
-    tuple val(meta), val("${params.outDir}/${meta.taxon_id}/${meta.platform}/${meta.tissue}/alignment"), path("${meta.tissue}.bam"), emit: merged_bam
+    tuple val(meta), path("${meta.tissue}.bam"), emit: merged_bam
     path "versions.yml", emit: versions_file
 
     script:
-    def outputDir="${params.outDir}/${meta.taxon_id}/${meta.platform}/${meta.tissue}/alignment"
+    def outputDir="${meta.output_dir}/${meta.taxon_id}/${meta.platform}/${meta.tissue}/alignment"
     """
-    if [ ! -s "${outputDir}/${meta.tissue}.bam" ]; then
-    mkdir -p ${outputDir}
-    samtools merge -@ ${task.cpus}  -f -O BAM -o ${outputDir}/${meta.tissue}.bam ${bamFiles.join(' ')}
-    
-    ln -s ${outputDir}/${meta.tissue}.bam .
+    if [ ! -s "${meta.alignment_dir}/${meta.tissue}.bam" ]; then
+    mkdir -p ${meta.alignment_dir}
+    samtools merge -@ ${task.cpus}  -f -O BAM -o ${meta.tissue}.bam ${bamFiles.join(' ')}
     else
+    ln -s ${outputDir}/${meta.tissue}.bam .
+    
     echo "merging"
     fi
     cat <<-END_VERSIONS > versions.yml

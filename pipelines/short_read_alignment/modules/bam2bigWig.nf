@@ -33,11 +33,11 @@ limitations under the License.
 process BAM2BIGWIG {
     tag "$bam_file1"
     label 'bamCoverage'
-    publishDir "${meta.output_dir}", mode: "copy"
+    publishDir "${meta.alignment_dir}", mode: "copy"
     afterScript "sleep $params.files_latency"  // Needed because of file system latency
 
     input:
-    //tuple val(taxon_id), val(genomeDir), val(tissue), val(platform), val(output_dir), path(bam_file1),  path(bam_file2)
+    //tuple val(taxon_id), val(genomeDir), val(tissue), val(platform), val(alignment_dir), path(bam_file1),  path(bam_file2)
     tuple val(meta), path(bam_file1),  path(bam_file2)
 
     output:
@@ -47,13 +47,13 @@ process BAM2BIGWIG {
     def bam_basename = bam_file1.baseName  // strips .bam 
     //def bam2_provided = bam_file2 ? true : false
     """
-    ln -s ${meta.output_dir}/${bam_file1}.* .
-    bamCoverage -b ${meta.output_dir}/${bam_file1} -o ${meta.output_dir}/${bam_basename}.bw --binSize 1 --numberOfProcessors ${task.cpus} 
-    ln -s ${meta.output_dir}/${bam_basename}.bw .
+    ln -s ${meta.alignment_dir}/${bam_file1}.* .
+    bamCoverage -b ${meta.alignment_dir}/${bam_file1} -o ${meta.alignment_dir}/${bam_basename}.bw --binSize 1 --numberOfProcessors ${task.cpus} 
+    ln -s ${meta.alignment_dir}/${bam_basename}.bw .
     if [  -s "${bam_file2}" ]; then
-      ln -s ${meta.output_dir}/${bam_file2}.* .
-      bamCoverage -b ${meta.output_dir}/${bam_file2} -o ${meta.output_dir}/${bam_file2.baseName}.bw --binSize 1 --numberOfProcessors ${task.cpus}
-      ln -s ${meta.output_dir}/${bam_file2.baseName}.bw .
+      ln -s ${meta.alignment_dir}/${bam_file2}.* .
+      bamCoverage -b ${meta.alignment_dir}/${bam_file2} -o ${meta.alignment_dir}/${bam_file2.baseName}.bw --binSize 1 --numberOfProcessors ${task.cpus}
+      ln -s ${meta.alignment_dir}/${bam_file2.baseName}.bw .
     else
       echo "Reverse strand BAM not found, skipping..."
     fi 

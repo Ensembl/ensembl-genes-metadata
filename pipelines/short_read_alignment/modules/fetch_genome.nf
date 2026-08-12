@@ -24,7 +24,7 @@ The fetched genome file is saved with the name "genome.fna".
 process FETCH_GENOME {
     tag "${meta.gca}:genome"
     label 'fetch_file'
-    storeDir "${params.outDir}/${meta.taxon_id}/${meta.gca}"
+    storeDir "${meta.output_dir}/${meta.taxon_id}/${meta.gca}"
     afterScript "sleep $params.files_latency"  // Needed because of file system latency
     maxForks 1
 
@@ -39,7 +39,7 @@ process FETCH_GENOME {
     
     script:
     """
-    if [[ -f "${meta.fasta_file}" ]] && [[ -f "${params.outDir}/${meta.taxon_id}/${meta.gca}/genome.fna" ]]; then
+    if [[ -f "${meta.fasta_file}" ]] && [[ -f "${meta.output_dir}/${meta.taxon_id}/${meta.gca}/genome.fna" ]]; then
             echo "Using provided genome file: ${meta.fasta_file}"
             cp -L "${meta.fasta_file}" genome.fna
         else

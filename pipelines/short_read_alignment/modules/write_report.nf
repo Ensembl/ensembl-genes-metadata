@@ -33,11 +33,9 @@ limitations under the License.
 
 process WRITE_REPORT {
     label "python"
-    tag "${meta.taxonId}:${meta.run_accession}"
-    maxForks 25
+    tag "${meta.taxon_id}"
     //storeDir "${params.outDir}/$taxon_id/$run_accession"
     afterScript "sleep $params.files_latency"  // Needed because of file system latency
-    //conda "$projectDir/pipelines/nextflow/modules/download_fastqs/environment.yml"
 
     input:
     val(meta)
@@ -49,9 +47,9 @@ process WRITE_REPORT {
     script: 
     """
     write_report.py \
-        --csv_path ${params.csv_path} \
-        --base_dir ${params.outDir} \
-        --output_csv ${params.outDir}/${meta.taxon_id}/report.csv \
+        --csv_path ${meta.csv_path} \
+        --base_dir ${meta.output_dir} \
+        --output_csv ${meta.output_dir}/report.csv \
         --merge_tissue ${params.mergeTissue} \
         --bam2bigWig ${params.bam2bigWig} \
 

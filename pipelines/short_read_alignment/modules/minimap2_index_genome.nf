@@ -26,7 +26,7 @@ limitations under the License.
 process MINIMAP2_INDEX_GENOME {
     label 'minimap2'
     tag "${meta.taxon_id}:${meta.gca}"
-    publishDir "${meta.fasta_file.parent}", mode: 'copy'
+    publishDir "${meta.genome_dir}", mode: 'copy'
     afterScript "sleep ${params.files_latency}"
     // Needed because of file system latency
     maxForks 10
@@ -48,9 +48,9 @@ process MINIMAP2_INDEX_GENOME {
     }
     //def genomefilePath = fnaFiles[0]
     """
-    if [ -z "\$(find "${meta.fasta_file.parent}" -name '*.mmi' -type f -size +0c)" ]; then
+    if [ -z "\$(find "${meta.genome_dir}" -name '*.mmi' -type f -size +0c)" ]; then
         minimap2 --threads ${task.cpus} \
-            -d ${meta.fasta_file.parent}/genome.mmi ${meta.fasta_file}
+            -d ${meta.genome_dir}/genome.mmi ${meta.fasta_file}
     else
         echo "Minimap indexed genome already exists, skipping Minimap2 genomeGenerate step."
     fi

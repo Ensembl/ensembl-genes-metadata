@@ -33,7 +33,7 @@ limitations under the License.
 
 process DOWNLOAD_FASTQS {
     label "python"
-    tag "${meta.taxonId}:${meta.run_accession}"
+    tag "$meta.taxon_id:$meta.run_accession"
     maxForks 25
     //storeDir "${params.outDir}/$taxon_id/$run_accession"
     afterScript "sleep $params.files_latency"  // Needed because of file system latency
@@ -51,33 +51,43 @@ process DOWNLOAD_FASTQS {
 
     script: 
     
-    def fastq1 = "${params.outDir}/${meta.taxon_id}/${meta.run_accession}/${meta.run_accession}_1.fastq.gz"
-    def fastq2 = meta.paired ? "${params.outDir}/${meta.taxon_id}/${meta.run_accession}/${meta.run_accession}_2.fastq.gz" : null
+    //def fastq1 = "${params.outDir}/${meta.taxon_id}/${meta.run_accession}/${meta.run_accession}_1.fastq.gz"
+    //def fastq2 = meta.paired ? "${params.outDir}/${meta.taxon_id}/${meta.run_accession}/${meta.run_accession}_2.fastq.gz" : null
 
-    def optionalArgs = meta.paired ? "--url2 ${meta.url2} --md5_2 ${meta.md5_2} --paired" : ""
+    def optionalArgs = meta.paired ? "--url2 $meta.pair2_path --md5_2 $meta.md5_2 --paired" : ""
     """
-    if [ ! -s "${fastq1}" ] || { ${meta.paired} && [ ! -s "${fastq2}" ]; }; then 
     download_fastq.py \
-        --taxon_id ${meta.taxon_id} \
-        --run_accession ${meta.run_accession} \
-        --url1 ${meta.url1} \
-        --md5_1 ${meta.md5_1} \
-        ${optionalArgs} \
-        --outDir ${params.outDir} 
-
-        ln -s ${params.outDir}/${meta.taxon_id}/${meta.run_accession}/*_1.fastq.gz ./
-        ${meta.paired ? "ln -s ${params.outDir}/${meta.taxon_id}/${meta.run_accession}/*_2.fastq.gz ./" : ""}
-        else
-        echo "skipping"
-        ln -s ${params.outDir}/${meta.taxon_id}/${meta.run_accession}/*_1.fastq.gz ./
-        ${meta.paired ? "ln -s ${params.outDir}/${meta.taxon_id}/${meta.run_accession}/*_2.fastq.gz ./" : ""}
-        fi
-
-        
-        cat <<-END_VERSIONS > versions.yml
+        --run_accession $meta.run_accession \
+        --url1 $meta.pair1_path \
+        --md5_1 $meta.md5_1 \
+        $optionalArgs \
+        --outDir .
+    echo "download completed"    
+    cat <<-END_VERSIONS > versions.yml
             "${task.process}":
             download_fastq.py: \$(download_fastq.py --version 2>&1)
             python: \$(python --version | sed 's/Python //')
         END_VERSIONS
-        """    
+        """
         }
+
+
+
+    /*
+    if [ ! -s "${fastq1}" ] || { ${meta.paired} && [ ! -s "${fastq2}" ]; }; then 
+    download_fastq.py \
+        --taxon_id $meta.taxon_id \
+        --run_accession $meta.run_accession \
+        --url1 $meta.pair1_path \
+        --md5_1 $meta.md5_1 \
+        $optionalArgs \
+        --outDir ${params.outDir} 
+
+        ln -s $params.outDir/$meta.taxon_id/$meta.run_accession/*_1.fastq.gz ./
+        ${meta.paired ? "ln -s ${params.outDir}/${meta.taxon_id}/${meta.run_accession}/*_2.fastq.gz ./" : ""}
+        else
+        echo "skipping"
+        ln -s ${params.outDir}/$meta.taxon_id/$meta.run_accession/*_1.fastq.gz ./
+        ${meta.paired ? "ln -s ${params.outDir}/${meta.taxon_id}/${meta.run_accession}/*_2.fastq.gz ./" : ""}
+        fi
+        */

@@ -27,7 +27,7 @@ limitations under the License.
 process SAM2BAM {
     tag "${meta.run_accession}"
     label 'samtools'
-    storeDir "${params.outDir}/${meta.taxon_id}/${meta.run_accession}/alignment/"
+    storeDir "${meta.alignment_dir}"
     afterScript "sleep $params.files_latency"  // Needed because of file system latency
 
     input:

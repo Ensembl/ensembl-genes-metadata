@@ -21,7 +21,7 @@ limitations under the License.
     * Convert aligned BAM files to CRAM format using samtools.
     *
     * Input:
-    *   - meta: metadata map containing taxon_id, genomeDir, tissue, platform, output_dir, etc.
+    *   - meta: metadata map containing taxon_id, genomeDir, tissue, platform, alignment_dir, etc.
     *   - aligned_file: path to the input BAM file
     *
     * Output:
@@ -33,11 +33,11 @@ limitations under the License.
 process BAM2CRAM {
     tag "$aligned_file"
     label 'samtools'
-    publishDir "${meta.output_dir}", mode: "copy"
+    publishDir "${meta.alignment_dir}", mode: "copy"
     afterScript "sleep $params.files_latency"  // Needed because of file system latency
 
     input:
-    //tuple val(taxon_id), val(genomeDir), val(tissue), val(platform), val(output_dir), path(aligned_file)
+    //tuple val(taxon_id), val(genomeDir), val(tissue), val(platform), val(alignment_dir), path(aligned_file)
     tuple val(meta), path(aligned_file)
     output:
     tuple val(meta), path("*.cram"), emit:cram_output
@@ -49,8 +49,8 @@ process BAM2CRAM {
     //def genomeFile = genomeDirPath.listFiles().find { it.name.endsWith('fna') }
     def bam_basename = aligned_file.baseName  // strips .bam
     """
-    samtools view -@ ${task.cpus}  -C -T ${meta.fasta_file} -o ${meta.output_dir}/${bam_basename}.cram ${aligned_file}
-    ln -s ${meta.output_dir}/${bam_basename}.cram .
+    samtools view -@ ${task.cpus}  -C -T ${meta.fasta_file} -o ${meta.alignment_dir}/${bam_basename}.cram ${aligned_file}
+    ln -s ${meta.alignment_dir}/${bam_basename}.cram .
 
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
