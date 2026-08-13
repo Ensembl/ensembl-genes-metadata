@@ -1,8 +1,15 @@
 .codex
-*.pyc
+*.py[cod]
 .idea
 venv
-__pycache__
+__pycache__/
 .next
 node_modules
 out
+.DS_Store
+logs/
+metadata_app/backend/logs/
+metadata_app/backend/cache/*.json
+src/python/ensembl/genes_metadata/delete_live_ftp/paths_to_delete.txt
+src/python/ensembl/genes_metadata/registry_status_update/faulty_status.csv
+src/python/ensembl/genes_metadata/registry_status_update/genebuild_status_updater_*.log

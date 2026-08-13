@@ -1,22 +1,24 @@
 import json
 import logging
-from pathlib import Path
 import time
+from pathlib import Path
+
 import requests
+
+
+BACKEND_ROOT = Path(__file__).resolve().parents[2]
+CLADE_DATA_FILE = BACKEND_ROOT / "data" / "clade_settings.json"
 
 
 def load_clade_data():
     """Load clade settings JSON reliably."""
-    base_dir = Path(__file__).resolve().parents[4]  # adjust if needed
-    json_file = base_dir / "metadata_app/backend/data/clade_settings.json"
+    if not CLADE_DATA_FILE.exists():
+        logging.error("Clade config not found: %s", CLADE_DATA_FILE)
+        raise FileNotFoundError(f"{CLADE_DATA_FILE} not found")
 
-    if not json_file.exists():
-        logging.error(f"Clade config not found: {json_file}")
-        raise FileNotFoundError(f"{json_file} not found")
-
-    with open(json_file, "r") as f:
+    with CLADE_DATA_FILE.open("r", encoding="utf-8") as handle:
         logging.info("Loading clade settings json file.")
-        return json.load(f)
+        return json.load(handle)
 
 
 def assign_clade_and_species(
@@ -43,24 +45,24 @@ def assign_clade_and_species(
             return "human", human_taxon_id, None, "hprc"
         return "Unassigned", None, None, "anno"
 
-    # Build a quick mapping taxon_class -> taxon_class_id
     taxon_class_map = {
-        t["taxon_class"]: t["taxon_class_id"] for t in taxonomy_hierarchy
+        taxon["taxon_class"]: taxon["taxon_class_id"]
+        for taxon in taxonomy_hierarchy
     }
 
     species_taxon_id = taxon_class_map.get("species")
     genus_taxon_id = taxon_class_map.get("genus")
-    species_taxon_id_int = int(species_taxon_id) if species_taxon_id is not None else None
+    species_taxon_id_int = (
+        int(species_taxon_id) if species_taxon_id is not None else None
+    )
     is_human = lowest_taxon_id == human_taxon_id or species_taxon_id_int == human_taxon_id
 
-    # Precompute taxon_id → clade_name mapping
     clade_lookup = {
         int(details["taxon_id"]): clade_name
         for clade_name, details in clade_data.items()
         if details.get("taxon_id")
     }
 
-    # Assign internal clade
     internal_clade = "Unassigned"
     for taxon_class in [
         "species",
@@ -98,7 +100,7 @@ def get_descendant_taxa(taxon_id):
         "db": "taxonomy",
         "term": f"txid{taxon_id}[Subtree]",
         "retmode": "json",
-        "retmax": 100000,  # Fetch in chunks
+        "retmax": 100000,
         "retstart": 0,
         "tool": "your_tool_name",
         "email": "your_email@example.com",
@@ -110,28 +112,24 @@ def get_descendant_taxa(taxon_id):
         response = requests.get(base_url, params=params)
         if response.status_code != 200:
             logging.error(
-                f"Error retrieving taxonomic data from NCBI. HTTP {response.status_code}."
+                "Error retrieving taxonomic data from NCBI. HTTP %s.",
+                response.status_code,
             )
             break
 
         try:
             result = response.json()
             batch_ids = result.get("esearchresult", {}).get("idlist", [])
-            logging.info(f"Descendant taxon ID lookup successful.")
+            logging.info("Descendant taxon ID lookup successful.")
             if not batch_ids:
-                break  # No more results
+                break
 
             taxon_ids.update(batch_ids)
-
-            # Update retstart to fetch the next batch
             params["retstart"] += params["retmax"]
+            time.sleep(0.5)
 
-            # Respect NCBI rate limits
-            time.sleep(0.5)  # Avoid overloading NCBI servers
-
-        except Exception as e:
-            print(f"Error processing response: {e}")
-            logging.error(f"Error processing NCBI response: {e}")
+        except Exception as exc:
+            logging.error("Error processing NCBI response: %s", exc)
             break
 
     return taxon_ids

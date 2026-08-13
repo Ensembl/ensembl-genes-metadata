@@ -60,3 +60,11 @@ cd frontend
 # Start the development server
 # npm run dev 
 ```
+
+### Docker
+
+Build from the repository root with the app Dockerfile under `metadata_app/`:
+
+```bash
+docker build -f metadata_app/Dockerfile .
+```

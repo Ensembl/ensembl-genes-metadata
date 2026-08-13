@@ -23,6 +23,8 @@ from metadata_app.backend.app.api.routes import (
 )
 from metadata_app.backend.app.core.database import setup_logging
 
+APP_ROOT = Path(__file__).resolve().parents[2]
+
 # Initialize FastAPI app
 app = FastAPI(
     title="Genebuild Metadata API",
@@ -106,7 +108,7 @@ async def general_exception_handler(request, exc):
 
 # Next.js frontend serving
 # Next.js static export creates an 'out' directory
-REACT_BUILD_PATH = Path("metadata_app/frontend/out")  # Next.js static export directory
+REACT_BUILD_PATH = APP_ROOT / "frontend" / "out"
 
 # Check if React build directory exists
 if REACT_BUILD_PATH.exists():

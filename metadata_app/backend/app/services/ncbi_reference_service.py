@@ -3,23 +3,24 @@
 import argparse
 import json
 import logging
-import os
 import time
 import urllib.error
 import urllib.request
+from pathlib import Path
 
 import pandas as pd
 
 API_URL = "https://api.ncbi.nlm.nih.gov/datasets/v2/genome/accession/{accession}/dataset_report"
-CACHE_FILE = "metadata_app/backend/cache/ncbi_reference_cache.json"
+BACKEND_ROOT = Path(__file__).resolve().parents[2]
+CACHE_FILE = BACKEND_ROOT / "cache" / "ncbi_reference_cache.json"
 CACHE_TTL = 90 * 24 * 60 * 60  # 3 months in seconds
 
 
 def load_cache():
-    if os.path.exists(CACHE_FILE):
+    if CACHE_FILE.exists():
         try:
-            with open(CACHE_FILE, "r") as f:
-                return json.load(f)
+            with CACHE_FILE.open("r", encoding="utf-8") as handle:
+                return json.load(handle)
         except json.JSONDecodeError:
             logging.warning("NCBI reference cache is invalid JSON. Rebuilding it.")
             return {}
@@ -27,9 +28,9 @@ def load_cache():
 
 
 def save_cache(cache):
-    os.makedirs(os.path.dirname(CACHE_FILE), exist_ok=True)
-    with open(CACHE_FILE, "w") as f:
-        json.dump(cache, f)
+    CACHE_FILE.parent.mkdir(parents=True, exist_ok=True)
+    with CACHE_FILE.open("w", encoding="utf-8") as handle:
+        json.dump(cache, handle)
 
 
 def get_ncbi_assembly(accession: str) -> dict:
@@ -47,11 +48,11 @@ def get_ncbi_assembly(accession: str) -> dict:
         with urllib.request.urlopen(request, timeout=30) as response:
             return json.load(response)
 
-    except urllib.error.HTTPError as e:
-        raise RuntimeError(f"NCBI API returned HTTP {e.code} for {accession}") from e
+    except urllib.error.HTTPError as exc:
+        raise RuntimeError(f"NCBI API returned HTTP {exc.code} for {accession}") from exc
 
-    except urllib.error.URLError as e:
-        raise RuntimeError(f"Could not connect to NCBI: {e.reason}") from e
+    except urllib.error.URLError as exc:
+        raise RuntimeError(f"Could not connect to NCBI: {exc.reason}") from exc
 
 
 def _build_reference_record(accession: str) -> dict:
@@ -71,8 +72,8 @@ def _build_reference_record(accession: str) -> dict:
             "is_reference_genome": refseq_category == "reference genome",
             "refseq_category": refseq_category,
         }
-    except RuntimeError as e:
-        logging.warning("NCBI reference lookup failed for %s: %s", accession, e)
+    except RuntimeError as exc:
+        logging.warning("NCBI reference lookup failed for %s: %s", accession, exc)
         return {
             "gca": accession,
             "is_reference_genome": None,
@@ -134,8 +135,8 @@ def main():
         print(f"RefSeq category: {category}")
         print(f"Is reference:    {is_reference}")
 
-    except RuntimeError as e:
-        print(f"ERROR: {e}")
+    except RuntimeError as exc:
+        print(f"ERROR: {exc}")
         raise SystemExit(1)
 
 

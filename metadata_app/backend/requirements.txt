@@ -4,5 +4,6 @@ numpy
 pandas
 pydantic
 PyMySQL
-Requests
 python-multipart
+requests
+uvicorn
