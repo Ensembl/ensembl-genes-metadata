@@ -1,13 +1,13 @@
 "use client";
 
 import React, { useRef, useState } from "react";
-import {Loader2, Terminal} from "lucide-react";
+import {Loader2, Terminal, DownloadIcon, InfoIcon} from "lucide-react";
 import { useReactToPrint } from 'react-to-print';
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { DataTable } from "@/components/tables/data-table";
 import { Report, columns } from "@/features/reports/annotation-columns";
+import { AnnotationDataTable } from "@/features/reports/annotation-data-table";
 import MultipleSelector, { Option } from "@/components/ui/multi_select";
 import {RepStatus, StatusItem} from "@/components/ui/rep_anno_status";
 import {AnnotatedBuscoCard, BuscoItem} from "@/components/ui/rep_anno_busco"
@@ -15,13 +15,13 @@ import {MethodItem, AnoMethodSummaryChart } from "@/components/ui/rep_anno_metho
 import {AnnotatedTaxaCard, NumTaxaItem} from "@/components/ui/rep_anno_num_taxa"
 import {RepTopTaxa, TaxaItem} from "@/components/ui/rep_anno_top_taxa"
 import {ProjectItem, RepProject} from "@/components/ui/repo_anno_project"
-import {Card, CardContent} from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import {DropdownMenu, DropdownMenuContent, DropdownMenuLabel, DropdownMenuItem, DropdownMenuTrigger} from "@/components/ui/dropdown-menu";
 import {CladeItem, RepClade} from "@/components/ui/repo_anno_clade";
 import {CladeLiveItem, RepCladeLive} from "@/components/ui/repo_anno_clade_live";
+import {Tooltip, TooltipContent, TooltipTrigger} from "@/components/ui/tooltip";
 import { cleanPayload, parseTaxonIds, splitProjectFilters } from "@/features/shared/filter-utils";
-import { PROJECT_OPTIONS } from "@/features/shared/project-options";
+import { PROJECT_OPTION_BY_SLUG, PROJECT_OPTIONS } from "@/features/shared/project-options";
 
 
 
@@ -53,6 +53,21 @@ export default function Page() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [cladeData, setClade] = useState<CladeItem[]>([]);
   const [cladeDataLive, setCladeLive] = useState<CladeLiveItem[]>([]);
+
+  React.useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    const projectSlug = searchParams.get("project");
+
+    if (!projectSlug) {
+      return;
+    }
+
+    const preselectedProject = PROJECT_OPTION_BY_SLUG[projectSlug];
+
+    if (preselectedProject) {
+      setSelectedProjects([preselectedProject]);
+    }
+  }, []);
 
 
 
@@ -183,6 +198,7 @@ export default function Page() {
               <div className="sm:col-span-2">
                 <Label className="mb-3 block">Main projects</Label>
                 <MultipleSelector
+                  value={selectedProjects}
                   placeholder="Select projects or groups..."
                   defaultOptions={PROJECT_OPTIONS}
                   onChange={(values) => setSelectedProjects(values)}
@@ -192,7 +208,27 @@ export default function Page() {
 
               {baseFields.map(({ label, placeholder }, index) => (
                 <div key={index}>
-                  <Label htmlFor={label.toLowerCase().replace(" ", "-")}>{label}</Label>
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor={label.toLowerCase().replace(" ", "-")}>{label}</Label>
+                    {(label === "Report start date" || label === "Report end date") && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-5 w-5"
+                            aria-label={`Info for ${label}`}
+                          >
+                            <InfoIcon className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>This will filter based on last update in the registry</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    )}
+                  </div>
                   <Input
                     id={label.toLowerCase().replace(" ", "-")}
                     type="text"
@@ -233,14 +269,16 @@ export default function Page() {
               <h1 className="text-xl font-semibold">Annotations report</h1>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline">Download</Button>
+                  <Button variant="outline">
+                    <DownloadIcon className="mr-2 h-4 w-4" />
+                    Download</Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-56" align="end">
                   <DropdownMenuLabel>Download report</DropdownMenuLabel>
                   <DropdownMenuItem onClick={handlePrint}>
                     PDF</DropdownMenuItem>
                   <DropdownMenuItem onClick={() => handleDownload(downloadables?.anno_wide, "annotations_report.csv", "text/csv")}
-                  >CSV</DropdownMenuItem>
+                  >Full CSV</DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
@@ -272,12 +310,27 @@ export default function Page() {
 
               {/* Full-width annotations table */}
               <div>
-                <h2 className="text-xl font-semibold my-8">Annotations table</h2>
-                <Card>
-                  <CardContent>
-                    <DataTable columns={columns} data={annotations} />
-                  </CardContent>
-                </Card>
+                <div className="flex items-center justify-between my-8">
+                  <h2 className="text-xl font-semibold">
+                    Annotations table
+                  </h2>
+
+                  <Button
+                    variant="outline"
+                    onClick={() =>
+                      handleDownload(
+                        downloadables?.anno_wide,
+                        "annotations_report.csv",
+                        "text/csv"
+                      )
+                    }
+                  >
+                    <DownloadIcon className="mr-2 h-4 w-4" />
+                    Download
+                  </Button>
+                </div>
+
+                <AnnotationDataTable columns={columns} data={annotations} />
               </div>
             </div>
           </div>

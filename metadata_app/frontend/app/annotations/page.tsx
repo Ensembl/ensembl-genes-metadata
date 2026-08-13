@@ -131,6 +131,9 @@ export default function Page() {
       <div className="w-full max-w-6xl">
         <div className="rounded-2xl border-accent">
           <div className="rounded-2xl bg-secondary p-4 gap-10 shadow-lg sm:p-8">
+            <div className="mb-6">
+              <h1 className="text-2xl font-bold">Set filters</h1>
+            </div>
             <div className="grid grid-cols-1 gap-4 mb-4 md:grid-cols-2">
             <div>
                 <Label className="mb-3 block">Select project name</Label>

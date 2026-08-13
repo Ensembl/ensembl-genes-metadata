@@ -3,6 +3,8 @@
 import * as React from "react";
 import {
   type ColumnDef,
+  type OnChangeFn,
+  type RowSelectionState,
   type SortingState,
   flexRender,
   getCoreRowModel,
@@ -22,24 +24,36 @@ import {
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
+  enableRowSelection?: boolean;
+  getRowId?: (originalRow: TData, index: number) => string;
+  onRowSelectionChange?: OnChangeFn<RowSelectionState>;
+  rowSelection?: RowSelectionState;
 }
 
 export function DataTable<TData, TValue>({
   columns,
   data,
+  enableRowSelection = false,
+  getRowId,
+  onRowSelectionChange,
+  rowSelection = {},
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = React.useState<SortingState>([]);
 
   const table = useReactTable({
     data,
     columns,
+    enableRowSelection,
     getCoreRowModel: getCoreRowModel(),
+    getRowId,
+    onRowSelectionChange,
     onSortingChange: setSorting,
     getSortedRowModel: getSortedRowModel(),
     state: {
       sorting,
+      rowSelection: rowSelection ?? {},
     },
-  });
+});
 
   return (
     <div>

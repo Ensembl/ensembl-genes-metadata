@@ -3,8 +3,8 @@
 import React, { useEffect, useState } from "react";
 import { Terminal } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { DataTable } from "@/components/tables/data-table-large";
 import { columns, type ProjectGCA } from "@/features/projects/columns";
+import { ProjectDataTable } from "@/features/projects/project-data-table";
 
 type ProjectPageClientProps = {
   projectSlug: string;
@@ -43,6 +43,7 @@ export function ProjectPageClient({
           lowest_taxon_id: item.lowest_taxon_id,
           scientific_name: item.scientific_name,
           asm_level: item.asm_level,
+          infra_name: item.infra_name,
           gb_status: item.gb_status,
           genebuilder: item.genebuilder,
         }));
@@ -81,8 +82,12 @@ export function ProjectPageClient({
         {loading ? (
           <p className="text-muted-foreground">Loading data...</p>
         ) : (
-          <div className="border-border border-2 rounded-md shadow-border">
-            <DataTable columns={columns} data={assemblies} />
+          <div>
+            <ProjectDataTable
+              columns={columns}
+              data={assemblies}
+              projectSlug={projectSlug}
+            />
           </div>
         )}
       </div>

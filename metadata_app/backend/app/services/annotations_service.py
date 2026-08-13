@@ -1,3 +1,7 @@
+"""
+This module provides services for handling annotations-related operations.
+"""
+
 import logging
 import numpy as np
 import pandas as pd
@@ -11,13 +15,23 @@ from metadata_app.backend.app.services.taxonomy_service import (
     assign_clade_and_species,
 )
 
-
 ENSEMBL_ORGANISMS_FTP_BASE_URL = "https://ftp.ebi.ac.uk/pub/ensemblorganisms"
 
 
 def _format_assembly_accession_path(gca_accession):
+    """
+    Formats the given GCA accession into a path structure.
+
+    Args:
+        gca_accession: The GCA accession to be formatted.
+
+    Returns:
+        str: The formatted path or None if the input is invalid.
+    """
     accession = str(gca_accession).strip()
-    match = re.fullmatch(r"(?P<prefix>GC[AF])_(?P<digits>\d+)\.(?P<version>\d+)", accession)
+    match = re.fullmatch(
+        r"(?P<prefix>GC[AF])_(?P<digits>\d+)\.(?P<version>\d+)", accession
+    )
     if not match:
         return None
 
@@ -43,6 +57,22 @@ def _format_annotation_date_path(date_value):
 
 
 def _format_annotation_provider_path(annotation_source):
+    """
+    Formats the annotation source to determine the appropriate provider path.
+
+    This function processes the given annotation source and standardizes it
+    to one of the predefined annotation provider paths. The logic accounts for
+    empty, null, or whitespace strings, converting them to the "ensembl" path.
+    A valid, non-empty source other than "ensembl" will default to "community".
+
+    Args:
+        annotation_source: The input source of the annotation. May be a string,
+            null, or NaN value.
+
+    Returns:
+        str: A string representing the formatted annotation provider path. It
+        will return either "ensembl" or "community" based on the input source.
+    """
     if pd.isna(annotation_source):
         return "ensembl"
 
@@ -54,6 +84,9 @@ def _format_annotation_provider_path(annotation_source):
 
 
 def build_ensemblorganisms_ftp_url(row):
+    """
+    Builds the FTP URL for Ensembl organisms based on the provided row data.
+    """
     accession_path = _format_assembly_accession_path(row.get("gca"))
     annotation_date = _format_annotation_date_path(row.get("last_genebuild_update"))
     provider = _format_annotation_provider_path(row.get("annotation_source"))

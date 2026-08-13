@@ -41,7 +41,6 @@
   --color-sidebar-ring: var(--sidebar-ring);
   --color-filter-background: var(--filter-background);
   --color-filter-input-bg: var(--filter-input-bg);
-    --animate-shine: shine var(--duration) infinite linear;
 }
 
 :root {

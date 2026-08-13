@@ -1,11 +1,14 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import {XCircle, Loader2, Terminal, InfoIcon} from "lucide-react";
+import React, { useEffect, useMemo, useState } from "react";
+import { type ColumnDef, type RowSelectionState } from "@tanstack/react-table";
+import {XCircle, Loader2, Terminal, InfoIcon, DownloadIcon, Sparkles} from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
+import { CopyButton } from "@/components/ui/button-copy";
 import { PopoverWithMultiSelect } from "@/components/ui/metrics_select";
 import MultipleSelector, { Option } from "@/components/ui/multi_select";
 import {
@@ -15,7 +18,6 @@ import {
 import { Assemblies, columns } from "@/features/assemblies/columns";
 import { DataTable } from "@/components/tables/data-table";
 import {cn} from "@/lib/utils";
-import {StartAnnotationDialog} from "@/components/start_anno_dialog";
 import {Tooltip, TooltipContent, TooltipTrigger} from "@/components/ui/tooltip";
 import {Alert, AlertDescription, AlertTitle} from "@/components/ui/alert";
 import {InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput} from "@/components/ui/input-group";
@@ -49,6 +51,9 @@ export default function Page() {
   } | null>(null);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [filterShortReadPresent, setFilterShortReadPresent] = useState(true);
+  const [filterLongReadPresent, setFilterLongReadPresent] = useState(false);
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
 
   const isNumeric = (value: string) => /^\d+(\.\d+)?$/.test(value);
 
@@ -60,6 +65,7 @@ export default function Page() {
     // Reset states at the beginning
     setErrorMessage(null);
     setAssemblies([]);
+    setRowSelection({});
 
     // Validate numeric inputs before proceeding
     for (const [metric, value] of Object.entries(metricValues)) {
@@ -84,9 +90,12 @@ export default function Page() {
           metric_thresholds[metric] = Number(value);
         });
 
-      // Get Assembly Level and Assembly Type values from toggleStates
+      // Get Assembly Level, Assembly Type, and Pipeline values from toggleStates
       const asm_level = toggleStates["Assembly level"] || null;
       const asm_type = toggleStates["Assembly type"] || null;
+      const pipeline = (toggleStates["Pipeline"] || []).map((value) => {
+        return value.toLowerCase();
+      });
 
       const taxonIdArray = parseTaxonIds(baseFieldValues["Taxon ID"]);
       const uniqueGCA = splitCommaSeparated(gcaInput);
@@ -98,6 +107,7 @@ export default function Page() {
         metric_thresholds: Object.keys(metric_thresholds).length > 0 ? metric_thresholds : null,
         asm_level: asm_level,
         asm_type: asm_type,
+        pipeline: pipeline.length > 0 ? pipeline : null,
         release_date: baseFieldValues["Release date"] || null,
         taxon_id: taxonIdArray,
         current: checkCurrent,
@@ -216,6 +226,10 @@ export default function Page() {
         "diploid",
       ],
     },
+    {
+      label: "Pipeline",
+      options: ["Main", "Annotation", "HPRC"],
+    },
   ];
 
   const hasToggleGroup = selectedMetrics.some((metric) =>
@@ -226,12 +240,76 @@ export default function Page() {
     !toggleMetrics.some((tm) => tm.label === metric)
   );
 
+  const filteredAssemblies = useMemo(() => {
+    if (!checkENA) {
+      return assemblies;
+    }
+
+    return assemblies.filter((assembly) => {
+      const hasShortReadData =
+        Number(assembly.short_read_paired_end_illumina_lowest ?? 0) > 0 ||
+        Number(assembly.short_read_paired_end_illumina ?? 0) > 0;
+      const hasLongReadData = Number(assembly.long_read_pacbio ?? 0) > 0;
+
+      if (filterShortReadPresent && !hasShortReadData) {
+        return false;
+      }
+
+      if (filterLongReadPresent && !hasLongReadData) {
+        return false;
+      }
+
+      return true;
+    });
+  }, [assemblies, checkENA, filterLongReadPresent, filterShortReadPresent]);
+
+  const selectableColumns = useMemo<ColumnDef<Assemblies>[]>(() => [
+    {
+      id: "select",
+      header: ({ table }) => (
+        <Checkbox
+          checked={
+            table.getIsAllPageRowsSelected() ||
+            (table.getIsSomePageRowsSelected() && "indeterminate")
+          }
+          onCheckedChange={(value) => table.toggleAllPageRowsSelected(Boolean(value))}
+          aria-label="Select all rows"
+        />
+      ),
+      cell: ({ row }) => (
+        <Checkbox
+          checked={row.getIsSelected()}
+          onCheckedChange={(value) => row.toggleSelected(Boolean(value))}
+          aria-label={`Select ${row.original.gca}`}
+        />
+      ),
+      enableSorting: false,
+    },
+    ...columns,
+  ], []);
+
+  const selectedAssemblies = useMemo(
+    () => filteredAssemblies.filter((assembly) => rowSelection[assembly.gca]),
+    [filteredAssemblies, rowSelection],
+  );
+  const selectedGcaText = useMemo(
+    () => selectedAssemblies.map((assembly) => assembly.gca).join("\n"),
+    [selectedAssemblies],
+  );
+  const quickFiltersActive =
+    checkENA && (filterShortReadPresent || filterLongReadPresent);
+  const quickFiltersEmptiedTable =
+    assemblies.length > 0 && filteredAssemblies.length === 0 && quickFiltersActive;
+
   return (
     <div className="min-h-screen flex justify-center px-4 py-10 sm:px-6 lg:px-8">
       <div className="w-full max-w-6xl">
         <div className="rounded-2xl border-accent shadow-lg">
           {/* Filter Section */}
           <div className="rounded-t-2xl bg-secondary p-4 gap-10 sm:p-8">
+            <div className="mb-6">
+              <h1 className="text-2xl font-bold">Set filters</h1>
+            </div>
             <div className="grid grid-cols-1 gap-4 mb-4 md:grid-cols-2">
             <div>
                 <Label className="mb-3 block">Select project name</Label>
@@ -435,7 +513,10 @@ export default function Page() {
                 Loading...
               </>
             ) : (
-              "Get Assemblies"
+              <>
+                <Sparkles className="mr-2" />
+                Get Assemblies
+              </>
             )}
           </Button>
         </div>
@@ -454,15 +535,21 @@ export default function Page() {
         {assemblies.length > 0 &&  (
           <div className="mt-10 shadow-lg border border:border rounded-2xl">
             <div className="flex flex-col gap-4 px-4 py-6 border-b border:border sm:px-8 md:flex-row md:items-center md:justify-between">
-              <h2 className="text-lg font-semibold">Filtered Assemblies ({assemblies.length}) </h2>
+              <h2 className="text-lg font-semibold">Filtered Assemblies ({filteredAssemblies.length}) </h2>
               <div className="grid w-full grid-cols-1 gap-2 sm:grid-cols-2 md:w-auto md:flex">
-                {/* Download GCA List (.txt) */}
-                <Button
-                  variant="outline"
-                  onClick={() => handleDownload(downloadables?.gca_list, "filtered_gca_list.txt")}
-                >
-                  Download GCA List
-                </Button>
+                {selectedAssemblies.length > 0 ? (
+                  <CopyButton
+                    text={selectedGcaText}
+                    defaultLabel="Copy selected GCAs"
+                  />
+                ) : (
+                  <Button
+                    variant="outline"
+                    onClick={() => handleDownload(downloadables?.gca_list, "filtered_gca_list.txt")}
+                  >
+                    Download GCA List
+                  </Button>
+                )}
 
 
                 {/* Download Full Table from Backend */}
@@ -470,15 +557,57 @@ export default function Page() {
                   variant="outline"
                   onClick={() => handleDownload(downloadables?.df_wide, "full_table_filtered_assemblies.csv", "text/csv")}
                 >
+                  <DownloadIcon></DownloadIcon>
                   Download Full Table
                 </Button>
 
-                {/* Annotation start button */}
-                <StartAnnotationDialog/>
-
               </div>
             </div>
-            <DataTable columns={columns} data={assemblies} />
+            {checkENA && (
+              <div className="border-b border:border px-4 py-4 sm:px-8">
+                <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center">
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="quick-filter-short-read"
+                      checked={filterShortReadPresent}
+                      onCheckedChange={setFilterShortReadPresent}
+                    />
+                    <Label htmlFor="quick-filter-short-read">
+                      Only show records with short read data
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="quick-filter-long-read"
+                      checked={filterLongReadPresent}
+                      onCheckedChange={setFilterLongReadPresent}
+                    />
+                    <Label htmlFor="quick-filter-long-read">
+                      Only show records with long read data
+                    </Label>
+                  </div>
+                </div>
+              </div>
+            )}
+            {quickFiltersEmptiedTable && (
+              <div className="border-b border:border px-4 py-4 sm:px-8">
+                <Alert>
+                  <InfoIcon />
+                  <AlertTitle>Warning</AlertTitle>
+                  <AlertDescription>
+                    The quick filters are currently on, so all rows are hidden. Turn off one or both quick filters to see the matching assemblies again.
+                  </AlertDescription>
+                </Alert>
+              </div>
+            )}
+            <DataTable
+              columns={selectableColumns}
+              data={filteredAssemblies}
+              enableRowSelection
+              getRowId={(row) => row.gca}
+              onRowSelectionChange={setRowSelection}
+              rowSelection={rowSelection}
+            />
           </div>
         )}
       </div>

@@ -2,6 +2,7 @@
 
 import { type ColumnDef, type HeaderContext } from "@tanstack/react-table";
 import {ArrowUpDown, Badge, BadgeCheck} from "lucide-react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
 export type Assemblies = {
@@ -14,6 +15,7 @@ export type Assemblies = {
   lowest_taxon_id: number;
   internal_clade: string;
   is_current: string;
+  is_reference_genome: string;
   gb_status: string;
   other_version_live: string;
   "assembly.busco": string;
@@ -77,9 +79,30 @@ export const columns: ColumnDef<Assemblies>[] = [
     accessorKey: "is_current",
     header: sortableHeader("Latest GCA"),
   },
-    {
+  {
     accessorKey: "lowest_aligned_count",
     header: sortableHeader("Transcr. reg. lowest"),
+    cell: ({ row }) => {
+      const value = row.getValue("lowest_aligned_count");
+      const taxonId = row.original.lowest_taxon_id;
+
+      if (value === null || value === undefined || value === "") {
+        return "";
+      }
+
+      if (!taxonId) {
+        return String(value);
+      }
+
+      return (
+        <Link
+          href={`/transc-assess?taxon_id=${taxonId}`}
+          className="text-primary underline underline-offset-4"
+        >
+          {String(value)}
+        </Link>
+      );
+    },
   },
   {
     accessorKey: "short_read_paired_end_illumina_lowest",

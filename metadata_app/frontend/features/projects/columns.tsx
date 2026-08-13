@@ -9,6 +9,7 @@ export type ProjectGCA = {
   lowest_taxon_id: number;
   scientific_name: string;
   asm_level: string;
+  infra_name: string;
   gb_status: string;
   genebuilder: string;
 };
@@ -32,25 +33,37 @@ export const columns: ColumnDef<ProjectGCA>[] = [
   {
     accessorKey: "gca",
     header: sortableHeader("GCA"),
+    filterFn: "includesString",
   },
   {
     accessorKey: "lowest_taxon_id",
     header: sortableHeader("Taxon ID"),
+    filterFn: (row, columnId, filterValue) =>
+      String(row.getValue(columnId)).includes(String(filterValue).trim()),
   },
   {
     accessorKey: "scientific_name",
     header: sortableHeader("Scientific Name"),
+    filterFn: "includesString",
   },
   {
     accessorKey: "asm_level",
     header: sortableHeader("ASM Level"),
+    filterFn: "includesString",
+  },
+    {
+    accessorKey: "infra_name",
+    header: sortableHeader("Infra name"),
+    filterFn: "includesString",
   },
   {
     accessorKey: "gb_status",
     header: sortableHeader("Status"),
+    filterFn: "includesString",
   },
   {
     accessorKey: "genebuilder",
     header: sortableHeader("Genebuilder"),
+    filterFn: "includesString",
   },
 ];

@@ -121,21 +121,21 @@ if REACT_BUILD_PATH.exists():
         )
 
     # Serve common static assets
-    @app.get("/favicon.ico")
+    @app.api_route("/favicon.ico", methods=["GET", "HEAD"])
     async def favicon():
         favicon_path = REACT_BUILD_PATH / "favicon.ico"
         if favicon_path.exists():
             return FileResponse(str(favicon_path))
         raise HTTPException(status_code=404, detail="Favicon not found")
 
-    @app.get("/manifest.json")
+    @app.api_route("/manifest.json", methods=["GET", "HEAD"])
     async def manifest():
         manifest_path = REACT_BUILD_PATH / "manifest.json"
         if manifest_path.exists():
             return FileResponse(str(manifest_path))
         raise HTTPException(status_code=404, detail="Manifest not found")
 
-    @app.get("/robots.txt")
+    @app.api_route("/robots.txt", methods=["GET", "HEAD"])
     async def robots():
         robots_path = REACT_BUILD_PATH / "robots.txt"
         if robots_path.exists():
@@ -143,7 +143,7 @@ if REACT_BUILD_PATH.exists():
         raise HTTPException(status_code=404, detail="Robots.txt not found")
 
     # Root endpoint - serve Next.js app
-    @app.get("/")
+    @app.api_route("/", methods=["GET", "HEAD"])
     async def serve_react_root():
         index_file = REACT_BUILD_PATH / "index.html"
         if index_file.exists():
@@ -151,7 +151,7 @@ if REACT_BUILD_PATH.exists():
         raise HTTPException(status_code=404, detail="Next.js app not found")
 
     # Catch-all handler: serve Next.js app for all non-API routes
-    @app.get("/{full_path:path}")
+    @app.api_route("/{full_path:path}", methods=["GET", "HEAD"])
     async def serve_react_app(full_path: str):
         # Don't serve Next.js app for API routes or Next.js static assets
         if full_path.startswith("api/") or full_path.startswith("_next/"):
@@ -180,7 +180,7 @@ else:
     )
 
     # Fallback root endpoint if Next.js build doesn't exist
-    @app.get("/")
+    @app.api_route("/", methods=["GET", "HEAD"])
     async def root():
         return {
             "message": "Welcome to the Genebuild API - Next.js frontend not built yet"

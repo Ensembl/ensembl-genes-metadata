@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useRef, useState } from "react";
-import {Loader2, Terminal} from "lucide-react";
+import {DownloadIcon, Loader2, Terminal, InfoIcon} from "lucide-react";
 import { useReactToPrint } from 'react-to-print';
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,7 +12,7 @@ import MultipleSelector, { Option } from "@/components/ui/multi_select";
 import {AsmTaxaCard, NumTaxaItem} from "@/components/ui/rep_asm_num_taxa"
 import {RepTopTaxa, TaxaItem} from "@/components/ui/rep_anno_top_taxa"
 import {ProjectItem, RepProject} from "@/components/ui/repo_anno_project"
-import {Card, CardContent} from "@/components/ui/card";
+import {Card} from "@/components/ui/card";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -213,7 +213,27 @@ export default function Page() {
 
               {baseFields.map(({ label, placeholder }, index) => (
                 <div key={index}>
-                  <Label htmlFor={label.toLowerCase().replace(" ", "-")}>{label}</Label>
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor={label.toLowerCase().replace(" ", "-")}>{label}</Label>
+                    {(label === "Report start date" || label === "Report end date") && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-5 w-5"
+                            aria-label={`Info for ${label}`}
+                          >
+                            <InfoIcon className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>This will filter based on last update in the registry</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    )}
+                  </div>
                   <Input
                     id={label.toLowerCase().replace(" ", "-")}
                     type="text"
@@ -303,7 +323,9 @@ export default function Page() {
               <h1 className="text-xl font-semibold">Assembly report</h1>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline">Download</Button>
+                  <Button variant="outline">
+                    <DownloadIcon className="mr-2 h-4 w-4" />
+                    Download</Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-56" align="end">
                   <DropdownMenuLabel>Download report</DropdownMenuLabel>
@@ -350,14 +372,31 @@ export default function Page() {
 
 
 
-              {/* Full-width annotations table */}
+              {/* Full-width assemblies table */}
               <div>
-                <h2 className="text-xl font-semibold my-8">Assemblies table</h2>
-                <Card>
-                  <CardContent>
-                    <DataTable columns={columns} data={assemblies} />
-                  </CardContent>
-                </Card>
+                <div className="flex items-center justify-between my-8">
+                  <h2 className="text-xl font-semibold">
+                    Assemblies table
+                  </h2>
+
+                  <Button
+                    variant="outline"
+                    onClick={() =>
+                      handleDownload(
+                        downloadables?.rep_asm_wide,
+                        "assembly_report.csv",
+                        "text/csv"
+                      )
+                    }
+                  >
+                    <DownloadIcon className="mr-2 h-4 w-4" />
+                    Download
+                  </Button>
+                </div>
+
+                <div className="rounded-xl border">
+                  <DataTable columns={columns} data={assemblies} />
+                </div>
               </div>
             </div>
           </div>

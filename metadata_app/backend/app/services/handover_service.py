@@ -49,6 +49,19 @@ def _empty_handover_result():
     return ([], 0, 0, 0, [], [], [], [])
 
 
+def _build_core_name(scientific_name, gca):
+    if not scientific_name or not gca:
+        return None
+
+    name_parts = str(scientific_name).strip().lower().split()
+    if not name_parts:
+        return None
+
+    species_part = "_".join(name_parts[:2])
+    gca_part = str(gca).strip().lower().replace(".", "v").replace("_", "")
+    return f"{species_part}_{gca_part}_core_114_1"
+
+
 def get_ready_to_ho(genebuilder):
     try:
         with get_db_connection("meta") as conn:
@@ -212,19 +225,12 @@ def get_ready_to_ho(genebuilder):
         )
         collapsed["pipeline"] = collapsed["lowest_taxon_id"].apply(assign_pipeline)
 
-        ho_ready = ["pre_released", "completed"]
-
-        df_filtered = collapsed[collapsed["gb_status"].isin(ho_ready)]
-
-        df_ready = df_filtered.copy()
-
-        df_ready.loc[:, "production_name"] = (
-            df_ready["scientific_name"].str.lower().str.replace(" ", "_")
-            + "_"
-            + df_ready["gca"]
-            .str.lower()
-            .str.replace(".", "v", regex=False)
-            .str.replace("_", "", regex=False)
+        df_ready = collapsed[
+            collapsed["gb_status"].isin(["pre_released", "completed"])
+        ].copy()
+        df_ready.loc[:, "core_name"] = df_ready.apply(
+            lambda row: _build_core_name(row["scientific_name"], row["gca"]),
+            axis=1,
         )
 
         # check data and in progress for more than 6 months
@@ -234,7 +240,7 @@ def get_ready_to_ho(genebuilder):
             pd.Timestamp.today().normalize() - date_series
         ).dt.days
 
-        count_ho_ready = df_filtered["gca"].nunique()
+        count_ho_ready = df_ready["gca"].nunique()
 
         # handed over (from collapsed)
         check_data = ["check_busco", "insufficient_data", "poor_genome_busco", "low_genome_busco"]
@@ -394,7 +400,17 @@ def get_ready_to_ho(genebuilder):
             return _json_safe_records(frame)
 
         return (
-            _json_safe_records(df_ready),
+            _json_safe_records(
+                df_ready[
+                    [
+                        "gca",
+                        "scientific_name",
+                        "bioproject_name",
+                        "date_status_update",
+                        "core_name",
+                    ]
+                ]
+            ),
             int(count_ho_ready),
             int(count_data),
             int(count_pending),

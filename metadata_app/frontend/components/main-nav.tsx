@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { Icons } from "@/components/icons"
 import { ModeSwitcher } from "@/components/mode_switcher"
-import { Search, ListCheck, ChartNoAxesColumnIncreasing, FolderRoot, DatabaseSearch, UserSearch, FlaskConical } from "lucide-react"
+import { Search, ListCheck, ChartNoAxesColumnIncreasing, FolderRoot, DatabaseSearch, UserSearch, FlaskConical, Cone } from "lucide-react"
 import { NavigationMenu,
   NavigationMenuContent,
   NavigationMenuItem,
@@ -64,6 +64,14 @@ const sections_genebuild = [
         label: 'Annotations',
         description: 'See what has been annotated',
         href: '/annotations'
+      },
+        {
+        icon: (
+          < Cone />
+        ),
+        label: 'Transcriptomic registry',
+        description: 'Query the transcriptomic registry',
+        href: '/transc-assess'
       }
     ]
   },
@@ -153,7 +161,6 @@ export function MainNav() {
                     <div className='space-y-1'>
                       {sections_genebuild.items.map(item => (
                         <NavigationMenuLink
-                          className='flex items-start gap-2 *:[svg]:mt-1 *:[svg]:size-5'
                           href={item.href}
                           key={item.label}
                         >
@@ -175,9 +182,19 @@ export function MainNav() {
         <NavigationMenuLink asChild>
           <Link
             href="/help"
-            className="group inline-flex h-10 w-max items-center justify-center rounded-md bg-background px-4 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground"
+            className="group inline-flex h-10 w-max items-center justify-center rounded-md px-4 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground"
           >
             Help
+          </Link>
+        </NavigationMenuLink>
+      </NavigationMenuItem>
+        <NavigationMenuItem>
+        <NavigationMenuLink asChild>
+          <Link
+            href="/changelog"
+            className="group inline-flex h-10 w-max items-center justify-center rounded-md px-4 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground"
+          >
+            Changelog
           </Link>
         </NavigationMenuLink>
       </NavigationMenuItem>

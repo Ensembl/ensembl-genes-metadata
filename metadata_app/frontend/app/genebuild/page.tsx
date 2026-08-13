@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import {DatabaseCleanup} from "@/components/ui/card_clean_up"
+import { CopyButton } from "@/components/ui/button-copy";
 import {
   Card,
   CardAction,
@@ -94,6 +95,14 @@ type NeedActionApiItem = {
   days_since_update?: number | null;
 };
 
+type HandoverReadyApiItem = {
+  gca: string | null;
+  scientific_name: string | null;
+  bioproject_name?: string | null;
+  date_status_update?: string | null;
+  core_name?: string | null;
+};
+
 type StatusSummaryItem = {
   gb_status: string;
   main: number;
@@ -147,9 +156,11 @@ export default function Page() {
     const [backendStatusSummary, setBackendStatusSummary] = useState<StatusSummaryItem[]>([]);
     const [staleDataItems, setStaleDataItems] = useState<NeedActionApiItem[]>([]);
     const [stalePendingItems, setStalePendingItems] = useState<NeedActionApiItem[]>([]);
+    const [handoverReadyItems, setHandoverReadyItems] = useState<HandoverReadyApiItem[]>([]);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [selectedHandoverIds, setSelectedHandoverIds] = useState<string[]>([]);
   const [selectedAnnotationIds, setSelectedAnnotationIds] = useState<string[]>([]);
   const [selectedStatus, setSelectedStatus] = useState<string>("");
   const [statusDialogOpen, setStatusDialogOpen] = useState(false);
@@ -186,10 +197,12 @@ export default function Page() {
         setCountHOR(result.count_ho_ready);
         setCountData(result.count_data);
         setPending(result.count_pending);
+        setHandoverReadyItems(result.df_ready ?? []);
         setAnnotationOverview(result.annotation_overview ?? []);
         setBackendStatusSummary(result.status_summary ?? []);
         setStaleDataItems(result.list_data ?? []);
         setStalePendingItems(result.list_pending ?? []);
+        setSelectedHandoverIds([]);
         setSelectedAnnotationIds([]);
 
 
@@ -197,10 +210,12 @@ export default function Page() {
         setCountHOR(0);
         setCountData(0);
         setPending(0);
+        setHandoverReadyItems([]);
         setAnnotationOverview([]);
         setBackendStatusSummary([]);
         setStaleDataItems([]);
         setStalePendingItems([]);
+        setSelectedHandoverIds([]);
         setSelectedAnnotationIds([]);
         setError("No dashboard data found for this genebuilder.");
       }
@@ -290,6 +305,28 @@ export default function Page() {
 
     return [...dataItems, ...pendingItems];
   }, [staleDataItems, stalePendingItems]);
+  const selectableHandoverItems = useMemo(
+    () =>
+      handoverReadyItems
+        .map((item, index) => ({
+          ...item,
+          id: `${item.gca ?? "handover"}-${item.core_name ?? index}-${index}`,
+        }))
+        .filter((item) => item.core_name),
+    [handoverReadyItems],
+  );
+  const allHandoverRowsSelected =
+    selectableHandoverItems.length > 0 &&
+    selectableHandoverItems.every((item) => selectedHandoverIds.includes(item.id));
+  const selectedHandoverCoreNames = useMemo(
+    () =>
+      selectableHandoverItems
+        .filter((item) => selectedHandoverIds.includes(item.id))
+        .map((item) => item.core_name)
+        .filter((coreName): coreName is string => Boolean(coreName))
+        .join("\n"),
+    [selectableHandoverItems, selectedHandoverIds],
+  );
   const selectableDashboardItems = useMemo(
     () => dashboardItems.filter((item) => item.gca),
     [dashboardItems],
@@ -370,8 +407,18 @@ export default function Page() {
     );
   };
 
+  const toggleHandoverSelection = (id: string, checked: boolean) => {
+    setSelectedHandoverIds((current) =>
+      checked ? Array.from(new Set([...current, id])) : current.filter((itemId) => itemId !== id),
+    );
+  };
+
   const toggleAllAnnotationRows = (checked: boolean) => {
     setSelectedAnnotationIds(checked ? selectableDashboardItems.map((item) => item.id) : []);
+  };
+
+  const toggleAllHandoverRows = (checked: boolean) => {
+    setSelectedHandoverIds(checked ? selectableHandoverItems.map((item) => item.id) : []);
   };
 
   const handleChangeStatus = async () => {
@@ -504,31 +551,37 @@ export default function Page() {
             </Card>
               </BackgroundGradient>
             <BackgroundGradient>
-            <Card className="min-w-0">
-              <CardHeader>
-                <CardDescription>Tracked annotations</CardDescription>
-                <CardTitle className="text-2xl">{totalTracked.toLocaleString()}</CardTitle>
-              </CardHeader>
-            </Card>
+            <a href="#annotation-overview" className="block min-w-0">
+              <Card className="min-w-0 cursor-pointer transition-colors">
+                <CardHeader>
+                  <CardDescription>Tracked annotations</CardDescription>
+                  <CardTitle className="text-2xl">{totalTracked.toLocaleString()}</CardTitle>
+                </CardHeader>
+              </Card>
+            </a>
               </BackgroundGradient>
             <BackgroundGradient>
-            <Card className="min-w-0">
-              <CardHeader>
-                <CardDescription>Need action</CardDescription>
-                <CardTitle className="flex items-center gap-2 text-2xl">
-                  {actionNeeded.toLocaleString()}
-                  {actionNeeded ? <LucideHeartCrack className="size-5 text-destructive" /> : <Smile className="size-5 text-primary" />}
-                </CardTitle>
-              </CardHeader>
-            </Card>
+            <a href="#need-action-annotations" className="block min-w-0">
+              <Card className="min-w-0 cursor-pointer transition-colors ">
+                <CardHeader>
+                  <CardDescription>Need action</CardDescription>
+                  <CardTitle className="flex items-center gap-2 text-2xl">
+                    {actionNeeded.toLocaleString()}
+                    {actionNeeded ? <LucideHeartCrack className="size-5 text-destructive" /> : <Smile className="size-5 text-primary" />}
+                  </CardTitle>
+                </CardHeader>
+              </Card>
+            </a>
               </BackgroundGradient>
             <BackgroundGradient>
-            <Card className="min-w-0">
-              <CardHeader>
-                <CardDescription>Ready to hand over</CardDescription>
-                <CardTitle className="text-2xl">{horeadyCount.toLocaleString()}</CardTitle>
-              </CardHeader>
-            </Card>
+            <a href="#ready-to-handover" className="block min-w-0">
+              <Card className="min-w-0 cursor-pointer transition-colors">
+                <CardHeader>
+                  <CardDescription>Ready to hand over</CardDescription>
+                  <CardTitle className="text-2xl">{horeadyCount.toLocaleString()}</CardTitle>
+                </CardHeader>
+              </Card>
+            </a>
             </BackgroundGradient>
           </div>
 
@@ -579,7 +632,77 @@ export default function Page() {
             </CardContent>
           </Card>
 
-          <Card className="min-w-0 overflow-hidden">
+          <Card id="ready-to-handover" className="min-w-0 overflow-hidden">
+            <CardHeader>
+              <CardTitle>Ready to hand over</CardTitle>
+              <CardDescription>Annotations marked as pre-released or completed in the registry.</CardDescription>
+              <CardAction>
+                <CopyButton
+                  text={selectedHandoverCoreNames}
+                  disabled={!selectedHandoverIds.length}
+                  defaultLabel="Copy core names"
+                />
+              </CardAction>
+            </CardHeader>
+            <CardContent className="min-w-0 overflow-x-auto">
+              <Table className="min-w-[760px]">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-10">
+                      <Checkbox
+                        checked={allHandoverRowsSelected || (selectedHandoverIds.length > 0 && "indeterminate")}
+                        onCheckedChange={(checked) => toggleAllHandoverRows(checked === true)}
+                        aria-label="Select all handover-ready annotations"
+                      />
+                    </TableHead>
+                    <TableHead>Annotation</TableHead>
+                    <TableHead>BioProject</TableHead>
+                    <TableHead>Last update</TableHead>
+                    <TableHead>Core name</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {selectableHandoverItems.length ? (
+                    selectableHandoverItems.map((item) => (
+                      <TableRow
+                        key={`handover-ready-${item.id}`}
+                        aria-selected={selectedHandoverIds.includes(item.id)}
+                      >
+                        <TableCell>
+                          <Checkbox
+                            checked={selectedHandoverIds.includes(item.id)}
+                            onCheckedChange={(checked) => toggleHandoverSelection(item.id, checked === true)}
+                            aria-label={`Select ${stringValue(item.gca, "handover-ready annotation")}`}
+                          />
+                        </TableCell>
+                        <TableCell className="max-w-[280px] whitespace-normal">
+                          <div className="font-medium">{stringValue(item.scientific_name)}</div>
+                          <div className="break-all text-xs text-muted-foreground">{stringValue(item.gca, "")}</div>
+                        </TableCell>
+                        <TableCell className="max-w-[220px] whitespace-normal break-words text-muted-foreground">
+                          {stringValue(item.bioproject_name)}
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap text-muted-foreground">
+                          {item.date_status_update ?? "Unknown"}
+                        </TableCell>
+                        <TableCell className="max-w-[320px] break-all text-muted-foreground">
+                          {stringValue(item.core_name)}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={5} className="h-20 text-center text-muted-foreground">
+                        No handover-ready annotations.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+
+          <Card id="need-action-annotations" className="min-w-0 overflow-hidden">
             <CardHeader>
               <CardTitle>Need action annotations</CardTitle>
               <CardDescription>Annotations older than 6 months that are in progress or blocked by data quality.</CardDescription>
@@ -730,7 +853,7 @@ export default function Page() {
                     sortedDashboardItems.map((item) => (
                       <TableRow
                         key={item.id}
-                        className={item.gca ? "cursor-pointer select-none" : "cursor-not-allowed opacity-70"}
+                        className={item.gca ? "cursor-pointer" : "cursor-not-allowed opacity-70"}
                         onClick={() => {
                           if (!item.gca) return;
                           toggleAnnotationSelection(item.id, !selectedAnnotationIds.includes(item.id));

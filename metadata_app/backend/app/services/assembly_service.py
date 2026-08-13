@@ -15,6 +15,9 @@ from metadata_app.backend.app.services.transcriptomics_service import (
 from metadata_app.backend.app.services.get_transcriptomic_data_ENA_service import (
     add_data_from_ena,
 )
+from metadata_app.backend.app.services.ncbi_reference_service import (
+    get_reference_data_for_accessions,
+)
 
 
 def check_other_version_live(gca: str) -> str:
@@ -60,11 +63,55 @@ def check_other_version_live(gca: str) -> str:
         return "no"
 
 
+def get_other_version_live_map(gcas: list[str]) -> dict[str, str]:
+    """
+    Check in one query whether any version of each GCA chain has a live genebuild.
+
+    Returns a mapping keyed by full GCA accession, preserving the current
+    "yes"/"no" output used by the frontend.
+    """
+    unique_gcas = sorted({gca for gca in gcas if gca})
+    if not unique_gcas:
+        return {}
+
+    gca_bases = sorted({gca.rsplit(".", 1)[0] for gca in unique_gcas})
+
+    try:
+        with get_db_connection("meta") as conn:
+            if conn is None:
+                logging.error("Failed to obtain metadata database connection.")
+                return {gca: "no" for gca in unique_gcas}
+
+            cursor = conn.cursor()
+            placeholders = ",".join(["%s"] * len(gca_bases))
+            query = f"""
+                SELECT SUBSTRING_INDEX(gca_accession, '.', 1) AS gca_base
+                FROM genebuild_status
+                WHERE SUBSTRING_INDEX(gca_accession, '.', 1) IN ({placeholders})
+                  AND gb_status = 'live'
+                GROUP BY SUBSTRING_INDEX(gca_accession, '.', 1)
+            """
+            cursor.execute(query, tuple(gca_bases))
+            live_bases = {
+                row["gca_base"] for row in cursor.fetchall() if row.get("gca_base")
+            }
+
+        return {
+            gca: "yes" if gca.rsplit(".", 1)[0] in live_bases else "no"
+            for gca in unique_gcas
+        }
+
+    except Exception:
+        logging.exception("Error checking live versions in batch")
+        return {gca: "no" for gca in unique_gcas}
+
+
 def get_filtered_assemblies(
     bioproject_id,
     metric_thresholds,
     asm_level,
     asm_type,
+    pipeline,
     release_date,
     taxon_id,
     current,
@@ -83,6 +130,7 @@ def get_filtered_assemblies(
             metric_thresholds: Dictionary of metric names and their threshold values
             asm_level: List of assembly levels to filter by
             asm_type: List of assembly types to filter by
+            pipeline: List of pipeline names to filter by
             release_date: Filter assemblies released after this date
             taxon_id: NCBI Taxon ID to filter by
             current: Whether to filter for current assemblies only
@@ -386,6 +434,10 @@ def get_filtered_assemblies(
             df_wide = df_wide[df_wide["asm_type"].isin(asm_type)]
             logging.info(f"Filtered assembly types: {asm_type}")
 
+        if pipeline:
+            df_wide = df_wide[df_wide["pipeline"].isin(pipeline)]
+            logging.info(f"Filtered pipelines: {pipeline}")
+
         # Check if any assemblies remain after filtering
         if df_wide.empty:
             return "No assemblies meet the given thresholds.", None, None, None, None
@@ -493,7 +545,12 @@ def get_filtered_assemblies(
         df_wide = df_wide.drop_duplicates(subset=["gca"], keep="first")
 
         # Flag assemblies that have another live version on the same GCA chain.
-        df_wide["other_version_live"] = df_wide["gca"].apply(check_other_version_live)
+        other_version_live_map = get_other_version_live_map(df_wide["gca"].tolist())
+        df_wide["other_version_live"] = df_wide["gca"].map(other_version_live_map)
+
+        # reference_df = get_reference_data_for_accessions(df_wide["gca"].tolist())
+        # if not reference_df.empty:
+        #    df_wide = df_wide.merge(reference_df, on="gca", how="left")
 
         # Create GCA list
         df_gca_list = df_wide[["gca"]]

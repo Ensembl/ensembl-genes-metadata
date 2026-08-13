@@ -53,10 +53,7 @@ export const columns: ColumnDef<Report>[] = [
     accessorKey: "gb_status",
     header: sortableHeader("Status"),
   },
-  {
-    accessorKey: "ftp",
-    header: sortableHeader("FTP"),
-  },
+
   {
     accessorKey: "last_genebuild_update",
     header: sortableHeader("Annotation Date"),
@@ -64,7 +61,7 @@ export const columns: ColumnDef<Report>[] = [
   },
   {
     accessorKey: "release_date",
-    header: sortableHeader("Release Date Beta"),
+    header: sortableHeader("Release Date"),
     cell: ({ row }) => dateCell(row.getValue("release_date")),
   },
   {
@@ -73,12 +70,16 @@ export const columns: ColumnDef<Report>[] = [
   },
   {
     accessorKey: "latest_annotated",
-    header: sortableHeader("Latest GCA Annotated"),
+    header: sortableHeader("Latest Annotated"),
     cell: ({ row }) =>
       row.getValue("latest_annotated") === "Yes" ? (
         <BadgeCheck className="text-foreground w-5 h-5" />
       ) : (
         <Badge className="text-foreground w-5 h-5" />
       ),
+  },
+  {
+    accessorKey: "ftp",
+    header: sortableHeader("FTP"),
   },
 ];
