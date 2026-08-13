@@ -167,7 +167,7 @@ export default function Page() {
               <Button
                 className="w-full sm:w-auto"
                 size="lg"
-                onClick={handleGetRegistryData}
+                onClick={() => void handleGetRegistryData()}
                 disabled={loading}
               >
                 {loading ? (
