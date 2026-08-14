@@ -108,9 +108,13 @@ def generate_report(start_date, end_date, group_name, taxon_id, bioproject_id):
         anno_wide["protein_busco"] = "Not available"
         average_busco = "Not available"
 
+    if "infra_name" not in anno_wide.columns:
+        anno_wide["infra_name"] = ""
+
     main_report = anno_wide[
         [
             "associated_project",
+            "infra_name",
             "gca",
             "genebuilder",
             "gb_status",

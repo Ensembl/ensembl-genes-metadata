@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 export type Report = {
   id: number;
   associated_project: string;
+  infra_name: string;
   gca: string;
   genebuilder: string;
   gb_status: string;
@@ -44,6 +45,10 @@ export const columns: ColumnDef<Report>[] = [
   {
     accessorKey: "associated_project",
     header: sortableHeader("Project"),
+  },
+  {
+    accessorKey: "infra_name",
+    header: sortableHeader("Infra Name"),
   },
   {
     accessorKey: "genebuilder",

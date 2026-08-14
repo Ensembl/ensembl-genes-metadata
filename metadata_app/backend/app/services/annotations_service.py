@@ -198,6 +198,7 @@ def query_meta_registry(annotation_date, taxon_id, bioproject_id, group_name, gc
                     g.group_name,
                     CONCAT(a.gca_chain, '.', a.gca_version) AS gca,
                     a.lowest_taxon_id,
+                    o.infra_name,
                     gb.gb_status,
                     gb.genebuilder,
                     gb.annotation_source,
@@ -219,6 +220,7 @@ def query_meta_registry(annotation_date, taxon_id, bioproject_id, group_name, gc
                 LEFT JOIN assembly a ON gb.assembly_id = a.assembly_id
                 LEFT JOIN bioproject b ON a.assembly_id = b.assembly_id
                 LEFT JOIN species s ON a.lowest_taxon_id = s.lowest_taxon_id
+                LEFT JOIN organism o ON a.assembly_id = o.assembly_id
                 LEFT JOIN custom_group g
                     ON (
                          (g.group_type = 'taxon' AND a.lowest_taxon_id = g.item)
@@ -251,6 +253,7 @@ def query_meta_registry(annotation_date, taxon_id, bioproject_id, group_name, gc
                     a.gca_chain,
                     a.gca_version,
                     a.lowest_taxon_id,
+                    o.infra_name,
                     gb.gb_status,
                     gb.genebuilder,
                     gb.annotation_source,
