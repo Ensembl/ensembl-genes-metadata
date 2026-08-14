@@ -227,9 +227,19 @@ def get_status_updates(merged_df):
         condition_mismatch_date, "release_date_production"
     ]
 
-    # 5–6. last_genebuild_update corrections
+    # 5. Processing/Submitted -> handed_over
+    condition_handed_over = df["status"].isin(
+        ["Processed", "Processing", "Submitted"]
+    ) & (df["gb_status"] != "handed_over")
+    logger.info(f"Handed_over updates: {condition_handed_over.sum()}")
+    df.loc[condition_handed_over, "gb_status_new"] = "handed_over"
+    df.loc[condition_handed_over, "date_status_update_new"] = (
+        pd.Timestamp.today().normalize()
+    )
+
+    # 6-7. last_genebuild_update corrections for live and handed_over rows
     condition_missing_update = (
-        (df["gb_status_new"] == "live")
+        df["gb_status_new"].isin(["live", "handed_over"])
         & df["last_genebuild_update_registry"].isna()
         & df["last_genebuild_update_production"].notna()
     )
@@ -241,7 +251,7 @@ def get_status_updates(merged_df):
     ]
 
     condition_mismatch_update = (
-        (df["gb_status_new"] == "live")
+        df["gb_status_new"].isin(["live", "handed_over"])
         & df["last_genebuild_update_registry"].notna()
         & df["last_genebuild_update_production"].notna()
         & (
@@ -254,7 +264,7 @@ def get_status_updates(merged_df):
         condition_mismatch_update, "last_genebuild_update_production"
     ]
 
-    # 7. Live but missing genebuild_version
+    # 8. Live but missing genebuild_version
     condition_missing_genebuild_version = (
         (df["gb_status_new"] == "live")
         & df["genebuild_version"].isna()
@@ -266,16 +276,6 @@ def get_status_updates(merged_df):
     df.loc[condition_missing_genebuild_version, "genebuild_version_new"] = df.loc[
         condition_missing_genebuild_version, "gb_v_production"
     ]
-
-    # 8. Processing/Submitted → handed_over
-    condition_handed_over = df["status"].isin(
-        ["Processed", "Processing", "Submitted"]
-    ) & (df["gb_status"] != "handed_over")
-    logger.info(f"Handed_over updates: {condition_handed_over.sum()}")
-    df.loc[condition_handed_over, "gb_status_new"] = "handed_over"
-    df.loc[condition_handed_over, "date_status_update_new"] = (
-        pd.Timestamp.today().normalize()
-    )
 
     # ---- Determine changes ----
     status_changed = df["gb_status"] != df["gb_status_new"]
