@@ -31,6 +31,51 @@ Refer to the `README` files inside `backend/` and `frontend/` for component‑sp
 - Docker and Docker Compose
 - (Optional, for direct development) Python / Node.js as required by the backend and frontend
 
+### DB configs
+You need to add a db configs to metadata_app/backend/conf. Add read user everywhere exept where it specifies write in the name
+```bash
+{
+    "meta": {
+        "host": "mysql-ens-genebuild-prod-1",
+        "user": "",
+        "password": "",
+        "database": "gb_assembly_metadata",
+        "port": },
+
+    "meta_write": {
+        "host": "mysql-ens-genebuild-prod-1",
+        "user": "",
+        "password": "",
+        "database": "gb_assembly_metadata",
+        "port": },
+
+    "transcriptomic": {
+        "host": "mysql-ens-genebuild-prod-1",
+        "user": "",
+        "password": "",
+        "database": "gb_transcriptomic_registry",
+        "port": 
+    },
+
+    "prod": {
+    "host": "mysql-ens-production-1",
+    "user": "",
+    "password": "",
+    "database": "ensembl_genome_metadata",
+    "port": 
+  },
+
+  "main": {
+    "host": "mysql-ens-meta-prod-1",
+    "user": "",
+    "password": "",
+    "database": "ensembl_metadata",
+    "port":  }
+}
+
+```
+
+
 
 
 ## Local Development (Without Docker)
