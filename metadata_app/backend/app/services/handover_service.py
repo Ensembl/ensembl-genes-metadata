@@ -196,6 +196,27 @@ def get_ready_to_ho(genebuilder):
                 return "data_error"
             return "other"
 
+        def queue_label(dashboard_status):
+            return {
+                "handed_over": "Handed over",
+                "ready_for_handover": "Ready for handover",
+                "abandoned": "Abandoned",
+                "data_error": "Data error",
+                "in_progress": "In progress",
+                "other": "Other",
+            }.get(dashboard_status, "Other")
+
+        def stale_next_action(status):
+            if status == "check_busco":
+                return "Check for better quality data or set as abandoned"
+            if status in {"poor_genome_busco", "low_genome_busco"}:
+                return "Check if there is a better quality annotation"
+            if status == "insufficient_data":
+                return "Check if there is more transcriptomic data"
+            if status == "in_progress":
+                return "Follow up stale in-progress annotation"
+            return "Review current status and next action"
+
         def assign_pipeline(lowest_taxon_id):
             try:
                 _, _, _, pipeline = assign_clade_and_species(
@@ -261,6 +282,9 @@ def get_ready_to_ho(genebuilder):
                 "days_since_update",
             ],
         ]
+        list_data = list_data.copy()
+        list_data["queue"] = "Data error"
+        list_data["next_action"] = list_data["gb_status"].apply(stale_next_action)
 
         # pending
         count_pending = (
@@ -282,6 +306,11 @@ def get_ready_to_ho(genebuilder):
                 "days_since_update",
             ],
         ]
+        list_pending = list_pending.copy()
+        list_pending["queue"] = "In progress"
+        list_pending["next_action"] = list_pending["gb_status"].apply(
+            stale_next_action
+        )
 
         overview = collapsed.copy()
         overview["dashboard_status"] = overview["gb_status"].apply(overview_grouped_status)
@@ -301,16 +330,7 @@ def get_ready_to_ho(genebuilder):
             & (~overview["dashboard_status"].eq("abandoned") | show_abandoned)
         ].copy()
 
-        overview["queue"] = overview["dashboard_status"].replace(
-            {
-                "handed_over": "Handed over",
-                "ready_for_handover": "Ready for handover",
-                "abandoned": "Abandoned",
-                "data_error": "Data error",
-                "in_progress": "In progress",
-                "other": "Other",
-            }
-        )
+        overview["queue"] = overview["dashboard_status"].apply(queue_label)
         overview["next_action"] = np.select(
             [
                 overview["dashboard_status"].eq("handed_over"),
@@ -406,6 +426,7 @@ def get_ready_to_ho(genebuilder):
                         "gca",
                         "scientific_name",
                         "bioproject_name",
+                        "gb_status",
                         "date_status_update",
                         "core_name",
                     ]

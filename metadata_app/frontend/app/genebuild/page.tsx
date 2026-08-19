@@ -90,6 +90,8 @@ type NeedActionApiItem = {
   gca: string | null;
   scientific_name: string | null;
   gb_status: string | null;
+  queue?: string | null;
+  next_action?: string | null;
   bioproject_name?: string | null;
   date_status_update?: string | null;
   days_since_update?: number | null;
@@ -262,7 +264,7 @@ export default function Page() {
         id: `overview-${item.genebuild_status_id}`,
         gca: stringValue(item.gca, ""),
         scientific_name: stringValue(item.scientific_name),
-        status: stringValue(item.dashboard_status),
+        status: stringValue(item.gb_status),
         queue: stringValue(item.queue),
         action: stringValue(item.next_action, "Review current status and next action"),
         priority: item.priority,
@@ -282,8 +284,8 @@ export default function Page() {
       gca: stringValue(item.gca, ""),
       scientific_name: stringValue(item.scientific_name),
       status: stringValue(item.gb_status),
-      queue: "Data quality",
-      action: "Check BUSCO, transcript/protein evidence, or mark abandoned",
+      queue: stringValue(item.queue),
+      action: stringValue(item.next_action, "Review current status and next action"),
       priority: "high" as const,
       project: stringValue(item.bioproject_name),
       updated: item.date_status_update ?? undefined,
@@ -295,8 +297,8 @@ export default function Page() {
       gca: stringValue(item.gca, ""),
       scientific_name: stringValue(item.scientific_name),
       status: stringValue(item.gb_status),
-      queue: "In progress",
-      action: "Follow up stale in-progress annotation",
+      queue: stringValue(item.queue),
+      action: stringValue(item.next_action, "Review current status and next action"),
       priority: "high" as const,
       project: stringValue(item.bioproject_name),
       updated: item.date_status_update ?? undefined,
