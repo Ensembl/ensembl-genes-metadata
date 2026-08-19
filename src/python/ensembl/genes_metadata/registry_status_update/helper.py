@@ -3,7 +3,7 @@ from logger_settings import get_logger
 
 logger = get_logger(__name__)
 
-def mysql_fetch_data(query, host, user, password, port, database):
+def mysql_fetch_data(query:str, host:str, user:str, password:str, port:int, database:str) -> list[dict]:
     """
     Execute a MySQL query and return the results as a list of dictionaries.
 

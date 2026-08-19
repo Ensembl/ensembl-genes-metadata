@@ -59,7 +59,8 @@ def check_status_production_db(gca_tuple):
                 ensembl_release.release_date,
                 dataset_attribute.value,
                 dataset_attribute.attribute_id,
-                ensembl_release.release_id, 
+                ensembl_release.release_id,
+                genome.suppressed,
                 ensembl_release.is_current as is_current_release
             FROM assembly
             JOIN genome ON assembly.assembly_id = genome.assembly_id
@@ -109,6 +110,7 @@ def check_status_production_db(gca_tuple):
                 "release_date",
                 "release_id",
                 "is_current_release",
+                "suppressed"
             ],
             columns="attribute_id",
             values="value",

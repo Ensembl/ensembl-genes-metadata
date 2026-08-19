@@ -56,7 +56,7 @@ from logger_settings import get_logger
 logger = get_logger(__name__)
 
 
-def get_genebuild_status():
+def get_genebuild_status() -> dict:
     """
     Fetch genebuild status from the registry excluding 'archive' and 'live'.
 
@@ -97,7 +97,7 @@ def get_genebuild_status():
         return
 
 
-def get_status_updates(merged_df):
+def get_status_updates(merged_df: pd.DataFrame) -> pd.DataFrame:
     """
     Determine which GCAs need their genebuild status or release date updated.
     """
@@ -144,17 +144,20 @@ def get_status_updates(merged_df):
     df["date_status_update_new"] = df["date_status_update"]
     df["release_type_new"] = df["release_type"]
 
-    # 1. Faulty entries → skip
+    # 1. Faulty or suppressed entries → mark as faulty or suppressed in the registry
     condition_faulty = df["status"] == "Faulty"
-    faulty_count = condition_faulty.sum()
-    logger.info(f"Production 'Faulty' entries: {faulty_count}")
+    logger.info(f"Faulty updates: {condition_faulty.sum()}")
+    df.loc[condition_faulty, "gb_status_new"] = "faulty"
+    df.loc[condition_faulty, "date_status_update_new"] = (
+        pd.Timestamp.today().normalize()
+    )
 
-    if faulty_count:
-        faulty_path = "faulty_status.csv"
-        df[condition_faulty].to_csv(faulty_path, index=False)
-        logger.info(f"Saved faulty entries to: {faulty_path}")
-        df = df[~condition_faulty].copy()
-        logger.info(f"{len(df)} rows remain after filtering out faulty entries.")
+    condition_suppressed = df["suppressed"] == 1
+    logger.info(f"Suppressed: {condition_suppressed.sum()}")
+    df.loc[condition_suppressed, "gb_status_new"] = "suppressed"
+    df.loc[condition_suppressed, "date_status_update_new"] = (
+        pd.Timestamp.today().normalize()
+    )
 
     # 2. Production Released in current release -> coming_soon, older release -> live
     current_release_ids = df.loc[df["is_current_release"] == 1, "release_id"].dropna()
@@ -277,6 +280,7 @@ def get_status_updates(merged_df):
         condition_missing_genebuild_version, "gb_v_production"
     ]
 
+
     # ---- Determine changes ----
     status_changed = df["gb_status"] != df["gb_status_new"]
     release_changed = ~(
@@ -317,7 +321,7 @@ def get_status_updates(merged_df):
     return updated_df
 
 
-def update_genebuild_status(updated_df, password):
+def update_genebuild_status(updated_df:pd.DataFrame, password:str) -> None:
     """
     Update the genebuild_status table with new statuses, dates info.
     Logs a summary of which columns were updated.
@@ -412,7 +416,7 @@ def update_genebuild_status(updated_df, password):
         connection.close()
 
 
-def main(password, test, apply_method):
+def main(password:str, test:bool, apply_method:str) -> None:
 
     logger.info("Only using the new registry.")
     logger.info("Fetching genebuild status from new registry.")
