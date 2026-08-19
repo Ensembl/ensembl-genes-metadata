@@ -30,6 +30,37 @@ CREATE TABLE assembly_metrics (
   CONSTRAINT metric_record UNIQUE (assembly_id, metrics_name, metrics_value)
 ) ENGINE=MyISAM AUTO_INCREMENT=1 DEFAULT CHARSET=latin1;
 
+DROP TABLE IF EXISTS annotation_events;
+
+CREATE TABLE annotation_events
+(
+    anno_event_id       int auto_increment
+        primary key,
+    genebuild_status_id int          not null,
+    event               varchar(255) not null,
+    value               varchar(255) not null,
+    constraint metric_record
+        unique (genebuild_status_id, event, value)
+)
+    engine = MyISAM
+    charset = latin1;
+
+DROP TABLE IF EXISTS annotation_metrics;
+
+create table annotation_metrics
+(
+    anno_metrics_id     int auto_increment
+        primary key,
+    assembly_id         int          not null,
+    genebuild_status_id int          not null,
+    metrics_name        varchar(255) null,
+    metrics_value       varchar(225) not null,
+    constraint metric_record
+        unique (assembly_id, genebuild_status_id, metrics_name, metrics_value)
+)
+    engine = MyISAM
+    charset = latin1;
+
 
 DROP TABLE IF EXISTS species;
 
@@ -168,7 +199,7 @@ CREATE TABLE genebuild_status (
   genebuild_status_id int NOT NULL AUTO_INCREMENT,
   assembly_id int NOT NULL,
   gca_accession VARCHAR(20) NOT NULL, 
-  gb_status ENUM('in_progress', 'insufficient_data', 'check_busco', 'completed', 'pre_released','handed_over', 'live', 'archive'),
+  gb_status ENUM(enum('in_progress', 'abandoned', 'insufficient_data', 'check_busco', 'completed', 'pre_released', 'handed_over', 'live', 'poor_genome_busco', 'coming_soon', 'faulty', 'suppressed', 'large_sequence')),
   last_attempt int(2),
   genebuilder varchar(20) NOT NULL,
   annotation_source ENUM('ensembl', 'external','import_refseq', 'import_community', 'import_wormbase', 'import_flybase', 'import_genbank', 'import_noninsdc'),
@@ -185,15 +216,19 @@ CREATE TABLE genebuild_status (
 ) ENGINE=MyISAM AUTO_INCREMENT=1 DEFAULT CHARSET=latin1;
 
 
-DROP TABLE IF EXISTS genebuild_metrics;
+DROP TABLE IF EXISTS new_metrics;
 
-CREATE TABLE genebuild_metrics (
-  gb_metrics_id int NOT NULL AUTO_INCREMENT,
-  genebuild_id int NOT NULL,
-  metrics_name varchar(50),
-  metrics_value varchar(225),
-  PRIMARY KEY (`gb_metrics_id`),
-  FOREIGN KEY (`genebuild_id`) REFERENCES genebuild_status(`genebuild_id`)
-) ENGINE=MyISAM AUTO_INCREMENT=1 DEFAULT CHARSET=latin1;
-
+create table new_metrics
+(
+    anno_metrics_id     int auto_increment
+        primary key,
+    assembly_id         int          not null,
+    genebuild_status_id int          not null,
+    metrics_name        varchar(255) null,
+    metrics_value       varchar(225) not null,
+    constraint metric_record
+        unique (assembly_id, genebuild_status_id, metrics_name, metrics_value)
+)
+    engine = MyISAM
+    charset = latin1;
 
