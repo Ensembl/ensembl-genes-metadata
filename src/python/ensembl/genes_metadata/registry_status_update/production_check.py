@@ -61,20 +61,22 @@ def check_status_production_db(gca_tuple):
                 dataset_attribute.attribute_id,
                 ensembl_release.release_id,
                 genome.suppressed,
-                ensembl_release.is_current as is_current_release
+                ensembl_release.is_current as is_current_release,
+                ensembl_release.release_type as prod_type
             FROM assembly
-            JOIN genome ON assembly.assembly_id = genome.assembly_id
-            JOIN genome_release on genome_release.genome_id = genome.genome_id
-            join ensembl_release on genome_release.release_id = ensembl_release.release_id
-            JOIN genome_dataset ON genome.genome_id = genome_dataset.genome_id
-            JOIN dataset ON genome_dataset.dataset_id = dataset.dataset_id
-            JOIN dataset_attribute ON dataset.dataset_id = dataset_attribute.dataset_id
-            join attribute on dataset_attribute.attribute_id = attribute.attribute_id
+            LEFT JOIN genome ON assembly.assembly_id = genome.assembly_id
+            LEFT JOIN genome_release on genome_release.genome_id = genome.genome_id
+            LEFT JOIN ensembl_release on genome_release.release_id = ensembl_release.release_id
+            LEFT JOIN genome_dataset ON genome.genome_id = genome_dataset.genome_id
+            LEFT JOIN dataset ON genome_dataset.dataset_id = dataset.dataset_id
+            LEFT JOIN dataset_attribute ON dataset.dataset_id = dataset_attribute.dataset_id
             WHERE dataset.name = "genebuild"
                 AND assembly.accession IN {gca_tuple}
                 AND genome_dataset.is_current = 1
-                AND attribute.name IN ("genebuild.last_geneset_update", "genebuild.method", "genebuild.version", "genebuild.annotation_source")
-                AND ensembl_release.release_type = "partial"
+                AND dataset_attribute.attribute_id IN (34, 37, 71, 169)                AND (
+                  ensembl_release.release_id IS NULL
+                  OR ensembl_release.release_type NOT IN ("integrated", "archive")
+              )
         """
 
         production_status = mysql_fetch_data(
@@ -100,6 +102,7 @@ def check_status_production_db(gca_tuple):
                     "last_genebuild_update",
                     "release_id",
                     "is_current_release",
+                    "prod_type",
                 ]
             )
 
@@ -110,7 +113,8 @@ def check_status_production_db(gca_tuple):
                 "release_date",
                 "release_id",
                 "is_current_release",
-                "suppressed"
+                "suppressed",
+                "prod_type"
             ],
             columns="attribute_id",
             values="value",
@@ -133,6 +137,8 @@ def check_status_production_db(gca_tuple):
         pivoted["annotation_method"] = pivoted["annotation_method"].apply(
             lambda x: "external_annotation_import" if x == "import" else x
         )
+
+        # keep the latest last genebuild update record
         pivoted["last_genebuild_update"] = pd.to_datetime(
             pivoted["last_genebuild_update"], errors="coerce"
         )
@@ -142,6 +148,7 @@ def check_status_production_db(gca_tuple):
                 ("ENS", "HLX", "EXT", "BRK"), na=False
             )
         ]
+
         pivoted = pivoted.drop_duplicates(subset="gca_accession", keep="last")
 
         logger.info(f"Found {len(pivoted)} entries in production table.")
