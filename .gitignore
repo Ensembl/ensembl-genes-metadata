@@ -1,0 +1,13 @@
+.codex
+*.py[cod]
+.idea
+venv
+.venv
+__pycache__/
+.next
+node_modules
+out
+.DS_Store
+logs/
+metadata_app/backend/logs/
+metadata_app/backend/cache/*.json
