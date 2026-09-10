@@ -1,10 +1,4 @@
-"""
-Connects to registry DB to get live GCA accessions, checks FTP for matching directories,
-and writes a manifest of paths that are safe to delete.
-
-Run as: yourself (no special permissions needed)
-"""
-
+"""Discover live pre-release GCA directories and write a deletion manifest."""
 import argparse
 import ftplib
 import logging
@@ -22,63 +16,66 @@ logging.basicConfig(
 )
 log = logging.getLogger(__name__)
 
-
-# Configuration — override via CLI args or environment
 DEFAULT_DB = dict(
     host="mysql-ens-genebuild-prod-1",
     port=4527,
     user="ensro",
-    password="",  # prefer env var MYSQL_PWD or ~/.my.cnf
+    password="",
     database="gb_assembly_metadata",
     cursorclass=pymysql.cursors.DictCursor,
 )
-
 FTP_HOST = "ftp.ebi.ac.uk"
 FTP_BASE_DIR = "/pub/databases/ensembl/pre-release"
 
 
-# DB helpers
-def get_live_gca_accessions(db_config: dict) -> set[str]:
-    """Return the set of GCA accessions currently live in the database."""
-    log.info("Connecting to database %s@%s …", db_config["database"], db_config["host"])
+def get_latest_status_by_gca(db_config: dict) -> dict[str, str]:
+    """Return the latest metadata status for each GCA accession."""
+    log.info("Connecting to database %s@%s", db_config["database"], db_config["host"])
     conn = pymysql.connect(**db_config)
     try:
         with conn.cursor() as cur:
-            # ----------------------------------------------------------------
-            # !! Adjust table/column names to match your schema !!
-            # ----------------------------------------------------------------
-            sql = """
-                SELECT DISTINCT gca_accession
-                FROM genebuild_status       
-                WHERE  gb_status = 'live'
-            """
-            cur.execute(sql)
+            cur.execute(
+                """
+                SELECT status.gca_accession, status.gb_status
+                FROM genebuild_status AS status
+                JOIN (
+                    SELECT gca_accession,
+                           MAX(genebuild_status_id) AS latest_id
+                    FROM genebuild_status
+                    WHERE gca_accession IS NOT NULL
+                    GROUP BY gca_accession
+                ) AS latest
+                  ON latest.latest_id = status.genebuild_status_id
+                """
+            )
             rows = cur.fetchall()
     finally:
         conn.close()
 
-    accessions = {row["gca_accession"].strip() for row in rows}
-    log.info("Found %d live GCA accessions in DB.", len(accessions))
-    return accessions
+    statuses = {
+        row["gca_accession"].strip(): row["gb_status"] for row in rows
+    }
+    log.info(
+        "Found latest statuses for %d GCA accessions (%d live).",
+        len(statuses),
+        sum(status == "live" for status in statuses.values()),
+    )
+    return statuses
 
 
-# FTP helpers
 def connect_ftp(host: str) -> ftplib.FTP:
-    log.info("Connecting to FTP %s …", host)
+    log.info("Connecting to FTP %s", host)
     ftp = ftplib.FTP(host, timeout=30)
-    # Public FTP: anonymous login (no credentials needed)
     ftp.login()
     ftp.set_pasv(True)
-    log.info("FTP anonymous login successful.")
     return ftp
 
 
 def list_ftp_directory(ftp: ftplib.FTP, path: str) -> list[str]:
-    """Return names of entries directly under *path*, or [] if it doesn't exist."""
     try:
         return ftp.nlst(path)
     except ftplib.error_perm as exc:
-        if "550" in str(exc):  # No such file or directory
+        if "550" in str(exc):
             return []
         raise
 
@@ -86,95 +83,78 @@ def list_ftp_directory(ftp: ftplib.FTP, path: str) -> list[str]:
 def find_gca_directories_on_ftp(
     ftp: ftplib.FTP,
     base_dir: str,
-    live_accessions: set[str],
-) -> list[str]:
-    """
-    Walk the FTP tree under *base_dir* looking one level deep for GCA directories.
+    latest_status_by_gca: dict[str, str],
+) -> list[dict[str, str]]:
+    """Find pre-release GCA directories whose latest status is live."""
+    records = []
+    log.info("Scanning FTP base directory: %s", base_dir)
 
-    Structure assumed:
-        base_dir/<species>/GCA_xxx...
-    """
-    deletable: list[str] = []
-
-    log.info("Scanning FTP base dir (1 level deep): %s", base_dir)
-
-    level1_dirs = list_ftp_directory(ftp, base_dir)
-
-    for lvl1 in level1_dirs:
-        # lvl1 is species directory, e.g. Ajuga_reptans
-        gca_dirs = list_ftp_directory(ftp, lvl1)
-
-        for entry_path in gca_dirs:
-            entry_name = entry_path.split("/")[-1]
-
-            if not entry_name.upper().startswith("GCA_"):
+    for species_path in list_ftp_directory(ftp, base_dir):
+        species = species_path.rstrip("/").split("/")[-1]
+        for entry_path in list_ftp_directory(ftp, species_path):
+            entry_name = entry_path.rstrip("/").split("/")[-1]
+            if not entry_name.startswith("GCA_"):
                 continue
 
-            parts = entry_name.split("_")
-            if len(parts) >= 2:
-                accession = f"{parts[0]}_{parts[1]}"
-            else:
-                accession = entry_name
+            status = latest_status_by_gca.get(entry_name)
+            if status != "live":
+                log.debug("KEEP: %s (latest status: %s)", entry_name, status)
+                continue
 
-            if accession in live_accessions:
-                full_path = f"/nfs/ftp/public{entry_path}"
-                log.info(
-                    "  DELETABLE: %s  (accession %s live)",
-                    full_path,
-                    accession,
-                )
-                deletable.append(full_path)
-            else:
-                log.debug("  KEEP: %s", entry_name)
+            ftp_relative_path = entry_path.removeprefix("/pub/")
+            local_path = f"/nfs/ftp/public/{ftp_relative_path}"
+            records.append(
+                {
+                    "path": local_path,
+                    "species": species,
+                    "gca_accession": entry_name,
+                    "latest_status": status,
+                }
+            )
+            log.info("DELETABLE: %s", local_path)
 
-    log.info(
-        "FTP scan complete. %d deletable director%s found.",
-        len(deletable),
-        "y" if len(deletable) == 1 else "ies",
-    )
-    return deletable
+    log.info("FTP scan complete: %d deletable directories", len(records))
+    return records
 
 
-# Manifest writer
-def write_manifest(paths: list[str], output_file: Path) -> None:
+def write_manifest(records: list[dict[str, str]], output_file: Path) -> None:
     timestamp = datetime.utcnow().isoformat(timespec="seconds") + "Z"
-    with output_file.open("w") as fh:
-        fh.write(f"# Deletion manifest generated {timestamp}\n")
-        fh.write(f"# Total paths: {len(paths)}\n")
-        fh.write("# Hand this file to the deletion script (phase 2).\n\n")
-        for p in sorted(paths):
-            fh.write(p + "\n")
-    log.info("Manifest written to: %s", output_file)
+    with output_file.open("w") as handle:
+        handle.write(f"# Deletion manifest generated {timestamp}\n")
+        handle.write(f"# Total paths: {len(records)}\n")
+        handle.write("# Review this file before deletion.\n")
+        handle.write("path\tspecies\tgca_accession\tlatest_status\taction\n")
+        for record in sorted(records, key=lambda item: item["path"]):
+            handle.write(
+                "{path}\t{species}\t{gca_accession}\t{latest_status}\tdelete\n".format(
+                    **record
+                )
+            )
+    log.info("Manifest written to %s", output_file)
 
 
-# CLI
 def parse_args() -> argparse.Namespace:
-    p = argparse.ArgumentParser(
-        description="Phase 1 — discover FTP dirs with live GCA accessions."
+    parser = argparse.ArgumentParser(
+        description="Discover pre-release directories whose latest status is live."
     )
-    p.add_argument("--db-host", default=DEFAULT_DB["host"])
-    p.add_argument("--db-port", type=int, default=DEFAULT_DB["port"])
-    p.add_argument("--db-user", default=DEFAULT_DB["user"])
-    p.add_argument("--db-password", default=DEFAULT_DB["password"])
-    p.add_argument("--db-name", default=DEFAULT_DB["database"])
-    p.add_argument("--ftp-host", default=FTP_HOST)
-    p.add_argument("--ftp-base", default=FTP_BASE_DIR)
-    p.add_argument(
-        "--output",
-        default="paths_to_delete.txt",
-        help="Path to write the deletion manifest (default: paths_to_delete.txt)",
-    )
-    p.add_argument(
+    parser.add_argument("--db-host", default=DEFAULT_DB["host"])
+    parser.add_argument("--db-port", type=int, default=DEFAULT_DB["port"])
+    parser.add_argument("--db-user", default=DEFAULT_DB["user"])
+    parser.add_argument("--db-password", default=DEFAULT_DB["password"])
+    parser.add_argument("--db-name", default=DEFAULT_DB["database"])
+    parser.add_argument("--ftp-host", default=FTP_HOST)
+    parser.add_argument("--ftp-base", default=FTP_BASE_DIR)
+    parser.add_argument("--output", type=Path, default=Path("paths_to_delete.tsv"))
+    parser.add_argument(
         "--dry-run",
         action="store_true",
-        help="Print paths but do not write the manifest.",
+        help="Print candidate paths without writing a manifest.",
     )
-    return p.parse_args()
+    return parser.parse_args()
 
 
 def main() -> None:
     args = parse_args()
-
     db_config = dict(
         host=args.db_host,
         port=args.db_port,
@@ -184,12 +164,11 @@ def main() -> None:
         cursorclass=pymysql.cursors.DictCursor,
     )
 
-    live_accessions = get_live_gca_accessions(db_config)
-
+    latest_status_by_gca = get_latest_status_by_gca(db_config)
     ftp = connect_ftp(args.ftp_host)
     try:
-        deletable_paths = find_gca_directories_on_ftp(
-            ftp, args.ftp_base, live_accessions
+        records = find_gca_directories_on_ftp(
+            ftp, args.ftp_base, latest_status_by_gca
         )
     finally:
         try:
@@ -197,26 +176,17 @@ def main() -> None:
         except Exception:
             pass
 
-    if not deletable_paths:
-        log.info("Nothing to delete — exiting.")
+    if not records:
+        log.info("Nothing to delete")
         return
 
     if args.dry_run:
-        log.info("DRY RUN — paths that would be written to manifest:")
-        for p in sorted(deletable_paths):
-            print(p)
+        log.info("DRY RUN - candidate paths:")
+        for record in sorted(records, key=lambda item: item["path"]):
+            print(record["path"])
         return
 
-    write_manifest(deletable_paths, Path(args.output))
-    print()
-    print("=" * 60)
-    print("Next step — hand the manifest to the deletion script:")
-    print()
-    print("  1. Copy the manifest to a shared location accessible by genebuild.")
-    print("  2. Switch to the genebuild user")
-    print("  3. Request a datamover node")
-    print("  4. Run:  python delete_live_from_ftp.py --manifest paths_to_delete.txt")
-    print("=" * 60)
+    write_manifest(records, args.output)
 
 
 if __name__ == "__main__":
