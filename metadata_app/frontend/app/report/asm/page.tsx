@@ -1,18 +1,18 @@
 "use client";
 
 import React, { useRef, useState } from "react";
-import {Loader2, Terminal} from "lucide-react";
+import {DownloadIcon, Loader2, Terminal, InfoIcon} from "lucide-react";
 import { useReactToPrint } from 'react-to-print';
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { DataTable } from "@/app/tables/data-table";
-import { Report, columns } from "@/app/tables/asm_report_columns";
+import { DataTable } from "@/components/tables/data-table";
+import { Report, columns } from "@/features/reports/assembly-columns";
 import MultipleSelector, { Option } from "@/components/ui/multi_select";
 import {AsmTaxaCard, NumTaxaItem} from "@/components/ui/rep_asm_num_taxa"
 import {RepTopTaxa, TaxaItem} from "@/components/ui/rep_anno_top_taxa"
 import {ProjectItem, RepProject} from "@/components/ui/repo_anno_project"
-import {Card, CardContent} from "@/components/ui/card";
+import {Card} from "@/components/ui/card";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -24,11 +24,14 @@ import {
 import {Switch} from "@/components/ui/switch";
 import {CladeItem, RepClade} from "@/components/ui/repo_asm_clade";
 import {AsmTypeItem, RepAsmType} from "@/components/ui/repo_asm_type";
+import {AsmLevelItem, RepAsmLevel} from "@/components/ui/repo_asm_level";
 import {TranscItem, TranscCard} from "@/components/ui/rep_asm_transc";
 import {LengthItem, LengthChart} from "@/components/ui/rep_asm_length";
 import {RepTranscENA, TranscENAItem} from "@/components/ui/repo_asm_transc_ena";
 import {Tooltip, TooltipContent, TooltipTrigger} from "@/components/ui/tooltip";
 import {Alert, AlertDescription, AlertTitle} from "@/components/ui/alert";
+import { cleanPayload, parseTaxonIds, splitProjectFilters } from "@/features/shared/filter-utils";
+import { GROUP_NAME_VALUES, PROJECT_OPTIONS } from "@/features/shared/project-options";
 
 
 
@@ -46,28 +49,15 @@ export default function Page() {
     { label: "Report end date", placeholder: "2024-03-05" },
   ];
 
-  const projectOptions: Option[] = [
-    { value: "PRJEB40665", label: "Darwin Tree of Life" },
-    { value: "PRJEB61747", label: "European Reference Genome Atlas/Biodiversity Genomics Europe" },
-    { value: "PRJEB43510", label: "European Reference Genome Atlas" },
-    { value: "PRJNA533106", label: "Earth BioGenome" },
-    { value: "PRJEB47820", label: "European Reference Genome Atlas pilot" },
-    { value: "PRJEB43743", label: "Aquatic Symbiosis" },
-    { value: "PRJNA489243", label: "Vertebrate Genomes" },
-    { value: "PRJNA813333", label: "Canadian BioGenome" },
-    { value: "PRJEB80366", label: "Ancient Environmental Genomics Initiative for Sustainability" },
-    { value: "LACA", label: "Livestock And Companion Animals" },
-    { value: "AQUA-FAANG", label: "Aqua FAANG" },
-      { value: "PRJEB43745", label: "Tree of Life" },
-  ];
-
   const [selectedProjects, setSelectedProjects] = useState<Option[]>([]);
   const [baseFieldValues, setBaseFieldValues] = useState<{ [key: string]: string }>({});
   const [assemblies, setReport] = useState<Report[]>([]);
   const [downloadables, setDownloadables] = useState<Downloadables | null>(null);
   const [loading, setLoading] = useState(false);
   const [candidate, setCandidate] = useState<boolean>(false);
+  const [nonAnnotated, setNonAnnotated] = useState<boolean>(true);
   const [asmtypeData, setAsmType] = useState<AsmTypeItem[]>([]);
+  const [asmlevelData, setAsmLevel] = useState<AsmLevelItem[]>([]);
   const [transcData, setTransc] = useState<TranscItem| null>(null);
   const [taxaData, setTaxa] = useState<NumTaxaItem | null>(null);
   const [topTaxaData, setTopTaxa] = useState<TaxaItem[]>([]);
@@ -79,13 +69,12 @@ export default function Page() {
   const [transc, setTransc_check_reg] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const title = "Generate non-annotated assembly report";
+  const title = "Generate assembly report";
   const description =
-    "Select a biodiversity project or enter a BioProject ID to generate an overview of non-annotated assemblies. Use the optional filters to further customize your report. Generate a table with assemblies and download a PDF report.";
+    "Select a biodiversity project or enter a BioProject ID to generate an overview of assemblies. Use the optional filters to further customize your report. Generate a table with assemblies and download a PDF report.";
 
-  const groupNameValues = ["LACA", "AQUA-FAANG"];
   const hasBioprojectInput =
-  selectedProjects.some(item => !groupNameValues.includes(item.value)) ||
+  selectedProjects.some(item => !GROUP_NAME_VALUES.some((group) => group === item.value)) ||
   (baseFieldValues["BioProject ID"]?.trim() ?? "") !== "";
 
   const handleGetAnnotations = async () => {
@@ -94,63 +83,26 @@ export default function Page() {
 
     setLoading(true);
     try {
-      const bioprojectArray: string[] = [];
-      const groupNames: string[] = [];
-
-      // Parse selection from dropdown
-      selectedProjects.forEach((item) => {
-        if (groupNameValues.includes(item.value)) {
-          groupNames.push(item.value);
-        } else {
-          bioprojectArray.push(item.value);
-        }
-      });
-
-      // Include manually entered BioProject IDs
-      const manualIdInput = baseFieldValues["BioProject ID"];
-      if (manualIdInput) {
-        const manualIds = manualIdInput
-          .split(",")
-          .map((id) => id.trim())
-          .filter((id) => id);
-        bioprojectArray.push(...manualIds);
-      }
-
-      // Remove duplicates
-      const uniqueBioprojects = Array.from(new Set(bioprojectArray));
-
-      let taxonIdArray = null;
-      const taxonInput = baseFieldValues["Taxon ID"];
-
-      if (taxonInput) {
-        if (taxonInput.includes(',')) {
-          taxonIdArray = taxonInput
-            .split(',')
-            .map(id => parseInt(id.trim(), 10))
-            .filter(id => !isNaN(id));
-        } else {
-          const parsed = parseInt(taxonInput.trim(), 10);
-          if (!isNaN(parsed)) {
-            taxonIdArray = [parsed];
-          }
-        }
-      }
+      const { bioprojectIds, groupNames } = splitProjectFilters(
+        selectedProjects,
+        baseFieldValues["BioProject ID"],
+      );
+      const taxonIdArray = parseTaxonIds(baseFieldValues["Taxon ID"]);
 
 
       const payload = {
-        bioproject_id: uniqueBioprojects.length > 0 ? uniqueBioprojects : null,
+        bioproject_id: bioprojectIds.length > 0 ? bioprojectIds : null,
         group_name: groupNames.length > 0 ? groupNames : null,
         taxon_id: taxonIdArray,
         start_date: baseFieldValues["Report start date"] || null,
         end_date: baseFieldValues["Report end date"] || null,
         candidate: candidate,
+        non_annotated: nonAnnotated,
         transc_ena: transc_ena,
         transc: transc,
       };
 
-      const cleanPayload = Object.fromEntries(
-        Object.entries(payload).filter(([_, value]) => value !== null && value !== undefined)
-      );
+      const cleanedPayload = cleanPayload(payload);
 
       const res = await fetch("/api/report/asm/report/asm/filter", {
         method: "POST",
@@ -158,7 +110,7 @@ export default function Page() {
           "Content-Type": "application/json",
           accept: "application/json",
         },
-        body: JSON.stringify(cleanPayload),
+        body: JSON.stringify(cleanedPayload),
       });
 
       if (!res.ok) {
@@ -174,6 +126,7 @@ export default function Page() {
       if (result.rep_asm_main) {
         setReport(result.rep_asm_main);
         setAsmType(result.asm_type_group);
+        setAsmLevel(result.asm_level_group);
         setTransc(result.transc_reg_count);
         setTaxa(result.num_unique_taxa);
         setTopTaxa(result.top_3_taxa);
@@ -239,20 +192,20 @@ export default function Page() {
   });
 
   return (
-    <div className="min-h-screen justify-center flex flex-wrap align-items-center">
-      <div className="container m-16 mt-10 max-w-6xl">
+    <div className="min-h-screen flex justify-center px-4 py-10 sm:px-6 lg:px-8">
+      <div className="w-full max-w-6xl">
         <div className="rounded-2xl border-accent">
-          <div className="rounded-2xl bg-secondary p-8 gap-10 shadow-lg">
+          <div className="rounded-2xl bg-secondary p-4 gap-10 shadow-lg sm:p-8">
             <div className="mb-8">
               <h1 className="text-2xl font-bold mb-2">{title}</h1>
               <p className="text-muted-foreground">{description}</p>
             </div>
-            <div className="grid justify-center grid-cols-2 gap-4">
-              <div className="col-span-2">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="sm:col-span-2">
                 <Label className="mb-3 block">Main projects</Label>
                 <MultipleSelector
                   placeholder="Select projects or groups..."
-                  defaultOptions={projectOptions}
+                  defaultOptions={PROJECT_OPTIONS}
                   onChange={(values) => setSelectedProjects(values)}
                 />
               </div>
@@ -260,7 +213,27 @@ export default function Page() {
 
               {baseFields.map(({ label, placeholder }, index) => (
                 <div key={index}>
-                  <Label htmlFor={label.toLowerCase().replace(" ", "-")}>{label}</Label>
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor={label.toLowerCase().replace(" ", "-")}>{label}</Label>
+                    {(label === "Report start date" || label === "Report end date") && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-5 w-5"
+                            aria-label={`Info for ${label}`}
+                          >
+                            <InfoIcon className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>This will filter based on last update in the registry</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    )}
+                  </div>
                   <Input
                     id={label.toLowerCase().replace(" ", "-")}
                     type="text"
@@ -277,57 +250,58 @@ export default function Page() {
                 </div>
               ))}
 
-              <div className="grid justify-center grid-cols-2 mt-4">
-
-                <div className="flex items-center space-x-2">
+              <div className="grid grid-cols-1 gap-4 mt-4 items-center sm:col-span-2 sm:grid-cols-2 lg:grid-cols-4">
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <div className="flex flex-wrap gap-2">
-                    <Switch
-                      checked={transc_ena}
-                      onCheckedChange={setENA}
-                    />
-                    <Label className="mt-1 block">Check ENA for RNASeq</Label>
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        checked={transc_ena}
+                        onCheckedChange={setENA}
+                      />
+                      <Label>Check ENA for RNASeq</Label>
                     </div>
                   </TooltipTrigger>
-                <TooltipContent>
-                  <p>This will take longer to process</p>
-                </TooltipContent>
+                  <TooltipContent>
+                    <p>This will take longer to process</p>
+                  </TooltipContent>
                 </Tooltip>
+
+                <div className="flex items-center gap-2">
+                  <Switch
+                    checked={transc}
+                    onCheckedChange={setTransc_check_reg}
+                  />
+                  <Label>Check transcriptomic registry</Label>
                 </div>
 
-              <div className="flex flex-wrap gap-2">
-                <Switch
-                  checked={transc}
-                  onCheckedChange={setTransc_check_reg}
-                />
-                <Label className="mt-1 block">Check transcriptomic registry</Label>
-              </div>
-              </div>
-
-              <div className="grid justify-center grid-cols-2 gap-4 mt-4">
-              <div className="flex items-center space-x-2">
                 <Tooltip>
                   <TooltipTrigger asChild>
-                <div className="flex flex-wrap gap-2">
-                <Switch
-                  checked={candidate}
-                  onCheckedChange={setCandidate}
-                />
-                <Label className="mt-1 block">Annotation candidates</Label>
-              </div>
-                    </TooltipTrigger>
-                <TooltipContent>
-                  <p>Contig N50 min. 100.000, chromosome and complete genome.</p>
-                </TooltipContent>
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        checked={candidate}
+                        onCheckedChange={setCandidate}
+                      />
+                      <Label>Annotation candidates</Label>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Contig N50 min. 100.000, chromosome and complete genome.</p>
+                  </TooltipContent>
                 </Tooltip>
+
+                <div className="flex items-center gap-2">
+                  <Switch
+                    checked={nonAnnotated}
+                    onCheckedChange={setNonAnnotated}
+                  />
+                  <Label className="leading-tight">Only show non-annotated assemblies</Label>
                 </div>
-             </div>
+              </div>
 
             </div>
             <div className="mt-6 flex justify-end">
-              <Button className="cursor-pointer" onClick={handleGetAnnotations} disabled={loading}>
-                {loading ? <Loader2 className="animate-spin h-4 w-4 mr-2" /> : "Generate non-annotated assembly report"}
+              <Button className="w-full cursor-pointer sm:w-auto" onClick={handleGetAnnotations} disabled={loading}>
+                {loading ? <Loader2 className="animate-spin h-4 w-4 mr-2" /> : "Generate assembly report"}
               </Button>
             </div>
           </div>
@@ -344,12 +318,14 @@ export default function Page() {
         )}
 
         {assemblies.length > 0 && (
-          <div className="p-8">
-            <div className="flex items-center justify-between mt-4 mb-6">
+          <div className="py-8 sm:p-8">
+            <div className="flex flex-col gap-4 mt-4 mb-6 sm:flex-row sm:items-center sm:justify-between">
               <h1 className="text-xl font-semibold">Assembly report</h1>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline">Download</Button>
+                  <Button variant="outline">
+                    <DownloadIcon className="mr-2 h-4 w-4" />
+                    Download</Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-56" align="end">
                   <DropdownMenuLabel>Download report</DropdownMenuLabel>
@@ -364,10 +340,11 @@ export default function Page() {
               </DropdownMenu>
             </div>
             <div className="grid grid-cols-1 gap-6">
-              <div ref={componentRef} className="grid grid-cols-2 gap-6">
+              <div ref={componentRef} className="grid grid-cols-1 gap-6 lg:grid-cols-2">
                 {!hasBioprojectInput &&
                     <RepProject data={projectData} />}
                 <RepAsmType data={asmtypeData} />
+                <RepAsmLevel data={asmlevelData} />
 
                 {baseFieldValues["Taxon ID"] && (
                   <>
@@ -383,11 +360,11 @@ export default function Page() {
                 <RepTranscENA data={transcenaData} />
                 )}
 
-                <div className="col-span-2">
+                <div className="lg:col-span-2">
                 <RepClade data={cladeData} />
                 </div>
 
-                <div className="col-span-2">
+                <div className="lg:col-span-2">
                 <LengthChart data={lengthData} />
                 </div>
 
@@ -395,14 +372,31 @@ export default function Page() {
 
 
 
-              {/* Full-width annotations table */}
+              {/* Full-width assemblies table */}
               <div>
-                <h2 className="text-xl font-semibold my-8">Assemblies table</h2>
-                <Card>
-                  <CardContent>
-                    <DataTable columns={columns} data={assemblies} />
-                  </CardContent>
-                </Card>
+                <div className="flex items-center justify-between my-8">
+                  <h2 className="text-xl font-semibold">
+                    Assemblies table
+                  </h2>
+
+                  <Button
+                    variant="outline"
+                    onClick={() =>
+                      handleDownload(
+                        downloadables?.rep_asm_wide,
+                        "assembly_report.csv",
+                        "text/csv"
+                      )
+                    }
+                  >
+                    <DownloadIcon className="mr-2 h-4 w-4" />
+                    Download
+                  </Button>
+                </div>
+
+                <div className="rounded-xl border">
+                  <DataTable columns={columns} data={assemblies} />
+                </div>
               </div>
             </div>
           </div>

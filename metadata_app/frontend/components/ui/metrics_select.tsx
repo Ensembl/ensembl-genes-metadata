@@ -61,7 +61,7 @@ export function PopoverWithMultiSelect({
   }
 
 
-  const group1 = ["Assembly level", "Assembly type", "Contig N50", "Sequence length"];
+  const group1 = ["Assembly level", "Assembly type", "Pipeline", "Contig N50", "Sequence length"];
   const group2 = ["GC%", "Genome coverage", "Number of contigs", "Number of scaffolds", "Scaffold N50"];
 
   return (
@@ -69,7 +69,7 @@ export function PopoverWithMultiSelect({
       <PopoverTrigger asChild>
         <Button variant="outline" className="w-full dark:bg-foreground dark:text-background cursor-pointer">
           <ListFilterPlus className="shrink-0" />
-          <span className="hidden lg:inline">Assembly Metrics</span>
+          <span className="hidden lg:inline">More filters</span>
         </Button>
       </PopoverTrigger>
 

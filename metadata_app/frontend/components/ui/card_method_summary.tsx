@@ -125,7 +125,7 @@ const fetchMethodData = async (filtersData: FilterData = {}) => {
         <CardTitle>Annotation method summary</CardTitle>
         <CardDescription>Use the filters below to refine the data</CardDescription>
 
-        <div className="grid grid-cols-2 gap-4 mt-4">
+        <div className="grid grid-cols-1 gap-4 mt-4 sm:grid-cols-2">
 
           <div>
             <FormLabel htmlFor="release_date" className="mb-2 block">Release Date</FormLabel>

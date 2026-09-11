@@ -1,13 +1,13 @@
 "use client";
 
 import React, { useRef, useState } from "react";
-import {Loader2, Terminal} from "lucide-react";
+import {Loader2, Terminal, DownloadIcon, InfoIcon} from "lucide-react";
 import { useReactToPrint } from 'react-to-print';
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { DataTable } from "@/app/tables/data-table";
-import { Report, columns } from "@/app/tables/report_columns";
+import { Report, columns } from "@/features/reports/annotation-columns";
+import { AnnotationDataTable } from "@/features/reports/annotation-data-table";
 import MultipleSelector, { Option } from "@/components/ui/multi_select";
 import {RepStatus, StatusItem} from "@/components/ui/rep_anno_status";
 import {AnnotatedBuscoCard, BuscoItem} from "@/components/ui/rep_anno_busco"
@@ -15,9 +15,14 @@ import {MethodItem, AnoMethodSummaryChart } from "@/components/ui/rep_anno_metho
 import {AnnotatedTaxaCard, NumTaxaItem} from "@/components/ui/rep_anno_num_taxa"
 import {RepTopTaxa, TaxaItem} from "@/components/ui/rep_anno_top_taxa"
 import {ProjectItem, RepProject} from "@/components/ui/repo_anno_project"
-import {Card, CardContent} from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import {DropdownMenu, DropdownMenuContent, DropdownMenuLabel, DropdownMenuItem, DropdownMenuTrigger} from "@/components/ui/dropdown-menu";
+import {CladeItem, RepClade} from "@/components/ui/repo_anno_clade";
+import {CladeLiveItem, RepCladeLive} from "@/components/ui/repo_anno_clade_live";
+import {Tooltip, TooltipContent, TooltipTrigger} from "@/components/ui/tooltip";
+import { cleanPayload, parseTaxonIds, splitProjectFilters } from "@/features/shared/filter-utils";
+import { PROJECT_OPTION_BY_SLUG, PROJECT_OPTIONS } from "@/features/shared/project-options";
+
 
 
 type Downloadables = {
@@ -33,21 +38,6 @@ export default function Page() {
     { label: "Report end date", placeholder: "2024-03-05" },
   ];
 
-  const projectOptions: Option[] = [
-    { value: "PRJEB40665", label: "Darwin Tree of Life" },
-    { value: "PRJEB61747", label: "European Reference Genome Atlas/Biodiversity Genomics Europe" },
-    { value: "PRJEB43510", label: "European Reference Genome Atlas" },
-    { value: "PRJNA533106", label: "Earth BioGenome" },
-    { value: "PRJEB47820", label: "European Reference Genome Atlas pilot" },
-    { value: "PRJEB43743", label: "Aquatic Symbiosis" },
-    { value: "PRJNA489243", label: "Vertebrate Genomes" },
-    { value: "PRJNA813333", label: "Canadian BioGenome" },
-    { value: "PRJEB80366", label: "Ancient Environmental Genomics Initiative for Sustainability" },
-    { value: "LACA", label: "Livestock And Companion Animals" },
-    { value: "AQUA-FAANG", label: "Aqua FAANG" },
-      { value: "PRJEB43745", label: "Tree of Life" },
-  ];
-
   const [selectedProjects, setSelectedProjects] = useState<Option[]>([]);
   const [baseFieldValues, setBaseFieldValues] = useState<{ [key: string]: string }>({});
   const [annotations, setReport] = useState<Report[]>([]);
@@ -59,14 +49,31 @@ export default function Page() {
   const [taxaData, setTaxa] = useState<NumTaxaItem | null>(null);
   const [topTaxaData, setTopTaxa] = useState<TaxaItem[]>([])
   const [projectData, setProject] = useState<ProjectItem[]>([])
+  const [projectLiveData, setProjectLive] = useState<ProjectItem[]>([])
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [cladeData, setClade] = useState<CladeItem[]>([]);
+  const [cladeDataLive, setCladeLive] = useState<CladeLiveItem[]>([]);
+
+  React.useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    const projectSlug = searchParams.get("project");
+
+    if (!projectSlug) {
+      return;
+    }
+
+    const preselectedProject = PROJECT_OPTION_BY_SLUG[projectSlug];
+
+    if (preselectedProject) {
+      setSelectedProjects([preselectedProject]);
+    }
+  }, []);
+
 
 
   const title = "Generate annotation report";
   const description =
     "Select a biodiversity project or enter a BioProject ID to generate an overview of annotations by Genebuild. Use the optional filters to further customize your report. Generate a table with annotations and download a PDF report.";
-
-  const groupNameValues = ["LACA", "AQUA-FAANG"];
 
   const handleGetAnnotations = async () => {
     setErrorMessage(null);
@@ -74,60 +81,22 @@ export default function Page() {
 
     setLoading(true);
     try {
-      const bioprojectArray: string[] = [];
-      const groupNames: string[] = [];
-
-      // Parse selection from dropdown
-      selectedProjects.forEach((item) => {
-        if (groupNameValues.includes(item.value)) {
-          groupNames.push(item.value);
-        } else {
-          bioprojectArray.push(item.value);
-        }
-      });
-
-      // Include manually entered BioProject IDs
-      const manualIdInput = baseFieldValues["BioProject ID"];
-      if (manualIdInput) {
-        const manualIds = manualIdInput
-          .split(",")
-          .map((id) => id.trim())
-          .filter((id) => id);
-        bioprojectArray.push(...manualIds);
-      }
-
-      // Remove duplicates
-      const uniqueBioprojects = Array.from(new Set(bioprojectArray));
-
-      let taxonIdArray = null;
-      const taxonInput = baseFieldValues["Taxon ID"];
-
-      if (taxonInput) {
-        if (taxonInput.includes(',')) {
-          taxonIdArray = taxonInput
-            .split(',')
-            .map(id => parseInt(id.trim(), 10))
-            .filter(id => !isNaN(id));
-        } else {
-          const parsed = parseInt(taxonInput.trim(), 10);
-          if (!isNaN(parsed)) {
-            taxonIdArray = [parsed];
-          }
-        }
-      }
+      const { bioprojectIds, groupNames } = splitProjectFilters(
+        selectedProjects,
+        baseFieldValues["BioProject ID"],
+      );
+      const taxonIdArray = parseTaxonIds(baseFieldValues["Taxon ID"]);
 
 
       const payload = {
-        bioproject_id: uniqueBioprojects.length > 0 ? uniqueBioprojects : null,
+        bioproject_id: bioprojectIds.length > 0 ? bioprojectIds : null,
         group_name: groupNames.length > 0 ? groupNames : null,
         taxon_id: taxonIdArray,
         start_date: baseFieldValues["Report start date"] || null,
         end_date: baseFieldValues["Report end date"] || null
       };
 
-      const cleanPayload = Object.fromEntries(
-        Object.entries(payload).filter(([_, value]) => value !== null && value !== undefined)
-      );
+      const cleanedPayload = cleanPayload(payload);
 
       const res = await fetch("/api/report/anno/report/anno/filter", {
         method: "POST",
@@ -135,7 +104,7 @@ export default function Page() {
           "Content-Type": "application/json",
           accept: "application/json",
         },
-        body: JSON.stringify(cleanPayload),
+        body: JSON.stringify(cleanedPayload),
       });
 
       if (!res.ok) {
@@ -156,6 +125,9 @@ export default function Page() {
         setTaxa(result.num_unique_taxa);
         setTopTaxa(result.top_3_taxa);
         setProject(result.project_report);
+        setProjectLive(result.project_report_live ?? []);
+        setClade(result.clade_group);
+        setCladeLive(result.clade_group_live);
       } else {
         alert("No data found.");
       }
@@ -214,20 +186,21 @@ export default function Page() {
   });
 
   return (
-    <div className="min-h-screen justify-center flex flex-wrap align-items-center">
-      <div className="container m-16 mt-10 max-w-6xl">
+    <div className="min-h-screen flex justify-center px-4 py-10 sm:px-6 lg:px-8">
+      <div className="w-full max-w-6xl">
         <div className="rounded-2xl border-accent">
-          <div className="rounded-2xl bg-secondary p-8 gap-10 shadow-lg">
+          <div className="rounded-2xl bg-secondary p-4 gap-10 shadow-lg sm:p-8">
             <div className="mb-8">
               <h1 className="text-2xl font-bold mb-2">{title}</h1>
               <p className="text-muted-foreground">{description}</p>
             </div>
-            <div className="grid justify-center grid-cols-2 gap-4">
-              <div className="col-span-2">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="sm:col-span-2">
                 <Label className="mb-3 block">Main projects</Label>
                 <MultipleSelector
+                  value={selectedProjects}
                   placeholder="Select projects or groups..."
-                  defaultOptions={projectOptions}
+                  defaultOptions={PROJECT_OPTIONS}
                   onChange={(values) => setSelectedProjects(values)}
                 />
               </div>
@@ -235,7 +208,27 @@ export default function Page() {
 
               {baseFields.map(({ label, placeholder }, index) => (
                 <div key={index}>
-                  <Label htmlFor={label.toLowerCase().replace(" ", "-")}>{label}</Label>
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor={label.toLowerCase().replace(" ", "-")}>{label}</Label>
+                    {(label === "Report start date" || label === "Report end date") && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-5 w-5"
+                            aria-label={`Info for ${label}`}
+                          >
+                            <InfoIcon className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>This will filter based on last update in the registry</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    )}
+                  </div>
                   <Input
                     id={label.toLowerCase().replace(" ", "-")}
                     type="text"
@@ -253,7 +246,7 @@ export default function Page() {
               ))}
             </div>
             <div className="mt-6 flex justify-end">
-              <Button className="cursor-pointer" onClick={handleGetAnnotations} disabled={loading}>
+              <Button className="w-full cursor-pointer sm:w-auto" onClick={handleGetAnnotations} disabled={loading}>
                 {loading ? <Loader2 className="animate-spin h-4 w-4 mr-2" /> : "Generate annotation report"}
               </Button>
             </div>
@@ -271,43 +264,73 @@ export default function Page() {
         )}
 
         {annotations.length > 0 && (
-          <div className="p-8">
-            <div className="flex items-center justify-between mt-4 mb-6">
+          <div className="py-8 sm:p-8">
+            <div className="flex flex-col gap-4 mt-4 mb-6 sm:flex-row sm:items-center sm:justify-between">
               <h1 className="text-xl font-semibold">Annotations report</h1>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline">Download</Button>
+                  <Button variant="outline">
+                    <DownloadIcon className="mr-2 h-4 w-4" />
+                    Download</Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-56" align="end">
                   <DropdownMenuLabel>Download report</DropdownMenuLabel>
                   <DropdownMenuItem onClick={handlePrint}>
                     PDF</DropdownMenuItem>
                   <DropdownMenuItem onClick={() => handleDownload(downloadables?.anno_wide, "annotations_report.csv", "text/csv")}
-                  >CSV</DropdownMenuItem>
+                  >Full CSV</DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
             <div className="grid grid-cols-1 gap-6">
               {/* Two-column card layout */}
-              <div ref={componentRef} className="grid grid-cols-2 gap-6">
+              <div ref={componentRef} className="grid grid-cols-1 gap-6 lg:grid-cols-2">
                 <RepStatus data={statusData} />
                 <RepProject data={projectData} />
+                <RepProject
+                  data={projectLiveData}
+                  title="Live associated biodiversity projects"
+                  description="Number of live annotations per project"
+                />
 
                 <AnnotatedBuscoCard data={buscoData} />
                 <AnoMethodSummaryChart data={methodData} />
 
                 <RepTopTaxa data={topTaxaData} />
                 <AnnotatedTaxaCard data={taxaData} />
+
+                  <div className="lg:col-span-2">
+                <RepClade data={cladeData} />
+                </div>
+                  <div className="lg:col-span-2">
+                <RepCladeLive data={cladeDataLive} />
+                </div>
               </div>
+
 
               {/* Full-width annotations table */}
               <div>
-                <h2 className="text-xl font-semibold my-8">Annotations table</h2>
-                <Card>
-                  <CardContent>
-                    <DataTable columns={columns} data={annotations} />
-                  </CardContent>
-                </Card>
+                <div className="flex items-center justify-between my-8">
+                  <h2 className="text-xl font-semibold">
+                    Annotations table
+                  </h2>
+
+                  <Button
+                    variant="outline"
+                    onClick={() =>
+                      handleDownload(
+                        downloadables?.anno_wide,
+                        "annotations_report.csv",
+                        "text/csv"
+                      )
+                    }
+                  >
+                    <DownloadIcon className="mr-2 h-4 w-4" />
+                    Download
+                  </Button>
+                </div>
+
+                <AnnotationDataTable columns={columns} data={annotations} />
               </div>
             </div>
           </div>

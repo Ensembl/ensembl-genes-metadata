@@ -124,7 +124,7 @@ export function StatusBox({ horeadyCount, dataCount, pendingCount, listData, lis
   });
 
     return (
-      <div className="flex items-center justify-center p-8">
+      <div className="flex items-center justify-center py-8 sm:p-8">
           <div className="@container grow w-full">
 
       <div className="grid grid-cols-1 @3xl:grid-cols-3 gap-8 w-full">
@@ -190,7 +190,7 @@ export function StatusBox({ horeadyCount, dataCount, pendingCount, listData, lis
                         </DrawerDescription>
                       </DrawerHeader>
 
-                        <Card className="mx-16 py-2">
+                        <Card className="mx-4 py-2 sm:mx-16">
                         <CardContent className="max-h-[60vh] overflow-y-auto mb-4">
 
                       <div className={
@@ -286,7 +286,7 @@ export function StatusBox({ horeadyCount, dataCount, pendingCount, listData, lis
                           Here is the list of annotations that have been stuck for more then 6 months as in progress.
                         </DrawerDescription>
                       </DrawerHeader>
-                    <Card className="mx-16 py-2">
+                    <Card className="mx-4 py-2 sm:mx-16">
                         <CardContent className="max-h-[60vh] overflow-y-auto mb-4">
                       <div className={
                             listData && listData.length

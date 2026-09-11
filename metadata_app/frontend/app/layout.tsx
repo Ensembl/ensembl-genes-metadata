@@ -1,16 +1,10 @@
 import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils"
 import { ThemeProvider } from "@/components/theme-provider";
 import { META_THEME_COLORS, siteConfig } from "@/config/site"
 import { SiteHeader } from "@/components/ui/site_header"
-
-
-const inter = Inter({
-  subsets: ['latin'],
-  display: 'swap',
-})
+import Footer from "@/components/ui/footer"
 
 export const metadata: Metadata = {
   title: {
@@ -69,7 +63,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
         </head>
         <body
           className={cn(
-            "min-h-svh bg-background font-sans antialiased"
+            "min-h-svh bg-background font-sans antialiased flex flex-col"
           )}
         >
           <ThemeProvider
@@ -79,8 +73,9 @@ export default function RootLayout({ children }: RootLayoutProps) {
             disableTransitionOnChange
           >
             <SiteHeader />
-            <main>{children}</main>
+            <main className="flex-1">{children}</main>
           </ThemeProvider>
+        <Footer />
         </body>
       </html>
     </>

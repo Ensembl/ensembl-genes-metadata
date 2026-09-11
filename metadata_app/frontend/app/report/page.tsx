@@ -13,6 +13,7 @@ import { ArrowRight } from "lucide-react";
 import { BackgroundGradient } from "@/components/ui/backround-gradient"
 
 
+
 import {CardsReportTable} from "@/components/ui/report_card_table"
 import {ProjectsBar} from "@/components/ui/report_per_year"
 
@@ -24,18 +25,18 @@ export default function ReportSelectorPage() {
 
 
   return (
-    <div className="flex items-center justify-center mt-15">
-      <div className="grid max-w-6xl gap-8">
-        <h1 className="scroll-m-20 text-4xl font-extrabold tracking-tight text-balance">{title}</h1>
-        <p className="leading-7 [&:not(:first-child)]:mt-6">{description}</p>
-        <div className="grid grid-cols-2 gap-4 justify-center">
-         <BackgroundGradient>
-            <Link href="/report/asm" className="group">
-            <Card className="relative hover:shadow-lg transition-shadow cursor-pointer h-full dark:bg-secondary">
+    <div className="mt-10 flex w-full justify-center overflow-x-hidden px-4 sm:px-6 lg:px-8">
+      <div className="grid w-full min-w-0 max-w-6xl gap-8">
+        <h1 className="scroll-m-20 break-words text-3xl font-extrabold tracking-tight text-balance sm:text-4xl">{title}</h1>
+        <p className="max-w-full break-words leading-7 [&:not(:first-child)]:mt-6">{description}</p>
+        <div className="grid w-full min-w-0 auto-rows-fr grid-cols-1 items-stretch gap-4 md:grid-cols-2">
+         <BackgroundGradient containerClassName="h-full min-w-0" className="flex h-full min-w-0">
+            <Link href="/report/asm" className="group flex h-full w-full min-w-0">
+            <Card className="relative h-full w-full min-w-0 cursor-pointer hover:shadow-lg transition-shadow dark:bg-secondary">
                 <CardHeader>
-                <CardTitle>Non-annotated assemblies</CardTitle>
+                <CardTitle>Assemblies</CardTitle>
                 <CardDescription>
-                  Create a report on available non-annotated assemblies
+                  Create a report on available assemblies
                 </CardDescription>
               </CardHeader>
               <CardContent className="absolute bottom-4 right-4">
@@ -44,9 +45,9 @@ export default function ReportSelectorPage() {
             </Card>
           </Link>
              </BackgroundGradient>
-        <BackgroundGradient>
-          <Link href="/report/anno" className="group">
-            <Card className="relative hover:shadow-lg transition-shadow cursor-pointer h-full dark:bg-secondary">
+        <BackgroundGradient containerClassName="h-full min-w-0" className="flex h-full min-w-0">
+          <Link href="/report/anno" className="group flex h-full w-full min-w-0">
+            <Card className="relative h-full w-full min-w-0 cursor-pointer hover:shadow-lg transition-shadow dark:bg-secondary">
               <CardHeader>
                 <CardTitle>Annotations</CardTitle>
                 <CardDescription>
@@ -65,11 +66,11 @@ export default function ReportSelectorPage() {
           Quick overview
         </h2>
 
-        <div>
+        <div className="min-w-0">
           <ProjectsBar></ProjectsBar>
         </div>
 
-        <div className="mb-8">
+        <div className="mb-8 min-w-0">
           <CardsReportTable></CardsReportTable>
         </div>
 

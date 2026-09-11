@@ -72,7 +72,7 @@ const transformedData = React.useMemo(() => {
               cursor={false}
               content={<ChartTooltipContent />}
             />
-          <Bar dataKey="count" fill="var(--color-chart-1)" radius={8}>
+          <Bar dataKey="count" fill="var(--color-chart-3)" radius={8}>
               <LabelList
                 position="top"
                 offset={12}

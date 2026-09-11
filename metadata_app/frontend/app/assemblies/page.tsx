@@ -1,24 +1,28 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import {XCircle, Loader2, Terminal, InfoIcon} from "lucide-react";
+import React, { useEffect, useMemo, useState } from "react";
+import { type ColumnDef, type RowSelectionState } from "@tanstack/react-table";
+import {XCircle, Loader2, Terminal, InfoIcon, DownloadIcon, Sparkles} from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
+import { CopyButton } from "@/components/ui/button-copy";
 import { PopoverWithMultiSelect } from "@/components/ui/metrics_select";
 import MultipleSelector, { Option } from "@/components/ui/multi_select";
 import {
   ToggleGroup,
   ToggleGroupItem,
 } from "@/components/ui/assembly_toggle";
-import { Assemblies, columns } from "@/app/tables/assemblies_columns";
-import { DataTable } from "@/app/tables/data-table";
+import { Assemblies, columns } from "@/features/assemblies/columns";
+import { DataTable } from "@/components/tables/data-table";
 import {cn} from "@/lib/utils";
-import {StartAnnotationDialog} from "@/components/start_anno_dialog";
 import {Tooltip, TooltipContent, TooltipTrigger} from "@/components/ui/tooltip";
 import {Alert, AlertDescription, AlertTitle} from "@/components/ui/alert";
 import {InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput} from "@/components/ui/input-group";
+import { cleanPayload, parseTaxonIds, splitCommaSeparated, splitProjectFilters } from "@/features/shared/filter-utils";
+import { PROJECT_OPTIONS } from "@/features/shared/project-options";
 
 
 
@@ -27,22 +31,6 @@ export default function Page() {
     { label: "BioProject ID", placeholder: "PRJNA123456"},
     { label: "Taxon ID", placeholder: "9606" },
     { label: "Release date", placeholder: "2024-12-31" },
-  ];
-
-  const projectOptions: Option[] = [
-    { value: "PRJEB40665", label: "Darwin Tree of Life" },
-    { value: "PRJEB61747", label: "European Reference Genome Atlas/Biodiversity Genomics Europe" },
-    { value: "PRJEB43510", label: "European Reference Genome Atlas" },
-    { value: "PRJNA533106", label: "Earth BioGenome" },
-    { value: "PRJEB47820", label: "European Reference Genome Atlas pilot" },
-    { value: "PRJEB43743", label: "Aquatic Symbiosis" },
-    { value: "PRJNA489243", label: "Vertebrate Genomes" },
-    { value: "PRJEB80366", label: "Ancient Environmental Genomics Initiative for Sustainability" },
-    { value: "PRJNA813333", label: "Canadian BioGenome" },
-    { value: "LACA", label: "Livestock And Companion Animals" },
-    { value: "AQUA-FAANG", label: "Aqua FAANG" },
-      { value: "PRJEB43745", label: "Tree of Life" },
-
   ];
 
   const [selectedProjects, setSelectedProjects] = useState<Option[]>([]);
@@ -63,8 +51,9 @@ export default function Page() {
   } | null>(null);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-
-  const groupNameValues = ["LACA", "AQUA-FAANG"];
+  const [filterShortReadPresent, setFilterShortReadPresent] = useState(true);
+  const [filterLongReadPresent, setFilterLongReadPresent] = useState(false);
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
 
   const isNumeric = (value: string) => /^\d+(\.\d+)?$/.test(value);
 
@@ -73,9 +62,10 @@ export default function Page() {
   };
 
   const handleGetResults = async () => {
-      // Reset states at the beginning
+    // Reset states at the beginning
     setErrorMessage(null);
     setAssemblies([]);
+    setRowSelection({});
 
     // Validate numeric inputs before proceeding
     for (const [metric, value] of Object.entries(metricValues)) {
@@ -88,76 +78,36 @@ export default function Page() {
     setLoading(true);
 
     try {
-      const bioprojectArray: string[] = [];
-      const groupNames: string[] = [];
+      const { bioprojectIds, groupNames } = splitProjectFilters(
+        selectedProjects,
+        baseFieldValues["BioProject ID"],
+      );
 
-      // Parse selection from dropdown
-      selectedProjects.forEach((item) => {
-        if (groupNameValues.includes(item.value)) {
-          groupNames.push(item.value);
-        } else {
-          bioprojectArray.push(item.value);
-        }
-      });
-
-      // Include manually entered BioProject IDs
-      const manualIdInput = baseFieldValues["BioProject ID"];
-      if (manualIdInput) {
-        const manualIds = manualIdInput
-          .split(",")
-          .map((id) => id.trim())
-          .filter((id) => id);
-        bioprojectArray.push(...manualIds);
-      }
-
-      // Remove duplicates
-      const uniqueBioprojects = Array.from(new Set(bioprojectArray));
-
-      // Format metric thresholds
-      const metric_thresholds: Record<string, number> = {};      Object.entries(metricValues)
-        .filter(([_, value]) => value) // Only include fields with values
+      const metric_thresholds: Record<string, number> = {};
+      Object.entries(metricValues)
+        .filter(([, value]) => value) // Only include fields with values
         .forEach(([metric, value]) => {
           metric_thresholds[metric] = Number(value);
         });
 
-      // Get Assembly Level and Assembly Type values from toggleStates
+      // Get Assembly Level, Assembly Type, and Pipeline values from toggleStates
       const asm_level = toggleStates["Assembly level"] || null;
       const asm_type = toggleStates["Assembly type"] || null;
+      const pipeline = (toggleStates["Pipeline"] || []).map((value) => {
+        return value.toLowerCase();
+      });
 
-      // Format taxon_id as number
-      let taxonIdArray = null;
-      const taxonInput = baseFieldValues["Taxon ID"];
-
-      if (taxonInput) {
-        if (taxonInput.includes(',')) {
-          taxonIdArray = taxonInput
-            .split(',')
-            .map(id => parseInt(id.trim(), 10))
-            .filter(id => !isNaN(id));
-        } else {
-          const parsed = parseInt(taxonInput.trim(), 10);
-          if (!isNaN(parsed)) {
-            taxonIdArray = [parsed];
-          }
-        }
-      }
-
-      // Parse GCA(s)
-      let uniqueGCA: string[] = [];
-      if (gcaInput) {
-        uniqueGCA = gcaInput
-          .split(",")
-          .map((id) => id.trim())
-          .filter((id) => id);
-      }
+      const taxonIdArray = parseTaxonIds(baseFieldValues["Taxon ID"]);
+      const uniqueGCA = splitCommaSeparated(gcaInput);
 
       // Format the payload according to API expectations
       const payload = {
-        bioproject_id: uniqueBioprojects.length > 0 ? uniqueBioprojects : null,
+        bioproject_id: bioprojectIds.length > 0 ? bioprojectIds : null,
         group_name: groupNames.length > 0 ? groupNames : null,
         metric_thresholds: Object.keys(metric_thresholds).length > 0 ? metric_thresholds : null,
         asm_level: asm_level,
         asm_type: asm_type,
+        pipeline: pipeline.length > 0 ? pipeline : null,
         release_date: baseFieldValues["Release date"] || null,
         taxon_id: taxonIdArray,
         current: checkCurrent,
@@ -177,7 +127,7 @@ export default function Page() {
           "Content-Type": "application/json",
           "accept": "application/json"
         },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(cleanPayload(payload)),
       });
 
       if (!res.ok) {
@@ -276,6 +226,10 @@ export default function Page() {
         "diploid",
       ],
     },
+    {
+      label: "Pipeline",
+      options: ["Main", "Annotation", "HPRC"],
+    },
   ];
 
   const hasToggleGroup = selectedMetrics.some((metric) =>
@@ -286,18 +240,82 @@ export default function Page() {
     !toggleMetrics.some((tm) => tm.label === metric)
   );
 
+  const filteredAssemblies = useMemo(() => {
+    if (!checkENA) {
+      return assemblies;
+    }
+
+    return assemblies.filter((assembly) => {
+      const hasShortReadData =
+        Number(assembly.short_read_paired_end_illumina_lowest ?? 0) > 0 ||
+        Number(assembly.short_read_paired_end_illumina ?? 0) > 0;
+      const hasLongReadData = Number(assembly.long_read_pacbio ?? 0) > 0;
+
+      if (filterShortReadPresent && !hasShortReadData) {
+        return false;
+      }
+
+      if (filterLongReadPresent && !hasLongReadData) {
+        return false;
+      }
+
+      return true;
+    });
+  }, [assemblies, checkENA, filterLongReadPresent, filterShortReadPresent]);
+
+  const selectableColumns = useMemo<ColumnDef<Assemblies>[]>(() => [
+    {
+      id: "select",
+      header: ({ table }) => (
+        <Checkbox
+          checked={
+            table.getIsAllPageRowsSelected() ||
+            (table.getIsSomePageRowsSelected() && "indeterminate")
+          }
+          onCheckedChange={(value) => table.toggleAllPageRowsSelected(Boolean(value))}
+          aria-label="Select all rows"
+        />
+      ),
+      cell: ({ row }) => (
+        <Checkbox
+          checked={row.getIsSelected()}
+          onCheckedChange={(value) => row.toggleSelected(Boolean(value))}
+          aria-label={`Select ${row.original.gca}`}
+        />
+      ),
+      enableSorting: false,
+    },
+    ...columns,
+  ], []);
+
+  const selectedAssemblies = useMemo(
+    () => filteredAssemblies.filter((assembly) => rowSelection[assembly.gca]),
+    [filteredAssemblies, rowSelection],
+  );
+  const selectedGcaText = useMemo(
+    () => selectedAssemblies.map((assembly) => assembly.gca).join("\n"),
+    [selectedAssemblies],
+  );
+  const quickFiltersActive =
+    checkENA && (filterShortReadPresent || filterLongReadPresent);
+  const quickFiltersEmptiedTable =
+    assemblies.length > 0 && filteredAssemblies.length === 0 && quickFiltersActive;
+
   return (
-    <div className="min-h-screen justify-center flex flex-wrap align-items-center">
-      <div className="container m-16 mt-10 max-w-6xl">
+    <div className="min-h-screen flex justify-center px-4 py-10 sm:px-6 lg:px-8">
+      <div className="w-full max-w-6xl">
         <div className="rounded-2xl border-accent shadow-lg">
           {/* Filter Section */}
-          <div className="rounded-t-2xl bg-secondary p-8 gap-10">
-            <div className="grid justify-center grid-cols-2 gap-4 mb-4">
+          <div className="rounded-t-2xl bg-secondary p-4 gap-10 sm:p-8">
+            <div className="mb-6">
+              <h1 className="text-2xl font-bold">Set filters</h1>
+            </div>
+            <div className="grid grid-cols-1 gap-4 mb-4 md:grid-cols-2">
             <div>
                 <Label className="mb-3 block">Select project name</Label>
                 <MultipleSelector
                   placeholder="Select projects or groups..."
-                  defaultOptions={projectOptions}
+                  defaultOptions={PROJECT_OPTIONS}
                   onChange={(values) => setSelectedProjects(values)}
                 />
               </div>
@@ -329,7 +347,7 @@ export default function Page() {
 
               </div>
               </div>
-            <div className="grid justify-center grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
 
 
               {baseFields.map(({ label, placeholder }, index) => (
@@ -361,7 +379,7 @@ export default function Page() {
               </div>
             </div>
 
-            <div className="flex gap-10 mt-6">
+            <div className="grid grid-cols-1 gap-4 mt-6 sm:grid-cols-2 lg:grid-cols-4">
 
               <div className="flex items-center space-x-2">
                 <Tooltip>
@@ -396,7 +414,7 @@ export default function Page() {
           {selectedMetrics.length > 0 && (
           <div
             className={cn(
-              "bg-color-sidebar-accent dark:border-x-2 dark:border-b-2 rounded-b-2xl flex flex-col p-8",
+              "bg-color-sidebar-accent dark:border-x-2 dark:border-b-2 rounded-b-2xl flex flex-col p-4 sm:p-8",
               hasToggleGroup && hasInputFields && "space-y-8"
             )}
           >
@@ -445,7 +463,7 @@ export default function Page() {
             )}
 
             {hasInputFields && (
-              <div className="grid grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 {selectedMetrics.map((metric) =>
                   !toggleMetrics.some((tm) => tm.label === metric) ? (
                     <div key={metric}>
@@ -488,14 +506,17 @@ export default function Page() {
 
         {/* Get Results Button */}
         <div className="mt-8 flex justify-end">
-          <Button className="cursor-pointer" size="lg" onClick={handleGetResults} disabled={loading}>
+          <Button className="w-full cursor-pointer sm:w-auto" size="lg" onClick={handleGetResults} disabled={loading}>
             {loading ? (
               <>
                 <Loader2 className="animate-spin mr-2" />
                 Loading...
               </>
             ) : (
-              "Get Assemblies"
+              <>
+                <Sparkles className="mr-2" />
+                Get Assemblies
+              </>
             )}
           </Button>
         </div>
@@ -513,16 +534,22 @@ export default function Page() {
         {/* Results */}
         {assemblies.length > 0 &&  (
           <div className="mt-10 shadow-lg border border:border rounded-2xl">
-            <div className="flex items-center justify-between px-8 py-6 border-b border:border">
-              <h2 className="text-lg font-semibold">Filtered Assemblies ({assemblies.length}) </h2>
-              <div className="flex gap-2">
-                {/* Download GCA List (.txt) */}
-                <Button
-                  variant="outline"
-                  onClick={() => handleDownload(downloadables?.gca_list, "filtered_gca_list.txt")}
-                >
-                  Download GCA List
-                </Button>
+            <div className="flex flex-col gap-4 px-4 py-6 border-b border:border sm:px-8 md:flex-row md:items-center md:justify-between">
+              <h2 className="text-lg font-semibold">Filtered Assemblies ({filteredAssemblies.length}) </h2>
+              <div className="grid w-full grid-cols-1 gap-2 sm:grid-cols-2 md:w-auto md:flex">
+                {selectedAssemblies.length > 0 ? (
+                  <CopyButton
+                    text={selectedGcaText}
+                    defaultLabel="Copy selected GCAs"
+                  />
+                ) : (
+                  <Button
+                    variant="outline"
+                    onClick={() => handleDownload(downloadables?.gca_list, "filtered_gca_list.txt")}
+                  >
+                    Download GCA List
+                  </Button>
+                )}
 
 
                 {/* Download Full Table from Backend */}
@@ -530,15 +557,57 @@ export default function Page() {
                   variant="outline"
                   onClick={() => handleDownload(downloadables?.df_wide, "full_table_filtered_assemblies.csv", "text/csv")}
                 >
+                  <DownloadIcon></DownloadIcon>
                   Download Full Table
                 </Button>
 
-                {/* Annotation start button */}
-                <StartAnnotationDialog/>
-
               </div>
             </div>
-            <DataTable columns={columns} data={assemblies} />
+            {checkENA && (
+              <div className="border-b border:border px-4 py-4 sm:px-8">
+                <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center">
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="quick-filter-short-read"
+                      checked={filterShortReadPresent}
+                      onCheckedChange={setFilterShortReadPresent}
+                    />
+                    <Label htmlFor="quick-filter-short-read">
+                      Only show records with short read data
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="quick-filter-long-read"
+                      checked={filterLongReadPresent}
+                      onCheckedChange={setFilterLongReadPresent}
+                    />
+                    <Label htmlFor="quick-filter-long-read">
+                      Only show records with long read data
+                    </Label>
+                  </div>
+                </div>
+              </div>
+            )}
+            {quickFiltersEmptiedTable && (
+              <div className="border-b border:border px-4 py-4 sm:px-8">
+                <Alert>
+                  <InfoIcon />
+                  <AlertTitle>Warning</AlertTitle>
+                  <AlertDescription>
+                    The quick filters are currently on, so all rows are hidden. Turn off one or both quick filters to see the matching assemblies again.
+                  </AlertDescription>
+                </Alert>
+              </div>
+            )}
+            <DataTable
+              columns={selectableColumns}
+              data={filteredAssemblies}
+              enableRowSelection
+              getRowId={(row) => row.gca}
+              onRowSelectionChange={setRowSelection}
+              rowSelection={rowSelection}
+            />
           </div>
         )}
       </div>

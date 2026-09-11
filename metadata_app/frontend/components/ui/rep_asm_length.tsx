@@ -23,7 +23,7 @@ import {
 } from "recharts"
 
 const chartConfig: Record<string, { label: string; color?: string }> = {
-  total_sequence_length_Gb: { label: "Genome size", color: "var(--chart-1)" },
+  total_sequence_length_Gb: { label: "Genome size", color: "var(--chart-3)" },
 } satisfies ChartConfig
 
 export type LengthItem = {
@@ -73,7 +73,7 @@ export function LengthChart({ data }: Props) {
               <Scatter
                 name="Genome size"
                 data={data}
-                fill="var(--chart-1)"
+                fill="var(--chart-3)"
               />
             </ScatterChart>
           </ResponsiveContainer>

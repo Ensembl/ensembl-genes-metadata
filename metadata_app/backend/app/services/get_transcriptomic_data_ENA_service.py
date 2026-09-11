@@ -1,64 +1,78 @@
-import logging
 import asyncio
+import json
+import logging
+import time
+from pathlib import Path
+
 import aiohttp
 import pandas as pd
-import os
-import json
-import time
 
 ENA_BASE_URL = "https://www.ebi.ac.uk/ena/portal/api/search?display=report&domain=read&result=read_run&fields=sample_accession,run_accession,fastq_ftp,read_count,instrument_platform"
-MAX_RETRIES = 5  # Maximum number of retries for failed requests
-CONCURRENT_LIMIT = 5  # Maximum concurrent API requests
+MAX_RETRIES = 5
+CONCURRENT_LIMIT = 5
 
-CACHE_FILE = "metadata_app/backend/cache/ena_cache.json"
-CACHE_TTL = 90 * 24 * 60 * 60  #3 months in seconds
+BACKEND_ROOT = Path(__file__).resolve().parents[2]
+CACHE_FILE = BACKEND_ROOT / "cache" / "ena_cache.json"
+CACHE_TTL = 90 * 24 * 60 * 60
 
 
 def load_cache():
-    if os.path.exists(CACHE_FILE):
+    if CACHE_FILE.exists():
         try:
-            with open(CACHE_FILE, "r") as f:
-                return json.load(f)
+            with CACHE_FILE.open("r", encoding="utf-8") as handle:
+                return json.load(handle)
         except json.JSONDecodeError:
             return {}
     return {}
 
 
 def save_cache(cache):
-    with open(CACHE_FILE, "w") as f:
-        json.dump(cache, f)
+    CACHE_FILE.parent.mkdir(parents=True, exist_ok=True)
+    with CACHE_FILE.open("w", encoding="utf-8") as handle:
+        json.dump(cache, handle)
 
 
 async def ena_rest_api(session, query, semaphore):
-    """Asynchronous function to query ENA API with rate limiting and retries."""
+    """Query the ENA API with rate limiting and retries."""
     search_url = f"{ENA_BASE_URL}&query={query}"
 
     for attempt in range(MAX_RETRIES):
         try:
-            async with semaphore:  # Limit concurrent tasks
+            async with semaphore:
                 async with session.get(search_url) as response:
                     if response.status == 200:
                         text = await response.text()
-                        results = text.strip().split("\n")[1:]  # Ignore header row
+                        results = text.strip().split("\n")[1:]
                         return len(results)
-                    elif response.status == 429:  # Too Many Requests
+                    if response.status == 429:
                         wait_time = 2 ** attempt
-                        logging.warning(f"Rate limited. Retrying in {wait_time} seconds...")
+                        logging.warning(
+                            "Rate limited by ENA. Retrying in %s seconds...",
+                            wait_time,
+                        )
                         await asyncio.sleep(wait_time)
                     else:
                         response.raise_for_status()
 
-        except (aiohttp.ClientResponseError, aiohttp.ClientConnectorError, aiohttp.ClientOSError) as e:
+        except (
+            aiohttp.ClientResponseError,
+            aiohttp.ClientConnectorError,
+            aiohttp.ClientOSError,
+        ) as exc:
             wait_time = 2 ** attempt
-            logging.warning(f"Request failed: {e}. Retrying in {wait_time} seconds...")
+            logging.warning(
+                "ENA request failed: %s. Retrying in %s seconds...",
+                exc,
+                wait_time,
+            )
             await asyncio.sleep(wait_time)
 
-    logging.error(f"Failed to fetch data after {MAX_RETRIES} retries: {search_url}")
+    logging.error("Failed to fetch ENA data after %s retries: %s", MAX_RETRIES, search_url)
     return 0
 
 
 async def check_data_from_ena(taxon_id, tree, semaphore, cache, now):
-    """Query ENA API for sequencing run counts using controlled concurrency + shared cache dict."""
+    """Query ENA API for sequencing run counts using a shared cache."""
     cache_key = f"{taxon_id}:{tree}"
 
     if cache_key in cache and now - cache[cache_key]["timestamp"] < CACHE_TTL:
@@ -68,11 +82,14 @@ async def check_data_from_ena(taxon_id, tree, semaphore, cache, now):
     queries = {
         "short_read_paired_end_illumina": f"{query_base} AND instrument_platform=ILLUMINA AND library_layout=PAIRED AND library_source=TRANSCRIPTOMIC",
         "long_read_pacbio": f"{query_base} AND instrument_platform=PACBIO_SMRT AND library_source=TRANSCRIPTOMIC",
-        "long_read_onp": f"{query_base} AND instrument_platform=OXFORD_NANOPORE AND library_source=TRANSCRIPTOMIC"
+        "long_read_onp": f"{query_base} AND instrument_platform=OXFORD_NANOPORE AND library_source=TRANSCRIPTOMIC",
     }
 
     async with aiohttp.ClientSession() as session:
-        tasks = {key: ena_rest_api(session, query, semaphore) for key, query in queries.items()}
+        tasks = {
+            key: ena_rest_api(session, query, semaphore)
+            for key, query in queries.items()
+        }
         results = await asyncio.gather(*tasks.values())
 
     data = {"taxon_id": taxon_id, **dict(zip(queries.keys(), results))}
@@ -82,15 +99,22 @@ async def check_data_from_ena(taxon_id, tree, semaphore, cache, now):
 
 
 def add_data_from_ena(df):
-    """Check transcriptomic data for each taxon_id in the dataset (cached)."""
+    """Check transcriptomic data for each taxon_id in the dataset."""
     logging.info("Transcriptomic data check from ENA requested")
 
-    # Collect unique taxon IDs
-    taxon_ids = {int(tid) for tid in pd.concat([
-        df["lowest_taxon_id"], df["species_taxon_id"], df["genus_taxon_id"]
-    ]).dropna().unique()}
+    taxon_ids = {
+        int(taxon_id)
+        for taxon_id in pd.concat(
+            [df["lowest_taxon_id"], df["species_taxon_id"], df["genus_taxon_id"]]
+        )
+        .dropna()
+        .unique()
+    }
 
-    logging.info(f"Found {len(taxon_ids)} valid taxon IDs for transcriptomic data check")
+    logging.info(
+        "Found %s valid taxon IDs for transcriptomic data check",
+        len(taxon_ids),
+    )
 
     cache = load_cache()
     now = time.time()
@@ -98,19 +122,20 @@ def add_data_from_ena(df):
 
     async def fetch_transcriptomic_data():
         tasks = [
-            check_data_from_ena(taxon_id, tree=True, semaphore=semaphore, cache=cache, now=now)
+            check_data_from_ena(
+                taxon_id,
+                tree=True,
+                semaphore=semaphore,
+                cache=cache,
+                now=now,
+            )
             for taxon_id in taxon_ids
         ]
         return await asyncio.gather(*tasks)
 
     transcriptomic_results = asyncio.run(fetch_transcriptomic_data())
-
-    # Save cache once after all requests
     save_cache(cache)
 
-    # Create DataFrame and keep only lowercase underscore columns
     transcriptomic_df = pd.DataFrame(transcriptomic_results)
-    # Print all columns before filtering
-
     logging.info("ENA check for transcriptomic data finished")
     return transcriptomic_df

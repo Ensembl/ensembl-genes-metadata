@@ -7,7 +7,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Check, ChevronsUpDown } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 const people = [
   {
@@ -51,6 +51,13 @@ const people = [
         imageUrl: "https://content.embl.org/sites/default/files/persons/CP-60025510.jpg",
 
   },
+    {
+    name: "Jenni",
+    role: "westoby",
+        imageUrl: "https://content.embl.org/sites/default/files/persons/CP-60101370.jpg",
+
+  },
+
 ];
 
 type SelectUserProps = {
@@ -59,16 +66,27 @@ type SelectUserProps = {
     role: string;
     imageUrl: string;
   }) => void;
+  value?: string | null;
   placeholder?: string;
 };
 
-export default function GridList02({ onSelect }: SelectUserProps) {
+export default function GridList02({ onSelect, value }: SelectUserProps) {
       const [selectedUser, setSelectedUser] = useState<null | typeof people[0]>(null);
 
+useEffect(() => {
+  const savedRole = value ?? localStorage.getItem("selectedGenebuilder");
+  if (!savedRole) return;
+
+  const foundUser = people.find(p => p.role === savedRole);
+  if (foundUser) {
+    setSelectedUser(foundUser);
+    onSelect(foundUser); // sync with parent
+  }
+}, [value]);
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger className="flex items-center gap-2 bg-accent py-2.5 px-3 rounded-xl">
+      <DropdownMenuTrigger className="flex items-center gap-2 py-2.5 px-3 rounded-xl border-0 hover:bg-accent">
         <Avatar className="rounded-xl h-8 w-8">
           {selectedUser ? (
             <AvatarImage src={selectedUser.imageUrl} alt={selectedUser.name} />
@@ -98,6 +116,7 @@ export default function GridList02({ onSelect }: SelectUserProps) {
             key={person.name}
             onClick={() => {
               setSelectedUser(person);
+                localStorage.setItem("selectedGenebuilder", person.role); // persist
               onSelect(person);
             }}
           >
@@ -120,4 +139,3 @@ export default function GridList02({ onSelect }: SelectUserProps) {
     </DropdownMenu>
   );
 }
-

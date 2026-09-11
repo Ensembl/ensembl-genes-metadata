@@ -1,6 +1,7 @@
 "use client"
 
-import {Bar, BarChart, CartesianGrid, LabelList, XAxis} from "recharts"
+import { Bar, BarChart, CartesianGrid, LabelList, XAxis } from "recharts"
+import { PROJECTS } from "@/features/projects/project-config"
 import {
   Card,
   CardContent,
@@ -15,8 +16,7 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart"
-import {MethodItem} from "@/components/ui/rep_anno_method";
-import * as React from "react";
+import * as React from "react"
 
 export type ProjectItem = {
   associated_project: string
@@ -24,58 +24,86 @@ export type ProjectItem = {
 }
 type Props = {
   data: ProjectItem[]
+  title?: string
+  description?: string
 }
 
-const chartConfig: Record<string, { label: string; color?: string }> = {
-  number_of_annotations: { label: "Annotations" },
-  DToL: { label: "DToL", color: "var(--chart-1)" },
-  "ERGA/BGE": { label: "ERGA/BG", color: "var(--chart-2)" },
-  ERGA: { label: "ERGA", color: "var(--chart-3)" },
-  EBP: { label: "EBP", color: "var(--chart-4)" },
-  ERGA_pilot: { label: "ERGA_pilot", color: "var(--chart-5)" },
-  ASG: { label: "ASG", color: "var(--chart-6)" },
-  VGP: { label: "VGP", color: "var(--chart-7)" },
-  CBP: { label: "CBP", color: "var(--chart-7)" },
+const biodiversityProjects = PROJECTS.filter(
+  (project) => project.reportGroup === "biodiversity",
+)
+
+const chartConfig = {
+  count: { label: "Annotations" },
+  ...Object.fromEntries(
+    biodiversityProjects.map((project) => [
+      project.reportKey,
+      {
+        label: project.reportLabel ?? project.reportKey,
+        color: "var(--chart-1)",
+      },
+    ]),
+  ),
 } satisfies ChartConfig
 
-
-
-export function RepProject({ data }: Props) {
-const transformedData = React.useMemo(() => {
-    return data.map((item) => ({
-      ...item,
-      displayName: chartConfig[item.associated_project]?.label || item.associated_project,
-      fill: chartConfig[item.associated_project]?.color,
+export function RepProject({
+  data,
+  title = "Associated biodiversity projects",
+  description = "Number of annotations per project",
+}: Props) {
+  const transformedData = React.useMemo(() => {
+    const countByProject = new Map(
+      data
+        .filter((item) => item.associated_project && item.associated_project !== "count")
+        .map((item) => [item.associated_project.trim(), item.count]),
+    )
+    const knownProjectRows = biodiversityProjects.map((project) => ({
+      associated_project: project.reportKey,
+      count: countByProject.get(project.reportKey) ?? 0,
+      displayName: project.reportLabel ?? project.reportKey,
     }))
+    const unknownProjectRows = data
+      .filter(
+        (item) =>
+          item.associated_project &&
+          item.associated_project.trim() !== "count" &&
+          !chartConfig[item.associated_project.trim()],
+      )
+      .map((item) => ({
+        ...item,
+        associated_project: item.associated_project.trim(),
+        displayName: item.associated_project.trim(),
+      }))
+
+    return [...knownProjectRows, ...unknownProjectRows].filter((item) => item.count > 0)
   }, [data])
-
-  const totalAnnotations = React.useMemo(() => {
-    return transformedData.reduce((sum, item) => sum + (item.count || 0), 0)
-  }, [transformedData])
-
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Associated biodiversity projects</CardTitle>
-        <CardDescription>Number of annotations per project</CardDescription>
+        <CardTitle>{title}</CardTitle>
+        <CardDescription>{description}</CardDescription>
       </CardHeader>
       <CardContent>
         <ChartContainer config={chartConfig}>
-        <BarChart accessibilityLayer data={transformedData} margin={{
-              top: 30,
-            }} >
-          <CartesianGrid vertical={false} />
-          <XAxis
+          <BarChart
+            accessibilityLayer
+            data={transformedData}
+            margin={{ top: 20, bottom: 80 }}
+          >
+            <CartesianGrid vertical={false} />
+            <XAxis
               dataKey="displayName"
               tickLine={false}
               axisLine={false}
-          />
-          <ChartTooltip
+              angle={-90}
+              textAnchor="end"
+              alignmentBaseline="middle"
+            />
+            <ChartTooltip
               cursor={false}
               content={<ChartTooltipContent />}
             />
-          <Bar dataKey="count" fill="var(--color-chart-1)" radius={8}>
+            <Bar dataKey="count" name="Annotations" fill="var(--color-chart-1)" radius={8}>
               <LabelList
                 position="top"
                 offset={12}
@@ -83,8 +111,8 @@ const transformedData = React.useMemo(() => {
                 fontSize={12}
               />
             </Bar>
-        </BarChart>
-      </ChartContainer>
+          </BarChart>
+        </ChartContainer>
       </CardContent>
     </Card>
   )

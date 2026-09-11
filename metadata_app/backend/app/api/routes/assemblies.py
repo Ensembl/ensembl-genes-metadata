@@ -11,6 +11,7 @@ def filter_assemblies(filters: AssemblyFilterRequest):
         metric_thresholds=filters.metric_thresholds or {},
         asm_level=filters.asm_level,
         asm_type=filters.asm_type,
+        pipeline=filters.pipeline,
         release_date=filters.release_date,
         taxon_id=filters.taxon_id,
         current=filters.current,

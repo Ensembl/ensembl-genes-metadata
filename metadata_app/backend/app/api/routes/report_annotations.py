@@ -1,39 +1,88 @@
+from datetime import date, datetime
+
+import numpy as np
+import pandas as pd
 from fastapi import APIRouter, HTTPException
 from metadata_app.backend.app.models.report_schemas import ReportFilterRequest
 from metadata_app.backend.app.services.report_annotation_service import generate_report
 
 report = APIRouter()
 
+
+def _json_safe(value):
+    if isinstance(value, dict):
+        return {key: _json_safe(item) for key, item in value.items()}
+    if isinstance(value, list):
+        return [_json_safe(item) for item in value]
+    if isinstance(value, tuple):
+        return tuple(_json_safe(item) for item in value)
+    if value is None:
+        return None
+    if isinstance(value, pd.Timestamp):
+        return None if pd.isna(value) else value.strftime("%Y-%m-%d")
+    if isinstance(value, (datetime, date)):
+        return value.isoformat()
+    if isinstance(value, np.integer):
+        return int(value)
+    if isinstance(value, np.floating):
+        return float(value) if np.isfinite(value) else None
+    if isinstance(value, float):
+        return value if np.isfinite(value) else None
+    if isinstance(value, np.bool_):
+        return bool(value)
+    try:
+        if pd.isna(value):
+            return None
+    except (TypeError, ValueError):
+        pass
+    return value
+
+
 @report.post("/report/anno/filter")
 def filter_annotations(filters: ReportFilterRequest):
     try:
-        anno_wide, number_of_annotations, method_report, num_unique_taxa, top_3_taxa, project_report, average_busco, main_report = generate_report(
+        (
+            anno_wide,
+            number_of_annotations,
+            method_report,
+            num_unique_taxa,
+            top_3_taxa,
+            project_report,
+            project_report_live,
+            average_busco,
+            main_report,
+            clade_group,
+            clade_group_live,
+        ) = generate_report(
             bioproject_id=filters.bioproject_id,
-            end_date=filters.end_date,
             start_date=filters.start_date,
+            end_date=filters.end_date,
             group_name=filters.group_name,
             taxon_id=filters.taxon_id,
         )
 
-        return {
+        return _json_safe({
             "main_report": main_report.to_dict(orient="records"),
             "number_of_annotations": number_of_annotations,
             "method_report": method_report.to_dict(orient="records"),
             "num_unique_taxa": {"value": num_unique_taxa},
             "top_3_taxa": top_3_taxa.to_dict(orient="records"),
             "project_report": project_report.to_dict(orient="records"),
+            "project_report_live": project_report_live.to_dict(orient="records"),
             "average_busco": {"value": average_busco},
-
-        "downloadables_report": {
+            "clade_group": clade_group.to_dict(orient="records"),
+            "clade_group_live": clade_group_live.to_dict(orient="records"),
+            "downloadables_report": {
                 "anno_main": main_report.to_csv(index=False),
-                "anno_wide": anno_wide.to_csv(index=False)
-            }
-        }
+                "anno_wide": anno_wide.to_csv(index=False),
+            },
+        })
 
     except HTTPException as e:
         raise e  # re-raise to return proper status like 404
     except Exception as e:
         # Log the actual exception
         import logging
+
         logging.exception("Unhandled exception in filter_annotations")
         raise HTTPException(status_code=500, detail="Internal server error")

@@ -8,6 +8,7 @@ class AssemblyFilterRequest(BaseModel):
     metric_thresholds: Optional[Dict[str, float]] = None
     asm_level: Optional[List[str]] = None
     asm_type: Optional[List[str]] = None
+    pipeline: Optional[List[str]] = None
     release_date: Optional[date] = None
     taxon_id: Optional[List[int]] = None
     current: Optional[bool] = False

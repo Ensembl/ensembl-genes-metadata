@@ -28,13 +28,13 @@ export function ReportCard() {
       </CardContent>
 
       <CardFooter className="justify-end">
-        <div className="flex gap-4">
-          <Button variant="secondary">
+        <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:gap-4">
+          <Button variant="secondary" className="w-full sm:w-auto">
           <Link href="/report/asm">
             Assembly report <span className="ml-1">→</span>
           </Link>
         </Button>
-          <Button variant="secondary">
+          <Button variant="secondary" className="w-full sm:w-auto">
           <Link href="/report/anno">
             Annotation report <span className="ml-1">→</span>
           </Link>

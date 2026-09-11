@@ -432,7 +432,7 @@ const MultipleSelector = React.forwardRef<MultipleSelectorRef, MultipleSelectorP
           handleKeyDown(e);
           commandProps?.onKeyDown?.(e);
         }}
-        className={cn('h-auto overflow-visible bg-filter-input-bg dark:bg-transparent', commandProps?.className)}
+        className={cn('h-auto min-w-0 overflow-visible bg-filter-input-bg dark:bg-transparent', commandProps?.className)}
         shouldFilter={
           commandProps?.shouldFilter !== undefined ? commandProps.shouldFilter : !onSearch
         } // When onSearch is provided, we don't want to filter the options. You can still override it.
@@ -440,7 +440,7 @@ const MultipleSelector = React.forwardRef<MultipleSelectorRef, MultipleSelectorP
       >
         <div
           className={cn(
-            'min-h-10 rounded-md border border-input text-base ring-offset-background focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 md:text-sm shadow-sm',
+            'min-h-10 min-w-0 rounded-md border border-input text-base ring-offset-background focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 md:text-sm shadow-sm',
             {
               'px-3 py-2': selected.length !== 0,
               'cursor-text': !disabled && selected.length !== 0,
@@ -458,7 +458,7 @@ const MultipleSelector = React.forwardRef<MultipleSelectorRef, MultipleSelectorP
                 <Badge
                   key={option.value}
                   className={cn(
-                    'data-[disabled]:bg-background data-[disabled]:text-muted data-[disabled]:hover:bg-foreground',
+                    'max-w-full whitespace-normal break-words data-[disabled]:bg-background data-[disabled]:text-muted data-[disabled]:hover:bg-foreground',
                     'data-[fixed]:bg-foreground data-[fixed]:text-muted data-[fixed]:hover:bg-foreground',
                     badgeClassName,
                   )}
@@ -510,7 +510,7 @@ const MultipleSelector = React.forwardRef<MultipleSelectorRef, MultipleSelectorP
               }}
               placeholder={hidePlaceholderWhenSelected && selected.length !== 0 ? '' : placeholder}
               className={cn(
-                'flex-1 bg-transparent outline-none placeholder:text-muted-foreground',
+                'min-w-0 flex-1 bg-transparent outline-none placeholder:text-muted-foreground',
                 {
                   'w-full': hidePlaceholderWhenSelected,
                   'px-3 py-2': selected.length === 0,

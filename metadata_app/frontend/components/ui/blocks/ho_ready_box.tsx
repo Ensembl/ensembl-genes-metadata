@@ -39,6 +39,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 export type Handover = {
   id: string
@@ -126,6 +134,7 @@ export function HoReadyBox({ data, loading, genebuilder }: HoReadyBoxProps) {
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
   const [rowSelection, setRowSelection] = React.useState({})
     const [tableData, setTableData] = React.useState<Handover[]>(data)
+    const [selectedStatus, setSelectedStatus] = React.useState<string | undefined>();
 
     React.useEffect(() => {
   setTableData(data)
@@ -177,7 +186,7 @@ const reloadData = async () => {
 
 
   return (
-    <Card id="ho-ready-table" className="dark:bg-secondary">
+    <Card id="ho-ready-table" className="min-w-0 dark:bg-secondary">
       <CardHeader className="mb-4">
         <CardTitle className="text-xl">Handover ready cores</CardTitle>
           <CardAction>
@@ -188,7 +197,7 @@ const reloadData = async () => {
                         disabled={!Object.keys(rowSelection).length}
                         variant="default"
                       >
-                        Set as abandoned
+                        Change status
                       </Button>
                     </DialogTrigger>
                   <DialogContent className="sm:max-w-[425px]">
@@ -198,11 +207,30 @@ const reloadData = async () => {
                       Click apply if you are certain
                     </DialogDescription>
                   </DialogHeader>
-                        {/* Add selected count info */}
-                        <p className="mt-2 text-sm text-muted-foreground">
+
+                      <div>
+                        <p className="text-sm text-foreground">
+                            Select new status:
+                           </p>
+                          <Select onValueChange={setSelectedStatus}>
+                              <SelectTrigger className="w-fit">
+                                <SelectValue placeholder="gb_status" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectGroup>
+                                  <SelectItem value="abandoned">Abandoned</SelectItem>
+                                  <SelectItem value="poor_genome_busco">Low genome BUSCO</SelectItem>
+                                  <SelectItem value="insufficient_data">Insufficient data</SelectItem>
+                                    <SelectItem value="check_busco">Low protein BUSCO</SelectItem>
+                                </SelectGroup>
+                              </SelectContent>
+                            </Select>
+                          {/* Add selected count info */}
+                        <p className="mt-4 text-sm text-foreground">
                           {Object.keys(rowSelection).length} record
-                          {Object.keys(rowSelection).length !== 1 ? 's' : ''} selected. These will be changed to ABANDONED in the registry.
+                          {Object.keys(rowSelection).length !== 1 ? 's' : ''} selected. These will be changed in the registry.
                         </p>
+                      </div>
                       <DialogFooter>
                           <DialogClose asChild>
                             <Button variant="outline">Cancel</Button>
@@ -216,6 +244,11 @@ const reloadData = async () => {
                                   return;
                                 }
                               if (!selectedRows.length) return;
+                              if (!selectedStatus) {
+                              alert("Please select a new status");
+                              return;
+                            }
+
 
                               // Extract the gca info
                               const selectedItems = selectedRows.map(row => ({
@@ -225,12 +258,12 @@ const reloadData = async () => {
                               console.log("Sending GCAs:", selectedItems);
 
                               try {
-                                const response = await fetch("/api/handover/handover/abandon", {
+                                const response = await fetch("/api/handover/handover/change_status", {
                                   method: "POST",
                                   headers: {
                                     "Content-Type": "application/json",
                                   },
-                                  body: JSON.stringify({ genebuilder, items: selectedItems }),
+                                  body: JSON.stringify({ genebuilder, items: selectedItems, new_status: selectedStatus }),
                                 });
 
                                 if (!response.ok) {
@@ -257,7 +290,7 @@ const reloadData = async () => {
           </CardAction>
 
       </CardHeader>
-      <CardContent className="overflow-visible mb-4">
+      <CardContent className="mb-4 min-w-0 overflow-x-auto">
         <div className="rounded-md">
           {loading ? (
             <p className="text-muted-foreground">Loading data...</p>
