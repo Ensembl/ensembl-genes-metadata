@@ -187,6 +187,16 @@ def main() -> None:
         return
 
     write_manifest(records, args.output)
+    print()
+    print("=" * 60)
+    print("Next step - hand the manifest to the deletion script:")
+    print()
+    print("  1. Copy the manifest to a shared location accessible by genebuild.")
+    print("  2. Switch to the genebuild user.")
+    print("  3. Request a datamover node.")
+    print(f"  4. Run: python delete_live_from_ftp.py {args.output}")
+    print("     Add --execute only after reviewing the dry-run output.")
+    print("=" * 60)
 
 
 if __name__ == "__main__":
