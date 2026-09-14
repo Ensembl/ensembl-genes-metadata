@@ -228,8 +228,8 @@ The `latest_assembly_version_annotated` indicates whether a newer version of the
 
 The `status` column indicates the current state of each genome annotation:
 
-- live: Annotation is publicly available on beta.ensembl.org
-- pending_release: Annotation is complete and  will be featured in an upcoming release on beta.ensembl.org. A draft version of the annotation can be found on https://ftp.ebi.ac.uk/pub/databases/ensembl/pre-release/ Please note that this may not be identical to the final annotation that will be made public on beta.ensembl.org
+- live: Annotation is publicly available on ensembl.org
+- pending_release: Annotation is complete and  will be featured in an upcoming release on ensembl.org. A draft version of the annotation can be found on https://ftp.ebi.ac.uk/pub/databases/ensembl/pre-release/ Please note that this may not be identical to the final annotation that will be made public on ensembl.org
 - in_progress: Annotation is currently underway
 - low_genome_busco: Genome quality is low based on BUSCO assessment
 - insufficient_data: Not enough data available to proceed with annotation
