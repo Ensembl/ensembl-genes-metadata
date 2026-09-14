@@ -20,6 +20,15 @@ from metadata_app.backend.app.services.ncbi_reference_service import (
 )
 
 
+# These statuses describe a previous attempt that should be reconsidered when
+# the current assembly and evidence satisfy the candidate criteria.  A
+# ``testing`` genebuild is deliberately non-production and must not block the
+# assembly from being suggested.
+CANDIDATE_REASSESSABLE_STATUSES = frozenset(
+    {"not_started", "abandoned", "insufficient_data", "testing"}
+)
+
+
 def check_other_version_live(gca: str) -> str:
     """
     Check whether any version of the given GCA accession is live.
@@ -120,6 +129,7 @@ def get_filtered_assemblies(
     non_annotated,
     group_name,
     gca,
+    candidate=False,
 ):
     """
     Fetch all assemblies and their metrics, filter results based on given thresholds,
@@ -139,6 +149,7 @@ def get_filtered_assemblies(
             non_annotated: Only show non-annotated assemblies
             group_name: Filter assemblies by group name
             gca: Filter assemblies by GCA(s)
+            candidate: Apply candidate-specific genebuild status filtering
 
     Returns:
             df_main: DataFrame of filtered assembly metrics
@@ -516,8 +527,21 @@ def get_filtered_assemblies(
             else:
                 logging.warning("No transcriptomic data retrieved from ENA")
 
-        # Filter non annoteted assemblies only
-        if non_annotated:
+        # Candidate suggestions may include assemblies with a previous
+        # re-assessable attempt.  Filter at GCA level so a blocked status on
+        # one historical/current row cannot be hidden by another row.
+        if candidate:
+            status_is_reassessable = df_wide["gb_status"].isin(
+                CANDIDATE_REASSESSABLE_STATUSES
+            )
+            blocked_gcas = set(df_wide.loc[~status_is_reassessable, "gca"])
+            df_wide = df_wide[~df_wide["gca"].isin(blocked_gcas)]
+            logging.info(
+                "Filtered candidate assemblies by genebuild status; blocked %d GCAs",
+                len(blocked_gcas),
+            )
+        # Filter non annotated assemblies only
+        elif non_annotated:
             logging.info(f"Filtring for non-annotated assemblies")
             df_wide = df_wide
             df_wide = df_wide[df_wide["gb_status"] == "not_started"]

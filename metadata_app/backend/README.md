@@ -155,6 +155,21 @@ Example patterns:
 - `GET /api/report/asm/{assembly_id}`
   - Detailed report for a specific assembly, potentially aggregating multiple sub‑records.
 
+#### Candidate suggestion status policy
+
+Candidate suggestions retain the existing assembly quality and transcriptomic
+evidence behaviour.  The presence of a `genebuild_status` row alone does not
+exclude an assembly; status is filtered according to the policy below.
+
+| Status | Candidate behaviour |
+| --- | --- |
+| `not_started` | Eligible if the assembly and evidence pass the candidate checks |
+| `abandoned` | Reassess; this means the previous attempt stopped, not that the assembly is permanently excluded |
+| `insufficient_data` | Reassess using the existing evidence checks |
+| `testing` | Ignore for production blocking; testing was not intended for release |
+| `superseded` | Exclude permanently for candidate suggestion |
+| Active or released statuses | Exclude while the production genebuild is active or available |
+
 ---
 
 ### Bioproject Search
