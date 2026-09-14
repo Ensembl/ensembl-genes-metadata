@@ -1,0 +1,19 @@
+from typing import List, Optional, Dict
+from pydantic import BaseModel
+from datetime import date
+
+
+class AssemblyFilterRequest(BaseModel):
+    bioproject_id: Optional[List[str]] = None
+    metric_thresholds: Optional[Dict[str, float]] = None
+    asm_level: Optional[List[str]] = None
+    asm_type: Optional[List[str]] = None
+    pipeline: Optional[List[str]] = None
+    release_date: Optional[date] = None
+    taxon_id: Optional[List[int]] = None
+    current: Optional[bool] = False
+    transc: Optional[bool] = False
+    transc_ena: Optional[bool] = False
+    non_annotated: Optional[bool] = False
+    group_name: Optional[List[str]] = None
+    gca: Optional[List[str]] = None
