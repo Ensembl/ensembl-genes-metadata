@@ -14,6 +14,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+    Functions for handling taxonomy checks, including verification of taxonomy hierarchy 
+    completeness and comparison of taxon IDs between NCBI reports and the registry.
+"""
 
 import argparse
 import json
@@ -23,6 +27,16 @@ from gb_metadata.db_utils import execute_query, execute_write
 
 
 def taxonomy_checker(taxon_id: str, metadata_params: dict) -> bool:
+    """
+    Check if the taxonomy hierarchy for a given taxon ID is complete.
+
+    Args:
+        taxon_id (str): The taxon ID to check.
+        metadata_params (dict): Parameters for the database connection.
+
+    Returns:
+        bool: True if the taxonomy hierarchy is complete, False otherwise.
+    """
 
     taxonomy_count = execute_query(
         f"SELECT COUNT(*) FROM taxonomy WHERE lowest_taxon_id = '{taxon_id}'",
@@ -38,6 +52,17 @@ def taxonomy_checker(taxon_id: str, metadata_params: dict) -> bool:
 
 
 def check_taxon_id(data, accession, metadata_params):
+    """
+    Check and compare the taxon ID from NCBI with the one in the registry.
+
+    Args:
+        data (dict): The data containing NCBI reports.
+        accession (str): The accession identifier for the assembly.
+        metadata_params (dict): Parameters for the database connection.
+
+    Returns:
+        str: A comma-separated string containing the registry taxon ID, NCBI taxon ID, and the check result ("pass" or "fail").
+    """
 
     # Taxon ID in NCBI
     taxon_id_ncbi = data["reports"][0].get("organism", "").get("tax_id")
@@ -83,6 +108,17 @@ def check_taxon_id(data, accession, metadata_params):
 
 
 def comparing_basic_taxon_data(data, accession, metadata_params):
+    """
+    Compare basic taxon data between the NCBI report and the registry.
+
+    Args:
+        data (dict): The data containing NCBI reports.
+        accession (str): The accession identifier for the assembly.
+        metadata_params (dict): Parameters for the database connection.
+
+    Returns:
+        List[str]: A list of output lines summarizing the changes.
+    """
 
     output_line_list = []
 

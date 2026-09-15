@@ -14,6 +14,10 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
+"""
+    Functions for handling assembly metrics, including retrieval from the database,
+    normalisation, SQL escaping, and generation of upsert statements.   
+"""
 
 import argparse
 import json
@@ -25,6 +29,16 @@ from gb_metadata.db_utils import execute_query, execute_write
 
 
 def getting_metrics_registry(assembly_id, metadata_params):
+    """
+    Retrieve the assembly metrics for a given assembly ID from the database.
+
+    Args:
+        assembly_id (str): The ID of the assembly.
+        metadata_params (Dict[str, Any]): Parameters for the database connection.
+
+    Returns:
+        Dict[str, Any]: A dictionary mapping metric names to their values.
+    """
 
     query_asm_metrics = (
         f"SELECT metrics_name, metrics_value FROM assembly_metrics WHERE assembly_id = '{assembly_id}';"
@@ -44,6 +58,12 @@ def normalise_value(metric_name: str, value: Any) -> Any:
     """
     Normalise values so comparisons don't fail just because of type/format
     differences (e.g., '13' vs 13, '37.0x' vs '37').
+    Args:
+        metric_name (str): The name of the metric.
+        value (Any): The value of the metric to normalise.
+
+    Returns:
+        Any: The normalised value.
     """
     if value is None:
         return None
@@ -80,6 +100,13 @@ def normalise_value(metric_name: str, value: Any) -> Any:
 def sql_escape(value: Any) -> str:
     """
     Minimal SQL string escaping for single quotes.
+
+    Args:
+        value (Any): The value to escape for SQL.
+
+    Returns:
+        str: The SQL-escaped string representation of the value.
+
     (If you're using a DB driver, prefer parameterised queries instead.)
     """
     if value is None:
@@ -94,6 +121,20 @@ def generate_metric_upserts(
     assembly_id: int,
     metadata_params: Dict[str, Any],
 ) -> List[str]:
+    """
+    Generate SQL upsert statements for assembly metrics.
+
+    Args:
+        accession (str): The accession identifier for the assembly.
+        ncbi (Dict[str, Any]): The NCBI-provided metrics.
+        registry (Dict[str, Any]): The existing registry metrics.
+        assembly_id (int): The internal assembly ID.
+        metadata_params (Dict[str, Any]): Parameters for the database connection.
+
+    Returns:
+        List[str]: A list of output lines summarizing the changes.
+    """
+    
     output_line_list: List[str] = []
 
     ncbi_keys = set(ncbi.keys())
