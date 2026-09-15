@@ -24,9 +24,7 @@ def _format_default(value: Any) -> str:
 
 def _ordered_groups(schema: dict) -> list[str]:
     defs = schema.get("$defs", {})
-    ref_order = [
-        ref["$ref"].rsplit("/", 1)[-1] for ref in schema.get("allOf", []) if "$ref" in ref
-    ]
+    ref_order = [ref["$ref"].rsplit("/", 1)[-1] for ref in schema.get("allOf", []) if "$ref" in ref]
     ordered = [name for name in ref_order if name in defs]
     ordered += [name for name in defs if name not in ordered]
     return ordered

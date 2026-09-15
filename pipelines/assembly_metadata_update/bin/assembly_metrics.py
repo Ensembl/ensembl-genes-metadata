@@ -134,7 +134,7 @@ def generate_metric_upserts(
     Returns:
         List[str]: A list of output lines summarizing the changes.
     """
-    
+
     output_line_list: List[str] = []
 
     ncbi_keys = set(ncbi.keys())
