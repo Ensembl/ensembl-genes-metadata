@@ -58,7 +58,7 @@ MAX_RETRIES = 3
 # ---------------------------------------------------------------------------
 
 
-def _get(url: str) -> dict:
+def _get_url(url: str) -> dict:
     """GET a URL with simple retry logic; raise on persistent failure."""
     for attempt in range(1, MAX_RETRIES + 1):
         try:
@@ -82,7 +82,7 @@ def get_assembly_info(accession: str) -> dict:
         f"{NCBI_BASE}/genome/accession/{accession}/dataset_report"
         "?filters.exclude_atypical=false&filters.assembly_version=all_assemblies"
     )
-    data = _get(url)
+    data = _get_url(url)
 
     reports = data.get("reports", [])
     if not reports:
@@ -101,7 +101,7 @@ def get_reference_for_taxon(taxon_id: str) -> dict | None:
     no reference exists.
     """
     url = f"{NCBI_BASE}/genome/taxon/{taxon_id}/dataset_report" f"?filters.reference_only=true"
-    data = _get(url)
+    data = _get_url(url)
 
     total = data.get("total_count", 0)
     reports = data.get("reports", [])
