@@ -40,13 +40,10 @@ cicd = [
     "types-requests",
 ]
 docs = [
-    "mkdocs",
-    "mkdocs-material",
-    "mkdocs-gen-files",
-    "mkdocstrings[python]",
-    "mkdocs-literate-nav",
-    "mkdocs-section-index",
-    "mkdocs-coverage",
+    "sphinx",
+    "sphinx-autoapi",
+    "sphinx-rtd-theme",
+    "myst-parser",
 ]
 
 [tool.setuptools]

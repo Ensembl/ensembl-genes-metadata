@@ -1,31 +1,39 @@
-name: 'Docs: Build (MkDocs)'
+name: Documentation
 
 on:
   push:
     branches: [ main ]
     paths:
-      - 'mkdocs/**'
       - 'docs/**'
-      - 'mkdocs.yml'
+      - 'src/python/**'
+      - 'pipelines/**/nextflow_schema.json'
+      - 'README.md'
   pull_request:
     paths:
-      - 'mkdocs/**'
       - 'docs/**'
-      - 'mkdocs.yml'
+      - 'src/python/**'
+      - 'pipelines/**/nextflow_schema.json'
+      - 'README.md'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: gh-pages
+  cancel-in-progress: false
 
 jobs:
-  build:
-    name: Build MkDocs site and upload
+  docs:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout
+      - name: Checkout Repository
         uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: '3.11'
 
       - name: Cache pip
         uses: actions/cache@v4
@@ -35,22 +43,33 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip-
 
-      - name: Install project docs dependencies
+      - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip
           pip install ".[docs]" || \
-          pip install mkdocs mkdocs-material mkdocs-gen-files \
-          mkdocstrings[python] mkdocs-literate-nav mkdocs-section-index \
-          mkdocs-coverage
+          pip install sphinx sphinx-autoapi sphinx-rtd-theme myst-parser
 
-      - name: Build MkDocs site
-        env:
-          PYTHONPATH: src/python
-        run: |
-          mkdocs build -f mkdocs.yml -d site
+      - name: Generate Parameter Reference
+        run: python -m docs.generate_docs
 
-      - name: Upload generated site artifact
-        uses: peaceiris/actions-gh-pages@v3
+      - name: Sphinx Build
+        run: sphinx-build --keep-going -b html docs/source docs/build/html
+
+      - name: Sphinx Link Check
+        if: ${{ github.event_name != 'pull_request' }}
+        continue-on-error: true
+        run: sphinx-build -b linkcheck docs/source docs/build/linkcheck
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: docs/build/html
+
+      - name: Deploy to GitHub Pages
+        if: github.event_name == 'push'
+        uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: site
+          publish_branch: gh-pages
+          publish_dir: docs/build/html
+          force_orphan: true
