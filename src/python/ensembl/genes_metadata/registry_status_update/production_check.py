@@ -72,7 +72,6 @@ def check_status_production_db(gca_tuple):
             LEFT JOIN dataset_attribute ON dataset.dataset_id = dataset_attribute.dataset_id
             WHERE dataset.name = "genebuild"
                 AND assembly.accession IN {gca_tuple}
-                AND genome_dataset.is_current = 1
                 AND dataset_attribute.attribute_id IN (34, 37, 71, 169)
                 AND (
                   ensembl_release.release_id IS NULL
