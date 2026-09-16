@@ -47,7 +47,7 @@ myst_heading_anchors = 3
 
 html_theme = "sphinx_rtd_theme"
 html_title = "ensembl-genes-metadata"
-html_logo = "../img/ebang.png"
+html_logo = "../../docs_mkdocs/img/ebang.png"
 html_theme_options = {
     "collapse_navigation": False,
     "navigation_depth": 4,
