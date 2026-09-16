@@ -23,14 +23,14 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
-  group: gh-pages
+  group: pages
   cancel-in-progress: false
 
 jobs:
-  docs:
+  build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
@@ -75,22 +75,33 @@ jobs:
 
       # MkDocs owns the site root (matches ensembl-genes-nf's look); the
       # Sphinx build (with the gb_metadata autoapi reference) is nested
-      # under /api/ so both are reachable from one gh-pages deployment.
+      # under /api/ so both are reachable from one Pages deployment.
       - name: Combine Sites
         run: |
           mkdir -p site/api
           cp -r docs/build/html/. site/api/
 
+      - name: Setup Pages
+        if: github.event_name == 'push'
+        uses: actions/configure-pages@v6
+
       - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v4
+        if: github.event_name == 'push'
+        uses: actions/upload-pages-artifact@v5
         with:
           path: site
 
+  deploy:
+    if: github.event_name == 'push'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
       - name: Deploy to GitHub Pages
-        if: github.event_name == 'push'
-        uses: peaceiris/actions-gh-pages@v4
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_branch: gh-pages
-          publish_dir: site
-          force_orphan: true
+        id: deployment
+        uses: actions/deploy-pages@v5
