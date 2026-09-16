@@ -7,7 +7,6 @@
 ```{toctree}
 :maxdepth: 1
 :caption: Pipelines
-:glob:
 
-pipelines/*
+pipelines/index
 ```
