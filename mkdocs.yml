@@ -4,8 +4,18 @@ site_author: Ensembl Genebuild
 copyright: Copyright &copy; 2026 <a href="https://www.ebi.ac.uk">EMBL-European Bioinformatics Institute</a>
 repo_url: https://github.com/Ensembl/ensembl-genes-metadata
 repo_name: Ensembl/ensembl-genes-metadata
-docs_dir: docs_mkdocs
+docs_dir: docs
 site_dir: site
+
+# The generator tooling (docs/generators/) lives alongside the content
+# MkDocs serves. mkdocs itself honors exclude_docs below, but zensical
+# (used in CI, see docs-ci.yml) does not implement exclude_docs as of
+# 0.0.62 -- it copies generators/ into site/ regardless. The CI build
+# strips it back out after the build step; do the same for local
+# previews built with zensical (see docs/generators/generate_docs.py).
+exclude_docs: |
+  generators/
+  __pycache__/
 
 theme:
   name: material
@@ -78,4 +88,3 @@ nav:
       - Modules: pipelines/assembly_metadata_update/modules/index.md
       - Output: pipelines/assembly_metadata_update/output.md
       - Troubleshooting: pipelines/assembly_metadata_update/troubleshooting.md
-  - API Reference: api/index.html

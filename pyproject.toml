@@ -40,10 +40,6 @@ cicd = [
     "types-requests",
 ]
 docs = [
-    "sphinx",
-    "sphinx-autoapi",
-    "sphinx-rtd-theme",
-    "myst-parser",
     "mkdocs-material",
     "mkdocs-minify-plugin",
     "zensical",

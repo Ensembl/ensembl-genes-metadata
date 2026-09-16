@@ -3,18 +3,25 @@
 Generate MkDocs Material documentation for the Ensembl Genes Nextflow pipelines.
 
 Mirrors the layout used by ensembl-genes-nf's live documentation site
-(mkdocs.yml built with mkdocs/zensical), reusing the same Nextflow
-module/workflow/schema parsing as the Sphinx generator (see
-docs/generate_docs.py). The content lives under docs_mkdocs/, a sibling of
-docs/, so it never overlaps with the Sphinx source tree or this package.
+(mkdocs.yml built with mkdocs/zensical). This tooling lives in
+docs/generators/, alongside the content MkDocs serves (docs_dir: docs in
+mkdocs.yml). mkdocs.yml's exclude_docs keeps generators/ out of a build
+with the official `mkdocs` CLI, but zensical (used in CI) does not
+implement exclude_docs as of 0.0.62 and will copy generators/ into the
+built site -- after `zensical build`, remove it manually:
 
-Only generated pages are overwritten. Handwritten pages (docs_mkdocs/README.md
-and each pipeline's index.md, input.md, output.md, troubleshooting.md) are
+    rm -rf site/generators site/__init__.py
+    find site -name '__pycache__' -type d -exec rm -rf {} +
+
+(docs-ci.yml already does this for the deployed build.)
+
+Only generated pages are overwritten. Handwritten pages (docs/README.md and
+each pipeline's index.md, input.md, output.md, troubleshooting.md) are
 created once and then left alone.
 
 Run before the MkDocs build:
 
-    python -m docs.generate_mkdocs
+    python -m docs.generators.generate_docs
 """
 
 from __future__ import annotations
@@ -22,13 +29,13 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 
-from docs.generators.module_page import render_module
-from docs.generators.parameters import load_schema
-from docs.generators.parameters import render as render_parameters
-from docs.generators.parser import parse_module
-from docs.generators.parser import parse_workflow
-from docs.generators.utils import write_file
-from docs.generators.workflow_page import render_workflow
+from .module_page import render_module
+from .parameters import load_schema
+from .parameters import render as render_parameters
+from .parser import parse_module
+from .parser import parse_workflow
+from .utils import write_file
+from .workflow_page import render_workflow
 
 logging.basicConfig(
     level=logging.INFO,
@@ -37,11 +44,11 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
-REPO_ROOT = Path(__file__).resolve().parents[1]
+REPO_ROOT = Path(__file__).resolve().parents[2]
 
 PIPELINES_DIR = REPO_ROOT / "pipelines"
 
-DOCS_DIR = REPO_ROOT / "docs_mkdocs"
+DOCS_DIR = REPO_ROOT / "docs"
 
 
 def _title(name: str) -> str:
