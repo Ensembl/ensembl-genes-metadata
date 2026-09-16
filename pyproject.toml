@@ -44,6 +44,9 @@ docs = [
     "sphinx-autoapi",
     "sphinx-rtd-theme",
     "myst-parser",
+    "mkdocs-material",
+    "mkdocs-minify-plugin",
+    "zensical",
 ]
 
 [tool.setuptools]
