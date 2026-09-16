@@ -101,7 +101,6 @@ python gb_prefect/flows/gb_registry_update.py \
 | `--slack-report` | No | Enables Slack reporting in the underlying pipeline |
 | `--dry-run` | No | Build the sbatch script and log it, but don't submit the job |
 
-> **Note:** the sbatch script this task generates currently passes a hardcoded `--screen_date 2026-01-15` to the pipeline alongside `--gca_input`/`--gca_list`. Since [assembly_metadata_update](../pipelines/assembly_metadata_update) treats `--screen_date` and `--gca_input` as mutually exclusive, this value is unused when running against a GCA list — but it's worth updating or removing if this flow is reused after that date.
 
 ### `genome_busco_flow`
 
