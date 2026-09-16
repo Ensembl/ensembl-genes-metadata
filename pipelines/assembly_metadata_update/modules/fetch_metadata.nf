@@ -15,21 +15,30 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+/*
+FETCH METADATA
+This process fetches metadata for a given GCA accession using the fetch_metadata.py script.
+Inputs:
+- gca: The GCA accession for which to fetch metadata.
+Outputs:
+- stdout: The standard output from the fetch_metadata.py script.
+*/
 
-process WRITE2DB_SPECIES {
+
+process FETCH_METADATA {
 
     label 'python'
-    tag "$gca"
-    publishDir "${params.output_dir}/nextflow_output/$gca", mode: 'copy'
+    tag "${gca}"
+    publishDir "${params.output_dir}/nextflow_output/${gca}", mode: 'copy'
 
     input:
-    tuple val(gca), path(species)
+    val gca
 
     output:
-    tuple val(gca), path("${species.baseName}.last_id")
+    tuple val(gca), stdout, path("${gca}_metadata.json"), emit: metadata_json
 
     script:
     """
-    write2db.py --file-path $species --metadata ${params.metadata_params} --config ${params.db_table_conf}
+    fetch_metadata.py --accession ${gca} --ncbi_url ${params.ncbi_url}
     """
 }

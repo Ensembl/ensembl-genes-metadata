@@ -15,21 +15,33 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+/*
+TAXONOMY UPDATE
+This process updates the taxonomy information for a given GCA accession using the taxonomy.py script.
+Inputs:
+- gca: The GCA accession for which to update taxonomy information.
+- attempt_update: A flag indicating whether to attempt an update (true/false).
+- metadata_json: The JSON file containing the metadata information.
+Outputs:
+- stdout: The standard output from the taxonomy.py script.
+*/
 
-process WRITE2DB_ASSEMBLY {
+process TAXONOMY {
 
     label 'python'
-    tag "$gca"
-    publishDir "${params.output_dir}/nextflow_output/$gca", mode: 'copy'
+    tag "${gca}"
 
     input:
-    tuple val(gca), path(assembly), path(metadata_tmp), path(species_tmp)
+    tuple val(gca), val(attempt_update), path(metadata_json)
 
     output:
-    tuple val(gca), path(metadata_tmp), path("${assembly.baseName}.last_id"), path(species_tmp)
+    stdout
+
+    when:
+    attempt_update.trim() == 'true'
 
     script:
     """
-    write2db.py --file-path $assembly --metadata ${params.metadata_params} --config ${params.db_table_conf}
+    taxonomy.py --accession_json ${metadata_json} --accession ${gca}  --metadata_params '${params.metadata_params_string}' --taxonomy_update
     """
 }
