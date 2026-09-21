@@ -69,7 +69,7 @@ def create_report_csv(project_key: str, project_info: dict, csv_folder: Path) ->
     anno_main = pd.read_csv(StringIO(anno_wide_csv))
 
     # Define statuses to exclude
-    exclude_statuses = {"archive", "abandoned"}
+    exclude_statuses = {"archive"}
     
     # Define renaming mapping
     status_mapping = {
@@ -78,7 +78,12 @@ def create_report_csv(project_key: str, project_info: dict, csv_folder: Path) ->
         "completed": "pending_release",
         "handed_over": "pending_release",
         "coming_soon": "pending_release",
-        "pre_released": "pending_release"
+        "pre_released": "pending_release",
+        "faulty": "pending_release",
+        "abandoned": "better_candidate_avaliable",
+        "large_sequence": "genome_too_large_for_annotation",
+        "suppressed": "pending_release"
+
     }
     
     # Drop rows with unwanted statuses
@@ -103,6 +108,10 @@ def create_report_csv(project_key: str, project_info: dict, csv_folder: Path) ->
             "protein_busco_lineage",
             "coding_genes"
             ]
+    genebuild_columns = [
+        column for column in anno_main.columns if column.startswith("genebuild.")
+    ]
+    cols_to_keep.extend(genebuild_columns)
     anno_main = anno_main[cols_to_keep]
 
     # Rename columns
@@ -117,6 +126,12 @@ def create_report_csv(project_key: str, project_info: dict, csv_folder: Path) ->
     )
     anno_main = anno_main.rename(
         columns={"gb_status": "status"}
+    )
+    anno_main = anno_main.rename(
+        columns={
+            column: column.removeprefix("genebuild.")
+            for column in genebuild_columns
+        }
     )
 
     # Order table by status column
@@ -234,6 +249,8 @@ The `status` column indicates the current state of each genome annotation:
 - low_genome_busco: Genome quality is low based on BUSCO assessment
 - insufficient_data: Not enough data available to proceed with annotation
 - low_protein_busco: Protein BUSCO score is low and/or differs from the genome BUSCO score by more than 10%
+- better_candidate_avaliable: Genome was picked up but a better candidate was released since. We are working on annotating the new one.
+- genome_too_large_for_annotation: We are working on annotating large genomes. Annotation will be picked up when develepment is complete.
 
 If you have any questions regarding these emails please send them to genebuild@ebi.ac.uk. This inbox is not monitored.
 
