@@ -114,7 +114,12 @@ def query_meta_registry(annotation_date, taxon_id, bioproject_id, group_name, gc
 
             # Validate BioProject IDs if provided
             if bioproject_id:
-                cursor.execute("SELECT DISTINCT bioproject_id FROM bioproject;")
+                placeholders = ",".join(["%s"] * len(bioproject_id))
+                cursor.execute(
+                    f"SELECT DISTINCT bioproject_id FROM bioproject "
+                    f"WHERE bioproject_id IN ({placeholders});",
+                    tuple(bioproject_id),
+                )
                 valid_bioprojects = {row["bioproject_id"] for row in cursor.fetchall()}
                 invalid_bioprojects = set(bioproject_id) - valid_bioprojects
                 if invalid_bioprojects:
@@ -192,14 +197,16 @@ def query_meta_registry(annotation_date, taxon_id, bioproject_id, group_name, gc
             where_clause = " WHERE " + " AND ".join(conditions)
 
             meta_query = f"""
-                SELECT 
+                SELECT DISTINCT
                     b.bioproject_id,
                     mb.bioproject_name AS associated_project,
                     g.group_name,
                     CONCAT(a.gca_chain, '.', a.gca_version) AS gca,
+                    a.assembly_id,
                     a.lowest_taxon_id,
                     o.infra_name,
                     gb.gb_status,
+                    gb.genebuild_status_id,
                     gb.genebuilder,
                     gb.annotation_source,
                     gb.annotation_method,
@@ -208,14 +215,7 @@ def query_meta_registry(annotation_date, taxon_id, bioproject_id, group_name, gc
                     gb.date_status_update,
                     gb.last_genebuild_update,
                     s.scientific_name,
-                    s.common_name,
-                    asm.assembly_busco,
-                    asm.assembly_busco_lineage,
-                    asm.assembly_busco_version,
-                    am.protein_busco,
-                    am.protein_busco_lineage,
-                    am.protein_busco_version,
-                    am.coding_genes
+                    s.common_name
                 FROM genebuild_status gb
                 LEFT JOIN assembly a ON gb.assembly_id = a.assembly_id
                 LEFT JOIN bioproject b ON a.assembly_id = b.assembly_id
@@ -228,42 +228,8 @@ def query_meta_registry(annotation_date, taxon_id, bioproject_id, group_name, gc
                          (g.group_type = 'assembly' AND a.gca_chain = g.item)
                        )
                 LEFT JOIN main_bioproject mb ON b.bioproject_id = mb.bioproject_id
-                LEFT JOIN (
-                      SELECT genebuild_status_id,
-                             MAX(CASE WHEN metrics_name='genebuild.busco' THEN metrics_value END) AS protein_busco,
-                             MAX(CASE WHEN metrics_name='genebuild.busco_dataset' THEN metrics_value END) AS protein_busco_lineage,
-                             MAX(CASE WHEN metrics_name='genebuild.busco_version' THEN metrics_value END) AS protein_busco_version,
-                             MAX(CASE WHEN metrics_name='genebuild.stats.coding_genes' THEN metrics_value END) AS coding_genes
-                      FROM annotation_metrics
-                      GROUP BY genebuild_status_id
-                ) am ON gb.genebuild_status_id = am.genebuild_status_id
-                LEFT JOIN (
-                      SELECT assembly_id,
-                             MAX(CASE WHEN metrics_name='assembly.busco' THEN metrics_value END) AS assembly_busco,
-                             MAX(CASE WHEN metrics_name='assembly.busco_dataset' THEN metrics_value END) AS assembly_busco_lineage,
-                             MAX(CASE WHEN metrics_name='assembly.busco_version' THEN metrics_value END) AS assembly_busco_version
-                      FROM assembly_metrics
-                      GROUP BY assembly_id
-                ) asm ON a.assembly_id = asm.assembly_id
                 {where_clause}
-                GROUP BY
-                    b.bioproject_id,
-                    mb.bioproject_name,
-                    g.group_name,
-                    a.gca_chain,
-                    a.gca_version,
-                    a.lowest_taxon_id,
-                    o.infra_name,
-                    gb.gb_status,
-                    gb.genebuilder,
-                    gb.annotation_source,
-                    gb.annotation_method,
-                    gb.date_started,
-                    gb.release_date,
-                    gb.date_status_update,
-                    gb.last_genebuild_update,
-                    s.scientific_name,
-                    s.common_name;                
+
             """
 
             cursor.execute(meta_query, parameters)
@@ -274,6 +240,47 @@ def query_meta_registry(annotation_date, taxon_id, bioproject_id, group_name, gc
                     detail="No annotations found matching the specified criteria.",
                 )
             logging.info(f"Query returned {len(results)} lines.")
+
+            # Keep the wide table in sync with the registry as new annotation
+            # metrics are added, instead of maintaining a hard-coded list here.
+            genebuild_status_ids = {
+                row["genebuild_status_id"]
+                for row in results
+                if row.get("genebuild_status_id") is not None
+            }
+            annotation_metrics = []
+            if genebuild_status_ids:
+                metrics_query = f"""
+                    SELECT genebuild_status_id, metrics_name, metrics_value
+                    FROM annotation_metrics
+                    WHERE genebuild_status_id IN ({','.join(['%s'] * len(genebuild_status_ids))})
+                """
+                cursor.execute(metrics_query, tuple(genebuild_status_ids))
+                annotation_metrics = cursor.fetchall()
+
+            assembly_ids = {
+                row["assembly_id"]
+                for row in results
+                if row.get("assembly_id") is not None
+            }
+            assembly_metrics = []
+            if assembly_ids:
+                assembly_metrics_query = f"""
+                    SELECT assembly_id, metrics_name, metrics_value
+                    FROM assembly_metrics
+                    WHERE assembly_id IN ({','.join(['%s'] * len(assembly_ids))})
+                      AND metrics_name IN (%s, %s, %s)
+                """
+                cursor.execute(
+                    assembly_metrics_query,
+                    tuple(assembly_ids)
+                    + (
+                        "assembly.busco",
+                        "assembly.busco_dataset",
+                        "assembly.busco_version",
+                    ),
+                )
+                assembly_metrics = cursor.fetchall()
 
             # Get taxonomy data
             lowest_taxon_ids = {
@@ -317,6 +324,55 @@ def query_meta_registry(annotation_date, taxon_id, bioproject_id, group_name, gc
                 )
 
         df_meta_genebuild = pd.DataFrame(results)
+
+        if annotation_metrics:
+            metrics_wide = (
+                pd.DataFrame(annotation_metrics)
+                .pivot_table(
+                    index="genebuild_status_id",
+                    columns="metrics_name",
+                    values="metrics_value",
+                    aggfunc="first",
+                )
+                .reset_index()
+            )
+            df_meta_genebuild = df_meta_genebuild.merge(
+                metrics_wide, on="genebuild_status_id", how="left"
+            )
+
+        if assembly_metrics:
+            assembly_metrics_wide = (
+                pd.DataFrame(assembly_metrics)
+                .pivot_table(
+                    index="assembly_id",
+                    columns="metrics_name",
+                    values="metrics_value",
+                    aggfunc="first",
+                )
+                .reset_index()
+            )
+            df_meta_genebuild = df_meta_genebuild.merge(
+                assembly_metrics_wide, on="assembly_id", how="left"
+            )
+
+        # Preserve the existing friendly column names used by reports while
+        # retaining every raw metrics_name column in the wide table.
+        for metric_name, column_name in {
+            "genebuild.busco": "protein_busco",
+            "genebuild.busco_dataset": "protein_busco_lineage",
+            "genebuild.busco_version": "protein_busco_version",
+            "genebuild.stats.coding_genes": "coding_genes",
+            "assembly.busco": "assembly_busco",
+            "assembly.busco_dataset": "assembly_busco_lineage",
+            "assembly.busco_version": "assembly_busco_version",
+        }.items():
+            df_meta_genebuild[column_name] = df_meta_genebuild.get(
+                metric_name, pd.Series(pd.NA, index=df_meta_genebuild.index)
+            )
+
+        df_meta_genebuild = df_meta_genebuild.drop(
+            columns=["genebuild_status_id", "assembly_id", "genebuild.id"], errors="ignore"
+        )
 
         # Add clade, species, and genus information
         clade_data = load_clade_data()
@@ -466,14 +522,10 @@ def generate_tables(annotation_date, taxon_id, bioproject_id, group_name, gca=No
 
     # Transforming out of range float values that are not JSON compliant: nan
     logging.info(f"Transfroming Out of range float values that are not JSON compliant")
-    anno_main = anno_main.apply(
-        lambda col: col.fillna("") if col.dtype == "object" else col
-    )
-    anno_wide = anno_wide.apply(
-        lambda col: col.fillna("") if col.dtype == "object" else col
-    )
-    anno_project_memberships = anno_project_memberships.apply(
-        lambda col: col.fillna("") if col.dtype == "object" else col
+    anno_main = anno_main.astype(object).where(pd.notna(anno_main), None)
+    anno_wide = anno_wide.astype(object).where(pd.notna(anno_wide), None)
+    anno_project_memberships = anno_project_memberships.astype(object).where(
+        pd.notna(anno_project_memberships), None
     )
 
     return anno_wide, anno_main, anno_project_memberships
