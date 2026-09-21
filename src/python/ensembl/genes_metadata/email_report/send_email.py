@@ -172,7 +172,9 @@ def send_project_emails(
         projects = json.load(f)  # nested dict: project_key -> {label, email, id}
 
     for project_key, project_info in projects.items():
-        recipient = project_info["email"]
+        recipients = project_info["email"]
+        if isinstance(recipients, str):
+            recipients = [recipients]
         project_label = project_info["label"]
 
         # Generate CSV for this project
@@ -181,7 +183,7 @@ def send_project_emails(
         # Compose email
         msg = EmailMessage()
         msg["From"] = from_email
-        msg["To"] = recipient
+        msg["To"] = ", ".join(recipients)
         msg["Subject"] = f"Monthly annotation report: {project_label}"
         msg.set_content(body_text)
 
@@ -204,15 +206,15 @@ def send_project_emails(
             with smtplib.SMTP(smtp_host, smtp_port) as smtp:
                 smtp.sendmail(
                 msg["From"],
-                [msg["To"]],
+                recipients,
                 msg.as_string()
                 )
                 logging.info(
-                    f"Email successfully sent to {recipient} for project {project_label}"
+                    f"Email successfully sent to {', '.join(recipients)} for project {project_label}"
                 )
         except Exception as e:
             logging.error(
-                f"Failed to send email to {recipient} for project {project_label}: {e}"
+                f"Failed to send email to {', '.join(recipients)} for project {project_label}: {e}"
             )
 
     logging.info("Finished sending all project emails")
