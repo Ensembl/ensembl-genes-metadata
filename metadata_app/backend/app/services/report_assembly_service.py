@@ -164,9 +164,10 @@ def generate_tables(
             current=True,
             transc=transc,
             transc_ena=transc_ena,
-            non_annotated=non_annotated,
+            non_annotated=non_annotated and not candidate,
             group_name=group_name,
             gca=None,
+            candidate=candidate,
         )
         if isinstance(assembly_result[0], str):
             return assembly_result
