@@ -42,6 +42,7 @@ export default function Page() {
   const [assemblies, setAssemblies] = useState<Assemblies[]>([]);
   const [checkENA, setCheckENA] = useState(false);
   const [nonAnnotated, setNonAnnotated] = useState(true);
+  const [candidate, setCandidate] = useState(false);
   const [checkTranscript, setCheckTranscript] = useState(false);
   const [checkCurrent, setCheckCurrent] = useState(true);
   const [gcaInput, setGcaInput] = useState<string>("");
@@ -114,6 +115,7 @@ export default function Page() {
         transc: checkTranscript,
         transc_ena: checkENA,
         non_annotated: nonAnnotated,
+        candidate,
         gca: uniqueGCA.length > 0 ? uniqueGCA : null,
       };
 
@@ -406,6 +408,10 @@ export default function Page() {
               <div className="flex items-center space-x-2">
                 <Switch id="non_annotated" checked={nonAnnotated} onCheckedChange={setNonAnnotated} />
                 <Label htmlFor="non_annotated">Only show non-annotated assemblies</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Switch id="candidate" checked={candidate} onCheckedChange={setCandidate} />
+                <Label htmlFor="candidate">Reconsider for annotation</Label>
               </div>
             </div>
           </div>

@@ -15,5 +15,6 @@ class AssemblyFilterRequest(BaseModel):
     transc: Optional[bool] = False
     transc_ena: Optional[bool] = False
     non_annotated: Optional[bool] = False
+    candidate: Optional[bool] = False
     group_name: Optional[List[str]] = None
     gca: Optional[List[str]] = None

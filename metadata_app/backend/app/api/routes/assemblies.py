@@ -18,6 +18,7 @@ def filter_assemblies(filters: AssemblyFilterRequest):
         transc=filters.transc,
         transc_ena=filters.transc_ena,
         non_annotated = filters.non_annotated,
+        candidate=filters.candidate,
         group_name = filters.group_name,
         gca = filters.gca,
     )
