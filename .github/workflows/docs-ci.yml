@@ -2,7 +2,7 @@ name: Documentation
 
 on:
   push:
-    branches: [ main ]
+    branches: [ dev/asm_update_nfx ]
     paths:
       - 'docs/**'
       - 'mkdocs.yml'
