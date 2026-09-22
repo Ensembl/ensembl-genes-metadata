@@ -7,14 +7,18 @@ repo_name: Ensembl/ensembl-genes-metadata
 docs_dir: docs
 site_dir: site
 
-# The generator tooling (docs/generators/) lives alongside the content
+# The generator tooling (docs/generators/) and the Sphinx project that
+# builds the "Source" tab (docs/source/) both live alongside the content
 # MkDocs serves. mkdocs itself honors exclude_docs below, but zensical
 # (used in CI, see docs-ci.yml) does not implement exclude_docs as of
-# 0.0.62 -- it copies generators/ into site/ regardless. The CI build
-# strips it back out after the build step; do the same for local
-# previews built with zensical (see docs/generators/generate_docs.py).
+# 0.0.62 -- it copies generators/ and source/ into site/ regardless. The
+# CI build strips the raw source/ copy back out *before* running the real
+# Sphinx build into that same site/source/ path (see docs-ci.yml -- order
+# matters here); do the same for local previews built with zensical (see
+# docs/generators/generate_docs.py).
 exclude_docs: |
   generators/
+  source/
   __pycache__/
 
 theme:
@@ -88,3 +92,4 @@ nav:
       - Modules: pipelines/assembly_metadata_update/modules/index.md
       - Output: pipelines/assembly_metadata_update/output.md
       - Troubleshooting: pipelines/assembly_metadata_update/troubleshooting.md
+  - Source: source/index.html

@@ -5,15 +5,23 @@ Generate MkDocs Material documentation for the Ensembl Genes Nextflow pipelines.
 Mirrors the layout used by ensembl-genes-nf's live documentation site
 (mkdocs.yml built with mkdocs/zensical). This tooling lives in
 docs/generators/, alongside the content MkDocs serves (docs_dir: docs in
-mkdocs.yml). mkdocs.yml's exclude_docs keeps generators/ out of a build
-with the official `mkdocs` CLI, but zensical (used in CI) does not
-implement exclude_docs as of 0.0.62 and will copy generators/ into the
-built site -- after `zensical build`, remove it manually:
+mkdocs.yml). docs/source/ (a separate Sphinx project, see docs/source/conf.py)
+also lives there -- it builds the "Source" tab (the gb_metadata Python API
+reference). mkdocs.yml's exclude_docs keeps both generators/ and source/ out
+of a build with the official `mkdocs` CLI, but zensical (used in CI) does not
+implement exclude_docs as of 0.0.62 and will copy both into the built site.
 
-    rm -rf site/generators site/__init__.py
+The Sphinx build writes its real output to site/source/ -- the same path
+zensical's leaked raw copy occupies -- so the leaked copy MUST be removed
+BEFORE running the Sphinx build, not after (removing it after would delete
+the real output instead):
+
+    zensical build --config-file mkdocs.yml --strict
+    rm -rf site/generators site/__init__.py site/source
     find site -name '__pycache__' -type d -exec rm -rf {} +
+    sphinx-build --keep-going -b html docs/source site/source
 
-(docs-ci.yml already does this for the deployed build.)
+(docs-ci.yml already does this, in this order, for the deployed build.)
 
 Only generated pages are overwritten. Handwritten pages (docs/README.md and
 each pipeline's index.md, input.md, output.md, troubleshooting.md) are
