@@ -48,6 +48,18 @@ def escape_value(value) -> str:
     return pymysql.converters.escape_string(str(value))
 
 
+def format_sql_value(value) -> str:
+    """Render a Python value as a SQL literal: NULL for empty/None, else a quoted, escaped string.
+
+    The NULL/value decision is made per-value, before quoting/escaping, so a value whose
+    escaped content happens to end adjacent to its own closing quote can never be mistaken
+    for an empty placeholder (which a post-hoc string search for "''" could not tell apart).
+    """
+    if value is None or value == "":
+        return "NULL"
+    return f"'{escape_value(value)}'"
+
+
 def check_dict_structure(input_dict) -> bool:
     """This functions checks the structure of the dictionary to,
     identify if the data is a dictionary or a list of dictionary
@@ -131,9 +143,7 @@ def insert_query(data_dict: Dict, table_name: str, table_conf, metadata_params) 
         # crete basic query
         logging.info("Creating basic query for table %s", table_name)
         table_var_string = ", ".join(list(data_dict.keys()))
-        values_strings = ",".join([f"'{escape_value(value)}'" for value in list(data_dict.values())]).replace(
-            "''", "NULL"
-        )
+        values_strings = ",".join(format_sql_value(value) for value in data_dict.values())
         return f"""INSERT INTO {table_name} ({table_var_string}) VALUES ({values_strings}) ;"""
 
     logging.info("%s is an attribute table (key:value pairs) ", table_name)
@@ -153,7 +163,7 @@ def insert_query(data_dict: Dict, table_name: str, table_conf, metadata_params) 
     if dkey is None or dkey == "None":
         logging.info("%s is a per_row table without dkey %s", table_name, dkey)
         for key, value in data_dict.items():
-            value_item = f"('{escape_value(key)}', '{escape_value(value)}')"
+            value_item = f"('{escape_value(key)}', {format_sql_value(value)})"
             value_list.append(value_item)
             values_string = ", ".join(value_list)
 
@@ -164,7 +174,9 @@ def insert_query(data_dict: Dict, table_name: str, table_conf, metadata_params) 
     for key, value in data_dict.items():
         if key != dkey:
             if table_conf[table_name]["method"] in ["per_row"]:
-                value_item = f"('{escape_value(dkey_value)}', '{escape_value(key)}', '{escape_value(value)}')"
+                value_item = (
+                    f"('{escape_value(dkey_value)}', '{escape_value(key)}', {format_sql_value(value)})"
+                )
             elif table_conf[table_name]["method"] in ["per_row_key"]:
                 logging.info("%s is an attribute table (key only) ", table_name)
                 value_item = f"('{escape_value(dkey_value)}', '{escape_value(key)}')"
@@ -198,7 +210,7 @@ def update_query(data_dict: Dict, table_name: str, table_conf) -> str:
         if table_conf[table_name]["ukey"] == key:
             condition = f"{key} = {value}"
         else:
-            update_list.append(f"{key} = '{escape_value(value)}'")
+            update_list.append(f"{key} = {format_sql_value(value)}")
 
     if condition is None:
         raise ValueError(f"Update key not found in the provided data for table {table_name}")
@@ -414,7 +426,7 @@ def execute_query(
 
     except Exception as ee:
         print(f"Error: {ee}")
-        raise ValueError from ee
+        raise ValueError(str(ee)) from ee
 
     cur.close()
     conn.close()
