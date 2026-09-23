@@ -1,0 +1,136 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://raw.githubusercontent.com/Ensembl/ensembl-genes-metadata/main/pipelines/assembly_metadata_update/nextflow_schema.json",
+    "title": "Assembly Metadata Update Pipeline",
+    "description": "Nextflow pipeline to fetch new assemblies, retrieve their metadata from NCBI, and determine which existing assemblies in the Ensembl metadata database require an update.",
+    "type": "object",
+    "$defs": {
+        "input_output_options": {
+            "title": "Input/output options",
+            "type": "object",
+            "fa_icon": "fas fa-terminal",
+            "description": "Define where the pipeline should save output data.",
+            "required": [
+                "output_dir"
+            ],
+            "properties": {
+                "output_dir": {
+                    "type": "string",
+                    "description": "Path to the output directory where results will be saved.",
+                    "fa_icon": "fas fa-folder-open"
+                }
+            }
+        },
+        "assembly_options": {
+            "title": "Assembly options",
+            "type": "object",
+            "fa_icon": "fas fa-dna",
+            "description": "Options controlling which assemblies are screened for updates.",
+            "properties": {
+                "screen_date": {
+                    "type": "string",
+                    "description": "Custom date to retrieve assemblies released after this date. Format: YYYY-MM-DD. Required unless --gca_input is set; mutually exclusive with --gca_input.",
+                    "pattern": "^\\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$",
+                    "fa_icon": "fas fa-calendar-alt"
+                },
+                "gca_input": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "When true, uses the GCA list provided via --gca_list as input instead of fetching assemblies from the metadata database. Mutually exclusive with --screen_date.",
+                    "fa_icon": "fas fa-list"
+                },
+                "gca_list": {
+                    "type": "string",
+                    "description": "Path to a file containing a list of GCA accessions to process. Requires --gca_input.",
+                    "fa_icon": "fas fa-file-alt"
+                }
+            },
+            "dependentRequired": {
+                "gca_input": [
+                    "gca_list"
+                ]
+            }
+        },
+        "ncbi_options": {
+            "title": "NCBI options",
+            "type": "object",
+            "fa_icon": "fas fa-cloud",
+            "description": "Options for the NCBI Datasets API.",
+            "properties": {
+                "ncbi_url": {
+                    "type": "string",
+                    "default": "https://api.ncbi.nlm.nih.gov/datasets/v2",
+                    "description": "Base URL for the NCBI Datasets API.",
+                    "fa_icon": "fas fa-link"
+                }
+            }
+        },
+        "database_options": {
+            "title": "Database options",
+            "type": "object",
+            "fa_icon": "fas fa-database",
+            "description": "Options for the metadata database connection.",
+            "properties": {
+                "metadata_params_string": {
+                    "type": "string",
+                    "description": "JSON string with metadata database connection parameters (host, user, password, port, database).",
+                    "fa_icon": "fas fa-file-code"
+                },
+                "db_table_conf": {
+                    "type": "string",
+                    "default": "$projectDir/data/db_table_conf.json",
+                    "description": "Path to the JSON file describing how each metadata database table should be updated (method, delete key, update key).",
+                    "fa_icon": "fas fa-table"
+                }
+            }
+        },
+        "slack_options": {
+            "title": "Slack reporting options",
+            "type": "object",
+            "fa_icon": "fab fa-slack",
+            "description": "Options controlling Slack notifications sent to genebuilders when an assembly's metadata changes.",
+            "properties": {
+                "slack_report": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "When true, sends a Slack direct message to the genebuilder assigned to an assembly whenever its metadata is updated.",
+                    "fa_icon": "fas fa-comment-dots"
+                },
+                "slack_user": {
+                    "type": "string",
+                    "default": "$projectDir/data/slack_user.json",
+                    "description": "Path to the JSON file mapping genebuilder usernames to Slack user IDs. Requires --slack_report.",
+                    "fa_icon": "fas fa-users"
+                },
+                "slack_params": {
+                    "type": "string",
+                    "description": "JSON string with Slack bot connection parameters, e.g. '{\"slack_bot_token\": \"xoxb-...\"}'. Requires --slack_report.",
+                    "fa_icon": "fas fa-robot"
+                }
+            },
+            "dependentRequired": {
+                "slack_report": [
+                    "slack_user",
+                    "slack_params"
+                ]
+            }
+        }
+    },
+    "allOf": [
+        {
+            "$ref": "#/$defs/input_output_options"
+        },
+        {
+            "$ref": "#/$defs/assembly_options"
+        },
+        {
+            "$ref": "#/$defs/ncbi_options"
+        },
+        {
+            "$ref": "#/$defs/database_options"
+        },
+        {
+            "$ref": "#/$defs/slack_options"
+        }
+    ]
+}

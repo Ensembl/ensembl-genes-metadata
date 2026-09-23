@@ -1,0 +1,87 @@
+name: Documentation
+
+on:
+  push:
+    branches: [ dev/asm_update_nfx ]
+    paths:
+      - 'docs/**'
+      - 'mkdocs.yml'
+      - 'src/python/**'
+      - 'pipelines/**/*.nf'
+      - 'pipelines/**/nextflow_schema.json'
+  pull_request:
+    paths:
+      - 'docs/**'
+      - 'mkdocs.yml'
+      - 'src/python/**'
+      - 'pipelines/**/*.nf'
+      - 'pipelines/**/nextflow_schema.json'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: gh-pages
+  cancel-in-progress: false
+
+jobs:
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/pyproject.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install ".[docs]" || \
+          pip install mkdocs-material mkdocs-minify-plugin zensical \
+          sphinx sphinx-autoapi sphinx-rtd-theme myst-parser
+
+      - name: Generate Pipeline Docs
+        run: python -m docs.generators.generate_docs
+
+      - name: MkDocs Build
+        run: zensical build --config-file mkdocs.yml --strict
+
+      # zensical does not implement mkdocs.yml's exclude_docs (as of 0.0.62),
+      # so the build above copies docs/generators/ and docs/source/ straight
+      # into the built site. Strip that raw content out *before* the real
+      # Sphinx build below writes its own output to site/source/ -- doing
+      # this after would delete the real build output instead, since it
+      # lands at the same path as the raw copy being removed here.
+      - name: Remove Generator And Raw Sphinx Source From Built Site
+        run: |
+          rm -rf site/generators site/__init__.py site/source
+          find site -name '__pycache__' -type d -exec rm -rf {} +
+
+      - name: Sphinx Build (Source tab)
+        run: sphinx-build --keep-going -b html docs/source site/source
+
+      - name: Sphinx Link Check
+        if: ${{ github.event_name != 'pull_request' }}
+        continue-on-error: true
+        run: sphinx-build -b linkcheck docs/source docs/build/linkcheck
+
+      - name: Deploy to GitHub Pages
+        if: github.event_name == 'push'
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: gh-pages
+          publish_dir: site
+          force_orphan: true

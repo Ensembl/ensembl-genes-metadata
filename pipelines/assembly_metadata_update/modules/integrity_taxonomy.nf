@@ -15,22 +15,31 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+/*
+INTEGRITY TAXONOMY
+This process checks the integrity of the taxonomy for a given GCA accession using the species_checker.py script.
+Inputs:
+- gca: The GCA accession for which to check taxonomy.
+- taxon_id: The taxon ID associated with the GCA accession.
+Outputs:
+- taxonomy_${taxon_id}.json: The JSON file containing the taxonomy information.
+*/
 
-process WRITE2DB_TOLID {
+process INTEGRITY_TAXONOMY {
 
     label 'python'
-    tag "$gca"
-    publishDir "${params.output_dir}/nextflow_output/$gca", mode: 'copy'
+    tag "${gca}"
+    publishDir "${params.output_dir}/nextflow_output/${gca}", mode: 'copy'
 
     input:
-    tuple val(gca), path(tolid)
+    tuple val(gca), val(taxon_id)
+    path species_checker_script
 
     output:
-    val gca, emit: gca 
-    path "${tolid.baseName}.last_id", emit:last_id
+    tuple val(gca), path("taxonomy_${taxon_id}.json")
 
     script:
     """
-    write2db.py --file-path $tolid --update --metadata ${params.metadata_params} --config ${params.db_table_conf}
+    python ${species_checker_script} --taxon_id ${taxon_id} --ncbi_url ${params.ncbi_url} --taxonomy_update
     """
 }
