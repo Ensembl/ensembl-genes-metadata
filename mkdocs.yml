@@ -6,6 +6,9 @@ repo_url: https://github.com/Ensembl/ensembl-genes-metadata
 repo_name: Ensembl/ensembl-genes-metadata
 docs_dir: docs
 site_dir: site
+# site/ is what docs-ci.yml publishes to the gh-pages branch (required by
+# the repo's github-pages deployment environment, which only allows
+# deployments from that branch) via peaceiris/actions-gh-pages.
 
 # The generator tooling (docs/generators/) and the Sphinx project that
 # builds the "Source" tab (docs/source/) both live alongside the content
