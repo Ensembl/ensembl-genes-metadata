@@ -17,6 +17,7 @@ Each flow can be run two ways:
 - [Flows](#flows)
 - [Common Behavior](#common-behavior)
 - [Outputs](#outputs)
+- [`slurm-cli` Worker](#slurm-cli-worker)
 
 ---
 
@@ -170,3 +171,39 @@ Return values differ slightly by task:
 - `register_assemblies` / `update_assemblies` return a Prefect `Completed`/`Failed` state wrapping a result dict (`returncode`, `command`, `command_file`, `log_file`, `slurm_job_id`, `pipeline_run_date`, `pipeline_ran`, `dry_run`).
 - `run_nextflow_busco` returns the same kind of result dict directly, without wrapping it in a Prefect state.
 - `is_reference` returns the output CSV path as a string on success, or raises `RuntimeError` on failure.
+
+---
+
+## `slurm-cli` Worker
+
+`gb_prefect.worker.SlurmCliWorker` is a custom Prefect worker type (`type: slurm-cli`) that submits an entire flow run as a single Slurm job via the `sbatch` CLI. It's registered under `[project.entry-points."prefect.collections"]` in [pyproject.toml](../pyproject.toml), so once the package is installed it's available to `prefect work-pool create` / `prefect worker start` like any built-in worker type.
+
+As with any Prefect worker, the **whole flow run** — including any task that shells out to Nextflow — executes inside one Slurm job; tasks are not separate Slurm jobs.
+
+### Job configuration fields
+
+| Field | Description |
+|---|---|
+| `cpu` | CPU count (`--cpus-per-task`) |
+| `memory` | Memory in GB (`--mem`) |
+| `partition` | Slurm partition (`--partition`), optional |
+| `account` | Slurm account (`--account`), optional |
+| `qos` | Slurm QOS (`--qos`), optional |
+| `time_limit` | Wall time in hours (`--time`) |
+| `working_dir` | Directory the job runs from; also where the generated sbatch script and `slurm_%j.out`/`.err` files are written |
+| `setup_commands` | Shell commands run before the flow-run command, e.g. `module load nextflow/24.10.3`, `source ~/asm_venv/bin/activate` |
+
+**Important**: the environment produced by `setup_commands` must have this package (`gb_prefect`) and `prefect` importable — the flow run's own Python process executes inside the submitted Slurm job, not just any Nextflow subprocess it launches.
+
+### Example: creating a pool
+
+```bash
+prefect work-pool create codon-slurm-busco-pool --type slurm-cli
+prefect work-pool update codon-slurm-busco-pool --concurrency-limit 10
+```
+
+Job configuration values (`cpu`, `memory`, `setup_commands`, etc.) are then set on the pool's base job template or overridden per-deployment, the same as any other Prefect worker type.
+
+### Current scope
+
+This is an initial implementation. `sbatch` submission is retried with backoff (`GB_PREFECT_WORKER_MAX_ATTEMPTS`, default 3, plus `GB_PREFECT_WORKER_RETRY_MIN_DELAY_SECONDS`/`..._JITTER_SECONDS` env vars) for transient `slurmctld` errors.
