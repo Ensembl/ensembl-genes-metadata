@@ -1,0 +1,24 @@
+python
+======
+
+.. py:module:: python
+
+.. autoapi-nested-parse::
+
+   gb_metadata: shared Python scripts and utilities used across the Genebuild metadata pipelines.
+
+
+
+Submodules
+----------
+
+.. toctree::
+   :maxdepth: 1
+
+   /api/python/db_utils/index
+   /api/python/is_reference/index
+   /api/python/species_checker/index
+   /api/python/utils/index
+   /api/python/write2db/index
+
+

@@ -1,0 +1,294 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>python.species_checker &mdash; ensembl-genes-metadata</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <link rel="next" title="python.utils" href="../utils/index.html" />
+    <link rel="prev" title="python.is_reference" href="../is_reference/index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html">
+            
+              <img src="../../../_static/ebang.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Python Reference</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">python</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../index.html#submodules">Submodules</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../db_utils/index.html">python.db_utils</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../db_utils/index.html#functions">Functions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../db_utils/index.html#module-contents">Module Contents</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../is_reference/index.html">python.is_reference</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../is_reference/index.html#usage">Usage</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../is_reference/index.html#output-columns">Output columns</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../is_reference/index.html#attributes">Attributes</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../is_reference/index.html#functions">Functions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../is_reference/index.html#module-contents">Module Contents</a></li>
+</ul>
+</li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">python.species_checker</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#functions">Functions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#module-contents">Module Contents</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../utils/index.html">python.utils</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../utils/index.html#functions">Functions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../utils/index.html#module-contents">Module Contents</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../write2db/index.html">python.write2db</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../write2db/index.html#functions">Functions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../write2db/index.html#module-contents">Module Contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">ensembl-genes-metadata</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">python</a></li>
+      <li class="breadcrumb-item active">python.species_checker</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../_sources/api/python/species_checker/index.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-python.species_checker">
+<span id="python-species-checker"></span><h1>python.species_checker<a class="headerlink" href="#module-python.species_checker" title="Link to this heading"></a></h1>
+<p>The module add species_taxon_id and parlance_name to the species main key to json-like (.tmp) species file.
+It retrieves the taxonomy classification and names to be store in the taxonomy and taxonomy_name tables.
+The module when used in the pipeline requires –json-path, –ncbi_url and –enscode.
+Additionally, to be used as standalone script to update the taxonomy tables, it requires
+–taxonomy_update, –taxon_id, and –ncbi_url.</p>
+<dl class="field-list simple">
+<dt class="field-odd">raises ValueError<span class="colon">:</span></dt>
+<dd class="field-odd"><p>invalid taxonomy rank</p>
+</dd>
+<dt class="field-even">raises ValueError<span class="colon">:</span></dt>
+<dd class="field-even"><p>multiple prefix detected</p>
+</dd>
+<dt class="field-odd">returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>a json file with the species information</p>
+</dd>
+<dt class="field-even">rtype<span class="colon">:</span></dt>
+<dd class="field-even"><p>str</p>
+</dd>
+</dl>
+<section id="functions">
+<h2>Functions<a class="headerlink" href="#functions" title="Link to this heading"></a></h2>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#python.species_checker.get_taxon_data" title="python.species_checker.get_taxon_data"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_taxon_data</span></code></a>(→ dict)</p></td>
+<td><p>It connects to the NCBI API to retrieve the taxonomy data of the lowest taxon id.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#python.species_checker.get_taxon_classification" title="python.species_checker.get_taxon_classification"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_taxon_classification</span></code></a>(→ tuple[dict, dict])</p></td>
+<td><p>This function retrieves the taxonomy classification from the NCBI API response.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#python.species_checker.species_taxon" title="python.species_checker.species_taxon"><code class="xref py py-obj docutils literal notranslate"><span class="pre">species_taxon</span></code></a>(→ tuple[int, bool])</p></td>
+<td><p>This functions checks if the lowest taxon id is a species or a infraspecific taxon rank.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#python.species_checker.get_parlance_name" title="python.species_checker.get_parlance_name"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_parlance_name</span></code></a>(→ str)</p></td>
+<td><p>Search in the snp_static.txt file from the core_meta_update repository the parlance name</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#python.species_checker.update_species_metadata" title="python.species_checker.update_species_metadata"><code class="xref py py-obj docutils literal notranslate"><span class="pre">update_species_metadata</span></code></a>(→ None)</p></td>
+<td><p>Update the species JSON file with taxonomy classification and parlance name.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#python.species_checker.update_taxonomy_tables" title="python.species_checker.update_taxonomy_tables"><code class="xref py py-obj docutils literal notranslate"><span class="pre">update_taxonomy_tables</span></code></a>(→ None)</p></td>
+<td><p>Update the taxonomy and taxonomy_name tables, used as a standalone script.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#python.species_checker.main" title="python.species_checker.main"><code class="xref py py-obj docutils literal notranslate"><span class="pre">main</span></code></a>()</p></td>
+<td><p>Module's entry point.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="module-contents">
+<h2>Module Contents<a class="headerlink" href="#module-contents" title="Link to this heading"></a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="python.species_checker.get_taxon_data">
+<span class="sig-prename descclassname"><span class="pre">python.species_checker.</span></span><span class="sig-name descname"><span class="pre">get_taxon_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">taxon_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ncbi_url</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="headerlink" href="#python.species_checker.get_taxon_data" title="Link to this definition"></a></dt>
+<dd><p>It connects to the NCBI API to retrieve the taxonomy data of the lowest taxon id.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>taxon_id</strong> (<em>int</em>) – lowest taxon id of the assembly</p></li>
+<li><p><strong>ncbi_url</strong> (<em>str</em>) – valid url to connect to NCBI API, taxonomy endpoint</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>response from NCBI API</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="python.species_checker.get_taxon_classification">
+<span class="sig-prename descclassname"><span class="pre">python.species_checker.</span></span><span class="sig-name descname"><span class="pre">get_taxon_classification</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">taxon_data</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">dict</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#python.species_checker.get_taxon_classification" title="Link to this definition"></a></dt>
+<dd><p>This function retrieves the taxonomy classification from the NCBI API response.
+It returns the classification dictionary that will be user to update the taxonomy table.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>taxon_data</strong> (<em>dict</em>) – NCBI API response containing taxonomy information for the lowest taxon id.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>classification dictionary and classification name dictionary</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>tuple[dict, dict]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="python.species_checker.species_taxon">
+<span class="sig-prename descclassname"><span class="pre">python.species_checker.</span></span><span class="sig-name descname"><span class="pre">species_taxon</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">taxon_data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">taxon_id</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">bool</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#python.species_checker.species_taxon" title="Link to this definition"></a></dt>
+<dd><p>This functions checks if the lowest taxon id is a species or a infraspecific taxon rank.
+It returns the species taxon id to be used in the species table.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>lowest_taxon_id</strong> (<em>str</em>) – the taxonomy id of the assembly, it is obtained from the assembly NCBI report</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>ValueError</strong> – when the provided value is not a valid taxonomy rank. Valid values are
+species taxon ID or infraspecific taxon ID</p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>species taxon id, it could be the same lowest taxon id value</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="python.species_checker.get_parlance_name">
+<span class="sig-prename descclassname"><span class="pre">python.species_checker.</span></span><span class="sig-name descname"><span class="pre">get_parlance_name</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sci_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enscode</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#python.species_checker.get_parlance_name" title="Link to this definition"></a></dt>
+<dd><p>Search in the snp_static.txt file from the core_meta_update repository the parlance name
+for the scientific name provided</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>sci_name</strong> (<em>str</em>) – scientific name of the species</p></li>
+<li><p><strong>enscode</strong> (<em>str</em>) – ENSCODE variable path</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>parlance name when available</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="python.species_checker.update_species_metadata">
+<span class="sig-prename descclassname"><span class="pre">python.species_checker.</span></span><span class="sig-name descname"><span class="pre">update_species_metadata</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#python.species_checker.update_species_metadata" title="Link to this definition"></a></dt>
+<dd><p>Update the species JSON file with taxonomy classification and parlance name.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="python.species_checker.update_taxonomy_tables">
+<span class="sig-prename descclassname"><span class="pre">python.species_checker.</span></span><span class="sig-name descname"><span class="pre">update_taxonomy_tables</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#python.species_checker.update_taxonomy_tables" title="Link to this definition"></a></dt>
+<dd><p>Update the taxonomy and taxonomy_name tables, used as a standalone script.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="python.species_checker.main">
+<span class="sig-prename descclassname"><span class="pre">python.species_checker.</span></span><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#python.species_checker.main" title="Link to this definition"></a></dt>
+<dd><p>Module’s entry point.</p>
+</dd></dl>
+
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="../is_reference/index.html" class="btn btn-neutral float-left" title="python.is_reference" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../utils/index.html" class="btn btn-neutral float-right" title="python.utils" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Genebuild.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,27 @@
+python.utils
+============
+
+.. py:module:: python.utils
+
+.. autoapi-nested-parse::
+
+   Utility functions.
+
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   python.utils.connection_api
+
+
+Module Contents
+---------------
+
+.. py:function:: connection_api(uri: str) -> requests.Response
+
+   Connect to the API and return the HTTP response, retrying transient failures.
+
+

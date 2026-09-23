@@ -1,0 +1,107 @@
+python.species_checker
+======================
+
+.. py:module:: python.species_checker
+
+.. autoapi-nested-parse::
+
+   The module add species_taxon_id and parlance_name to the species main key to json-like (.tmp) species file.
+   It retrieves the taxonomy classification and names to be store in the taxonomy and taxonomy_name tables.
+   The module when used in the pipeline requires --json-path, --ncbi_url and --enscode.
+   Additionally, to be used as standalone script to update the taxonomy tables, it requires
+   --taxonomy_update, --taxon_id, and --ncbi_url.
+
+   :raises ValueError: invalid taxonomy rank
+   :raises ValueError: multiple prefix detected
+
+   :returns: a json file with the species information
+   :rtype: str
+
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   python.species_checker.get_taxon_data
+   python.species_checker.get_taxon_classification
+   python.species_checker.species_taxon
+   python.species_checker.get_parlance_name
+   python.species_checker.update_species_metadata
+   python.species_checker.update_taxonomy_tables
+   python.species_checker.main
+
+
+Module Contents
+---------------
+
+.. py:function:: get_taxon_data(taxon_id: int, ncbi_url: str) -> dict
+
+   It connects to the NCBI API to retrieve the taxonomy data of the lowest taxon id.
+
+   :param taxon_id: lowest taxon id of the assembly
+   :type taxon_id: int
+   :param ncbi_url: valid url to connect to NCBI API, taxonomy endpoint
+   :type ncbi_url: str
+
+   :returns: response from NCBI API
+   :rtype: dict
+
+
+.. py:function:: get_taxon_classification(taxon_data) -> tuple[dict, dict]
+
+   This function retrieves the taxonomy classification from the NCBI API response.
+   It returns the classification dictionary that will be user to update the taxonomy table.
+
+   :param taxon_data: NCBI API response containing taxonomy information for the lowest taxon id.
+   :type taxon_data: dict
+
+   :returns: classification dictionary and classification name dictionary
+   :rtype: tuple[dict, dict]
+
+
+.. py:function:: species_taxon(taxon_data, taxon_id) -> tuple[int, bool]
+
+   This functions checks if the lowest taxon id is a species or a infraspecific taxon rank.
+   It returns the species taxon id to be used in the species table.
+
+   :param lowest_taxon_id: the taxonomy id of the assembly, it is obtained from the assembly NCBI report
+   :type lowest_taxon_id: str
+
+   :raises ValueError: when the provided value is not a valid taxonomy rank. Valid values are
+       species taxon ID or infraspecific taxon ID
+
+   :returns: species taxon id, it could be the same lowest taxon id value
+   :rtype: str
+
+
+.. py:function:: get_parlance_name(sci_name: str, enscode) -> str
+
+   Search in the snp_static.txt file from the core_meta_update repository the parlance name
+   for the scientific name provided
+
+   :param sci_name: scientific name of the species
+   :type sci_name: str
+   :param enscode: ENSCODE variable path
+   :type enscode: str
+
+   :returns: parlance name when available
+   :rtype: str
+
+
+.. py:function:: update_species_metadata(args) -> None
+
+   Update the species JSON file with taxonomy classification and parlance name.
+
+
+.. py:function:: update_taxonomy_tables(args) -> None
+
+   Update the taxonomy and taxonomy_name tables, used as a standalone script.
+
+
+.. py:function:: main()
+
+   Module's entry point.
+
+

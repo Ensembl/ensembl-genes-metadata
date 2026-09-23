@@ -1,0 +1,288 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>python.is_reference &mdash; ensembl-genes-metadata</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <link rel="next" title="python.species_checker" href="../species_checker/index.html" />
+    <link rel="prev" title="python.db_utils" href="../db_utils/index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html">
+            
+              <img src="../../../_static/ebang.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Python Reference</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../index.html">python</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../index.html#submodules">Submodules</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="../db_utils/index.html">python.db_utils</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../db_utils/index.html#functions">Functions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../db_utils/index.html#module-contents">Module Contents</a></li>
+</ul>
+</li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">python.is_reference</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#usage">Usage</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#output-columns">Output columns</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#attributes">Attributes</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#functions">Functions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#module-contents">Module Contents</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../species_checker/index.html">python.species_checker</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../species_checker/index.html#functions">Functions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../species_checker/index.html#module-contents">Module Contents</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../utils/index.html">python.utils</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../utils/index.html#functions">Functions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../utils/index.html#module-contents">Module Contents</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="../write2db/index.html">python.write2db</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="../write2db/index.html#functions">Functions</a></li>
+<li class="toctree-l4"><a class="reference internal" href="../write2db/index.html#module-contents">Module Contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">ensembl-genes-metadata</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">python</a></li>
+      <li class="breadcrumb-item active">python.is_reference</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../_sources/api/python/is_reference/index.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-python.is_reference">
+<span id="python-is-reference"></span><h1>python.is_reference<a class="headerlink" href="#module-python.is_reference" title="Link to this heading"></a></h1>
+<p>Given a list of GCA accessions, query the NCBI Datasets API to determine
+whether each assembly is labeled as the reference assembly for its taxon.</p>
+<section id="usage">
+<h2>Usage<a class="headerlink" href="#usage" title="Link to this heading"></a></h2>
+<p>Pass accessions directly on the command line:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">is_reference</span><span class="o">.</span><span class="n">py</span> <span class="n">GCA_004027535</span><span class="mf">.1</span> <span class="n">GCA_000001405</span><span class="mf">.29</span>
+</pre></div>
+</div>
+<p>Or supply a file (one GCA per line, or a single-column CSV):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">is_reference</span><span class="o">.</span><span class="n">py</span> <span class="o">--</span><span class="n">file</span> <span class="n">gcas</span><span class="o">.</span><span class="n">txt</span>
+<span class="n">python</span> <span class="n">is_reference</span><span class="o">.</span><span class="n">py</span> <span class="o">--</span><span class="n">file</span> <span class="n">gcas</span><span class="o">.</span><span class="n">csv</span>
+</pre></div>
+</div>
+<p>Choose a custom output path (default: <code class="docutils literal notranslate"><span class="pre">reference_check.csv</span></code>):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">is_reference</span><span class="o">.</span><span class="n">py</span> <span class="o">--</span><span class="n">file</span> <span class="n">gcas</span><span class="o">.</span><span class="n">txt</span> <span class="o">--</span><span class="n">output</span> <span class="n">my_results</span><span class="o">.</span><span class="n">csv</span>
+</pre></div>
+</div>
+</section>
+<section id="output-columns">
+<h2>Output columns<a class="headerlink" href="#output-columns" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">gca</span></code></dt><dd><p>Input accession.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">species_name</span></code></dt><dd><p>Organism name from NCBI.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">taxon_id</span></code></dt><dd><p>NCBI taxonomy ID.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">is_reference</span></code></dt><dd><p><code class="docutils literal notranslate"><span class="pre">True</span></code>, <code class="docutils literal notranslate"><span class="pre">False</span></code>, or <code class="docutils literal notranslate"><span class="pre">No</span> <span class="pre">reference</span> <span class="pre">available</span></code>.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">current_reference</span></code></dt><dd><p>GCA (or GCF paired) accession of the reference, or
+<code class="docutils literal notranslate"><span class="pre">No</span> <span class="pre">reference</span> <span class="pre">available</span></code>.</p>
+</dd>
+</dl>
+</section>
+<section id="attributes">
+<h2>Attributes<a class="headerlink" href="#attributes" title="Link to this heading"></a></h2>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#python.is_reference.NCBI_BASE" title="python.is_reference.NCBI_BASE"><code class="xref py py-obj docutils literal notranslate"><span class="pre">NCBI_BASE</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#python.is_reference.RETRY_WAIT" title="python.is_reference.RETRY_WAIT"><code class="xref py py-obj docutils literal notranslate"><span class="pre">RETRY_WAIT</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#python.is_reference.MAX_RETRIES" title="python.is_reference.MAX_RETRIES"><code class="xref py py-obj docutils literal notranslate"><span class="pre">MAX_RETRIES</span></code></a></p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="functions">
+<h2>Functions<a class="headerlink" href="#functions" title="Link to this heading"></a></h2>
+<table class="autosummary longtable docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#python.is_reference.get_assembly_info" title="python.is_reference.get_assembly_info"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_assembly_info</span></code></a>(→ dict)</p></td>
+<td><p>Return a dict with keys: taxon_id, species_name.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#python.is_reference.get_reference_for_taxon" title="python.is_reference.get_reference_for_taxon"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_reference_for_taxon</span></code></a>(→ dict | None)</p></td>
+<td><p>Return the first reference-assembly report for taxon_id, or None if</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#python.is_reference.check_assembly" title="python.is_reference.check_assembly"><code class="xref py py-obj docutils literal notranslate"><span class="pre">check_assembly</span></code></a>(→ dict)</p></td>
+<td><p>Return a result row dict for one GCA accession.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#python.is_reference.load_accessions_from_file" title="python.is_reference.load_accessions_from_file"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_accessions_from_file</span></code></a>(→ list[str])</p></td>
+<td><p>Accept a plain text file (one accession per line) or a CSV whose</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#python.is_reference.write_csv" title="python.is_reference.write_csv"><code class="xref py py-obj docutils literal notranslate"><span class="pre">write_csv</span></code></a>(→ None)</p></td>
+<td><p>Write the result rows to output_path as a CSV file.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#python.is_reference.parse_args" title="python.is_reference.parse_args"><code class="xref py py-obj docutils literal notranslate"><span class="pre">parse_args</span></code></a>(→ argparse.Namespace)</p></td>
+<td><p>Parse command-line arguments.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#python.is_reference.main" title="python.is_reference.main"><code class="xref py py-obj docutils literal notranslate"><span class="pre">main</span></code></a>(→ None)</p></td>
+<td><p>Module entry point.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="module-contents">
+<h2>Module Contents<a class="headerlink" href="#module-contents" title="Link to this heading"></a></h2>
+<dl class="py data">
+<dt class="sig sig-object py" id="python.is_reference.NCBI_BASE">
+<span class="sig-prename descclassname"><span class="pre">python.is_reference.</span></span><span class="sig-name descname"><span class="pre">NCBI_BASE</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'https://api.ncbi.nlm.nih.gov/datasets/v2'</span></span><a class="headerlink" href="#python.is_reference.NCBI_BASE" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="python.is_reference.RETRY_WAIT">
+<span class="sig-prename descclassname"><span class="pre">python.is_reference.</span></span><span class="sig-name descname"><span class="pre">RETRY_WAIT</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">2</span></span><a class="headerlink" href="#python.is_reference.RETRY_WAIT" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="python.is_reference.MAX_RETRIES">
+<span class="sig-prename descclassname"><span class="pre">python.is_reference.</span></span><span class="sig-name descname"><span class="pre">MAX_RETRIES</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">3</span></span><a class="headerlink" href="#python.is_reference.MAX_RETRIES" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="python.is_reference.get_assembly_info">
+<span class="sig-prename descclassname"><span class="pre">python.is_reference.</span></span><span class="sig-name descname"><span class="pre">get_assembly_info</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">accession</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="headerlink" href="#python.is_reference.get_assembly_info" title="Link to this definition"></a></dt>
+<dd><p>Return a dict with keys: taxon_id, species_name.
+Raises if the accession is not found.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="python.is_reference.get_reference_for_taxon">
+<span class="sig-prename descclassname"><span class="pre">python.is_reference.</span></span><span class="sig-name descname"><span class="pre">get_reference_for_taxon</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">taxon_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></span><a class="headerlink" href="#python.is_reference.get_reference_for_taxon" title="Link to this definition"></a></dt>
+<dd><p>Return the first reference-assembly report for taxon_id, or None if
+no reference exists.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="python.is_reference.check_assembly">
+<span class="sig-prename descclassname"><span class="pre">python.is_reference.</span></span><span class="sig-name descname"><span class="pre">check_assembly</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">accession</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="headerlink" href="#python.is_reference.check_assembly" title="Link to this definition"></a></dt>
+<dd><p>Return a result row dict for one GCA accession.
+Catches all errors so a bad accession doesn’t abort the whole run.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="python.is_reference.load_accessions_from_file">
+<span class="sig-prename descclassname"><span class="pre">python.is_reference.</span></span><span class="sig-name descname"><span class="pre">load_accessions_from_file</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#python.is_reference.load_accessions_from_file" title="Link to this definition"></a></dt>
+<dd><p>Accept a plain text file (one accession per line) or a CSV whose
+first column contains accessions (header row is skipped if it does
+not look like a GCA accession).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="python.is_reference.write_csv">
+<span class="sig-prename descclassname"><span class="pre">python.is_reference.</span></span><span class="sig-name descname"><span class="pre">write_csv</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rows</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">dict</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#python.is_reference.write_csv" title="Link to this definition"></a></dt>
+<dd><p>Write the result rows to output_path as a CSV file.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="python.is_reference.parse_args">
+<span class="sig-prename descclassname"><span class="pre">python.is_reference.</span></span><span class="sig-name descname"><span class="pre">parse_args</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">argparse.Namespace</span></span></span><a class="headerlink" href="#python.is_reference.parse_args" title="Link to this definition"></a></dt>
+<dd><p>Parse command-line arguments.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="python.is_reference.main">
+<span class="sig-prename descclassname"><span class="pre">python.is_reference.</span></span><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#python.is_reference.main" title="Link to this definition"></a></dt>
+<dd><p>Module entry point.</p>
+</dd></dl>
+
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="../db_utils/index.html" class="btn btn-neutral float-left" title="python.db_utils" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../species_checker/index.html" class="btn btn-neutral float-right" title="python.species_checker" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Genebuild.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

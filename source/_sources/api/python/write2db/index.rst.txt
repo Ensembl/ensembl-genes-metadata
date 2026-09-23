@@ -1,0 +1,185 @@
+python.write2db
+===============
+
+.. py:module:: python.write2db
+
+.. autoapi-nested-parse::
+
+   This module is used to create insert or update queries for a MySQL database.
+   The module execute the queries in the target database and return the id of the row inserted or updated.
+
+   :param file_path: Path to the JSON file containing data to insert or update in a DB
+   :type file_path: str
+
+   :raises ValueError: when the query is not executed successfully
+   :raises ValueError: when keys are missing
+   :raises ValueError: when the input data is not properly formatted
+   :raises ValueError: when there are invalid method values in the table configuration
+   :raises ValueError: when the query retrieves more than one value
+   :raises ValueError: when table name is not found in configuration
+
+   :returns: json file with last id of the row inserted or updated
+   :rtype: str
+
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   python.write2db.escape_value
+   python.write2db.format_sql_value
+   python.write2db.check_dict_structure
+   python.write2db.check_key
+   python.write2db.insert_query
+   python.write2db.update_query
+   python.write2db.create_query
+   python.write2db.retrieve_row_id
+   python.write2db.execute_query
+   python.write2db.load_input_data
+   python.write2db.process_tables
+   python.write2db.main
+
+
+Module Contents
+---------------
+
+.. py:function:: escape_value(value) -> str
+
+   Escape a value for safe embedding inside a single-quoted SQL string literal.
+
+
+.. py:function:: format_sql_value(value) -> str
+
+   Render a Python value as a SQL literal: NULL for empty/None, else a quoted, escaped string.
+
+   The NULL/value decision is made per-value, before quoting/escaping, so a value whose
+   escaped content happens to end adjacent to its own closing quote can never be mistaken
+   for an empty placeholder (which a post-hoc string search for "''" could not tell apart).
+
+
+.. py:function:: check_dict_structure(input_dict) -> bool
+
+   This functions checks the structure of the dictionary to,
+   identify if the data is a dictionary or a list of dictionary
+
+   :param input_dict: input data to load in db
+   :type input_dict: dict or list[dict]
+
+   :returns:
+
+             returns a True if the input data is a list of dictionaries
+                         or False if the input data is a dictionary
+   :rtype: boolean
+
+
+.. py:function:: check_key(data_dict, table_name, update, table_conf) -> None
+
+   This function check if the data have all keys necessary for a successful execution.
+   It is used for insert queries or update queries
+
+   :param data_dict: input data of one table to load in db
+   :type data_dict: dict
+   :param table_name: table to load in db
+   :type table_name: str
+   :param update: True if the data is to update an exiting row. False is default (insert query)
+   :type update: boolean
+
+   :raises ValueError: raise an error when keys are missing
+
+
+.. py:function:: insert_query(data_dict: Dict, table_name: str, table_conf, metadata_params) -> str
+
+   This functions create a mysql insert queries using the input data provided
+
+   :param data_dict: dictionary containing the key:values to be inserted
+   :type data_dict: dic
+   :param table_name: table that is used to insert new data
+   :type table_name: str
+
+   :returns: returns mysql query
+   :rtype: str
+
+
+.. py:function:: update_query(data_dict: Dict, table_name: str, table_conf) -> str
+
+   This functions create a mysql update query using the input data provided
+
+   :param data_dict: dictionary containing the key:values to be inserted
+   :type data_dict: dict
+   :param table_name: table that is being updated
+   :type table_name: str
+
+   :raises ValueError: when the update key (ukey) is not present in data_dict
+
+   :returns: returns a mysql query
+   :rtype: str
+
+
+.. py:function:: create_query(data_dict: Dict, table_name: str, update: bool, table_conf, metadata_params) -> str
+
+   This function create an insert or update MySQL query depending if update argument was provided (True).
+   It use the check_key function to determinate of the data provided has the enough keys to create the query.
+
+   :param data_dict: dictionary containing key:values to be insert/update in the DB
+   :type data_dict: dict
+   :param table_name: table name to be used for the insert/update operation
+   :type table_name: str
+   :param update: boolean variable indicating if the operation is an update
+   :type update: bool
+
+   :returns: mysql query
+   :rtype: str
+
+
+.. py:function:: retrieve_row_id(data_dict: Dict, table_name: str, table_conf, metadata_params) -> int
+
+   If data is already inserted in the db, this function retrieves the id of the row using the
+   data provided and the table name, it will retrieve the uniqueness constrain of the table and
+   use it to retrieve the id of the row.
+
+   :param data_dict: dictionary containing key:values to be insert/update in the DB
+   :type data_dict: dict
+   :param table_name: table name to be used for the insert/update operation
+   :type table_name: str
+
+   :returns: id of the row
+   :rtype: int
+
+
+.. py:function:: execute_query(query: str, table_name: str, data_dict: Dict, table_conf, metadata_params) -> Tuple[Any, Any]
+
+   This function execute the query in the target database, if the query is an insert query it will
+   return the id of the row inserted. If the query is an update query it will return the id of the
+   row updated. If the query is duplicated it will retrieve the id of the row.
+
+   :param query: query to be executed in the target database
+   :type query: str
+   :param table_name: table name to be used for the insert/update operation
+   :type table_name: str
+   :param data_dict: dictionary containing key:values to be insert/update in the DB, used to
+                     retrieve the id of the row when the query is duplicated
+   :type data_dict: Dict
+
+   :raises ValueError: raise an error when the query is not executed successfully
+
+   :returns: id of the row inserted or updated
+   :rtype: int
+
+
+.. py:function:: load_input_data(args: argparse.Namespace) -> Tuple[Dict, Dict, Dict]
+
+   Load and validate the input JSON, table config, and metadata DB parameters from CLI args.
+
+
+.. py:function:: process_tables(input_data: Dict, update: bool, table_conf: Dict, metadata_params: Dict) -> Dict
+
+   Create and execute an insert/update query for every table in input_data.
+
+
+.. py:function:: main()
+
+   Module's entry point
+
+
