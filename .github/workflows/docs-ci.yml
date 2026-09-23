@@ -19,18 +19,15 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
-  group: pages
+  group: gh-pages
   cancel-in-progress: false
 
 jobs:
-  build:
+  docs:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pages: write
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -80,29 +77,11 @@ jobs:
         continue-on-error: true
         run: sphinx-build -b linkcheck docs/source docs/build/linkcheck
 
-      - name: Setup Pages
-        if: github.event_name == 'push'
-        uses: actions/configure-pages@v6
-        with:
-          enablement: true
-
-      - name: Upload Pages artifact
-        if: github.event_name == 'push'
-        uses: actions/upload-pages-artifact@v5
-        with:
-          path: site
-
-  deploy:
-    if: github.event_name == 'push'
-    needs: build
-    runs-on: ubuntu-latest
-    permissions:
-      pages: write
-      id-token: write
-    environment:
-      name: gh-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
       - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v5
+        if: github.event_name == 'push'
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: gh-pages
+          publish_dir: site
+          force_orphan: true
