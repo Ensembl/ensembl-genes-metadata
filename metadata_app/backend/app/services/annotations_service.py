@@ -18,6 +18,12 @@ from metadata_app.backend.app.services.taxonomy_service import (
 ENSEMBL_ORGANISMS_FTP_BASE_URL = "https://ftp.ebi.ac.uk/pub/ensemblorganisms"
 
 
+def _join_unique(values):
+    return ", ".join(
+        sorted({str(value) for value in values if pd.notna(value) and value != ""})
+    )
+
+
 def _format_assembly_accession_path(gca_accession):
     """
     Formats the given GCA accession into a path structure.
@@ -499,7 +505,17 @@ def generate_tables(annotation_date, taxon_id, bioproject_id, group_name, gca=No
 
     # filtered_df = filtered_df.drop(columns=['year', 'gca', 'version'])
     # df_info_result = df_info_result.drop(columns=['year', 'version', 'gca_latest'])
-    anno_wide = anno_wide.drop_duplicates(subset="gca", keep="first")
+    project_values = (
+        anno_wide.groupby("gca", as_index=False)[
+            ["bioproject_id", "associated_project"]
+        ]
+        .agg(_join_unique)
+    )
+    anno_wide = (
+        anno_wide.drop(columns=["bioproject_id", "associated_project"])
+        .drop_duplicates(subset="gca", keep="first")
+        .merge(project_values, on="gca", how="left")
+    )
     # Create main display table
     anno_main = anno_wide[
         [
