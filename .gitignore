@@ -1,0 +1,16 @@
+
+#App
+/metadata_app/frontend/out/
+/metadata_app/frontend/node_modules/
+/metadata_app/frontend/.next/
+/metadata_app/logs/app.log
+/metadata_app/backend/cache/
+
+
+#Python
+__pycache__/
+
+#idea
+.codex
+.idea
+.DS_Store

@@ -1,0 +1,9 @@
+aiohttp
+fastapi
+numpy
+pandas
+pydantic
+PyMySQL
+python-multipart
+requests
+uvicorn
