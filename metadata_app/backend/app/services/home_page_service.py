@@ -158,16 +158,12 @@ def get_annotations_per_year():
             cursor.execute(query)
             result = cursor.fetchall()
 
-        df = pd.DataFrame(
-            result, columns=["genebuild_status_id", "last_genebuild_update"]
-        )
+        df = pd.DataFrame(result, columns=["genebuild_status_id", "last_genebuild_update"])
         if df.empty:
             return []
 
         # Convert date_completed to datetime and extract year
-        df["last_genebuild_update"] = pd.to_datetime(
-            df["last_genebuild_update"], errors="coerce"
-        )
+        df["last_genebuild_update"] = pd.to_datetime(df["last_genebuild_update"], errors="coerce")
         df["year"] = df["last_genebuild_update"].dt.year
         # Filter to include only 2019 and later
         df = df[df["year"] >= 2019]
@@ -244,9 +240,7 @@ def bin_by_genebuild_method(bioproject_id, taxon_id, release_date):
             params = []
 
             if bioproject_id:
-                conditions.append(
-                    f"b.bioproject_id IN ({','.join(['%s'] * len(bioproject_id))})"
-                )
+                conditions.append(f"b.bioproject_id IN ({','.join(['%s'] * len(bioproject_id))})")
                 params.extend(bioproject_id)
                 logging.info(f"Filtering by BioProject IDs: {', '.join(bioproject_id)}")
 
@@ -270,13 +264,9 @@ def bin_by_genebuild_method(bioproject_id, taxon_id, release_date):
                         None,
                         None,
                     )
-                conditions.append(
-                    f"a.lowest_taxon_id IN ({','.join(['%s'] * len(descendant_taxa))})"
-                )
+                conditions.append(f"a.lowest_taxon_id IN ({','.join(['%s'] * len(descendant_taxa))})")
                 params.extend(descendant_taxa)
-                logging.info(
-                    f"Filtering by lowest taxon ID: {', '.join(str(id) for id in descendant_taxa)}"
-                )
+                logging.info(f"Filtering by lowest taxon ID: {', '.join(str(id) for id in descendant_taxa)}")
 
             # If there are conditions, join them with AND; otherwise, select all
             where_clause = " WHERE " + " AND ".join(conditions) if conditions else ""
@@ -309,9 +299,7 @@ def bin_by_genebuild_method(bioproject_id, taxon_id, release_date):
 
         # Group by genebuilder and count
         method_summary = (
-            df.groupby("annotation_method", observed=False)
-            .size()
-            .reset_index(name="number_of_annotations")
+            df.groupby("annotation_method", observed=False).size().reset_index(name="number_of_annotations")
         )
 
         return method_summary.to_dict(orient="records")

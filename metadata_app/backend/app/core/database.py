@@ -32,9 +32,7 @@ def setup_logging():
 
 def load_db_config():
     """Load database configuration from file or environment."""
-    config_path = Path(
-        os.environ.get("DB_CONFIG_PATH", str(DEFAULT_DB_CONFIG_PATH))
-    ).expanduser()
+    config_path = Path(os.environ.get("DB_CONFIG_PATH", str(DEFAULT_DB_CONFIG_PATH))).expanduser()
 
     if not config_path.exists():
         logging.error("Config file not found: %s", config_path)

@@ -24,9 +24,7 @@ from metadata_app.backend.app.services.ncbi_reference_service import (
 # the current assembly and evidence satisfy the candidate criteria.  A
 # ``testing`` genebuild is deliberately non-production and must not block the
 # assembly from being suggested.
-CANDIDATE_REASSESSABLE_STATUSES = frozenset(
-    {"not_started", "abandoned", "insufficient_data", "testing"}
-)
+CANDIDATE_REASSESSABLE_STATUSES = frozenset({"not_started", "abandoned", "insufficient_data", "testing"})
 
 
 def check_other_version_live(gca: str) -> str:
@@ -101,14 +99,9 @@ def get_other_version_live_map(gcas: list[str]) -> dict[str, str]:
                 GROUP BY SUBSTRING_INDEX(gca_accession, '.', 1)
             """
             cursor.execute(query, tuple(gca_bases))
-            live_bases = {
-                row["gca_base"] for row in cursor.fetchall() if row.get("gca_base")
-            }
+            live_bases = {row["gca_base"] for row in cursor.fetchall() if row.get("gca_base")}
 
-        return {
-            gca: "yes" if gca.rsplit(".", 1)[0] in live_bases else "no"
-            for gca in unique_gcas
-        }
+        return {gca: "yes" if gca.rsplit(".", 1)[0] in live_bases else "no" for gca in unique_gcas}
 
     except Exception:
         logging.exception("Error checking live versions in batch")
@@ -169,18 +162,14 @@ def get_filtered_assemblies(
             project_conditions = []
 
             if bioproject_id:
-                project_conditions.append(
-                    f"b.bioproject_id IN ({','.join(['%s'] * len(bioproject_id))})"
-                )
+                project_conditions.append(f"b.bioproject_id IN ({','.join(['%s'] * len(bioproject_id))})")
                 params.extend(bioproject_id)
                 logging.info(f"Filtering by BioProject IDs: {', '.join(bioproject_id)}")
 
             if group_name:
                 if isinstance(group_name, str):
                     group_name = [group_name]
-                project_conditions.append(
-                    f"g.group_name IN ({','.join(['%s'] * len(group_name))})"
-                )
+                project_conditions.append(f"g.group_name IN ({','.join(['%s'] * len(group_name))})")
                 params.extend(group_name)
                 logging.info(f"Filtering by group name: {', '.join(group_name)}")
 
@@ -206,9 +195,7 @@ def get_filtered_assemblies(
                 if isinstance(gca, str):
                     gca = [gca]
                 gca_list_filter = ",".join(["%s"] * len(gca))
-                conditions.append(
-                    f"CONCAT(a.gca_chain, '.', a.gca_version) IN ({gca_list_filter})"
-                )
+                conditions.append(f"CONCAT(a.gca_chain, '.', a.gca_version) IN ({gca_list_filter})")
                 params.extend(gca)
                 logging.info(f"Filtering by GCA: {', '.join(gca)}")
 
@@ -229,9 +216,7 @@ def get_filtered_assemblies(
                         None,
                     )
 
-                conditions.append(
-                    f"s.lowest_taxon_id IN ({','.join(['%s'] * len(all_descendant_taxa))})"
-                )
+                conditions.append(f"s.lowest_taxon_id IN ({','.join(['%s'] * len(all_descendant_taxa))})")
                 params.extend(list(all_descendant_taxa))
                 logging.info(
                     f"Filtering by lowest taxon IDs: {', '.join(str(id) for id in all_descendant_taxa)}"
@@ -271,9 +256,7 @@ def get_filtered_assemblies(
                     status_code=404,
                     detail="No assemblies found matching the specified criteria.",
                 )
-            logging.info(
-                f"Query executed successfully, retrieved {len(results)} results."
-            )
+            logging.info(f"Query executed successfully, retrieved {len(results)} results.")
 
             # Get taxonomy data
             lowest_taxon_ids = {
@@ -285,9 +268,7 @@ def get_filtered_assemblies(
 
             if not lowest_taxon_ids:
                 # No results or no taxon IDs found
-                raise HTTPException(
-                    status_code=404, detail="No valid taxon IDs found in the results."
-                )
+                raise HTTPException(status_code=404, detail="No valid taxon IDs found in the results.")
 
             # Fetch all taxonomy data for the collected lowest_taxon_ids
             taxonomy_query = """
@@ -295,13 +276,13 @@ def get_filtered_assemblies(
                 FROM taxonomy
                 WHERE lowest_taxon_id IN ({})
                 ORDER BY FIELD(taxon_class, 'species', 'genus', 'family', 'order', 'class', 'phylum', 'kingdom');
-            """.format(",".join(["%s"] * len(lowest_taxon_ids)))
+            """.format(
+                ",".join(["%s"] * len(lowest_taxon_ids))
+            )
 
             cursor.execute(taxonomy_query, tuple(lowest_taxon_ids))
             taxonomy_results = cursor.fetchall()
-            logging.info(
-                f"Taxonomy Query executed successfully, retrieved {len(taxonomy_results)} results."
-            )
+            logging.info(f"Taxonomy Query executed successfully, retrieved {len(taxonomy_results)} results.")
 
         # Process taxonomy results
         taxonomy_dict = {}
@@ -320,9 +301,7 @@ def get_filtered_assemblies(
         df = pd.DataFrame(results)
         df["gb_status"] = df["gb_status"].fillna("not_started")
         if df.empty:
-            raise HTTPException(
-                status_code=404, detail="No assemblies meet the given criteria."
-            )
+            raise HTTPException(status_code=404, detail="No assemblies meet the given criteria.")
 
         # Process data
         df["release_date"] = pd.to_datetime(df["release_date"], errors="coerce")
@@ -333,8 +312,7 @@ def get_filtered_assemblies(
         df["metrics_value"] = df.apply(
             lambda row: (
                 float(row["metrics_value"].rstrip("x"))
-                if row["metrics_name"] == "genome_coverage"
-                and isinstance(row["metrics_value"], str)
+                if row["metrics_name"] == "genome_coverage" and isinstance(row["metrics_value"], str)
                 else row["metrics_value"]
             ),
             axis=1,
@@ -346,38 +324,26 @@ def get_filtered_assemblies(
             df.groupby("gca")["associated_project"]
             .apply(
                 lambda x: ", ".join(
-                    sorted(
-                        {
-                            str(value).strip()
-                            for value in x
-                            if pd.notna(value) and str(value).strip()
-                        }
-                    )
+                    sorted({str(value).strip() for value in x if pd.notna(value) and str(value).strip()})
                 )
             )
             .reset_index()
         )
 
         # Merge back aggregated projects into main df
-        df = df.drop(columns="associated_project").merge(
-            df_projects, on="gca", how="left"
-        )
+        df = df.drop(columns="associated_project").merge(df_projects, on="gca", how="left")
 
         df["GCA"] = df["gca_chain"].astype(str) + "." + df["gca_version"].astype(str)
 
         # Assign taxonomy-derived fields before deduplication so the row identity
         # matches the actual data we will later pivot and return.
         clade_data = load_clade_data()
-        df[["internal_clade", "species_taxon_id", "genus_taxon_id", "pipeline"]] = (
-            pd.DataFrame(
-                df.apply(
-                    lambda r: assign_clade_and_species(
-                        r["lowest_taxon_id"], clade_data, taxonomy_dict
-                    ),
-                    axis=1,
-                ).tolist(),
-                index=df.index,
-            )
+        df[["internal_clade", "species_taxon_id", "genus_taxon_id", "pipeline"]] = pd.DataFrame(
+            df.apply(
+                lambda r: assign_clade_and_species(r["lowest_taxon_id"], clade_data, taxonomy_dict),
+                axis=1,
+            ).tolist(),
+            index=df.index,
         )
 
         index_cols = [
@@ -464,13 +430,9 @@ def get_filtered_assemblies(
             return "No assemblies meet the given thresholds.", None, None, None, None
 
         # Re-attach taxonomy-derived columns on the wide frame for downstream merges.
-        df_wide[
-            ["internal_clade", "species_taxon_id", "genus_taxon_id", "pipeline"]
-        ] = pd.DataFrame(
+        df_wide[["internal_clade", "species_taxon_id", "genus_taxon_id", "pipeline"]] = pd.DataFrame(
             df_wide.apply(
-                lambda r: assign_clade_and_species(
-                    r["lowest_taxon_id"], clade_data, taxonomy_dict
-                ),
+                lambda r: assign_clade_and_species(r["lowest_taxon_id"], clade_data, taxonomy_dict),
                 axis=1,
             ).tolist(),
             index=df_wide.index,
@@ -541,9 +503,7 @@ def get_filtered_assemblies(
         # re-assessable attempt.  Filter at GCA level so a blocked status on
         # one historical/current row cannot be hidden by another row.
         if candidate:
-            status_is_reassessable = df_wide["gb_status"].isin(
-                CANDIDATE_REASSESSABLE_STATUSES
-            )
+            status_is_reassessable = df_wide["gb_status"].isin(CANDIDATE_REASSESSABLE_STATUSES)
             blocked_gcas = set(df_wide.loc[~status_is_reassessable, "gca"])
             df_wide = df_wide[~df_wide["gca"].isin(blocked_gcas)]
             logging.info(
@@ -597,9 +557,7 @@ def get_filtered_assemblies(
         # Re-raise HTTPExceptions as they are already properly formatted
         raise
     except Exception as e:
-        logging.error(
-            f"Unexpected error in get_filtered_assemblies: {e}", exc_info=True
-        )
+        logging.error(f"Unexpected error in get_filtered_assemblies: {e}", exc_info=True)
         raise HTTPException(
             status_code=500,
             detail=f"Internal server error occurred while processing assemblies: {str(e)}",

@@ -45,7 +45,7 @@ async def ena_rest_api(session, query, semaphore):
                         results = text.strip().split("\n")[1:]
                         return len(results)
                     if response.status == 429:
-                        wait_time = 2 ** attempt
+                        wait_time = 2**attempt
                         logging.warning(
                             "Rate limited by ENA. Retrying in %s seconds...",
                             wait_time,
@@ -59,7 +59,7 @@ async def ena_rest_api(session, query, semaphore):
             aiohttp.ClientConnectorError,
             aiohttp.ClientOSError,
         ) as exc:
-            wait_time = 2 ** attempt
+            wait_time = 2**attempt
             logging.warning(
                 "ENA request failed: %s. Retrying in %s seconds...",
                 exc,
@@ -86,10 +86,7 @@ async def check_data_from_ena(taxon_id, tree, semaphore, cache, now):
     }
 
     async with aiohttp.ClientSession() as session:
-        tasks = {
-            key: ena_rest_api(session, query, semaphore)
-            for key, query in queries.items()
-        }
+        tasks = {key: ena_rest_api(session, query, semaphore) for key, query in queries.items()}
         results = await asyncio.gather(*tasks.values())
 
     data = {"taxon_id": taxon_id, **dict(zip(queries.keys(), results))}
@@ -104,9 +101,7 @@ def add_data_from_ena(df):
 
     taxon_ids = {
         int(taxon_id)
-        for taxon_id in pd.concat(
-            [df["lowest_taxon_id"], df["species_taxon_id"], df["genus_taxon_id"]]
-        )
+        for taxon_id in pd.concat([df["lowest_taxon_id"], df["species_taxon_id"], df["genus_taxon_id"]])
         .dropna()
         .unique()
     }

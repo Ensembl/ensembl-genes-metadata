@@ -35,9 +35,7 @@ def assign_clade_and_species(
     lowest_taxon_id = int(lowest_taxon_id)
     human_taxon_id = int(human_taxon_id)
 
-    taxonomy_hierarchy = taxonomy_dict.get(str(lowest_taxon_id)) or taxonomy_dict.get(
-        lowest_taxon_id, []
-    )
+    taxonomy_hierarchy = taxonomy_dict.get(str(lowest_taxon_id)) or taxonomy_dict.get(lowest_taxon_id, [])
 
     if not taxonomy_hierarchy:
         logging.warning(f"No taxonomy hierarchy found for taxon_id {lowest_taxon_id}")
@@ -45,16 +43,11 @@ def assign_clade_and_species(
             return "human", human_taxon_id, None, "hprc"
         return "Unassigned", None, None, "anno"
 
-    taxon_class_map = {
-        taxon["taxon_class"]: taxon["taxon_class_id"]
-        for taxon in taxonomy_hierarchy
-    }
+    taxon_class_map = {taxon["taxon_class"]: taxon["taxon_class_id"] for taxon in taxonomy_hierarchy}
 
     species_taxon_id = taxon_class_map.get("species")
     genus_taxon_id = taxon_class_map.get("genus")
-    species_taxon_id_int = (
-        int(species_taxon_id) if species_taxon_id is not None else None
-    )
+    species_taxon_id_int = int(species_taxon_id) if species_taxon_id is not None else None
     is_human = lowest_taxon_id == human_taxon_id or species_taxon_id_int == human_taxon_id
 
     clade_lookup = {

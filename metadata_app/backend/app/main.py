@@ -46,9 +46,7 @@ setup_logging()
 
 # Include routers from different modules
 app.include_router(assemblies.router, prefix="/api/assemblies", tags=["assemblies"])
-app.include_router(
-    annotations.annotations, prefix="/api/annotations", tags=["annotations"]
-)
+app.include_router(annotations.annotations, prefix="/api/annotations", tags=["annotations"])
 app.include_router(taxonomy.taxonomy, prefix="/api/taxonomy", tags=["taxonomy"])
 app.include_router(
     transcriptomics.transcriptomics,
@@ -56,20 +54,14 @@ app.include_router(
     tags=["transcriptomics"],
 )
 app.include_router(home_page.home_page, prefix="/api/home_page", tags=["home_page"])
-app.include_router(
-    report_annotations.report, prefix="/api/report/anno", tags=["report_anno"]
-)
-app.include_router(
-    report_assemblies.report, prefix="/api/report/asm", tags=["report_asm"]
-)
+app.include_router(report_annotations.report, prefix="/api/report/anno", tags=["report_anno"])
+app.include_router(report_assemblies.report, prefix="/api/report/asm", tags=["report_asm"])
 app.include_router(
     bioproject_search.router,
     prefix="/api/bioproject_search",
     tags=["bioproject_search"],
 )
-app.include_router(
-    taxonomy_search.router, prefix="/api/taxonomy_search", tags=["taxonomy_search"]
-)
+app.include_router(taxonomy_search.router, prefix="/api/taxonomy_search", tags=["taxonomy_search"])
 app.include_router(project.project_router, prefix="/api/project", tags=["project"])
 app.include_router(handover.handover_router, prefix="/api/handover", tags=["handover"])
 app.include_router(db_clean.db_clean_router, prefix="/api/clean", tags=["clean"])
@@ -177,13 +169,9 @@ if REACT_BUILD_PATH.exists():
             raise HTTPException(status_code=404, detail="Next.js app not found")
 
 else:
-    logging.warning(
-        "Next.js build directory not found. Make sure to run 'npm run build' first."
-    )
+    logging.warning("Next.js build directory not found. Make sure to run 'npm run build' first.")
 
     # Fallback root endpoint if Next.js build doesn't exist
     @app.api_route("/", methods=["GET", "HEAD"])
     async def root():
-        return {
-            "message": "Welcome to the Genebuild API - Next.js frontend not built yet"
-        }
+        return {"message": "Welcome to the Genebuild API - Next.js frontend not built yet"}

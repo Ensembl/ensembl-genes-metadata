@@ -49,10 +49,7 @@ def generate_report(start_date, end_date, group_name, taxon_id, bioproject_id):
 
     # Create tables for charts
     number_of_annotations_raw = (
-        anno_wide[["gca", "gb_status"]]
-        .groupby("gb_status")
-        .size()
-        .reset_index(name="count")
+        anno_wide[["gca", "gb_status"]].groupby("gb_status").size().reset_index(name="count")
     )
 
     # Transform into desired format
@@ -62,10 +59,7 @@ def generate_report(start_date, end_date, group_name, taxon_id, bioproject_id):
     ]
 
     method_report = (
-        anno_wide[["gca", "annotation_method"]]
-        .groupby("annotation_method")
-        .size()
-        .reset_index(name="count")
+        anno_wide[["gca", "annotation_method"]].groupby("annotation_method").size().reset_index(name="count")
     )
 
     num_unique_taxa = anno_wide["lowest_taxon_id"].nunique()
@@ -83,9 +77,7 @@ def generate_report(start_date, end_date, group_name, taxon_id, bioproject_id):
         .nunique()
         .reset_index(name="count")
     )
-    live_project_memberships = anno_project_memberships[
-        anno_project_memberships["gb_status"] == "live"
-    ]
+    live_project_memberships = anno_project_memberships[anno_project_memberships["gb_status"] == "live"]
     project_report_live = (
         live_project_memberships[["gca", "associated_project"]]
         .groupby("associated_project")["gca"]
@@ -136,9 +128,7 @@ def generate_report(start_date, end_date, group_name, taxon_id, bioproject_id):
 
     if not lowest_taxon_ids:
         # No results or no taxon IDs found
-        raise HTTPException(
-            status_code=404, detail="No valid taxon IDs found in the results."
-        )
+        raise HTTPException(status_code=404, detail="No valid taxon IDs found in the results.")
 
     # Fetch all taxonomy data for the collected lowest_taxon_ids
     try:
@@ -149,13 +139,13 @@ def generate_report(start_date, end_date, group_name, taxon_id, bioproject_id):
 			                FROM taxonomy
 			                WHERE lowest_taxon_id IN ({})
 			                ORDER BY FIELD(taxon_class, 'species', 'genus', 'family', 'order', 'class', 'phylum', 'kingdom');
-			            """.format(",".join(["%s"] * len(lowest_taxon_ids)))
+			            """.format(
+                ",".join(["%s"] * len(lowest_taxon_ids))
+            )
 
             cursor.execute(taxonomy_query, tuple(lowest_taxon_ids))
             taxonomy_results = cursor.fetchall()
-            logging.info(
-                f"Taxonomy Query executed successfully, retrieved {len(taxonomy_results)} results."
-            )
+            logging.info(f"Taxonomy Query executed successfully, retrieved {len(taxonomy_results)} results.")
     except Exception as e:
         logging.error(f"Taxonomy query failed: {e}")
         raise HTTPException(status_code=500, detail="Error fetching taxonomy data")
@@ -184,49 +174,29 @@ def generate_report(start_date, end_date, group_name, taxon_id, bioproject_id):
 
     # Create clade summary
     clade_group = (
-        anno_wide[["gca", "internal_clade"]]
-        .groupby("internal_clade")
-        .size()
-        .reset_index(name="count")
+        anno_wide[["gca", "internal_clade"]].groupby("internal_clade").size().reset_index(name="count")
     )
     logging.info("Created clade group summary")
 
     # Create clade summary for live annotations
     live_anno = anno_wide[anno_wide["gb_status"] == "live"]
     clade_group_live = (
-        live_anno[["gca", "internal_clade"]]
-        .groupby("internal_clade")
-        .size()
-        .reset_index(name="count")
+        live_anno[["gca", "internal_clade"]].groupby("internal_clade").size().reset_index(name="count")
     )
     logging.info("Created live clade group summary")
 
     # Transforming out of range float values that are not JSON compliant: nan
     logging.info(f"Transfroming Out of range float values that are not JSON compliant")
-    anno_wide = anno_wide.apply(
-        lambda col: col.fillna("") if col.dtype == "object" else col
-    )
-    method_report = method_report.apply(
-        lambda col: col.fillna("") if col.dtype == "object" else col
-    )
-    top_3_taxa = top_3_taxa.apply(
-        lambda col: col.fillna("") if col.dtype == "object" else col
-    )
-    project_report = project_report.apply(
-        lambda col: col.fillna("") if col.dtype == "object" else col
-    )
+    anno_wide = anno_wide.apply(lambda col: col.fillna("") if col.dtype == "object" else col)
+    method_report = method_report.apply(lambda col: col.fillna("") if col.dtype == "object" else col)
+    top_3_taxa = top_3_taxa.apply(lambda col: col.fillna("") if col.dtype == "object" else col)
+    project_report = project_report.apply(lambda col: col.fillna("") if col.dtype == "object" else col)
     project_report_live = project_report_live.apply(
         lambda col: col.fillna("") if col.dtype == "object" else col
     )
-    main_report = main_report.apply(
-        lambda col: col.fillna("") if col.dtype == "object" else col
-    )
-    clade_group = clade_group.apply(
-        lambda col: col.fillna("") if col.dtype == "object" else col
-    )
-    clade_group_live = clade_group_live.apply(
-        lambda col: col.fillna("") if col.dtype == "object" else col
-    )
+    main_report = main_report.apply(lambda col: col.fillna("") if col.dtype == "object" else col)
+    clade_group = clade_group.apply(lambda col: col.fillna("") if col.dtype == "object" else col)
+    clade_group_live = clade_group_live.apply(lambda col: col.fillna("") if col.dtype == "object" else col)
 
     return (
         anno_wide,

@@ -61,22 +61,24 @@ def filter_annotations(filters: ReportFilterRequest):
             taxon_id=filters.taxon_id,
         )
 
-        return _json_safe({
-            "main_report": main_report.to_dict(orient="records"),
-            "number_of_annotations": number_of_annotations,
-            "method_report": method_report.to_dict(orient="records"),
-            "num_unique_taxa": {"value": num_unique_taxa},
-            "top_3_taxa": top_3_taxa.to_dict(orient="records"),
-            "project_report": project_report.to_dict(orient="records"),
-            "project_report_live": project_report_live.to_dict(orient="records"),
-            "average_busco": {"value": average_busco},
-            "clade_group": clade_group.to_dict(orient="records"),
-            "clade_group_live": clade_group_live.to_dict(orient="records"),
-            "downloadables_report": {
-                "anno_main": main_report.to_csv(index=False),
-                "anno_wide": anno_wide.to_csv(index=False),
-            },
-        })
+        return _json_safe(
+            {
+                "main_report": main_report.to_dict(orient="records"),
+                "number_of_annotations": number_of_annotations,
+                "method_report": method_report.to_dict(orient="records"),
+                "num_unique_taxa": {"value": num_unique_taxa},
+                "top_3_taxa": top_3_taxa.to_dict(orient="records"),
+                "project_report": project_report.to_dict(orient="records"),
+                "project_report_live": project_report_live.to_dict(orient="records"),
+                "average_busco": {"value": average_busco},
+                "clade_group": clade_group.to_dict(orient="records"),
+                "clade_group_live": clade_group_live.to_dict(orient="records"),
+                "downloadables_report": {
+                    "anno_main": main_report.to_csv(index=False),
+                    "anno_wide": anno_wide.to_csv(index=False),
+                },
+            }
+        )
 
     except HTTPException as e:
         raise e  # re-raise to return proper status like 404

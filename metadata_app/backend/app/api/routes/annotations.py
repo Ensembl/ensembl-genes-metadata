@@ -20,26 +20,10 @@ def filter_annotations(filters: AnnotationFilterRequest):
             filter(
                 None,
                 [
-                    (
-                        f"bioproject_{'_'.join(filters.bioproject_id)}"
-                        if filters.bioproject_id
-                        else None
-                    ),
-                    (
-                        f"taxon_{'_'.join(map(str, filters.taxon_id))}"
-                        if filters.taxon_id
-                        else None
-                    ),
-                    (
-                        f"date_{filters.annotation_date}"
-                        if filters.annotation_date
-                        else None
-                    ),
-                    (
-                        f"group_{'_'.join(filters.group_name)}"
-                        if filters.group_name
-                        else None
-                    ),
+                    (f"bioproject_{'_'.join(filters.bioproject_id)}" if filters.bioproject_id else None),
+                    (f"taxon_{'_'.join(map(str, filters.taxon_id))}" if filters.taxon_id else None),
+                    (f"date_{filters.annotation_date}" if filters.annotation_date else None),
+                    (f"group_{'_'.join(filters.group_name)}" if filters.group_name else None),
                 ],
             )
         )

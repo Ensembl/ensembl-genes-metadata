@@ -14,7 +14,6 @@ from metadata_app.backend.app.services.home_page_service import bin_by_genebuild
 from metadata_app.backend.app.services.home_page_service import get_annotation_counts_by_group
 
 
-
 home_page = APIRouter()
 
 
@@ -30,18 +29,23 @@ def get_annotation_counts():
     Get counts of annotations per BioProject, with friendly project names.
     """
     return get_annotation_counts_by_bioproject()
+
+
 @home_page.get("/home/group")
 def get_annotation_counts_by_groups():
     """
     Get counts of annotations per group, with friendly project names.
     """
     return get_annotation_counts_by_group()
+
+
 @home_page.get("/home/assemblies")
 def get_assemblies_year():
     """
     Get counts of assemblies per year.
     """
     return get_assemblies_per_year()
+
 
 @home_page.get("/home/annotations")
 def get_annotations_year():
@@ -50,12 +54,14 @@ def get_annotations_year():
     """
     return get_annotations_per_year()
 
+
 @home_page.get("/home/meta_update")
 def metadata_registry_update_dates():
     """
     Get counts of assemblies per year.
     """
     return get_metadata_registry_update_dates()
+
 
 @home_page.get("/home/transc_update")
 def transcriptomic_registry_update_dates():

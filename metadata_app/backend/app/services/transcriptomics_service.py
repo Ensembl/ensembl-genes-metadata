@@ -40,18 +40,12 @@ def get_transcriptomic_assessment_for_ids(taxon_ids: list) -> pd.DataFrame:
             cursor.execute(query, taxon_ids)
             results = cursor.fetchall()
 
-        df = pd.DataFrame(
-            results, columns=["taxon_id", "transc_assess_date", "aligned_count"]
-        )
-        logging.info(
-            f"Retrieved transcriptomic data for {len(df)} of {len(taxon_ids)} taxon IDs."
-        )
+        df = pd.DataFrame(results, columns=["taxon_id", "transc_assess_date", "aligned_count"])
+        logging.info(f"Retrieved transcriptomic data for {len(df)} of {len(taxon_ids)} taxon IDs.")
 
         missing_count = len(taxon_ids) - df["taxon_id"].nunique()
         if missing_count > 0:
-            logging.info(
-                f"{missing_count} taxon IDs had no transcriptomic assessment data."
-            )
+            logging.info(f"{missing_count} taxon IDs had no transcriptomic assessment data.")
 
         return df
 
@@ -69,9 +63,7 @@ def add_transc_data_to_df(info_df):
         lowest_ids = info_df["lowest_taxon_id"].dropna().astype(int).tolist()
         all_ids = list(set(species_ids + lowest_ids))
 
-        trans_df = get_transcriptomic_assessment_for_ids(
-            all_ids
-        )  # Function accepts list of IDs
+        trans_df = get_transcriptomic_assessment_for_ids(all_ids)  # Function accepts list of IDs
 
         # Merge for species
         info_df = info_df.merge(
@@ -166,15 +158,11 @@ def get_metadata_from_registry(taxon_ids: list[int]) -> pd.DataFrame:
                 "percentage_reads_unmapped_too_short",
             ],
         )
-        logging.info(
-            f"Retrieved transcriptomic data for {len(df)} of {len(taxon_ids)} taxon IDs."
-        )
+        logging.info(f"Retrieved transcriptomic data for {len(df)} of {len(taxon_ids)} taxon IDs.")
 
         missing_count = len(taxon_ids) - df["taxon_id"].nunique()
         if missing_count > 0:
-            logging.info(
-                f"{missing_count} taxon IDs had no transcriptomic assessment data."
-            )
+            logging.info(f"{missing_count} taxon IDs had no transcriptomic assessment data.")
 
         return df
 

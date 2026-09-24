@@ -89,9 +89,7 @@ def get_live_annotations(genebuilder):
         return df
 
     except Exception as e:
-        logging.error(
-            f"Error fetching live annotations for {genebuilder}: {e}", exc_info=True
-        )
+        logging.error(f"Error fetching live annotations for {genebuilder}: {e}", exc_info=True)
         return pd.DataFrame()
 
 
@@ -182,9 +180,7 @@ def _find_databases_on_server(server, matchers, live_gcas, genebuilder):
             databases = cursor.fetchall()
             for db in databases:
                 db_name = _database_name_from_row(db)
-                is_pipe_db = _is_live_gca_pipe_database(
-                    db_name, genebuilder, live_gcas
-                )
+                is_pipe_db = _is_live_gca_pipe_database(db_name, genebuilder, live_gcas)
                 if is_pipe_db and server["host"] in PIPE_EXCLUDED_HOSTS:
                     continue
 
@@ -208,9 +204,8 @@ def _find_databases_on_server(server, matchers, live_gcas, genebuilder):
 
                 for db in pipe_databases:
                     db_name = _database_name_from_row(db)
-                    if (
-                        db_name not in existing_databases
-                        and _is_live_gca_pipe_database(db_name, genebuilder, live_gcas)
+                    if db_name not in existing_databases and _is_live_gca_pipe_database(
+                        db_name, genebuilder, live_gcas
                     ):
                         db_list.append(
                             {

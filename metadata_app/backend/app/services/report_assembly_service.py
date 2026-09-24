@@ -47,9 +47,7 @@ def check_dataframe_not_empty(df, description, raise_404=True):
 
 
 def _join_unique(values):
-    return ", ".join(
-        sorted({str(value) for value in values if pd.notna(value) and value != ""})
-    )
+    return ", ".join(sorted({str(value) for value in values if pd.notna(value) and value != ""}))
 
 
 def _add_transcriptomic_evidence(df_wide):
@@ -78,9 +76,7 @@ def _apply_report_filters(df_wide, candidate, start_date):
     df_wide = df_wide.copy()
 
     if start_date:
-        df_wide["release_date"] = pd.to_datetime(
-            df_wide["release_date"], errors="coerce"
-        )
+        df_wide["release_date"] = pd.to_datetime(df_wide["release_date"], errors="coerce")
         df_wide = df_wide[df_wide["release_date"] <= pd.to_datetime(start_date)]
         check_dataframe_not_empty(df_wide, "assemblies before report start date")
 
@@ -92,15 +88,10 @@ def _apply_report_filters(df_wide, candidate, start_date):
             )
         df_wide["contig_n50"] = pd.to_numeric(df_wide["contig_n50"], errors="coerce")
         df_wide = df_wide[
-            (~df_wide["asm_level"].isin(["Contig", "Scaffold"]))
-            & (df_wide["contig_n50"] >= 100000)
+            (~df_wide["asm_level"].isin(["Contig", "Scaffold"])) & (df_wide["contig_n50"] >= 100000)
         ]
-        logging.info(
-            "Filtered for annotation candidates (n50>=100000 and asm_level!='Contig')"
-        )
-        check_dataframe_not_empty(
-            df_wide, "candidate assemblies (N50 >= 100000, non-contig)"
-        )
+        logging.info("Filtered for annotation candidates (n50>=100000 and asm_level!='Contig')")
+        check_dataframe_not_empty(df_wide, "candidate assemblies (N50 >= 100000, non-contig)")
 
     return df_wide
 
@@ -108,9 +99,7 @@ def _apply_report_filters(df_wide, candidate, start_date):
 def _build_report_tables(df_wide):
     df_wide = _add_transcriptomic_evidence(df_wide)
 
-    missing_columns = [
-        column for column in REPORT_ASSEMBLY_MAIN_COLUMNS if column not in df_wide
-    ]
+    missing_columns = [column for column in REPORT_ASSEMBLY_MAIN_COLUMNS if column not in df_wide]
     if missing_columns:
         raise HTTPException(
             status_code=500,
@@ -127,9 +116,7 @@ def _build_report_tables(df_wide):
             agg_dict[col] = "first"
 
     rep_asm_wide = df_wide.groupby("gca", as_index=False).agg(agg_dict)
-    check_dataframe_not_empty(
-        rep_asm_wide, "wide results table after deduplication and cleanup"
-    )
+    check_dataframe_not_empty(rep_asm_wide, "wide results table after deduplication and cleanup")
 
     rep_asm_main = df_wide[REPORT_ASSEMBLY_MAIN_COLUMNS]
     check_dataframe_not_empty(rep_asm_main, "main results table after deduplication")
@@ -180,9 +167,7 @@ def generate_tables(
         logging.error("HTTPException raised during assembly filtering")
         raise
     except Exception:
-        logging.error(
-            "Unexpected error occurred during assembly filtering", exc_info=True
-        )
+        logging.error("Unexpected error occurred during assembly filtering", exc_info=True)
         raise HTTPException(status_code=500, detail="An unexpected error occurred.")
 
     check_dataframe_not_empty(rep_asm_wide, "wide assembly results from filtering")
@@ -211,9 +196,7 @@ def generate_tables(
     num_unique_taxa = rep_asm_wide["lowest_taxon_id"].nunique()
     if num_unique_taxa == 0:
         logging.error("No unique taxa found")
-        raise HTTPException(
-            status_code=404, detail="No unique taxa found in the results"
-        )
+        raise HTTPException(status_code=404, detail="No unique taxa found in the results")
 
     top_3_taxa = (
         rep_asm_wide.groupby(["scientific_name"])
@@ -224,46 +207,27 @@ def generate_tables(
     )
     check_dataframe_not_empty(top_3_taxa, "top 3 taxa summary")
 
-    asm_type_group = (
-        rep_asm_wide[["gca", "asm_type"]]
-        .groupby("asm_type")
-        .size()
-        .reset_index(name="count")
-    )
+    asm_type_group = rep_asm_wide[["gca", "asm_type"]].groupby("asm_type").size().reset_index(name="count")
 
-    asm_level_group = (
-        rep_asm_wide[["gca", "asm_level"]]
-        .groupby("asm_level")
-        .size()
-        .reset_index(name="count")
-    )
+    asm_level_group = rep_asm_wide[["gca", "asm_level"]].groupby("asm_level").size().reset_index(name="count")
     check_dataframe_not_empty(asm_type_group, "assembly type summary")
 
     clade_group = (
-        rep_asm_wide[["gca", "internal_clade"]]
-        .groupby("internal_clade")
-        .size()
-        .reset_index(name="count")
+        rep_asm_wide[["gca", "internal_clade"]].groupby("internal_clade").size().reset_index(name="count")
     )
     check_dataframe_not_empty(clade_group, "clade group summary")
 
     asm_length = rep_asm_wide[["gca", "total_sequence_length"]].copy()
     check_dataframe_not_empty(asm_length, "assembly length data")
 
-    asm_length = asm_length.sort_values(
-        by="total_sequence_length", ascending=False
-    ).reset_index(drop=True)
-    asm_length["total_sequence_length"] = pd.to_numeric(
-        asm_length["total_sequence_length"], errors="coerce"
-    )
+    asm_length = asm_length.sort_values(by="total_sequence_length", ascending=False).reset_index(drop=True)
+    asm_length["total_sequence_length"] = pd.to_numeric(asm_length["total_sequence_length"], errors="coerce")
     asm_length["total_sequence_length_Gb"] = asm_length["total_sequence_length"] / 1e9
     asm_length = asm_length[["gca", "total_sequence_length_Gb"]]
     check_dataframe_not_empty(asm_length, "processed assembly length data")
     logging.info(f"Assembly length data processed successfully: {len(asm_length)} rows")
 
-    transc_cols = [
-        col for col in rep_asm_wide.columns if col.endswith("_transc_assess_date")
-    ]
+    transc_cols = [col for col in rep_asm_wide.columns if col.endswith("_transc_assess_date")]
     if not transc_cols:
         transc_reg_count = "not checked"
     else:
@@ -271,9 +235,7 @@ def generate_tables(
         rows_with_transc = (
             rep_asm_wide[transc_cols]
             .apply(
-                lambda row: any(
-                    pd.notna(val) and str(val).strip() != "" for val in row
-                ),
+                lambda row: any(pd.notna(val) and str(val).strip() != "" for val in row),
                 axis=1,
             )
             .sum()
@@ -281,33 +243,15 @@ def generate_tables(
         transc_reg_count = f"{(rows_with_transc / total_rows) * 100:.1f}%"
 
     logging.info("Transforming out of range float values that are not JSON compliant")
-    rep_asm_wide = rep_asm_wide.apply(
-        lambda col: col.fillna("") if col.dtype == "object" else col
-    )
-    project_report = project_report.apply(
-        lambda col: col.fillna("") if col.dtype == "object" else col
-    )
-    rep_asm_main = rep_asm_main.apply(
-        lambda col: col.fillna("") if col.dtype == "object" else col
-    )
-    top_3_taxa = top_3_taxa.apply(
-        lambda col: col.fillna("") if col.dtype == "object" else col
-    )
-    asm_type_group = asm_type_group.apply(
-        lambda col: col.fillna("") if col.dtype == "object" else col
-    )
-    asm_level_group = asm_level_group.apply(
-        lambda col: col.fillna("") if col.dtype == "object" else col
-    )
-    clade_group = clade_group.apply(
-        lambda col: col.fillna("") if col.dtype == "object" else col
-    )
-    asm_length = asm_length.apply(
-        lambda col: col.fillna("") if col.dtype == "object" else col
-    )
-    transc_data = transc_data.apply(
-        lambda col: col.fillna("") if col.dtype == "object" else col
-    )
+    rep_asm_wide = rep_asm_wide.apply(lambda col: col.fillna("") if col.dtype == "object" else col)
+    project_report = project_report.apply(lambda col: col.fillna("") if col.dtype == "object" else col)
+    rep_asm_main = rep_asm_main.apply(lambda col: col.fillna("") if col.dtype == "object" else col)
+    top_3_taxa = top_3_taxa.apply(lambda col: col.fillna("") if col.dtype == "object" else col)
+    asm_type_group = asm_type_group.apply(lambda col: col.fillna("") if col.dtype == "object" else col)
+    asm_level_group = asm_level_group.apply(lambda col: col.fillna("") if col.dtype == "object" else col)
+    clade_group = clade_group.apply(lambda col: col.fillna("") if col.dtype == "object" else col)
+    asm_length = asm_length.apply(lambda col: col.fillna("") if col.dtype == "object" else col)
+    transc_data = transc_data.apply(lambda col: col.fillna("") if col.dtype == "object" else col)
 
     check_dataframe_not_empty(project_report, "final project report")
     check_dataframe_not_empty(top_3_taxa, "final top 3 taxa")
@@ -377,9 +321,7 @@ def generate_overview():
             results = cursor.fetchall()
 
         if not results:
-            raise HTTPException(
-                status_code=404, detail="No assemblies found matching criteria."
-            )
+            raise HTTPException(status_code=404, detail="No assemblies found matching criteria.")
 
         df = pd.DataFrame(results)
         logging.info(f"Fetched {len(df)} rows from database")
@@ -397,9 +339,7 @@ def generate_overview():
         )
 
         lowest_taxon_ids = {
-            row["lowest_taxon_id"]
-            for row in results
-            if row.get("lowest_taxon_id") is not None
+            row["lowest_taxon_id"] for row in results if row.get("lowest_taxon_id") is not None
         }
         taxonomy_dict = {}
         if lowest_taxon_ids:
@@ -409,7 +349,9 @@ def generate_overview():
                     SELECT lowest_taxon_id, taxon_class_id, taxon_class
                     FROM taxonomy
                     WHERE lowest_taxon_id IN ({})
-                """.format(",".join(["%s"] * len(lowest_taxon_ids)))
+                """.format(
+                    ",".join(["%s"] * len(lowest_taxon_ids))
+                )
                 cursor.execute(taxonomy_query, tuple(lowest_taxon_ids))
                 taxonomy_results = cursor.fetchall()
 
@@ -425,9 +367,7 @@ def generate_overview():
         clade_data = load_clade_data()
         df[["internal_clade", "species_taxon_id", "genus_taxon_id", "pipeline"]] = df[
             "lowest_taxon_id"
-        ].apply(
-            lambda x: pd.Series(assign_clade_and_species(x, clade_data, taxonomy_dict))
-        )
+        ].apply(lambda x: pd.Series(assign_clade_and_species(x, clade_data, taxonomy_dict)))
 
         df_wide = df.pivot_table(
             index=[
@@ -478,12 +418,8 @@ def generate_overview():
             & (df_wide["genebuild_status"] == "not_annotated")
         )
 
-        df_wide["unannotated_main"] = df_wide["unannotated"] & (
-            df_wide["pipeline"] == "main"
-        )
-        df_wide["unannotated_anno"] = df_wide["unannotated"] & (
-            df_wide["pipeline"] == "anno"
-        )
+        df_wide["unannotated_main"] = df_wide["unannotated"] & (df_wide["pipeline"] == "main")
+        df_wide["unannotated_anno"] = df_wide["unannotated"] & (df_wide["pipeline"] == "anno")
 
         summary = df_wide.groupby("project_name", as_index=False).agg(
             total_assemblies=("assembly_id", "nunique"),
@@ -536,9 +472,7 @@ def project_per_year():
             results = cursor.fetchall()
 
         if not results:
-            raise HTTPException(
-                status_code=404, detail="No assemblies found matching criteria."
-            )
+            raise HTTPException(status_code=404, detail="No assemblies found matching criteria.")
 
         df = pd.DataFrame(results)
         logging.info(f"Fetched {len(df)} rows from database")
@@ -546,14 +480,10 @@ def project_per_year():
 
         df["gb_status"] = df["gb_status"].fillna("not_annotated")
         df = df.drop_duplicates(subset=["project_name", "assembly_id"], keep="first")
-        print(
-            f"Projects per year after drop duplicates: {df['project_name'].nunique()}"
-        )
+        print(f"Projects per year after drop duplicates: {df['project_name'].nunique()}")
 
         df["release_date"] = pd.to_datetime(df["release_date"], errors="coerce")
-        df["release_date_anno"] = pd.to_datetime(
-            df["release_date_anno"], errors="coerce"
-        )
+        df["release_date_anno"] = pd.to_datetime(df["release_date_anno"], errors="coerce")
         print(f"Projects per year after datetime: {df['project_name'].nunique()}")
 
         df_assembly = df
@@ -563,29 +493,23 @@ def project_per_year():
         df_live = df
         df_live["release_year_anno"] = df_live["release_date_anno"].dt.year
 
-        print(
-            f"Projects per year after extract year: {df_live['project_name'].nunique()}"
-        )
+        print(f"Projects per year after extract year: {df_live['project_name'].nunique()}")
         print(df_live)
 
         df_assembly = df_assembly[df_assembly["is_current"] == "current"]
-        df_assembly = df_assembly.groupby(
-            ["project_name", "release_year"], as_index=False
-        ).agg(total_assemblies=("assembly_id", "nunique"))
+        df_assembly = df_assembly.groupby(["project_name", "release_year"], as_index=False).agg(
+            total_assemblies=("assembly_id", "nunique")
+        )
 
         df_live = df_live[df_live["gb_status"] == "live"].copy()
-        print(
-            f"Projects per year after live filter by annotations: {df_live['project_name'].nunique()}"
-        )
+        print(f"Projects per year after live filter by annotations: {df_live['project_name'].nunique()}")
 
         df_annotations = (
             df_live.groupby(["project_name", "release_year_anno"], as_index=False)
             .agg(live_annotations=("assembly_id", "nunique"))
             .rename(columns={"release_year_anno": "release_year"})
         )
-        print(
-            f"Projects per year after group by annotations: {df_annotations['project_name'].nunique()}"
-        )
+        print(f"Projects per year after group by annotations: {df_annotations['project_name'].nunique()}")
 
         df_assembly = df_assembly.pivot_table(
             index="release_year",

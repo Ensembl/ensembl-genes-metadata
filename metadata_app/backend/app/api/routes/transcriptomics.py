@@ -13,9 +13,7 @@ from metadata_app.backend.app.services.transcriptomics_service import (
 )
 
 # Create router for transcriptomics endpoints
-transcriptomics = APIRouter(
-    tags=["transcriptomics"], responses={404: {"description": "Not found"}}
-)
+transcriptomics = APIRouter(tags=["transcriptomics"], responses={404: {"description": "Not found"}})
 
 
 class TranscriptomicRegistryRequest(BaseModel):
@@ -101,9 +99,7 @@ async def get_transcriptomic_registry_metadata(req: TranscriptomicRegistryReques
 
         for column in ["transc_assess_date"]:
             if column in df.columns:
-                df[column] = pd.to_datetime(df[column], errors="coerce").dt.strftime(
-                    "%Y-%m-%d"
-                )
+                df[column] = pd.to_datetime(df[column], errors="coerce").dt.strftime("%Y-%m-%d")
                 df[column] = df[column].where(df[column].notna(), None)
 
         return {"records": df.where(pd.notna(df), None).to_dict(orient="records")}

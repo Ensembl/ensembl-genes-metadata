@@ -19,9 +19,7 @@ ENSEMBL_ORGANISMS_FTP_BASE_URL = "https://ftp.ebi.ac.uk/pub/ensemblorganisms"
 
 
 def _join_unique(values):
-    return ", ".join(
-        sorted({str(value) for value in values if pd.notna(value) and value != ""})
-    )
+    return ", ".join(sorted({str(value) for value in values if pd.notna(value) and value != ""}))
 
 
 def _format_assembly_accession_path(gca_accession):
@@ -35,9 +33,7 @@ def _format_assembly_accession_path(gca_accession):
         str: The formatted path or None if the input is invalid.
     """
     accession = str(gca_accession).strip()
-    match = re.fullmatch(
-        r"(?P<prefix>GC[AF])_(?P<digits>\d+)\.(?P<version>\d+)", accession
-    )
+    match = re.fullmatch(r"(?P<prefix>GC[AF])_(?P<digits>\d+)\.(?P<version>\d+)", accession)
     if not match:
         return None
 
@@ -45,9 +41,7 @@ def _format_assembly_accession_path(gca_accession):
     if len(digits) % 3 != 0:
         return None
 
-    grouped_digits = "/".join(
-        digits[index : index + 3] for index in range(0, len(digits), 3)
-    )
+    grouped_digits = "/".join(digits[index : index + 3] for index in range(0, len(digits), 3))
     return f"{match.group('prefix')}/{grouped_digits}/{match.group('version')}"
 
 
@@ -100,10 +94,7 @@ def build_ensemblorganisms_ftp_url(row):
     if not accession_path or not annotation_date or pd.isna(row.get("release_date")):
         return None
 
-    return (
-        f"{ENSEMBL_ORGANISMS_FTP_BASE_URL}/"
-        f"{accession_path}/{provider}/{annotation_date}/"
-    )
+    return f"{ENSEMBL_ORGANISMS_FTP_BASE_URL}/" f"{accession_path}/{provider}/{annotation_date}/"
 
 
 def query_meta_registry(annotation_date, taxon_id, bioproject_id, group_name, gca):
@@ -140,16 +131,12 @@ def query_meta_registry(annotation_date, taxon_id, bioproject_id, group_name, gc
             project_conditions = []
 
             if bioproject_id:
-                project_conditions.append(
-                    f"b.bioproject_id IN ({','.join(['%s'] * len(bioproject_id))})"
-                )
+                project_conditions.append(f"b.bioproject_id IN ({','.join(['%s'] * len(bioproject_id))})")
                 parameters.extend(bioproject_id)
                 logging.info(f"Filtering by BioProject IDs: {', '.join(bioproject_id)}")
 
             if group_name:
-                project_conditions.append(
-                    f"g.group_name IN ({','.join(['%s'] * len(group_name))})"
-                )
+                project_conditions.append(f"g.group_name IN ({','.join(['%s'] * len(group_name))})")
                 parameters.extend(group_name)
                 logging.info(f"Filtering by group name: {', '.join(group_name)}")
 
@@ -172,18 +159,14 @@ def query_meta_registry(annotation_date, taxon_id, bioproject_id, group_name, gc
                         detail=f"No descendant taxa found for any of the provided Taxon IDs: {', '.join(map(str, taxon_id))}",
                     )
 
-                conditions.append(
-                    f"s.lowest_taxon_id IN ({','.join(['%s'] * len(all_descendant_taxa))})"
-                )
+                conditions.append(f"s.lowest_taxon_id IN ({','.join(['%s'] * len(all_descendant_taxa))})")
                 parameters.extend(all_descendant_taxa)
                 logging.info(
                     f"Filtering by lowest taxon IDs: {', '.join(str(id) for id in all_descendant_taxa)}"
                 )
 
             if annotation_date:
-                logging.info(
-                    f"Retrieving annotation for annotation date {annotation_date}."
-                )
+                logging.info(f"Retrieving annotation for annotation date {annotation_date}.")
                 if isinstance(annotation_date, pd.Timestamp):
                     annotation_date = annotation_date.strftime("%Y-%m-%d")
                 elif isinstance(annotation_date, (datetime.date, datetime.datetime)):
@@ -250,9 +233,7 @@ def query_meta_registry(annotation_date, taxon_id, bioproject_id, group_name, gc
             # Keep the wide table in sync with the registry as new annotation
             # metrics are added, instead of maintaining a hard-coded list here.
             genebuild_status_ids = {
-                row["genebuild_status_id"]
-                for row in results
-                if row.get("genebuild_status_id") is not None
+                row["genebuild_status_id"] for row in results if row.get("genebuild_status_id") is not None
             }
             annotation_metrics = []
             if genebuild_status_ids:
@@ -264,11 +245,7 @@ def query_meta_registry(annotation_date, taxon_id, bioproject_id, group_name, gc
                 cursor.execute(metrics_query, tuple(genebuild_status_ids))
                 annotation_metrics = cursor.fetchall()
 
-            assembly_ids = {
-                row["assembly_id"]
-                for row in results
-                if row.get("assembly_id") is not None
-            }
+            assembly_ids = {row["assembly_id"] for row in results if row.get("assembly_id") is not None}
             assembly_metrics = []
             if assembly_ids:
                 assembly_metrics_query = f"""
@@ -298,9 +275,7 @@ def query_meta_registry(annotation_date, taxon_id, bioproject_id, group_name, gc
 
             if not lowest_taxon_ids:
                 # No results or no taxon IDs found
-                raise HTTPException(
-                    status_code=404, detail="No valid taxon IDs found in the results."
-                )
+                raise HTTPException(status_code=404, detail="No valid taxon IDs found in the results.")
 
             # Fetch all taxonomy data for the collected lowest_taxon_ids
             taxonomy_query = """
@@ -308,13 +283,13 @@ def query_meta_registry(annotation_date, taxon_id, bioproject_id, group_name, gc
                             FROM taxonomy
                             WHERE lowest_taxon_id IN ({})
                             ORDER BY FIELD(taxon_class, 'species', 'genus', 'family', 'order', 'class', 'phylum', 'kingdom');
-                        """.format(",".join(["%s"] * len(lowest_taxon_ids)))
+                        """.format(
+                ",".join(["%s"] * len(lowest_taxon_ids))
+            )
 
             cursor.execute(taxonomy_query, tuple(lowest_taxon_ids))
             taxonomy_results = cursor.fetchall()
-            logging.info(
-                f"Taxonomy Query executed successfully, retrieved {len(taxonomy_results)} results."
-            )
+            logging.info(f"Taxonomy Query executed successfully, retrieved {len(taxonomy_results)} results.")
 
             # Process taxonomy results
             taxonomy_dict = {}
@@ -342,9 +317,7 @@ def query_meta_registry(annotation_date, taxon_id, bioproject_id, group_name, gc
                 )
                 .reset_index()
             )
-            df_meta_genebuild = df_meta_genebuild.merge(
-                metrics_wide, on="genebuild_status_id", how="left"
-            )
+            df_meta_genebuild = df_meta_genebuild.merge(metrics_wide, on="genebuild_status_id", how="left")
 
         if assembly_metrics:
             assembly_metrics_wide = (
@@ -357,9 +330,7 @@ def query_meta_registry(annotation_date, taxon_id, bioproject_id, group_name, gc
                 )
                 .reset_index()
             )
-            df_meta_genebuild = df_meta_genebuild.merge(
-                assembly_metrics_wide, on="assembly_id", how="left"
-            )
+            df_meta_genebuild = df_meta_genebuild.merge(assembly_metrics_wide, on="assembly_id", how="left")
 
         # Preserve the existing friendly column names used by reports while
         # retaining every raw metrics_name column in the wide table.
@@ -383,10 +354,10 @@ def query_meta_registry(annotation_date, taxon_id, bioproject_id, group_name, gc
         # Add clade, species, and genus information
         clade_data = load_clade_data()
 
-        df_meta_genebuild[
-            ["internal_clade", "species_taxon_id", "genus_taxon_id", "pipeline"]
-        ] = df_meta_genebuild["lowest_taxon_id"].apply(
-            lambda x: pd.Series(assign_clade_and_species(x, clade_data, taxonomy_dict))
+        df_meta_genebuild[["internal_clade", "species_taxon_id", "genus_taxon_id", "pipeline"]] = (
+            df_meta_genebuild["lowest_taxon_id"].apply(
+                lambda x: pd.Series(assign_clade_and_species(x, clade_data, taxonomy_dict))
+            )
         )
 
         logging.info(f"Added clade data")
@@ -396,9 +367,7 @@ def query_meta_registry(annotation_date, taxon_id, bioproject_id, group_name, gc
         ).astype("Int64")
         logging.info(f"Changed genus id format")
 
-        logging.info(
-            f"Retrieved records from genebuild_status table: {df_meta_genebuild.shape}"
-        )
+        logging.info(f"Retrieved records from genebuild_status table: {df_meta_genebuild.shape}")
         print(df_meta_genebuild)
         return df_meta_genebuild
 
@@ -429,20 +398,14 @@ def check_if_gca_is_latest_annotated(anno_wide):
 
         # Convert to DataFrame
         update_df = pd.DataFrame(results, columns=["full_gca", "lowest_taxon_id"])
-        update_df["version"] = (
-            update_df["full_gca"].str.extract(r"GCA_\d+\.(\d+)").astype(float)
-        )
-        update_df["gca_root"] = update_df["full_gca"].str.replace(
-            r"\.\d+$", "", regex=True
-        )
+        update_df["version"] = update_df["full_gca"].str.extract(r"GCA_\d+\.(\d+)").astype(float)
+        update_df["gca_root"] = update_df["full_gca"].str.replace(r"\.\d+$", "", regex=True)
 
         # Keep only the latest version for each root GCA
         latest_versions = (
             update_df.sort_values("version", ascending=False)
             .drop_duplicates("gca_root", keep="first")
-            .rename(columns={"version": "latest_version"})[
-                ["gca_root", "latest_version"]
-            ]
+            .rename(columns={"version": "latest_version"})[["gca_root", "latest_version"]]
         )
 
         # Prepare the annotation DataFrame
@@ -466,9 +429,7 @@ def check_if_gca_is_latest_annotated(anno_wide):
         return merged
 
     except Exception as e:
-        logging.error(
-            f"Unexpected error in check_if_gca_is_latest_annotated: {e}", exc_info=True
-        )
+        logging.error(f"Unexpected error in check_if_gca_is_latest_annotated: {e}", exc_info=True)
         raise HTTPException(
             status_code=500,
             detail=f"Internal server error occurred while processing annotations: {str(e)}",
@@ -480,16 +441,12 @@ def generate_tables(annotation_date, taxon_id, bioproject_id, group_name, gca=No
         f"Generating tables for annotation date: {annotation_date}, taxon_id: {taxon_id}, bioproject_id: {bioproject_id}, gca: {gca}"
     )
     try:
-        df_meta_genebuild = query_meta_registry(
-            annotation_date, taxon_id, bioproject_id, group_name, gca
-        )
+        df_meta_genebuild = query_meta_registry(annotation_date, taxon_id, bioproject_id, group_name, gca)
     except HTTPException:
         logging.error("HTTPException raised during annotation filtering")
         raise
     except Exception as e:
-        logging.error(
-            "Unexpected error occurred during annotations filtering", exc_info=True
-        )
+        logging.error("Unexpected error occurred during annotations filtering", exc_info=True)
         raise HTTPException(status_code=500, detail="An unexpected error occurred.")
 
     logging.info(f"Checking if annotation is the latest GCA version")
@@ -505,11 +462,8 @@ def generate_tables(annotation_date, taxon_id, bioproject_id, group_name, gca=No
 
     # filtered_df = filtered_df.drop(columns=['year', 'gca', 'version'])
     # df_info_result = df_info_result.drop(columns=['year', 'version', 'gca_latest'])
-    project_values = (
-        anno_wide.groupby("gca", as_index=False)[
-            ["bioproject_id", "associated_project"]
-        ]
-        .agg(_join_unique)
+    project_values = anno_wide.groupby("gca", as_index=False)[["bioproject_id", "associated_project"]].agg(
+        _join_unique
     )
     anno_wide = (
         anno_wide.drop(columns=["bioproject_id", "associated_project"])

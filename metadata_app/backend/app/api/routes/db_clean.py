@@ -8,6 +8,7 @@ from metadata_app.backend.app.services.db_clean_service import server_clean_main
 
 db_clean_router = APIRouter()
 
+
 @db_clean_router.post("/db_clean/genebuilder")
 def get_server_clean_main(genebuilder: str = Form(...)):
     try:
@@ -16,15 +17,9 @@ def get_server_clean_main(genebuilder: str = Form(...)):
             raise HTTPException(status_code=404, detail="No cleanup commands returned")
 
         file_content = io.BytesIO(commands.encode("utf-8"))
-        headers = {
-            "Content-Disposition": f'attachment; filename="cleanup_{genebuilder}.sql"'
-        }
+        headers = {"Content-Disposition": f'attachment; filename="cleanup_{genebuilder}.sql"'}
 
-        return StreamingResponse(
-            file_content,
-            media_type="application/sql",
-            headers=headers
-        )
+        return StreamingResponse(file_content, media_type="application/sql", headers=headers)
 
     except HTTPException:
         raise

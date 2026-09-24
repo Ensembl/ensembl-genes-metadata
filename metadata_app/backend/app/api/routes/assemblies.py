@@ -4,6 +4,7 @@ from metadata_app.backend.app.services.assembly_service import get_filtered_asse
 
 router = APIRouter()
 
+
 @router.post("/assemblies/filter")
 def filter_assemblies(filters: AssemblyFilterRequest):
     result = get_filtered_assemblies(
@@ -17,10 +18,10 @@ def filter_assemblies(filters: AssemblyFilterRequest):
         current=filters.current,
         transc=filters.transc,
         transc_ena=filters.transc_ena,
-        non_annotated = filters.non_annotated,
+        non_annotated=filters.non_annotated,
         candidate=filters.candidate,
-        group_name = filters.group_name,
-        gca = filters.gca,
+        group_name=filters.group_name,
+        gca=filters.gca,
     )
 
     if isinstance(result[0], str):  # Error string
@@ -32,6 +33,6 @@ def filter_assemblies(filters: AssemblyFilterRequest):
         "df_wide": df_wide.to_dict(orient="records"),
         "downloadables": {
             "df_wide": df_wide.to_csv(index=False),
-            "gca_list": df_gca_list.to_csv(index=False)
-        }
+            "gca_list": df_gca_list.to_csv(index=False),
+        },
     }

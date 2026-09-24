@@ -97,9 +97,7 @@ def get_ready_to_ho(genebuilder):
             result = cursor.fetchall()
 
             lowest_taxon_ids = {
-                row["lowest_taxon_id"]
-                for row in result
-                if row.get("lowest_taxon_id") is not None
+                row["lowest_taxon_id"] for row in result if row.get("lowest_taxon_id") is not None
             }
             taxonomy_dict = {}
             if lowest_taxon_ids:
@@ -108,7 +106,9 @@ def get_ready_to_ho(genebuilder):
                     FROM taxonomy
                     WHERE lowest_taxon_id IN ({})
                     ORDER BY FIELD(taxon_class, 'species', 'genus', 'family', 'order', 'class', 'phylum', 'kingdom');
-                """.format(",".join(["%s"] * len(lowest_taxon_ids)))
+                """.format(
+                    ",".join(["%s"] * len(lowest_taxon_ids))
+                )
                 cursor.execute(taxonomy_query, tuple(lowest_taxon_ids))
                 taxonomy_results = cursor.fetchall()
 
@@ -142,9 +142,7 @@ def get_ready_to_ho(genebuilder):
             for value in values:
                 if not value or value == "Unknown":
                     continue
-                unique_vals.update(
-                    part.strip() for part in str(value).split(",") if part.strip()
-                )
+                unique_vals.update(part.strip() for part in str(value).split(",") if part.strip())
             return ", ".join(sorted(unique_vals)) if unique_vals else "Unknown"
 
         def overview_grouped_status(status):
@@ -219,14 +217,10 @@ def get_ready_to_ho(genebuilder):
 
         def assign_pipeline(lowest_taxon_id):
             try:
-                _, _, _, pipeline = assign_clade_and_species(
-                    lowest_taxon_id, clade_data, taxonomy_dict
-                )
+                _, _, _, pipeline = assign_clade_and_species(lowest_taxon_id, clade_data, taxonomy_dict)
                 return pipeline
             except Exception:
-                logging.warning(
-                    "Could not assign pipeline for taxon_id %s", lowest_taxon_id
-                )
+                logging.warning("Could not assign pipeline for taxon_id %s", lowest_taxon_id)
                 return "anno"
 
         clade_data = load_clade_data()
@@ -246,9 +240,7 @@ def get_ready_to_ho(genebuilder):
         )
         collapsed["pipeline"] = collapsed["lowest_taxon_id"].apply(assign_pipeline)
 
-        df_ready = collapsed[
-            collapsed["gb_status"].isin(["pre_released", "completed"])
-        ].copy()
+        df_ready = collapsed[collapsed["gb_status"].isin(["pre_released", "completed"])].copy()
         df_ready.loc[:, "core_name"] = df_ready.apply(
             lambda row: _build_core_name(row["scientific_name"], row["gca"]),
             axis=1,
@@ -257,9 +249,7 @@ def get_ready_to_ho(genebuilder):
         # check data and in progress for more than 6 months
         date_series = pd.to_datetime(collapsed["date_status_update"], errors="coerce")
         six_months_ago = pd.Timestamp.today() - pd.DateOffset(months=6)
-        collapsed["days_since_update"] = (
-            pd.Timestamp.today().normalize() - date_series
-        ).dt.days
+        collapsed["days_since_update"] = (pd.Timestamp.today().normalize() - date_series).dt.days
 
         count_ho_ready = df_ready["gca"].nunique()
 
@@ -267,9 +257,7 @@ def get_ready_to_ho(genebuilder):
         check_data = ["check_busco", "insufficient_data", "poor_genome_busco", "low_genome_busco"]
         check_data_df = collapsed[collapsed["gb_status"].isin(check_data)]
 
-        count_data = (
-            check_data_df.loc[(date_series < six_months_ago), "gca"]
-        ).nunique()
+        count_data = (check_data_df.loc[(date_series < six_months_ago), "gca"]).nunique()
 
         list_data = check_data_df.loc[
             (date_series < six_months_ago),
@@ -289,8 +277,7 @@ def get_ready_to_ho(genebuilder):
         # pending
         count_pending = (
             collapsed.loc[
-                (collapsed["gb_status"] == "in_progress")
-                & (date_series < six_months_ago),
+                (collapsed["gb_status"] == "in_progress") & (date_series < six_months_ago),
                 "gca",
             ]
         ).nunique()
@@ -308,15 +295,11 @@ def get_ready_to_ho(genebuilder):
         ]
         list_pending = list_pending.copy()
         list_pending["queue"] = "In progress"
-        list_pending["next_action"] = list_pending["gb_status"].apply(
-            stale_next_action
-        )
+        list_pending["next_action"] = list_pending["gb_status"].apply(stale_next_action)
 
         overview = collapsed.copy()
         overview["dashboard_status"] = overview["gb_status"].apply(overview_grouped_status)
-        overview["days_since_update"] = (
-            pd.Timestamp.today().normalize() - date_series
-        ).dt.days
+        overview["days_since_update"] = (pd.Timestamp.today().normalize() - date_series).dt.days
         overview["older_than_180_days"] = overview["days_since_update"] > 180
         overview["has_other_annotation"] = overview["other_annotation_count"] > 0
 
@@ -336,10 +319,8 @@ def get_ready_to_ho(genebuilder):
                 overview["dashboard_status"].eq("handed_over"),
                 overview["dashboard_status"].eq("ready_for_handover"),
                 overview["dashboard_status"].eq("abandoned"),
-                overview["dashboard_status"].eq("data_error")
-                & overview["older_than_180_days"],
-                overview["dashboard_status"].eq("data_error")
-                & ~overview["older_than_180_days"],
+                overview["dashboard_status"].eq("data_error") & overview["older_than_180_days"],
+                overview["dashboard_status"].eq("data_error") & ~overview["older_than_180_days"],
                 overview["dashboard_status"].eq("in_progress"),
             ],
             [
@@ -356,32 +337,22 @@ def get_ready_to_ho(genebuilder):
             [
                 overview["dashboard_status"].eq("ready_for_handover"),
                 overview["dashboard_status"].eq("abandoned"),
-                overview["dashboard_status"].eq("data_error")
-                & overview["older_than_180_days"],
+                overview["dashboard_status"].eq("data_error") & overview["older_than_180_days"],
             ],
             ["high", "high", "high"],
             default="normal",
         )
-        overview["days_since_update"] = overview["days_since_update"].astype(
-            object
-        ).where(pd.notna(overview["days_since_update"]), None)
+        overview["days_since_update"] = (
+            overview["days_since_update"].astype(object).where(pd.notna(overview["days_since_update"]), None)
+        )
 
         collapsed_for_summary = collapsed.assign(
             dashboard_status=collapsed["gb_status"].apply(summary_grouped_status),
-            pipeline_normalized=collapsed["pipeline"]
-            .fillna("")
-            .astype(str)
-            .str.lower(),
+            pipeline_normalized=collapsed["pipeline"].fillna("").astype(str).str.lower(),
         )
-        collapsed_for_summary["is_main"] = collapsed_for_summary[
-            "pipeline_normalized"
-        ].eq("main")
-        collapsed_for_summary["is_anno"] = collapsed_for_summary[
-            "pipeline_normalized"
-        ].eq("anno")
-        collapsed_for_summary["is_hprc"] = collapsed_for_summary[
-            "pipeline_normalized"
-        ].eq("hprc")
+        collapsed_for_summary["is_main"] = collapsed_for_summary["pipeline_normalized"].eq("main")
+        collapsed_for_summary["is_anno"] = collapsed_for_summary["pipeline_normalized"].eq("anno")
+        collapsed_for_summary["is_hprc"] = collapsed_for_summary["pipeline_normalized"].eq("hprc")
         status_summary = (
             collapsed_for_summary.groupby("dashboard_status", as_index=False)
             .agg(
@@ -395,13 +366,9 @@ def get_ready_to_ho(genebuilder):
         )
         date_columns = ["date_status_update"]
         for column in date_columns:
-            df_ready[column] = pd.to_datetime(
-                df_ready[column], errors="coerce"
-            ).dt.strftime("%Y-%m-%d")
+            df_ready[column] = pd.to_datetime(df_ready[column], errors="coerce").dt.strftime("%Y-%m-%d")
             df_ready[column] = df_ready[column].where(df_ready[column].notna(), None)
-            overview[column] = pd.to_datetime(
-                overview[column], errors="coerce"
-            ).dt.strftime("%Y-%m-%d")
+            overview[column] = pd.to_datetime(overview[column], errors="coerce").dt.strftime("%Y-%m-%d")
             overview[column] = overview[column].where(overview[column].notna(), None)
 
         def stale_records(frame):
@@ -414,9 +381,9 @@ def get_ready_to_ho(genebuilder):
             frame["date_status_update"] = frame["date_status_update"].where(
                 frame["date_status_update"].notna(), None
             )
-            frame["days_since_update"] = frame["days_since_update"].astype(
-                object
-            ).where(pd.notna(frame["days_since_update"]), None)
+            frame["days_since_update"] = (
+                frame["days_since_update"].astype(object).where(pd.notna(frame["days_since_update"]), None)
+            )
             return _json_safe_records(frame)
 
         return (
@@ -437,22 +404,24 @@ def get_ready_to_ho(genebuilder):
             int(count_pending),
             stale_records(list_data),
             stale_records(list_pending),
-            _json_safe_records(overview[
-                [
-                    "gca",
-                    "genebuild_status_id",
-                    "scientific_name",
-                    "gb_status",
-                    "dashboard_status",
-                    "queue",
-                    "next_action",
-                    "priority",
-                    "bioproject_name",
-                    "annotation_method",
-                    "date_status_update",
-                    "days_since_update",
+            _json_safe_records(
+                overview[
+                    [
+                        "gca",
+                        "genebuild_status_id",
+                        "scientific_name",
+                        "gb_status",
+                        "dashboard_status",
+                        "queue",
+                        "next_action",
+                        "priority",
+                        "bioproject_name",
+                        "annotation_method",
+                        "date_status_update",
+                        "days_since_update",
+                    ]
                 ]
-            ]),
+            ),
             _json_safe_records(status_summary),
         )
 

@@ -17,8 +17,7 @@ STATUS_INFO = {
     "insufficient_data": {
         "title": "Insufficient data",
         "description": (
-            "There is currently not enough transcriptomic evidence to produce "
-            "a high-quality annotation."
+            "There is currently not enough transcriptomic evidence to produce " "a high-quality annotation."
         ),
         "action": ("Waiting for additional transcriptomic data from the community."),
     },
@@ -38,8 +37,7 @@ STATUS_INFO = {
     "pre_released": {
         "title": "Pre-release",
         "description": (
-            "The annotation has been completed and is awaiting final quality "
-            "checks before release."
+            "The annotation has been completed and is awaiting final quality " "checks before release."
         ),
         "action": ("The annotation files are available on the pre-release FTP site."),
     },
@@ -61,17 +59,12 @@ STATUS_INFO = {
             "The predicted proteins have a low BUSCO completeness score, "
             "indicating the annotation may be incomplete."
         ),
-        "action": (
-            "Additional evidence or future pipeline improvements may improve "
-            "the annotation."
-        ),
+        "action": ("Additional evidence or future pipeline improvements may improve " "the annotation."),
     },
     "poor_genome_busco": {
         "title": "Low genome BUSCO",
         "description": "The genome assembly itself appears incomplete.",
-        "action": (
-            "A higher-quality assembly would likely produce a better annotation."
-        ),
+        "action": ("A higher-quality assembly would likely produce a better annotation."),
     },
 }
 
@@ -88,8 +81,7 @@ def build_reasons(row):
                     "indicating the annotation may be incomplete."
                 ),
                 "action": (
-                    "Additional evidence or future pipeline improvements may "
-                    "improve the annotation."
+                    "Additional evidence or future pipeline improvements may " "improve the annotation."
                 ),
                 "severity": "warning",
             }
@@ -100,9 +92,7 @@ def build_reasons(row):
             {
                 "title": "Low genome BUSCO",
                 "description": "The genome assembly itself appears incomplete.",
-                "action": (
-                    "A higher-quality assembly would likely produce a better annotation."
-                ),
+                "action": ("A higher-quality assembly would likely produce a better annotation."),
                 "severity": "warning",
             }
         ]
@@ -205,8 +195,7 @@ def build_assembly_fallback(gca: str):
             {
                 "title": "Sufficient RNA-seq evidence",
                 "description": (
-                    "Transcriptomic evidence from ENA is available at the lowest "
-                    "or genus taxon level."
+                    "Transcriptomic evidence from ENA is available at the lowest " "or genus taxon level."
                 ),
                 "action": "We have enough RNA-seq evidence for annotation. We can start annotation.",
                 "severity": "info",
@@ -216,9 +205,7 @@ def build_assembly_fallback(gca: str):
         reasons.append(
             {
                 "title": "Limited RNA-seq evidence",
-                "description": (
-                    "Some transcriptomic evidence is available from ENA, but it is limited."
-                ),
+                "description": ("Some transcriptomic evidence is available from ENA, but it is limited."),
                 "action": "Annotation may not be good quality with this evidence, but we can try.",
                 "severity": "warning",
             }

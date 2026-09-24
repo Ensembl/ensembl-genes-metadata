@@ -2,6 +2,7 @@ import logging
 from fastapi import HTTPException
 from metadata_app.backend.app.core.database import get_db_connection
 
+
 def search_taxonomy(user_input: str):
     """Search taxonomy by name or ID, return flat list of displayable strings."""
     try:
@@ -23,10 +24,7 @@ def search_taxonomy(user_input: str):
             print("ROWS:", rows)
 
             if not rows:
-                raise HTTPException(
-                    status_code=404,
-                    detail="No taxonomy found matching your query."
-                )
+                raise HTTPException(status_code=404, detail="No taxonomy found matching your query.")
 
             # Flatten to a set of unique, non-None strings
             results_set = set()
@@ -41,7 +39,4 @@ def search_taxonomy(user_input: str):
 
     except Exception as e:
         logging.error("Error during taxonomy search", exc_info=True)
-        raise HTTPException(
-            status_code=500,
-            detail=f"Internal server error: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
