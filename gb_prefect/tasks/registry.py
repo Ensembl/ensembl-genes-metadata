@@ -6,36 +6,59 @@ from typing import Optional
 from prefect import task  # type: ignore
 from prefect.states import Failed, Completed  # type: ignore
 
+from gb_prefect.models.pipeline_options import PipelineCredentials, TaskRunOptions
+from gb_prefect.utils.artifact_utils import create_registry_run_artifact
+from gb_prefect.utils.credentials_utils import redact_credentials
 from gb_prefect.utils.enscode_utils import resolve_enscode
 from gb_prefect.utils.logging_utils import append_log
 from gb_prefect.utils.shell_utils import run_cmd_bash_capture
-from gb_prefect.utils.artifact_utils import create_registry_run_artifact
+
+
+def _registry_mode_flags(date: Optional[str], full_screen: bool, gca_list: Optional[str]) -> str:
+    """Nextflow flags selecting the assembly_metadata input mode.
+
+    - gca_list: register exactly those accessions (--add_gca); no NCBI screening.
+    - date (MM-DD-YYYY): screen NCBI for assemblies released after that date.
+    - full_screen: screen NCBI from the DB's full_screen date.
+    - none of them: screen NCBI from the DB's last regular update date.
+    """
+    if date and full_screen:
+        raise ValueError("date and full_screen are mutually exclusive.")
+    flags = []
+    if gca_list:
+        flags.append(f"--add_gca true --gca_list {gca_list}")
+    if date:
+        flags.append(f"--date {datetime.strptime(date, '%m-%d-%Y').strftime('%m/%d/%Y')}")
+    if full_screen:
+        flags.append("--full_screen true")
+    return "".join(f"    {flag} \\\n" for flag in flags)
 
 
 @task(log_prints=True)
-def register_assemblies(
-    date: str,
+def register_assemblies(  # pylint: disable=too-many-arguments,too-many-positional-arguments,too-many-locals
     outdir: str,
     asm_venv: str,
-    metadata_params_string: str,
+    credentials: PipelineCredentials,
+    date: Optional[str] = None,
+    full_screen: bool = False,
+    gca_list: Optional[str] = None,
     enscode: Optional[str] = None,
-    dry_run: bool = False,
-    create_artifact: bool = True,
+    run_options: Optional[TaskRunOptions] = None,
 ):
     """Build and submit the SLURM job that runs the assembly registry Nextflow pipeline."""
+    run_options = run_options or TaskRunOptions()
+    mode_flags = _registry_mode_flags(date, full_screen, gca_list)
+    run_date = datetime.now().strftime("%Y-%m-%d")
     outdir_path = Path(outdir)
-    parsed_date = datetime.strptime(date, "%m-%d-%Y")
-    date_fmt = parsed_date.strftime("%Y-%m-%d")
-    date_slash = parsed_date.strftime("%m/%d/%Y")
-    log = outdir_path / f"log_flow_register_assemblies_{date_fmt}.log"
-    command_file = outdir_path / f"register_assemblies_command_{date_fmt}.sh"
+    log = outdir_path / f"log_flow_register_assemblies_{run_date}.log"
+    command_file = outdir_path / f"register_assemblies_command_{run_date}.sh"
     log.parent.mkdir(parents=True, exist_ok=True)
 
-    enscode = resolve_enscode(enscode, dry_run)
+    enscode = resolve_enscode(enscode, run_options.dry_run)
     append_log(log, f"[{datetime.now()}] INFO: ENSCODE set to {enscode}.\n")
 
     sbatch_script = f"""#!/bin/bash
-#SBATCH --job-name=asm_registry_{date_fmt}
+#SBATCH --job-name=asm_registry_{run_date}
 #SBATCH --output={outdir}/slurm_%j.out
 #SBATCH --error={outdir}/slurm_%j.err
 #SBATCH --time=02:00:00
@@ -47,19 +70,22 @@ source {asm_venv}/bin/activate
 
 cd {outdir}
 
-nextflow run \
-    {enscode}/ensembl-genes-metadata/pipelines/assembly_metadata/main.nf \
-        --output_dir {outdir} \
-        --enscode {enscode} \
-        --date {date_slash} \
-        --metadata_params_string '{metadata_params_string}' -with-dag
+nextflow run {enscode}/ensembl-genes-metadata/pipelines/assembly_metadata/main.nf \\
+    --output_dir {outdir} \\
+    --enscode {enscode} \\
+{mode_flags}    --metadata_params_string '{credentials.metadata_params_string}' \\
+    -with-report \\
+    -with-dag {outdir}/assembly_registry_dag_{run_date}.png
 """
 
-    append_log(log, f"[{datetime.now()}] INFO: sbatch script:\n{sbatch_script}\n")
+    # The command file holds the real credentials so it is owner-only; everything that is
+    # logged, returned or published as an artifact gets the redacted copy.
+    redacted_script = redact_credentials(sbatch_script, credentials)
+    append_log(log, f"[{datetime.now()}] INFO: sbatch script:\n{redacted_script}\n")
     command_file.write_text(sbatch_script)
-    command_file.chmod(0o755)
+    command_file.chmod(0o700)
 
-    if dry_run:
+    if run_options.dry_run:
         rc = 0
         job_id = None
         append_log(log, f"[{datetime.now()}] INFO: Dry run enabled; sbatch job was not submitted.\n")
@@ -82,26 +108,26 @@ nextflow run \
 
     append_log(log, f"[{datetime.now()}] INFO: Return code {rc}.\n")
 
-    if create_artifact:
+    if run_options.create_artifact:
         create_registry_run_artifact(
-            date=date_fmt,
+            date=run_date,
             outdir=outdir,
             command_file=str(command_file),
-            cmd=sbatch_script,
-            log_text=log.read_text(),
+            cmd=redacted_script,
+            log_text=redact_credentials(log.read_text(), credentials),
             rc=rc,
-            dry_run=dry_run,
+            dry_run=run_options.dry_run,
         )
 
     result = {
         "returncode": rc,
-        "command": sbatch_script,
+        "command": redacted_script,
         "command_file": str(command_file),
         "log_file": str(log),
-        "slurm_job_id": job_id if not dry_run else None,
-        "pipeline_run_date": date_fmt,
-        "pipeline_ran": not dry_run,
-        "dry_run": dry_run,
+        "slurm_job_id": job_id if not run_options.dry_run else None,
+        "pipeline_run_date": run_date,
+        "pipeline_ran": not run_options.dry_run,
+        "dry_run": run_options.dry_run,
     }
 
     if rc != 0:
