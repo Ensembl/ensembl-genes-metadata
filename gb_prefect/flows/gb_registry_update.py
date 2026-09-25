@@ -4,19 +4,26 @@ from typing import Optional
 
 from prefect import flow  # type: ignore
 from gb_prefect.models.pipeline_options import PipelineCredentials, TaskRunOptions
+from gb_prefect.utils.credentials_utils import (
+    DEFAULT_METADATA_SECRET_BLOCK,
+    DEFAULT_SLACK_SECRET_BLOCK,
+    resolve_credentials,
+)
 from gb_prefect.tasks.registry_update import update_assemblies
 
 
 @flow(name="gb_registry_update", log_prints=True)
-def gb_registry_update_flow(
+def gb_registry_update_flow(  # pylint: disable=too-many-arguments,too-many-positional-arguments
     gca_list: str,
     outdir: str,
     asm_venv: str,
-    credentials: PipelineCredentials,
     slack_report: bool = True,
     date: Optional[str] = None,
     enscode: Optional[str] = None,
     dry_run: bool = False,
+    credentials: Optional[PipelineCredentials] = None,
+    metadata_secret_block: str = DEFAULT_METADATA_SECRET_BLOCK,
+    slack_secret_block: str = DEFAULT_SLACK_SECRET_BLOCK,
 ):
     """Run the assembly metadata update Nextflow pipeline for the given GCA list."""
     if not date:
@@ -28,7 +35,9 @@ def gb_registry_update_flow(
         gca_list=gca_list,
         outdir=f"{outdir}/asm_update_{date}",
         asm_venv=asm_venv,
-        credentials=credentials,
+        credentials=resolve_credentials(
+            credentials, metadata_secret_block, slack_secret_block, slack_report
+        ),
         slack_report=slack_report,
         date=date,
         enscode=enscode,
@@ -55,8 +64,9 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--metadata-params-string",
-        required=True,
-        help="JSON string with metadata database connection parameters.",
+        required=False,
+        help="JSON string with metadata database connection parameters. If omitted, credentials are "
+        "loaded from the Prefect Secret blocks (see gb_prefect/deployments/create_secrets.py).",
     )
     parser.add_argument("--enscode", required=True, help="Path to ENSCODE directory.")
     parser.add_argument("--date", required=False, help="Date for the registry run (e.g., YYYY-MM-DD).")
@@ -76,9 +86,13 @@ if __name__ == "__main__":
         gca_list=args.gca_list,
         enscode=args.enscode,
         asm_venv=args.asm_venv,
-        credentials=PipelineCredentials(
-            metadata_params_string=args.metadata_params_string,
-            slack_params=args.slack_params,
+        credentials=(
+            PipelineCredentials(
+                metadata_params_string=args.metadata_params_string,
+                slack_params=args.slack_params,
+            )
+            if args.metadata_params_string
+            else None
         ),
         slack_report=args.slack_report,
         dry_run=args.dry_run,
