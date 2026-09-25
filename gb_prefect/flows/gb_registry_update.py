@@ -18,22 +18,26 @@ def gb_registry_update_flow(  # pylint: disable=too-many-arguments,too-many-posi
     outdir: str,
     asm_venv: str,
     slack_report: bool = True,
-    date: Optional[str] = None,
+    folder_name: Optional[str] = None,
     enscode: Optional[str] = None,
     dry_run: bool = False,
     credentials: Optional[PipelineCredentials] = None,
     metadata_secret_block: str = DEFAULT_METADATA_SECRET_BLOCK,
     slack_secret_block: str = DEFAULT_SLACK_SECRET_BLOCK,
 ):
-    """Run the assembly metadata update Nextflow pipeline for the given GCA list."""
-    if not date:
-        date = datetime.now().strftime("%Y-%m-%d")
-    else:
-        date = datetime.strptime(date, "%Y-%m-%d").strftime("%Y-%m-%d")
+    """Run the assembly metadata update Nextflow pipeline for the given GCA list.
+
+    Output goes to {outdir}/{folder_name}; folder_name defaults to asm_update_<today>.
+    """
+    date = datetime.now().strftime("%Y-%m-%d")
+    if not folder_name:
+        folder_name = f"asm_update_{date}"
+    elif "/" in folder_name:
+        raise ValueError(f"folder_name must be a single folder name, not a path: {folder_name}")
 
     return update_assemblies(
         gca_list=gca_list,
-        outdir=f"{outdir}/asm_update_{date}",
+        outdir=f"{outdir}/{folder_name}",
         asm_venv=asm_venv,
         credentials=resolve_credentials(
             credentials, metadata_secret_block, slack_secret_block, slack_report
@@ -69,19 +73,18 @@ if __name__ == "__main__":
         "loaded from the Prefect Secret blocks (see gb_prefect/deployments/create_secrets.py).",
     )
     parser.add_argument("--enscode", required=True, help="Path to ENSCODE directory.")
-    parser.add_argument("--date", required=False, help="Date for the registry run (e.g., YYYY-MM-DD).")
+    parser.add_argument(
+        "--folder-name",
+        required=False,
+        help="Output folder name under --outdir. Defaults to asm_update_<today>.",
+    )
     parser.add_argument(
         "--dry-run", action="store_true", help="Create the Nextflow command without running it."
     )
     args = parser.parse_args()
 
-    if not args.date:
-        run_date = datetime.now().strftime("%Y-%m-%d")
-    else:
-        run_date = datetime.strptime(args.date, "%Y-%m-%d").strftime("%Y-%m-%d")
-
     gb_registry_update_flow(
-        date=run_date,
+        folder_name=args.folder_name,
         outdir=args.outdir,
         gca_list=args.gca_list,
         enscode=args.enscode,
