@@ -31,7 +31,7 @@ def gb_registry_update_by_date_flow(  # pylint: disable=too-many-arguments,too-m
 
     return update_assemblies_by_date(
         screen_date=screen_date,
-        outdir=f"{outdir}/asm_update_{screen_date}",
+        outdir=f"{outdir}/asm_update_screen_{datetime.now().strftime('%Y-%m-%d')}",
         asm_venv=asm_venv,
         credentials=resolve_credentials(
             credentials, metadata_secret_block, slack_secret_block, slack_report
