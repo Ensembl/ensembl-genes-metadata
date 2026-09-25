@@ -15,7 +15,7 @@ genebuilders of changes via Slack.
 - [Nextflow](https://www.nextflow.io/) >= 24.04.03
 - Singularity >= 3.7.0
 - Access to a SLURM cluster
-- Access to the Ensembl assembly metadata MySQL database
+- Access to the Genebuild assembly metadata MySQL database
 - A Slack bot token and app, if using `--slack_report`
 
 ## Pipeline flow

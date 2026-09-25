@@ -21,23 +21,38 @@ whether each assembly is labeled as the reference assembly for its taxon.
 
 Usage
 -----
-    # Pass accessions directly on the command line:
+
+Pass accessions directly on the command line::
+
     python is_reference.py GCA_004027535.1 GCA_000001405.29
 
-    # Or supply a file (one GCA per line, or a single-column CSV):
+Or supply a file (one GCA per line, or a single-column CSV)::
+
     python is_reference.py --file gcas.txt
     python is_reference.py --file gcas.csv
 
-    # Choose a custom output path (default: reference_check.csv):
+Choose a custom output path (default: ``reference_check.csv``)::
+
     python is_reference.py --file gcas.txt --output my_results.csv
+
 Output columns
 --------------
-    gca               - input accession
-    species_name      - organism_name from NCBI
-    taxon_id          - NCBI taxonomy ID
-    is_reference      - True / False / No reference available
-    current_reference - GCA (or GCF paired) accession of the reference,
-                        or "No reference available"
+
+``gca``
+    Input accession.
+
+``species_name``
+    Organism name from NCBI.
+
+``taxon_id``
+    NCBI taxonomy ID.
+
+``is_reference``
+    ``True``, ``False``, or ``No reference available``.
+
+``current_reference``
+    GCA (or GCF paired) accession of the reference, or
+    ``No reference available``.
 """
 
 import argparse

@@ -1,11 +1,19 @@
 site_name: Ensembl Genes Metadata Pipelines
 site_description: Documentation for the Ensembl Genes Metadata Nextflow pipelines.
 site_author: Ensembl Genebuild
+# Required so generated absolute-path pages (404.html, sitemap.xml, canonical
+# links) point at the real subpath instead of defaulting to the domain root --
+# without this, 404.html's own assets/nav links 404 because the site is
+# actually served from /ensembl-genes-metadata/, not /.
+site_url: https://ensembl.github.io/ensembl-genes-metadata/
 copyright: Copyright &copy; 2026 <a href="https://www.ebi.ac.uk">EMBL-European Bioinformatics Institute</a>
 repo_url: https://github.com/Ensembl/ensembl-genes-metadata
 repo_name: Ensembl/ensembl-genes-metadata
 docs_dir: docs
 site_dir: site
+# site/ is what docs-ci.yml publishes to the gh-pages branch (required by
+# the repo's github-pages deployment environment, which only allows
+# deployments from that branch) via peaceiris/actions-gh-pages.
 
 # The generator tooling (docs/generators/) and the Sphinx project that
 # builds the "Source" tab (docs/source/) both live alongside the content
