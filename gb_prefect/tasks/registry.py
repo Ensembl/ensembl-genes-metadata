@@ -18,7 +18,7 @@ def _registry_mode_flags(date: Optional[str], gca_list: Optional[str]) -> str:
     """Nextflow flags selecting the assembly_metadata input mode.
 
     - gca_list: register exactly those accessions (--add_gca); no NCBI screening.
-    - date (MM-DD-YYYY): screen NCBI for assemblies released after that date.
+    - date (YYYY-MM-DD): screen NCBI for assemblies released after that date.
     - neither: screen NCBI from the DB's last regular update date.
 
     The pipeline's --full_screen mode is a developer option and is deliberately not exposed here.
@@ -27,7 +27,7 @@ def _registry_mode_flags(date: Optional[str], gca_list: Optional[str]) -> str:
     if gca_list:
         flags.append(f"--add_gca true --gca_list {gca_list}")
     if date:
-        flags.append(f"--date {datetime.strptime(date, '%m-%d-%Y').strftime('%m/%d/%Y')}")
+        flags.append(f"--date {datetime.strptime(date, '%Y-%m-%d').strftime('%m/%d/%Y')}")
     return "".join(f"    {flag} \\\n" for flag in flags)
 
 

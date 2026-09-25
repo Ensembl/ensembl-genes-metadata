@@ -26,14 +26,14 @@ def gb_registry_flow(  # pylint: disable=too-many-arguments,too-many-positional-
     metadata_secret_block: str = DEFAULT_METADATA_SECRET_BLOCK,
 ):
     """Run the assembly registry Nextflow pipeline, screening NCBI for assemblies released
-    after date (MM-DD-YYYY; default: SCREEN_DAYS_BACK days before today) and registering the
+    after date (YYYY-MM-DD; default: SCREEN_DAYS_BACK days before today) and registering the
     ones missing from the metadata DB. Output goes to a folder named after today's date.
     """
     today = datetime.now()
     if date:
-        date = datetime.strptime(date, "%m-%d-%Y").strftime("%m-%d-%Y")
+        date = datetime.strptime(date, "%Y-%m-%d").strftime("%Y-%m-%d")
     else:
-        date = (today - timedelta(days=SCREEN_DAYS_BACK)).strftime("%m-%d-%Y")
+        date = (today - timedelta(days=SCREEN_DAYS_BACK)).strftime("%Y-%m-%d")
     print(f"Screening NCBI for assemblies released after {date}.")
 
     return register_assemblies(
@@ -56,7 +56,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--date",
         required=False,
-        help="Screen for assemblies released after this date (MM-DD-YYYY). "
+        help="Screen for assemblies released after this date (YYYY-MM-DD). "
         f"Defaults to {SCREEN_DAYS_BACK} days before today.",
     )
     parser.add_argument("--outdir", required=True, help="Base output directory.")
