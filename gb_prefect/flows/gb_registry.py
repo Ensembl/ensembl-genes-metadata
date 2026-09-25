@@ -1,5 +1,5 @@
 import argparse
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Optional
 
 from prefect import flow  # type: ignore
@@ -11,32 +11,38 @@ from gb_prefect.utils.credentials_utils import (
 )
 from gb_prefect.tasks.registry import register_assemblies
 
+# By default, screen NCBI for assemblies released in the last SCREEN_DAYS_BACK days.
+SCREEN_DAYS_BACK = 60
+
 
 @flow(name="gb_registry", log_prints=True)
 def gb_registry_flow(  # pylint: disable=too-many-arguments,too-many-positional-arguments
     outdir: str,
     asm_venv: str,
     date: Optional[str] = None,
-    full_screen: bool = False,
     enscode: Optional[str] = None,
     dry_run: bool = False,
     credentials: Optional[PipelineCredentials] = None,
     metadata_secret_block: str = DEFAULT_METADATA_SECRET_BLOCK,
 ):
-    """Run the assembly registry Nextflow pipeline, screening NCBI for new assemblies.
-
-    date (MM-DD-YYYY) screens from that date; full_screen screens from the DB's full_screen
-    date; with neither, it screens from the DB's last regular update date.
+    """Run the assembly registry Nextflow pipeline, screening NCBI for assemblies released
+    after date (MM-DD-YYYY; default: SCREEN_DAYS_BACK days before today) and registering the
+    ones missing from the metadata DB. Output goes to a folder named after today's date.
     """
-    run_date = datetime.strptime(date, "%m-%d-%Y") if date else datetime.now()
+    today = datetime.now()
+    if date:
+        date = datetime.strptime(date, "%m-%d-%Y").strftime("%m-%d-%Y")
+    else:
+        date = (today - timedelta(days=SCREEN_DAYS_BACK)).strftime("%m-%d-%Y")
+    print(f"Screening NCBI for assemblies released after {date}.")
+
     return register_assemblies(
-        outdir=f"{outdir}/asm_registry_{run_date.strftime('%Y-%m-%d')}",
+        outdir=f"{outdir}/asm_registry_{today.strftime('%Y-%m-%d')}",
         asm_venv=asm_venv,
         credentials=resolve_credentials(
             credentials, metadata_secret_block, DEFAULT_SLACK_SECRET_BLOCK, slack_report=False
         ),
         date=date,
-        full_screen=full_screen,
         enscode=enscode,
         run_options=TaskRunOptions(dry_run=dry_run),
     )
@@ -51,12 +57,7 @@ if __name__ == "__main__":
         "--date",
         required=False,
         help="Screen for assemblies released after this date (MM-DD-YYYY). "
-        "If omitted, the last update date is read from the metadata DB.",
-    )
-    parser.add_argument(
-        "--full-screen",
-        action="store_true",
-        help="Screen from the DB's full_screen date. Mutually exclusive with --date.",
+        f"Defaults to {SCREEN_DAYS_BACK} days before today.",
     )
     parser.add_argument("--outdir", required=True, help="Base output directory.")
     parser.add_argument("--enscode", required=True, help="Path to ENSCODE directory.")
@@ -75,7 +76,6 @@ if __name__ == "__main__":
         outdir=args.outdir,
         asm_venv=args.asm_venv,
         date=args.date,
-        full_screen=args.full_screen,
         enscode=args.enscode,
         dry_run=args.dry_run,
         credentials=(

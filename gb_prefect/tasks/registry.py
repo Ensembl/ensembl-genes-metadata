@@ -14,40 +14,36 @@ from gb_prefect.utils.logging_utils import append_log
 from gb_prefect.utils.shell_utils import run_cmd_bash_capture
 
 
-def _registry_mode_flags(date: Optional[str], full_screen: bool, gca_list: Optional[str]) -> str:
+def _registry_mode_flags(date: Optional[str], gca_list: Optional[str]) -> str:
     """Nextflow flags selecting the assembly_metadata input mode.
 
     - gca_list: register exactly those accessions (--add_gca); no NCBI screening.
     - date (MM-DD-YYYY): screen NCBI for assemblies released after that date.
-    - full_screen: screen NCBI from the DB's full_screen date.
-    - none of them: screen NCBI from the DB's last regular update date.
+    - neither: screen NCBI from the DB's last regular update date.
+
+    The pipeline's --full_screen mode is a developer option and is deliberately not exposed here.
     """
-    if date and full_screen:
-        raise ValueError("date and full_screen are mutually exclusive.")
     flags = []
     if gca_list:
         flags.append(f"--add_gca true --gca_list {gca_list}")
     if date:
         flags.append(f"--date {datetime.strptime(date, '%m-%d-%Y').strftime('%m/%d/%Y')}")
-    if full_screen:
-        flags.append("--full_screen true")
     return "".join(f"    {flag} \\\n" for flag in flags)
 
 
 @task(log_prints=True)
-def register_assemblies(  # pylint: disable=too-many-arguments,too-many-positional-arguments,too-many-locals
+def register_assemblies(  # pylint: disable=too-many-arguments,too-many-positional-arguments
     outdir: str,
     asm_venv: str,
     credentials: PipelineCredentials,
     date: Optional[str] = None,
-    full_screen: bool = False,
     gca_list: Optional[str] = None,
     enscode: Optional[str] = None,
     run_options: Optional[TaskRunOptions] = None,
 ):
     """Build and submit the SLURM job that runs the assembly registry Nextflow pipeline."""
     run_options = run_options or TaskRunOptions()
-    mode_flags = _registry_mode_flags(date, full_screen, gca_list)
+    mode_flags = _registry_mode_flags(date, gca_list)
     run_date = datetime.now().strftime("%Y-%m-%d")
     outdir_path = Path(outdir)
     log = outdir_path / f"log_flow_register_assemblies_{run_date}.log"
@@ -75,7 +71,7 @@ nextflow run {enscode}/ensembl-genes-metadata/pipelines/assembly_metadata/main.n
     --enscode {enscode} \\
 {mode_flags}    --metadata_params_string '{credentials.metadata_params_string}' \\
     -with-report \\
-    -with-dag {outdir}/assembly_registry_dag_{run_date}.png
+    -with-dag
 """
 
     # The command file holds the real credentials so it is owner-only; everything that is
