@@ -54,7 +54,8 @@ This installs `gb_prefect` as part of the `ensembl-genes-metadata` package (see 
 
 | Flow | Module | Runs | Purpose |
 |------|--------|------|---------|
-| `gb_registry_flow` | [flows/gb_registry.py](flows/gb_registry.py) | [pipelines/assembly_metadata](../pipelines/assembly_metadata) | Register new assemblies released on a given date |
+| `gb_registry_flow` | [flows/gb_registry.py](flows/gb_registry.py) | [pipelines/assembly_metadata](../pipelines/assembly_metadata) | Register new assemblies released after a given date (default: 60 days ago) |
+| `gb_registry_by_gca_flow` | [flows/gb_registry_by_gca.py](flows/gb_registry_by_gca.py) | [pipelines/assembly_metadata](../pipelines/assembly_metadata) | Register the GCA accessions listed in a file |
 | `gb_registry_update_flow` | [flows/gb_registry_update.py](flows/gb_registry_update.py) | [pipelines/assembly_metadata_update](../pipelines/assembly_metadata_update) | Check/update metadata for a list of existing GCA accessions |
 | `genome_busco_flow` | [flows/gb_busco_genome.py](flows/gb_busco_genome.py) | `ensembl-genes-nf/pipelines/statistics` | Run BUSCO genome statistics for a single CSV file |
 | `genome_busco_master_flow` | [flows/gb_busco_genome_single_bulk.py](flows/gb_busco_genome_single_bulk.py) | `ensembl-genes-nf/pipelines/statistics` | Split a CSV into one row per file and run `genome_busco_flow`'s task in parallel for each |
@@ -62,22 +63,42 @@ This installs `gb_prefect` as part of the `ensembl-genes-metadata` package (see 
 
 ### `gb_registry_flow`
 
+Screens NCBI for assemblies released after a date (default: 60 days before today) and registers the ones missing from the metadata DB.
+
 ```bash
 python gb_prefect/flows/gb_registry.py \
-    --date 01-15-2026 \
     --outdir /path/to/output \
     --enscode $ENSCODE \
     --asm_venv /path/to/venv \
+    [--date 2026-01-15] \
+    [--metadata-params-string '{...}'] \
     [--dry-run]
 ```
 
 | Argument | Required | Description |
 |----------|----------|-------------|
-| `--date` | Yes | Date to register assemblies for. Format: `MM-DD-YYYY` |
-| `--outdir` | Yes | Base output directory (a `<date>` subdirectory is created under it) |
+| `--outdir` | Yes | Base output directory (an `asm_registry_<today's date>` subdirectory is created under it) |
 | `--enscode` | Yes | Path to the `ENSCODE` directory |
 | `--asm_venv` | Yes | Path to the virtual environment used to run the Nextflow pipeline |
+| `--date` | No | Screen for assemblies released after this date. Format: `YYYY-MM-DD` (converted to the pipeline's `MM/DD/YYYY`). Defaults to 60 days before today |
+| `--metadata-params-string` | No | JSON string with metadata DB connection parameters. If omitted, loaded from the `gb-metadata-db-params` Prefect Secret block |
 | `--dry-run` | No | Build the sbatch script and log it, but don't submit the job |
+
+### `gb_registry_by_gca_flow`
+
+Registers the GCA accessions listed in a file (`--add_gca` mode), without screening NCBI.
+
+```bash
+python gb_prefect/flows/gb_registry_by_gca.py \
+    --gca-list /path/to/gcas.txt \
+    --outdir /path/to/output \
+    --enscode $ENSCODE \
+    --asm_venv /path/to/venv \
+    [--metadata-params-string '{...}'] \
+    [--dry-run]
+```
+
+Output goes to an `asm_registry_gca_<YYYY-MM-DD>` subdirectory; the other arguments are as for `gb_registry_flow`.
 
 ### `gb_registry_update_flow`
 
@@ -87,7 +108,7 @@ python gb_prefect/flows/gb_registry_update.py \
     --outdir /path/to/output \
     --asm_venv /path/to/venv \
     --enscode $ENSCODE \
-    [--date YYYY-MM-DD] \
+    [--folder-name my_run] \
     [--slack-report] \
     [--dry-run]
 ```
@@ -95,10 +116,10 @@ python gb_prefect/flows/gb_registry_update.py \
 | Argument | Required | Description |
 |----------|----------|-------------|
 | `--gca-list` | Yes | Path to a file listing the GCA accessions to check/update |
-| `--outdir` | Yes | Base output directory (an `asm_update_<date>` subdirectory is created under it) |
+| `--outdir` | Yes | Base output directory (output goes to a `--folder-name` subdirectory under it) |
 | `--asm_venv` | Yes | Path to the virtual environment used to run the Nextflow pipeline |
 | `--enscode` | Yes | Path to the `ENSCODE` directory |
-| `--date` | No | Defaults to today (`YYYY-MM-DD`) if not set |
+| `--folder-name` | No | Output folder name under `--outdir`. Defaults to `asm_update_<today>` |
 | `--slack-report` | No | Enables Slack reporting in the underlying pipeline |
 | `--dry-run` | No | Build the sbatch script and log it, but don't submit the job |
 
