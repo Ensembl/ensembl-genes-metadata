@@ -29,6 +29,9 @@ dependencies = [
 [project.urls]
 Repository = "https://github.com/Ensembl/ensembl-genes-metadata"
 
+[project.entry-points."prefect.collections"]
+gb_prefect_worker = "gb_prefect.worker"
+
 [project.optional-dependencies]
 cicd = [
     "pytest",
@@ -52,6 +55,12 @@ docs = [
 [tool.setuptools]
 packages = [
     "gb_metadata",
+    "gb_prefect",
+    "gb_prefect.flows",
+    "gb_prefect.tasks",
+    "gb_prefect.utils",
+    "gb_prefect.models",
+    "gb_prefect.worker",
 ]
 
 [tool.setuptools.package-dir]
