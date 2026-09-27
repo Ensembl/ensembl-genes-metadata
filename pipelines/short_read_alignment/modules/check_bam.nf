@@ -48,6 +48,12 @@ process CHECK_BAM {
     script:
     """
     samtools quickcheck -v ${bamFile}
+    mapped=\$(samtools view -c -F 4 ${bamFile})
+
+if [ "\$mapped" -eq 0 ]; then
+    echo "ERROR: ${bamFile} has no mapped reads"
+    exit 1
+fi
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         samtools: \$(samtools --version | head -n 1 | awk '{print \$2}') 

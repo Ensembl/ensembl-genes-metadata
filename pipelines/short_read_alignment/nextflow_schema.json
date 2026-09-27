@@ -1,6 +1,6 @@
 {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
-    "$id": "https://raw.githubusercontent.com/nf-core/testpipeline/master/nextflow_schema.json",
+    "$id": "https://raw.githubusercontent.com//nextflow_schema.json",
     "title": "Ensembl-genes-metadata pipeline parameters",
     "description": "Describe input parameters and pipeline options",
     "type": "object",
@@ -86,6 +86,11 @@
             "type": "integer",
             "default": 100000,
             "description": "STAR option max_intron_size."
+        },
+        "limitSjdbInsertNsj" : {
+            "type": "integer",
+            "default": 2000000,
+            "description": "STAR option limitSjdbInsertNsj."
         },
         "genome_file": {
             "type": "string",

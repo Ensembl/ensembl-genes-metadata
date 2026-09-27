@@ -34,7 +34,8 @@ process COLLECT_SOFTWARE_VERSIONS {
     path "software_versions.yml"
 
     script:
+
     """
     cat versions_*.yml > software_versions.yml
     """
-}
+    }

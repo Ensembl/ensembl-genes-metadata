@@ -46,19 +46,19 @@ process SAM2BAM {
     //samtools index ${sam_file} ${meta.run_accession}.bam
     //samtools index ${meta.run_accession}.bam ${meta.run_accession}.bam.bai
     """
-    samtools view \
+    samtools sort \
     -@ ${task.cpus} \
-    -bS \
     -o ${meta.run_accession}.bam \
     ${sam_file}
 
     samtools index \
     -@ ${task.cpus} \
     ${meta.run_accession}.bam
-
+    
+    SAMTOOLS_VERSION=\$(samtools --version | head -n1)
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        samtools: \$(samtools --version | head -n1 | awk '{print \$2}')
+        samtools: \${SAMTOOLS_VERSION}
     END_VERSIONS
     """
 }

@@ -47,9 +47,9 @@ process WRITE_REPORT {
     script: 
     """
     write_report.py \
-        --csv_path ${meta.csv_path} \
+        --csv ${meta.csv_path} \
         --base_dir ${meta.output_dir} \
-        --output_csv ${meta.output_dir}/report.csv \
+        --out ${meta.output_dir}/report.csv \
         --merge_tissue ${params.mergeTissue} \
         --bam2bigWig ${params.bam2bigWig} \
 

@@ -78,11 +78,8 @@ process STAR_INDEX_GENOME {
             --outTmpDir _STARtmp \
             --limitBAMsortRAM ${limitBAMsortRAM};   
     
-    
     else 
-    
     echo "Genome index already exists, skipping STAR genomeGenerate step."
-    
     fi
 
     cat <<-END_VERSIONS > versions.yml

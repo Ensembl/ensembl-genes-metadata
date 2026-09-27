@@ -51,10 +51,11 @@ process BAM2CRAM {
     """
     samtools view -@ ${task.cpus}  -C -T ${meta.fasta_file} -o ${meta.alignment_dir}/${bam_basename}.cram ${aligned_file}
     ln -s ${meta.alignment_dir}/${bam_basename}.cram .
-
+    
+    SAMTOOLS_VERSION=\$(samtools --version | head -n1)
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        samtools: \$(samtools --version | head -n1 | awk '{print \$2}')
+        samtools: \${SAMTOOLS_VERSION}
     END_VERSIONS
     """
     

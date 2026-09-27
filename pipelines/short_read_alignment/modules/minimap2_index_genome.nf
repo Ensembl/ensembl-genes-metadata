@@ -26,7 +26,8 @@ limitations under the License.
 process MINIMAP2_INDEX_GENOME {
     label 'minimap2'
     tag "${meta.taxon_id}:${meta.gca}"
-    publishDir "${meta.genome_dir}", mode: 'copy'
+    //publishDir "${meta.genome_dir}", mode: 'copy'
+    storeDir "${meta.fasta_file.parent}"
     afterScript "sleep ${params.files_latency}"
     // Needed because of file system latency
     maxForks 10
@@ -43,16 +44,17 @@ process MINIMAP2_INDEX_GENOME {
     script:
     //def genomeDirPath= new File(genomeDir)
     //def fnaFiles = genomeDirPath.listFiles()?.findAll { it.name.endsWith('.fna') }
-    if (!meta.fasta_file || meta.fasta_file.size() != 1) {
-        throw new IllegalStateException("Expected exactly one .fna file in the directory: ${meta.fasta_file.parent}")
-    }
+    //if (!meta.fasta_file || meta.fasta_file.size() != 1) {
+    //    throw new IllegalStateException("Expected exactly one .fna file in the directory: ${meta.fasta_file.parent}")
+    //}
     //def genomefilePath = fnaFiles[0]
     """
     if [ -z "\$(find "${meta.genome_dir}" -name '*.mmi' -type f -size +0c)" ]; then
-        minimap2 --threads ${task.cpus} \
+        minimap2 -t ${task.cpus} \
             -d ${meta.genome_dir}/genome.mmi ${meta.fasta_file}
     else
         echo "Minimap indexed genome already exists, skipping Minimap2 genomeGenerate step."
+        cp -L ${meta.fasta_file.parent}/genome.mmi .
     fi
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

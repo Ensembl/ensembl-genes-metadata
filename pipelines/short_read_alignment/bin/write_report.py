@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """Download the CSV file and enrich it with paths to BAM, CRAM, \
     and BigWig files based on the provided base directory."""
 #pylint: disable=pointless-string-statement
@@ -61,6 +62,8 @@ def enrich_csv_with_paths(  # pylint: disable=too-many-statements, too-many-loca
         # df.loc[idx, "genome_file"] = str(relative_genome_file)
         df.loc[idx, "genome_file"] = "genome.fna"
         # print(relative_genome_file)
+        bam_path = Path(base_dir) / taxon_id / run_accession / "alignment"
+        relative_splice_junction_file=[]
         if paired:
             star_index_genome = genome_index_dir / "Genome"
             # print(star_index_genome)
@@ -68,20 +71,25 @@ def enrich_csv_with_paths(  # pylint: disable=too-many-statements, too-many-loca
             # print(relative_star_index_genome)
             # df["indexed_genome"] = relative_star_index_genome
             df.loc[idx, "indexed_genome"] = str(relative_star_index_genome)
+            splice_junction_file = list(bam_path.glob("*SJ.out.tab"))[0]
+            relative_splice_junction_file = splice_junction_file.relative_to(base_dir)
         else:
-            minimap_index_genome = genome_index_dir.glob("*.mmi")
-            relative_minimap_index_genome = minimap_index_genome.relative_to(base_dir)# type: ignore[attr-defined]
-            # df["indexed_genome"] = relative_minimap_index_genome
-            df.loc[idx, "indexed_genome"] = str(relative_minimap_index_genome)
+            minimap_files = list(genome_index_dir.glob("*.mmi"))
+
+            if minimap_files:
+                relative_minimap_index_genome = minimap_files[0].relative_to(base_dir)
+                df.loc[idx, "indexed_genome"] = str(relative_minimap_index_genome)
+            else:
+                df.loc[idx, "indexed_genome"] = "" 
         # print(run_accession)
-        bam_path = Path(base_dir) / taxon_id / run_accession / "alignment"
+        #bam_path = Path(base_dir) / taxon_id / run_accession / "alignment"
         # print(f"{base_dir}/{taxon_id}/{run_accession}")
         # print(list(bam_path.glob("*.bam")))
         bam_file = list(bam_path.glob("*.bam"))[0]
         relative_bam_file = bam_file.relative_to(base_dir)
         # print(relative_bam_file)
-        splice_junction_file = list(bam_path.glob("*SJ.out.tab"))[0]
-        relative_splice_junction_file = splice_junction_file.relative_to(base_dir)
+        #splice_junction_file = list(bam_path.glob("*SJ.out.tab"))[0]
+        #relative_splice_junction_file = splice_junction_file.relative_to(base_dir)
         # row["bam_file"] = relative_bam_file
         # row["splice_junction_file"] = relative_splice_junction_file
         df.loc[idx, "bam_file"] = str(relative_bam_file)
@@ -90,48 +98,77 @@ def enrich_csv_with_paths(  # pylint: disable=too-many-statements, too-many-loca
 
         if merge_tissue:
             tissue_dir = Path(base_dir) / taxon_id / platform / tissue / "alignment"
-            # print(str(tissue_dir))
-            tissue_bam = list(tissue_dir.glob(f"*{tissue}.bam"))[0]
-            relative_tissue_bam = tissue_bam.relative_to(base_dir)
-            df.loc[idx, "tissue_bam"] = relative_tissue_bam
-            enriched_paths.append(str(tissue_bam.resolve()))
+            print(str(tissue_dir))
+
+            tissue_bams = list(tissue_dir.glob(f"*{tissue}.bam"))
+
+            if tissue_bams:
+                tissue_bam = tissue_bams[0]
+                relative_tissue_bam = tissue_bam.relative_to(base_dir)
+                df.loc[idx, "tissue_bam"] = str(relative_tissue_bam)
+                enriched_paths.append(str(tissue_bam.resolve()))
+            else:
+                df.loc[idx, "tissue_bam"] = ""
+
             if bam2bigWig:
-                # forward_bw_file = list(tissue_dir.glob("*forward_strand.bw"))[0]
+                # Stranded BigWigs
                 file_fw = list(tissue_dir.glob("*forward_strand.bw"))
-                # forward_bw_file = file_fw[0] if file_fw else ''
-                # relative_forward_bw_file = forward_bw_file.relative_to(base_dir)
-                if file_fw:
-                    relative_forward_bw_file = file_fw[0].relative_to(base_dir)
-                else:
-                    relative_forward_bw_file = Path("")  # or simply ''
-                # reverse_bw_file = list(tissue_dir.glob("*reverse_strand.bw"))[0]
-                # relative_reverse_bw_file = reverse_bw_file.relative_to(base_dir)
                 file_rw = list(tissue_dir.glob("*reverse_strand.bw"))
-                # reverse_bw_file = file_rw[0] if file_rw else ''
-                # relative_reverse_bw_file = reverse_bw_file.relative_to(base_dir)
-                if file_rw:
-                    relative_reverse_bw_file = file_rw[0].relative_to(base_dir)
+
+                if file_fw or file_rw:
+                    # Stranded data
+                    df.loc[idx, "forward_bw_file"] = (
+                        str(file_fw[0].relative_to(base_dir))
+                        if file_fw else ""
+                    )
+
+                    df.loc[idx, "reverse_bw_file"] = (
+                        str(file_rw[0].relative_to(base_dir))
+                        if file_rw else ""
+                    )
+
+                    df.loc[idx, "bw_file"] = ""
+
                 else:
-                    relative_reverse_bw_file = Path("")  # or simply ''
-                df.loc[idx, "forward_bw_file"] = relative_forward_bw_file
-                df.loc[idx, "reverse_bw_file"] = relative_reverse_bw_file
+                    # Unstranded data: one BigWig
+                    bw_files = list(tissue_dir.glob("*.bw"))
+
+                    df.loc[idx, "bw_file"] = (
+                        str(bw_files[0].relative_to(base_dir))
+                        if bw_files else ""
+                    )
+
+                    df.loc[idx, "forward_bw_file"] = ""
+                    df.loc[idx, "reverse_bw_file"] = ""
+
         else:
             if bam2bigWig:
-                forward_bw_file = list(tissue_dir.glob("*forward_strand.bw"))[0]
-                relative_forward_bw_file = forward_bw_file.relative_to(base_dir)
-                reverse_bw_file = list(tissue_dir.glob("*reverse_strand.bw"))[0]
-                relative_reverse_bw_file = reverse_bw_file.relative_to(base_dir)
-                df.loc[idx, "forward_bw_file"] = relative_forward_bw_file
-                df.loc[idx, "reverse_bw_file"] = relative_reverse_bw_file
-                """ 
-                forward_bw_file = bam_path.glob("*forward_strand.bw")
-                reverse_bw_file = bam_path.glob("*reverse_strand.bw")
-                enriched_paths.append(str(forward_file.resolve()))
-                enriched_paths.append(str(reverse_file.resolve()))
-                df["forward_bw_file"] = forward_bw_file
-                df["reverse_bw_file"] = reverse_bw_file
-                """
-        # if expected_path.exists():
+                file_fw = list(bam_path.glob("*forward_strand.bw"))
+                file_rw = list(bam_path.glob("*reverse_strand.bw"))
+
+                if file_fw or file_rw:
+                    df.loc[idx, "forward_bw_file"] = (
+                        str(file_fw[0].relative_to(base_dir))
+                        if file_fw else ""
+                    )
+                    df.loc[idx, "reverse_bw_file"] = (
+                        str(file_rw[0].relative_to(base_dir))
+                        if file_rw else ""
+                    )
+                    df.loc[idx, "bw_file"] = ""
+
+                else:
+                    # Long-read / unstranded
+                    bw_files = list(bam_path.glob("*.bw"))
+
+                    df.loc[idx, "bw_file"] = (
+                        str(bw_files[0].relative_to(base_dir))
+                        if bw_files else ""
+                    )
+
+                    df.loc[idx, "forward_bw_file"] = ""
+                    df.loc[idx, "reverse_bw_file"] = ""
+            # if expected_path.exists():
         #    enriched_paths.append(str(expected_path.resolve()))
         # else:
         #    enriched_paths.append("")

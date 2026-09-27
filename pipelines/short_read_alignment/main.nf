@@ -99,6 +99,7 @@ workflow SHORT_READ_ALIGNMENT {
 
     main:
     ch_versions_file = channel.empty()
+    reportInput = channel.empty()
     paired_sample = ""
     def data 
     data = channel.fromPath(csvFile, type: 'file', checkIfExists: true)
@@ -108,7 +109,7 @@ workflow SHORT_READ_ALIGNMENT {
                     [
                         taxon_id : row.get('taxon_id'),
                         gca : row.get('assembly_accession'),
-                        instrument_platform : row.get('platform'),
+                        platform : row.get('platform'),
                         paired : row.get('paired')?.toBoolean(),
                         tissue : row.get('tissue'),
                         run_accession : row.get('run_accession'),
@@ -127,20 +128,29 @@ workflow SHORT_READ_ALIGNMENT {
     def finalBam
     def starOutput 
     def minimapOutput
-
+    def bamToBigWig
     def genomeAndDataToAlign = FETCH_GENOME(data).fasta_file_output
     .map {meta, genomeFile -> 
     return meta + [
         fasta_file: genomeFile,
         genome_dir: genomeFile.parent,
-        alignment_dir : "${meta.output_dir}/${meta.taxon_id}/${meta.run_accession}/alignment"]}
-    ch_versions_file = ch_versions_file.mix(FETCH_GENOME.out.versions_file)
+        alignment_dir : "${meta.output_dir}/${meta.taxon_id}/${meta.platform}/${meta.run_accession}/alignment"]}
+    def ch_versions_file1 = FETCH_GENOME.out.versions_file
 
     def downloadedFastqFiles=DOWNLOAD_FASTQS(genomeAndDataToAlign).fastq_file_output
-    .map {meta, fastq1, fastq2 -> return meta + [fastq1: fastq1, fastq2: fastq2] }
-    ch_versions_file = ch_versions_file.mix(DOWNLOAD_FASTQS.out.versions_file)
+    .map { meta, reads ->
+        def r1 = reads.find { it.name.endsWith('_1.fastq.gz') }
+        def r2 = reads.find { it.name.endsWith('_2.fastq.gz') }
+
+        if (!r1) error "R1 missing for ${meta.run_accession}"
+        if (meta.paired && !r2) error "R2 missing for paired run ${meta.run_accession}"
+
+        meta + [fastq1: r1, fastq2: r2]
+    }
+    //.map {meta, fastq1, fastq2 -> return meta + [fastq1: fastq1, fastq2: fastq2] }
+    def ch_versions_file2 = DOWNLOAD_FASTQS.out.versions_file
     def processReads = downloadedFastqFiles.branch { meta  ->
-        def platform = meta.instrument_platform?.toString()?.toLowerCase()
+        def platform = meta.platform?.toString()?.toLowerCase()
 
         star    : platform == 'illumina'
         minimap : platform in ['pacbio', 'pacbio_smrt', 'ont']
@@ -148,46 +158,46 @@ workflow SHORT_READ_ALIGNMENT {
     //if (processReads.star) {
         //log.info("Illumina data detected. Using STAR for alignment.")
         def genomeIndexParams = STAR_INDEX_PARAMS(processReads.star).genome_stats_output.view { "PARAMS OUT: $it" }
-        ch_versions_file = ch_versions_file.mix(STAR_INDEX_PARAMS.out.versions_file)
+        //ch_versions_file = ch_versions_file.mix(STAR_INDEX_PARAMS.out.versions_file)
 
         def genomeIndexShortData = STAR_INDEX_GENOME(genomeIndexParams).genome_index_output
-        ch_versions_file = ch_versions_file.mix(STAR_INDEX_GENOME.out.versions_file)
+        //ch_versions_file = ch_versions_file.mix(STAR_INDEX_GENOME.out.versions_file)
 
         def alignStarOutput = STAR(genomeIndexShortData).star_output
         .map {meta, bamFile -> return tuple(meta, bamFile) }
-        ch_versions_file = ch_versions_file.mix(STAR.out.versions_file)
+        //ch_versions_file = ch_versions_file.mix(STAR.out.versions_file)
 
         def checkedBamStar = CHECK_BAM_STAR(alignStarOutput).good_bam
-        ch_versions_file = ch_versions_file.mix(CHECK_BAM_STAR.out.versions_file)
+        //ch_versions_file = ch_versions_file.mix(CHECK_BAM_STAR.out.versions_file)
 
         def alignedFiles = DELETE_FASTQ_STAR(checkedBamStar).aligned_output
-        ch_versions_file = ch_versions_file.mix(DELETE_FASTQ_STAR.out.versions_file)
+        //ch_versions_file = ch_versions_file.mix(DELETE_FASTQ_STAR.out.versions_file)
         
-        starOutput = INDEX_BAM_STAR(alignedFiles, 'bai').aligned_output
-        ch_versions_file = ch_versions_file.mix(INDEX_BAM_STAR.out.versions_file)
+        starOutput = INDEX_BAM_STAR(alignedFiles, 'bai').indexed_output
+        //ch_versions_file = ch_versions_file.mix(INDEX_BAM_STAR.out.versions_file)
     //}
 
     //if (processReads.minimap) {
         //log.info("PacBio data detected. Using Minimap2 for alignment.")
 
         def genomeIndexLongData = MINIMAP2_INDEX_GENOME(processReads.minimap).minimap_index
-        ch_versions_file = ch_versions_file.mix(MINIMAP2_INDEX_GENOME.out.versions_file)
+        //ch_versions_file = ch_versions_file.mix(MINIMAP2_INDEX_GENOME.out.versions_file)
 
         def alignMinimapOutput = MINIMAP2(genomeIndexLongData).minimap_alignment
         .map {meta, bamFile -> return tuple(meta, bamFile) }
-        ch_versions_file = ch_versions_file.mix(MINIMAP2.out.versions_file)
+        //ch_versions_file = ch_versions_file.mix(MINIMAP2.out.versions_file)
 
         def checkedBamMinimap = CHECK_BAM_MINIMAP(alignMinimapOutput).good_bam
-        ch_versions_file = ch_versions_file.mix(CHECK_BAM_MINIMAP.out.versions_file)
+        //ch_versions_file = ch_versions_file.mix(CHECK_BAM_MINIMAP.out.versions_file)
 
         def cleanFile = DELETE_FASTQ_MINIMAP(checkedBamMinimap).aligned_output
-        ch_versions_file = ch_versions_file.mix(DELETE_FASTQ_MINIMAP.out.versions_file)
+        //ch_versions_file = ch_versions_file.mix(DELETE_FASTQ_MINIMAP.out.versions_file)
 
         sam2bamOutput = SAM2BAM(cleanFile).sam_output
-        ch_versions_file = ch_versions_file.mix(SAM2BAM.out.versions_file)
+        //ch_versions_file = ch_versions_file.mix(SAM2BAM.out.versions_file)
 
-        minimapOutput = INDEX_BAM_MINIMAP(sam2bamOutput, 'bai').aligned_output
-        ch_versions_file = ch_versions_file.mix(INDEX_BAM_MINIMAP.out.versions_file)
+        minimapOutput = INDEX_BAM_MINIMAP(sam2bamOutput, 'bai').indexed_output
+        //ch_versions_file = ch_versions_file.mix(INDEX_BAM_MINIMAP.out.versions_file)
     //}            
 
     // Collect all aligned BAMs
@@ -197,15 +207,15 @@ workflow SHORT_READ_ALIGNMENT {
     def bamForDownstream
     if (params.mergeTissue){
         output2process
-        .map { meta, bamFile ->
-           def groupMeta = meta.subMap('output_dir','taxon_id', 'tissue', 'platform','fasta_file','genome_dir')
+        .map { meta, bamFile, baiFile ->
+           def groupMeta = meta.subMap('output_dir','taxon_id', 'tissue', 'platform','fasta_file','genome_dir','csv_path')
             tuple(groupMeta, bamFile)
         }
         .groupTuple()
         .view { k, v -> "GROUP: ${k} → ${v.size()} bam files" }
         .map { meta, bamFiles ->
         def newMeta = meta + [
-                alignment_dir: "${meta.output_dir}/${meta.taxon_id}/${meta.tissue}/alignment"
+                alignment_dir: "${meta.output_dir}/${meta.taxon_id}/${meta.platform}/${meta.tissue}/alignment"
             ]
             tuple(newMeta, bamFiles)
         }.set { bam2merge }
@@ -229,88 +239,116 @@ workflow SHORT_READ_ALIGNMENT {
 
         finalBam = MERGE_BAM_PER_TISSUE(bam2merge).merged_bam
         .map {meta, bamFile -> return tuple(meta, bamFile) }
-        ch_versions_file = ch_versions_file.mix(MERGE_BAM_PER_TISSUE.out.versions_file)
+       // ch_versions_file = ch_versions_file.mix(MERGE_BAM_PER_TISSUE.out.versions_file)
 
         checkedMergedBam = CHECK_BAM_MERGED(finalBam).good_bam
-        ch_versions_file = ch_versions_file.mix(CHECK_BAM_MERGED.out.versions_file)
+        //ch_versions_file = ch_versions_file.mix(CHECK_BAM_MERGED.out.versions_file)
 
-        bamForDownstream = INDEX_BAM_MERGED(checkedMergedBam, 'bai').aligned_output
-        ch_versions_file = ch_versions_file.mix(INDEX_BAM_MERGED.out.versions_file)
+        indexedMerged =  INDEX_BAM_MERGED(checkedMergedBam, 'bai')
+        bamForDownstream = indexedMerged.indexed_output
+        //bamForReport = INDEX_BAM_MERGED(checkedMergedBam, 'bai').meta_value
+        //ch_versions_file = ch_versions_file.mix(indexedMerged.versions_file)
         //mergedBam.each { dataRow -> dataRow.view() }
-
+        reportInput=reportInput.mix(indexedMerged.meta_value)
         } else{
             bamForDownstream = output2process.flatten()
+            reportInput = reportInput.mix(
+                bamForDownstream.map { meta, bam -> meta })
+            //reportInput=reportInput.mix(bamForDownstream.meta_value)
         }
     //Define a finalBam channel to hold the final BAM files after merging or flattening
     //def bamForDownstream = params.mergeTissue ? mergedBam : output2process        
-    def reportInput
+    //def reportInput
     if (params.stranded){
-        def bamToStrand=bamForDownstream
-        def strandOutput=BAM2STRAND(bamToStrand).aligned_output
-        ch_versions_file = ch_versions_file.mix(BAM2STRAND.out.versions_file)
-        if(params.bam2bigWig){
-            reportInput=BAM2BIGWIG(strandOutput)
-            ch_versions_file = ch_versions_file.mix(BAM2BIGWIG.out.versions_file)
-        } else {
-        reportInput =strandOutput }
+        def bamToStrand=bamForDownstream.map{ meta, bam, bai ->
+        tuple(meta, bam)}
+
+        strandBam = BAM2STRAND(bamToStrand)
+        def strandOutput=strandBam.aligned_output
+        //def strandToBigWig = strandOutput.map { meta, forward_bam, reverse_bam, forward_index, reverse_index ->
+        //tuple(meta, [forward_bam, reverse_bam], [forward_index, reverse_index])
+        //}
+        //ch_versions_file = ch_versions_file.mix(strandBam.versions_file)
+        reportInput = reportInput.mix(strandBam.meta_value)
+        bamToBigWig = strandBam.aligned_output.map { meta, forward_bam, reverse_bam, forward_index, reverse_index ->
+        tuple(meta, [forward_bam, reverse_bam], [forward_index, reverse_index])
+        }
+        //if(params.bam2bigWig){
+        //def bigWigOutput = BAM2BIGWIG(strandOutput)
+        //    reportInput=reportInput.mix(bigWigOutput.meta_value)
+        //    ch_versions_file = ch_versions_file.mix(bigWigOutput.versions_file)
+        //} else {
+        //reportInput = reportInput.mix(strandBam.meta_value)
+        //}
     
     } else {
+        bamToBigWig = bamForDownstream.map { meta, bam, bai ->
+        tuple(meta, [bam], [bai])
+    }
+    }
     if(params.bam2bigWig){
-            def bamToBigWig=bamForDownstream
+            //def bamToBigWig=bamForDownstream.map { meta, bam, bai ->
+    //tuple(meta, [bam], [bai])
             //bamForDownstream.map { row ->
             //def (taxon_id, genomeDir, tissue, platform, output_dir, bamFile) = row
             //return [taxon_id, genomeDir, tissue, platform,output_dir,bamFile,file("dummy.bam")]
         //}.set { bamToBigWig }
-            reportInput=BAM2BIGWIG(bamToBigWig)
-            ch_versions_file = ch_versions_file.mix(BAM2BIGWIG.out.versions_file)
-        }
+            def bigWigOutput=BAM2BIGWIG(bamToBigWig)
+            reportInput=reportInput.mix(bigWigOutput.meta_value)
+            //ch_versions_file = ch_versions_file.mix(bigWigOutput.versions_file)
+        //}
     }
     if (params.bam2cram){
-        def bamToCram=bamForDownstream
+        def bamToCram=bamForDownstream.map { meta, bam, bai ->
+        tuple(meta, bam)}
         def cramFile = BAM2CRAM(bamToCram).cram_output
-        ch_versions_file = ch_versions_file.mix(BAM2CRAM.out.versions_file)
+        //ch_versions_file = ch_versions_file.mix(BAM2CRAM.out.versions_file)
         //.map {row -> 
         //def(taxon_id, genomeDir, tissue, platform, cram_file) = row 
         //def output_dir="${platform}/${tissue}"
         //return tuple(taxon_id, genomeDir, tissue, platform, output_dir, cram_file)
         //}
-        reportInput=INDEX_CRAM (cramFile,'crai') //indexCramFile
-        ch_versions_file = ch_versions_file.mix(INDEX_CRAM.out.versions_file)
-    }
-    def writeReportInput 
-
-    if (reportInput.isEmpty()) {
-
-    // No optional processing.
-    // WRITE_REPORT waits for every final BAM.
-    writeReportInput = bamForDownstream
-        .map { meta, bam -> meta }
-        .collect()
-
-} else {
-
-    // Start with the first completion channel
-    def reportDone = reportInput[0]
-
-    // Merge all other completion channels.
-    // MIX closes only after all input channels have closed.
-    reportInput.drop(1).each { ch ->
-        reportDone = reportDone.mix(ch)
+        def indexCram = INDEX_CRAM(cramFile,'crai')
+        reportInput=reportInput.mix(indexCram.meta_value)
+        //ch_versions_file = ch_versions_file.mix(indexCram.versions_file)
     }
 
-    // Wait until every selected downstream process is complete
-    // and collect the metadata into one value for WRITE_REPORT.
-    writeReportInput = reportDone
-        .map { meta, file -> meta }
-        .collect()
-}
+    //WRITE_REPORT(reportInput.collect())
+    //WRITE_REPORT( reportInput
+    //.map { row -> row[0].taxon_id }
+    //.toList()
+    //.map { taxonIds ->
+    //    if (!taxonIds) error "No completed outputs for WRITE_REPORT"
+
+    //    [
+    //        taxon_id: taxonIds.unique().join(','),
+    //        output_dir: params.outDir
+    //    ]
+    //})
+
+    //reportInput.map{meta ->
+    //def groupId=meta.subMap('taxon_id','output_dir','csv_path')
+    //}.groupTuple().set { input_set }
+    reportInput
+    .map { meta ->
+        tuple(meta.subMap('taxon_id','output_dir','csv_path'), true)
+    }
+    .groupTuple()
+    .map { groupMeta, doneItems ->
+        groupMeta
+    }
+    .set { input_set }
 
 
-    WRITE_REPORT(writeReportInput)
-    ch_versions_file = ch_versions_file.mix(WRITE_REPORT.out.versions_file)
+    WRITE_REPORT(input_set)
 
+    //ch_versions_file = ch_versions_file.mix(WRITE_REPORT.out.versions_file)
+    
+    ch_all_versions = channel.empty()
+        .mix(ch_versions_file1)
+        .mix(ch_versions_file2)
     // Merge into single file and publish
-    COLLECT_SOFTWARE_VERSIONS(ch_versions_file.collect())
+    COLLECT_SOFTWARE_VERSIONS(ch_all_versions.collect())
     if( !params.stranded && !params.bam2cram && !params.bam2bigWig ) {
     println "❌ No processing options selected (stranded, bam2cram, bam2bigWig)."
 }

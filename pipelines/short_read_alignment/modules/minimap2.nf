@@ -41,14 +41,14 @@ process MINIMAP2 {
     script:
     def sam_file = "${meta.run_accession}.sam"
     def profile = 
-        "${meta.platform}" == 'ONT' ? '-x splice' :
-        "${meta.platform}" == 'PacBio' ? '-x splice:hq' :
+        "${meta.platform}" == 'ont' ? '-x splice' :
+        "${meta.platform}" == 'pacbio' ? '-x splice:hq' :
         '-ax splice'  // fallback
     //--secondary=no
     """
     minimap2 ${profile} -a -G ${params.max_intron_size} \
-    --cs -N 1 -t ${params.cpus}  -u b ${minimap_index_file} \
-    ${meta.pair1_path} -o ${sam_file}
+    --cs -N 1 -t ${task.cpus}  -u b ${minimap_index_file} \
+    ${meta.fastq1} -o ${sam_file}
     
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":

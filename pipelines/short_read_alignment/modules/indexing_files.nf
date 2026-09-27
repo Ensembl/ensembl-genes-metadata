@@ -44,7 +44,8 @@ process INDEXING_FILES {
     val extension
     output:
     //tuple val(taxon_id), val(genomeDir), val(tissue), val(platform), val(output_dir), path(aligned_file)
-    tuple val(meta), path(aligned_file), emit:aligned_output
+    tuple val(meta), path(aligned_file), path("*${extension}"),emit:indexed_output
+    val(meta), emit:meta_value
     path "versions.yml", emit: versions_file
 
 
@@ -53,15 +54,16 @@ process INDEXING_FILES {
     """
     if [ ! -s "${meta.alignment_dir}/${aligned_file}.${extension}" ] || [ ! -s "${meta.alignment_dir}/${aligned_file}.csi" ]; then
     samtools index -c  \
-    ${meta.alignment_dir}/${aligned_file} ${meta.output_dir}/${aligned_file}.${extension} \
+    ${meta.alignment_dir}/${aligned_file} ${aligned_file}.${extension} \
     -@ ${task.cpus}
     echo "${meta.output_dir}/${aligned_file}.${extension}"
     else
     echo "skip file exists"
     fi
+    SAMTOOLS_VERSION=\$(samtools --version | head -n1)
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
-        samtools: \$(samtools --version | head -n1 | awk '{print \$2}')
+        samtools: \${SAMTOOLS_VERSION}
     END_VERSIONS
     """
     

@@ -35,7 +35,7 @@ process DOWNLOAD_FASTQS {
     label "python"
     tag "$meta.taxon_id:$meta.run_accession"
     maxForks 25
-    //storeDir "${params.outDir}/$taxon_id/$run_accession"
+    storeDir "${params.cacheDir}/${meta.taxon_id}/${meta.run_accession}"
     afterScript "sleep $params.files_latency"  // Needed because of file system latency
     //conda "$projectDir/pipelines/nextflow/modules/download_fastqs/environment.yml"
 
@@ -45,7 +45,7 @@ process DOWNLOAD_FASTQS {
     //tuple val(taxon_id), val(gca), val(platform), val(paired), val(tissue), val(run_accession), val(genomeDir),  val(url1), val(md5_1), val(url2),  val(md5_2)
 
     output:
-    tuple val(meta), path("*_1.fastq.gz"), path("*_2.fastq.gz", optional: true) , emit: fastq_file_output
+    tuple val(meta), path("${meta.run_accession}_*.fastq.gz", arity: '1..2'), emit: fastq_file_output
     path "versions.yml", emit: versions_file
 
 
