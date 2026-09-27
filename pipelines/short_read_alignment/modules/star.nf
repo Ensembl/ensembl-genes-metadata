@@ -43,20 +43,17 @@ process STAR {
     afterScript "sleep $params.files_latency"  // Needed because of file system latency
 
     input:
-    //tuple val(taxon_id), val(genomeDir), val(platform), val(tissue), val(run_accession), val(pair1), val(pair2)
     val(meta)
 
     output:
-    //tuple val(taxon_id), val(genomeDir), val(gca), val(platform), val(paired), val(tissue), val(run_accession), path("*_Aligned.sortedByCoord.out.bam")
-    //tuple val(taxon_id), val(genomeDir), val(tissue), val(platform), val(run_accession), path("*.bam")
     tuple val(meta), path("${meta.run_accession}_Aligned.sortedByCoord.out.bam"), emit: star_output
     path "versions.yml", emit: versions_file
     
     script:
     def starTmpDir =  "${meta.alignment_dir}/tmp"
     def outFileNamePrefix = "${meta.run_accession}_"
-    //def outFileNamePrefix = "${params.outDir}/${meta.taxon_id}/${meta.run_accession}/alignmenti/${meta.run_accession}_"
     def limitBAMsortRAM = (task.memory.toBytes() * 0.9) as long
+    
     """
     if [ ! -s "$meta.alignment_dir/${meta.run_accession}_Aligned.sortedByCoord.out.bam" ]; then
     rm -rf ${starTmpDir}

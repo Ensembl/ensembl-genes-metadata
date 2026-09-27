@@ -37,12 +37,9 @@ process DOWNLOAD_FASTQS {
     maxForks 25
     storeDir "${params.cacheDir}/${meta.taxon_id}/${meta.run_accession}"
     afterScript "sleep $params.files_latency"  // Needed because of file system latency
-    //conda "$projectDir/pipelines/nextflow/modules/download_fastqs/environment.yml"
 
     input:
     val(meta)
-
-    //tuple val(taxon_id), val(gca), val(platform), val(paired), val(tissue), val(run_accession), val(genomeDir),  val(url1), val(md5_1), val(url2),  val(md5_2)
 
     output:
     tuple val(meta), path("${meta.run_accession}_*.fastq.gz", arity: '1..2'), emit: fastq_file_output
@@ -50,10 +47,6 @@ process DOWNLOAD_FASTQS {
 
 
     script: 
-    
-    //def fastq1 = "${params.outDir}/${meta.taxon_id}/${meta.run_accession}/${meta.run_accession}_1.fastq.gz"
-    //def fastq2 = meta.paired ? "${params.outDir}/${meta.taxon_id}/${meta.run_accession}/${meta.run_accession}_2.fastq.gz" : null
-
     def optionalArgs = meta.paired ? "--url2 $meta.pair2_path --md5_2 $meta.md5_2 --paired" : ""
     """
     download_fastq.py \
@@ -68,26 +61,5 @@ process DOWNLOAD_FASTQS {
             download_fastq.py: \$(download_fastq.py --version 2>&1)
             python: \$(python --version | sed 's/Python //')
         END_VERSIONS
-        """
-        }
-
-
-
-    /*
-    if [ ! -s "${fastq1}" ] || { ${meta.paired} && [ ! -s "${fastq2}" ]; }; then 
-    download_fastq.py \
-        --taxon_id $meta.taxon_id \
-        --run_accession $meta.run_accession \
-        --url1 $meta.pair1_path \
-        --md5_1 $meta.md5_1 \
-        $optionalArgs \
-        --outDir ${params.outDir} 
-
-        ln -s $params.outDir/$meta.taxon_id/$meta.run_accession/*_1.fastq.gz ./
-        ${meta.paired ? "ln -s ${params.outDir}/${meta.taxon_id}/${meta.run_accession}/*_2.fastq.gz ./" : ""}
-        else
-        echo "skipping"
-        ln -s ${params.outDir}/$meta.taxon_id/$meta.run_accession/*_1.fastq.gz ./
-        ${meta.paired ? "ln -s ${params.outDir}/${meta.taxon_id}/${meta.run_accession}/*_2.fastq.gz ./" : ""}
-        fi
-        */
+    """
+}

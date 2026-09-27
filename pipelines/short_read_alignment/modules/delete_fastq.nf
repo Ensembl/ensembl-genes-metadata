@@ -27,13 +27,8 @@ process DELETE_FASTQ {
     label 'default'
 
     input:
-    //tuple val(taxon_id), val(genomeDir),  val(tissue),  path(aligned_file)
-    //tuple val(taxon_id), val(genomeDir), val(tissue),val(platform),  val(output_dir), path(aligned_file)
-    //tuple val(taxon_id), val(genomeDir), val(tissue), val(platform), val(run_accession), path(aligned_file)
     tuple val(meta), path(aligned_file)
     output:
-    //tuple val(taxon_id), val(genomeDir), val(tissue), val(platform), val(run_accession), path(aligned_file)
-    //tuple val(taxon_id), val(genomeDir), val(tissue), val(platform), val(output_dir), path(aligned_file)
     tuple val(meta), path(aligned_file) , emit:aligned_output
     path "versions.yml", emit: versions_file
 
@@ -48,5 +43,4 @@ process DELETE_FASTQ {
         coreutils: \$(rm --version | head -n1 | awk '{print \$NF}')
     END_VERSIONS
     """
-    
 }

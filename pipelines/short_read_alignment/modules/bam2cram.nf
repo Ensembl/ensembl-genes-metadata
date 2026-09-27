@@ -37,16 +37,12 @@ process BAM2CRAM {
     afterScript "sleep $params.files_latency"  // Needed because of file system latency
 
     input:
-    //tuple val(taxon_id), val(genomeDir), val(tissue), val(platform), val(alignment_dir), path(aligned_file)
     tuple val(meta), path(aligned_file)
     output:
     tuple val(meta), path("*.cram"), emit:cram_output
     val("versions.yml"), emit: versions_file
 
     script:
-
-    //def genomeDirPath= new File(genomeDir)
-    //def genomeFile = genomeDirPath.listFiles().find { it.name.endsWith('fna') }
     def bam_basename = aligned_file.baseName  // strips .bam
     """
     samtools view -@ ${task.cpus}  -C -T ${meta.fasta_file} -o ${meta.alignment_dir}/${bam_basename}.cram ${aligned_file}

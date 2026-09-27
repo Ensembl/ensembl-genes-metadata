@@ -41,13 +41,9 @@ process MERGE_BAM_PER_TISSUE {
 
 
     input:
-    //tuple val(taxon_id), val(genomeDir), val(gca), val(platform), val(paired), val(tissue), val(run_accession), path(aligned_file)
-    //tuple val(taxon_id), val(genomeDir), val(tissue), val(platform), path(bamFiles)
     tuple val(meta), path(bamFiles)
 
     output:
-    //tuple val(taxon_id), val(genomeDir), val(tissue), val(platform), \
-    //val("${params.outDir}/$taxon_id/$platform/$tissue/alignment"),path("${tissue}.bam")
     tuple val(meta), path("${meta.tissue}.bam"), emit: merged_bam
     path "versions.yml", emit: versions_file
 
@@ -69,6 +65,4 @@ process MERGE_BAM_PER_TISSUE {
     END_VERSIONS
     """
 }
-//samtools index ${outputDir}/${meta.tissue}.bam ${outputDir}/${meta.tissue}.bam.bai
-
 

@@ -36,21 +36,17 @@ process INDEXING_FILES {
     label 'samtools'
     publishDir "${meta.alignment_dir}", mode: 'copy'
     afterScript "sleep $params.files_latency"  // Needed because of file system latency
-//
+
     input:
-    //tuple val(taxon_id), val(genomeDir),  val(tissue),  path(aligned_file)
-    //tuple val(taxon_id), val(genomeDir), val(tissue),val(platform),  val(output_dir), path(aligned_file)
     tuple val(meta), path(aligned_file)
     val extension
     output:
-    //tuple val(taxon_id), val(genomeDir), val(tissue), val(platform), val(output_dir), path(aligned_file)
     tuple val(meta), path(aligned_file), path("*${extension}"),emit:indexed_output
     val(meta), emit:meta_value
     path "versions.yml", emit: versions_file
 
 
     script:
-    //def output_dir="${params.outDir}/${meta.taxon_id}/${meta.output_dir}/alignment"
     """
     if [ ! -s "${meta.alignment_dir}/${aligned_file}.${extension}" ] || [ ! -s "${meta.alignment_dir}/${aligned_file}.csi" ]; then
     samtools index -c  \
@@ -66,5 +62,4 @@ process INDEXING_FILES {
         samtools: \${SAMTOOLS_VERSION}
     END_VERSIONS
     """
-    
 }

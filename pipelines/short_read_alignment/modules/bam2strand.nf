@@ -35,17 +35,14 @@ limitations under the License.
 process BAM2STRAND {
    tag "$aligned_file"
    label 'samtools'
-   //storeDir "${meta.output_dir}"
    publishDir "${meta.alignment_dir}", mode: 'copy'
    afterScript "sleep $params.files_latency"  // Needed because of file system latency
 
    input:
-   //tuple val(taxon_id), val(genomeDir), val(tissue), val(platform), val(output_dir), path(aligned_file)
    tuple val(meta), path(aligned_file)
 
    output:
    tuple val(meta), path("*_forward_strand.bam"), path("*_reverse_strand.bam"), path("*_forward_strand.bam.csi"), path("*_reverse_strand.bam.csi"), emit:aligned_output
-   //tuple val(meta), path("*_forward_strand.bam"), path("*_reverse_strand.bam"), emit:aligned_output
    val(meta), emit:meta_value
    path "versions.yml", emit: versions_file
 
@@ -77,7 +74,7 @@ process BAM2STRAND {
    SAMTOOLS_VERSION=\$(samtools --version | head -n1)
    cat <<-END_VERSIONS > versions.yml
    "${task.process}":
-        samtools: \${SAMTOOLS_VERSION}
+      samtools: \${SAMTOOLS_VERSION}
    END_VERSIONS
    """
 }

@@ -33,7 +33,6 @@ process MINIMAP2_INDEX_GENOME {
     maxForks 10
 
     input:
-    //tuple val(taxon_id), val(genomeDir), val(gca), val(platform), val(paired), val(tissue), val(run_accession), val(pair1)
     val(meta)
 
     output:
@@ -42,12 +41,6 @@ process MINIMAP2_INDEX_GENOME {
 
 
     script:
-    //def genomeDirPath= new File(genomeDir)
-    //def fnaFiles = genomeDirPath.listFiles()?.findAll { it.name.endsWith('.fna') }
-    //if (!meta.fasta_file || meta.fasta_file.size() != 1) {
-    //    throw new IllegalStateException("Expected exactly one .fna file in the directory: ${meta.fasta_file.parent}")
-    //}
-    //def genomefilePath = fnaFiles[0]
     """
     if [ -z "\$(find "${meta.genome_dir}" -name '*.mmi' -type f -size +0c)" ]; then
         minimap2 -t ${task.cpus} \
@@ -60,6 +53,5 @@ process MINIMAP2_INDEX_GENOME {
     "${task.process}":
         minimap2: \$(minimap2 --version)
     END_VERSIONS
-
     """
 }

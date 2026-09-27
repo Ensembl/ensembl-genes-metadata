@@ -37,11 +37,8 @@ process STAR_INDEX_PARAMS {
 
     input:
     val(meta)
-    
-    //when: meta.platform?.toString()?.toLowerCase() == 'illumina'
 
     output:
-    //tuple val(taxon_id), val(genomeDir), val(platform),  val(tissue), val(run_accession), val(pair1), val(pair2)
     tuple val(meta), path("stats.json"), emit: genome_stats_output
     path "versions.yml", emit: versions_file
 

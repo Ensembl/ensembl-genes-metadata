@@ -39,28 +39,17 @@ process STAR_INDEX_GENOME {
     maxForks 1
 
     input:
-    //tuple val(taxon_id), val(genomeDir), val(gca), val(platform), val(paired), val(tissue), val(run_accession), val(pair1), val(pair2)
     tuple val(meta),path(statsJson)
 
 
 
     output:
-    //tuple val(taxon_id), val(genomeDir), val(platform),  val(tissue), val(run_accession), val(pair1), val(pair2)
     val(meta), emit: genome_index_output
     path "versions.yml", emit: versions_file
     
-    //when: meta.platform?.toString()?.toLowerCase() == 'illumina'
-
     script:
-    //def stats = new groovy.json.JsonSlurper().parse(file('stats.json'))
     def genomeDir = meta.genome_dir
     def limitBAMsortRAM = (task.memory.toBytes() * 0.8) as long
-    //def genomeDirPath= new File(genomeDir)
-    //def genomeIndexFile = genomeDirPath.listFiles()?.find { it.name.endsWith('Genome') }
-    //log.info("Genome index file: ${genomeIndexFile?.absolutePath}")
-    
-    //def genomefilePath = genomeDirPath.listFiles()?.find { it.name.endsWith('.fna') }
-
     
     """
     genomeSAindexNbases=\$(sed -n 's/.*"genomeSAindexNbases"[[:space:]]*:[[:space:]]*\\([0-9][0-9]*\\).*/\\1/p' "${statsJson}")

@@ -30,11 +30,9 @@ process MINIMAP2 {
     afterScript "sleep $params.files_latency"  // Needed because of file system latency
 
     input:
-    //tuple val(taxon_id), val(genomeDir), val(platform), val(tissue), val(run_accession), val(input_file), path(minimap_index_file)
     tuple val(meta), path(minimap_index_file)
 
     output:
-    //tuple val(taxon_id), val(genomeDir), val(tissue),val(platform),  val(run_accession), path("*.sam")
     tuple val(meta), path("*.sam") , emit: minimap_alignment
     path "versions.yml", emit: versions_file
 

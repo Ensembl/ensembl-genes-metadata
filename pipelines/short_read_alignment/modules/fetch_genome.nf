@@ -29,41 +29,36 @@ process FETCH_GENOME {
     maxForks 1
 
     input:
-    val meta
-    //tuple val(taxon_id), val(gca), val(platform), val(paired), val(tissue), val(run_accession), val(url1), val(md5_1), val(url2),  val(md5_2) 
-    
+    val meta    
     output:
     tuple val(meta), path("*.fna"), emit: fasta_file_output
     path "versions.yml", emit: versions_file
-    //tuple val(taxon_id), val(gca), val(platform), val(paired), val(tissue), val(run_accession), val("${params.outDir}/$taxon_id/$gca/"), val(url1), val(md5_1), val(url2), val(md5_2)
     
     script:
     """
     if [[ -f "${meta.fasta_file}" ]] && [[ -f "${meta.output_dir}/${meta.taxon_id}/${meta.gca}/genome.fna" ]]; then
-            echo "Using provided genome file: ${meta.fasta_file}"
-            cp -L "${meta.fasta_file}" genome.fna
-        else
-            fetch_genome.py \
-                --output_dir . \
-                --gca ${meta.gca} \
-                --ncbi_base ${params.ncbiBaseUrl}
+        echo "Using provided genome file: ${meta.fasta_file}"
+        cp -L "${meta.fasta_file}" genome.fna
+    else
+        fetch_genome.py \
+            --output_dir . \
+            --gca ${meta.gca} \
+            --ncbi_base ${params.ncbiBaseUrl}
 
-            downloaded_genome=\$(find . -maxdepth 1 -type f -name "*.fna" | head -n 1)
+        downloaded_genome=\$(find . -maxdepth 1 -type f -name "*.fna" | head -n 1)
 
-            if [[ -z "\$downloaded_genome" ]]; then
-                echo "No genome FASTA found for ${meta.gca}" >&2
-                exit 1
-            fi
+        if [[ -z "\$downloaded_genome" ]]; then
+            echo "No genome FASTA found for ${meta.gca}" >&2
+            exit 1
         fi
-        
-        # Create versions file
+    fi
+    
+    # Create versions file
 
-        cat <<-END_VERSIONS > versions.yml
-        "${task.process}":
-            fetch_genome.py: \$(fetch_genome.py --version 2>&1)
-            python: \$(python --version | sed 's/Python //')
-        END_VERSIONS
-        
+    cat <<-END_VERSIONS > versions.yml
+    "${task.process}":
+        fetch_genome.py: \$(fetch_genome.py --version 2>&1)
+        python: \$(python --version | sed 's/Python //')
+    END_VERSIONS
     """
-
-    }
+}

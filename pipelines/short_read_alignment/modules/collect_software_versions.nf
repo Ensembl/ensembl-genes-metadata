@@ -22,7 +22,7 @@ Inputs:
 Outputs:- software_versions.yml: merged versions file containing software versions used in the pipeline
 
 */
-// Single process to merge all versions
+
 process COLLECT_SOFTWARE_VERSIONS {
     label 'default'
     publishDir "${params.outDir}/pipeline_info", mode: 'copy'
@@ -34,7 +34,6 @@ process COLLECT_SOFTWARE_VERSIONS {
     path "software_versions.yml"
 
     script:
-
     """
     cat versions_*.yml > software_versions.yml
     """

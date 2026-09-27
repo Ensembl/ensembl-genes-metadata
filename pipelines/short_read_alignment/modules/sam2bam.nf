@@ -31,20 +31,14 @@ process SAM2BAM {
     afterScript "sleep $params.files_latency"  // Needed because of file system latency
 
     input:
-    //tuple val(taxon_id), val(genomeDir), val(tissue),val(platform),  val(run_accession), path(sam_file)
     tuple val(meta), path(sam_file)
 
 
     output:
-    //tuple val(taxon_id), val(genomeDir), val(gca), val(platform), val(paired), val(tissue), val(run_accession), path("*.bam")
-    //tuple val(taxon_id), val(genomeDir), val(tissue),val(platform),  val(run_accession), path("*.bam")
     tuple val(meta), path("*.bam"), emit:sam_output
     path "versions.yml", emit: versions_file
 
     script:
-    
-    //samtools index ${sam_file} ${meta.run_accession}.bam
-    //samtools index ${meta.run_accession}.bam ${meta.run_accession}.bam.bai
     """
     samtools sort \
     -@ ${task.cpus} \

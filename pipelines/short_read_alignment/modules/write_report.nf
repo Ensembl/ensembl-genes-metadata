@@ -34,7 +34,6 @@ limitations under the License.
 process WRITE_REPORT {
     label "python"
     tag "${meta.taxon_id}"
-    //storeDir "${params.outDir}/$taxon_id/$run_accession"
     afterScript "sleep $params.files_latency"  // Needed because of file system latency
 
     input:

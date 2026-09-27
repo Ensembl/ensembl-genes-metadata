@@ -36,9 +36,7 @@ process CHECK_BAM {
     tag "${meta.taxon_id}"
     afterScript "sleep $params.files_latency"  // Needed because of file system latency
 
-
     input:
-
     tuple val(meta), path(bamFile)
 
     output:
@@ -50,10 +48,10 @@ process CHECK_BAM {
     samtools quickcheck -v ${bamFile}
     mapped=\$(samtools view -c -F 4 ${bamFile})
 
-if [ "\$mapped" -eq 0 ]; then
-    echo "ERROR: ${bamFile} has no mapped reads"
-    exit 1
-fi
+    if [ "\$mapped" -eq 0 ]; then
+        echo "ERROR: ${bamFile} has no mapped reads"
+        exit 1
+    fi
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
         samtools: \$(samtools --version | head -n 1 | awk '{print \$2}') 
