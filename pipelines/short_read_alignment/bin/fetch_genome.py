@@ -29,8 +29,9 @@ from urllib.error import HTTPError
 import requests
 
 
-
-def download_ncbi_assembly_report(gca: str, dest_folder: Union[str, Path] = ".") -> Path:
+def download_ncbi_assembly_report(
+    gca: str, dest_folder: Union[str, Path] = "."
+) -> Path:
     """Download the assembly report from NCBI for a given GCA accession."""
     num = gca.split("_")[1].split(".")[0]
 
@@ -66,7 +67,7 @@ def download_ncbi_assembly_report(gca: str, dest_folder: Union[str, Path] = ".")
     return out_path
 
 
-def download_and_extract(#pylint: disable=too-many-locals
+def download_and_extract(  # pylint: disable=too-many-locals
     url: str,
     output_dir: Union[str, Path],
     max_retries: int = 8,
@@ -258,11 +259,16 @@ def rewrite_fasta_headers(input_fasta: Path, output_fasta: Path, mapping: dict) 
             else:
                 fout.write(line)
 
+
 __version__ = "1.0.0"
+
+
 def main():
     """Main function to parse arguments and download genome."""
     parser = argparse.ArgumentParser()
-    parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
+    parser.add_argument(
+        "--version", action="version", version=f"%(prog)s {__version__}"
+    )
     parser.add_argument("--gca", required=True)
     parser.add_argument("--output_dir", required=True)
     parser.add_argument(

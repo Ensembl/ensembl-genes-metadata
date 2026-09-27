@@ -57,7 +57,9 @@ keys_to_extract = {
 }
 
 
-def parse_star_output(file_path: str, keys: dict, extra_parameters: Dict[str, str]) -> str:
+def parse_star_output(
+    file_path: str, keys: dict, extra_parameters: Dict[str, str]
+) -> str:
     """Parse STAR Log file
 
     Args:
@@ -73,19 +75,20 @@ def parse_star_output(file_path: str, keys: dict, extra_parameters: Dict[str, st
     result: Dict[str, Any] = {}
     for parameter, value in extra_parameters.items():
         result[parameter] = value
-    with open(file_path, "r") as file:
+    with open(file_path, "r", encoding="utf-8") as file:
         for line in file:
             for key, pattern in keys.items():
                 # for key in keys:
                 match = re.search(
-                    f"{pattern}\s+\|\s+(.+)", line # pylint: disable=anomalous-backslash-in-string
+                    f"{pattern}\s+\|\s+(.+)",  # pylint: disable=anomalous-backslash-in-string
+                    line,  # pylint: disable=anomalous-backslash-in-string
                 )
                 if match:
                     result[key] = match.group(1).strip().replace("%", "")
     table_align["align"].append(result)
     print(table_align)
     output_file = "insert_into_align.json"
-    with open(output_file, "w") as json_file:
+    with open(output_file, "w", encoding="utf-8") as json_file:
         json.dump(table_align, json_file, indent=4)
     return output_file
 
@@ -109,13 +112,23 @@ def parse_extra_parameters(param_str: Union[str, ast.AST]):
             "Invalid extra parameters format. Must be a valid Python dictionary."
         )
 
+
 __version__ = "1.0.0"
+
+
 def parse_args():
     """Parse command line arguments."""
-    parser = argparse.ArgumentParser(description="Parse STAR output and create JSON with specified keys")
-    parser.add_argument("--file_path", required=True, type=str, help="Path to the STAR output file")
+    parser = argparse.ArgumentParser(
+        description="Parse STAR output and create JSON with specified keys"
+    )
     parser.add_argument(
-        "--extra_parameters", required=False, type=parse_extra_parameters, help="{'key':'value'}"
+        "--file_path", required=True, type=str, help="Path to the STAR output file"
+    )
+    parser.add_argument(
+        "--extra_parameters",
+        required=False,
+        type=parse_extra_parameters,
+        help="{'key':'value'}",
     )
     parser.add_argument(
         "--version",
@@ -123,8 +136,9 @@ def parse_args():
         version=f"%(prog)s {__version__}",
     )
     for key in keys_to_extract:
-        parser.add_argument(f"--{key}", action="store_true", help=f"Include {key} in output JSON")
-    # print(vars(parser))
+        parser.add_argument(
+            f"--{key}", action="store_true", help=f"Include {key} in output JSON"
+        )
     return parser.parse_args()
 
 
@@ -133,14 +147,16 @@ def main():
     args = parse_args()
 
     options = vars(args)
-    # del options['file_path']
-    # del options['run_accession']
-    # if the corresponding key is present in the options dictionary
-    # (meaning the user has provided the corresponding command-line argument)
-    # keys_to_include = [value for key, value in keys_to_extract if options.get(key)]
-    keys_to_include = {key: keys_to_extract[key] for key in keys_to_extract if options.get(key)} # pylint:disable=consider-using-dict-items
 
-    output_json = parse_star_output(args.file_path, keys_to_include, args.extra_parameters)
+    keys_to_include = {
+        key: keys_to_extract[key]  # pylint:disable=consider-using-dict-items
+        for key in keys_to_extract
+        if options.get(key)
+    }
+
+    output_json = parse_star_output(
+        args.file_path, keys_to_include, args.extra_parameters
+    )
     return output_json
 
 
