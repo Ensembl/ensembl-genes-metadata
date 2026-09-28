@@ -1,20 +1,15 @@
-# Ensembl Genes Nextflow Pipelines
+# ensembl-genes-metadata — Source
 
-Documentation for the Ensembl Nextflow pipelines.
+Reference documentation for the `gb_metadata` Python package
+(`src/python/`), generated from docstrings and type signatures with
+[sphinx-autoapi](https://github.com/readthedocs/sphinx-autoapi).
 
-The documentation is organised by pipeline. Each pipeline contains:
-
-- Overview
-- Input
-- Output
-- Parameters
-- Modules
-- Workflows
-- Troubleshooting
+For the Nextflow pipelines themselves, see the
+<a href="../index.html">main documentation</a>.
 
 ```{toctree}
-:maxdepth: 1
-:caption: Pipelines
+:maxdepth: 2
+:caption: Python Reference
 
-pipelines/index
+api/python/index
 ```

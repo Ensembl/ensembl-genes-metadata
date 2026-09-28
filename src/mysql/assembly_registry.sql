@@ -12,10 +12,10 @@ CREATE TABLE assembly (
   asm_name varchar(225) NOT NULL,
   refseq_accession varchar(30),
   release_date date,
-  submitter varchar(225),
+  submitter mediumtext,
   PRIMARY KEY (`assembly_id`),
   CONSTRAINT gca_accession UNIQUE (gca_chain, gca_version)
-) ENGINE=MyISAM AUTO_INCREMENT=1 DEFAULT CHARSET=latin1;
+) ENGINE=MyISAM AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
 DROP TABLE IF EXISTS assembly_metrics;
@@ -31,6 +31,49 @@ CREATE TABLE assembly_metrics (
 ) ENGINE=MyISAM AUTO_INCREMENT=1 DEFAULT CHARSET=latin1;
 
 
+DROP TABLE IF EXISTS refseq_assembly_metrics;
+
+CREATE TABLE refseq_assembly_metrics (
+  rasm_metrics_id int NOT NULL AUTO_INCREMENT,
+  assembly_id int NOT NULL,
+  metrics_name varchar(50) NOT NULL,
+  metrics_value varchar(225) NOT NULL,
+  PRIMARY KEY (`rasm_metrics_id`),
+  FOREIGN KEY (`assembly_id`) REFERENCES assembly(`assembly_id`),
+  CONSTRAINT metric_record UNIQUE (assembly_id, metrics_name, metrics_value)
+) ENGINE=MyISAM AUTO_INCREMENT=1 DEFAULT CHARSET=latin1;
+DROP TABLE IF EXISTS annotation_events;
+
+CREATE TABLE annotation_events
+(
+    anno_event_id       int auto_increment
+        primary key,
+    genebuild_status_id int          not null,
+    event               varchar(255) not null,
+    value               varchar(255) not null,
+    constraint metric_record
+        unique (genebuild_status_id, event, value)
+)
+    engine = MyISAM
+    charset = latin1;
+
+DROP TABLE IF EXISTS annotation_metrics;
+
+create table annotation_metrics
+(
+    anno_metrics_id     int auto_increment
+        primary key,
+    assembly_id         int          not null,
+    genebuild_status_id int          not null,
+    metrics_name        varchar(255) null,
+    metrics_value       varchar(225) not null,
+    constraint metric_record
+        unique (assembly_id, genebuild_status_id, metrics_name, metrics_value)
+)
+    engine = MyISAM
+    charset = latin1;
+
+
 DROP TABLE IF EXISTS species;
 
 CREATE TABLE species (
@@ -40,11 +83,11 @@ CREATE TABLE species (
   scientific_name varchar(225) NOT NULL,
   common_name varchar(225),
   parlance_name varchar(225),
+  species_prefix varchar(20),
   clade varchar(25),
   PRIMARY KEY (`species_id`),
-  FOREIGN KEY (`clade`) REFERENCES clade_settings(`clade`),
   FOREIGN KEY (`lowest_taxon_id`) REFERENCES assembly(`lowest_taxon_id`)
-) ENGINE=MyISAM AUTO_INCREMENT=1 DEFAULT CHARSET=latin1;
+) ENGINE=MyISAM AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 DROP TABLE IF EXISTS species_prefix;
 
@@ -54,7 +97,8 @@ CREATE TABLE species_prefix (
 	prefix varchar(7) NOT NULL,
 	PRIMARY KEY (`prefix_id`),
 	FOREIGN KEY (`lowest_taxon_id`) REFERENCES assembly(`lowest_taxon_id`),
-	CONSTRAINT species_prefix UNIQUE (lowest_taxon_id, prefix)
+	CONSTRAINT species_prefix UNIQUE (lowest_taxon_id, prefix),
+	CONSTRAINT unique_prefix UNIQUE (prefix)
 ) ENGINE=MyISAM AUTO_INCREMENT=1 DEFAULT CHARSET=latin1;
 
 DROP TABLE IF EXISTS taxonomy;
@@ -76,7 +120,7 @@ DROP TABLE IF EXISTS taxonomy_name;
 CREATE TABLE taxonomy_name (
   taxonomy_name_id int NOT NULL AUTO_INCREMENT,
   taxon_class_id int(15) NOT NULL,
-  taxon_class_name varchar(50) NOT NULL,
+  taxon_class_name varchar(225) NOT NULL,
   PRIMARY KEY (`taxonomy_name_id`),
   FOREIGN KEY (`taxon_class_id`) REFERENCES taxonomy(`taxon_class_id`),
   CONSTRAINT taxon_id_name UNIQUE (taxon_class_id, taxon_class_name)
@@ -90,12 +134,12 @@ CREATE TABLE organism (
   assembly_id int NOT NULL UNIQUE,
   biosample_id varchar(225),
   bioproject_id varchar(225),
-  dtol_id varchar(30),
+  tol_prefix varchar(30),
   infra_type ENUM ('', 'strain', 'breed', 'cultivar' , 'ecotype', 'isolate' ),
   infra_name varchar(225),
   PRIMARY KEY (`organism_id`),
-  FOREIGN KEY (`assembly_id`) REFERENCES assembly(`assembly_id`),
-) ENGINE=MyISAM AUTO_INCREMENT=1 DEFAULT CHARSET=latin1;
+  FOREIGN KEY (`assembly_id`) REFERENCES assembly(`assembly_id`)
+) ENGINE=MyISAM AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
 DROP TABLE IF EXISTS bioproject;
@@ -107,7 +151,7 @@ CREATE TABLE bioproject (
   PRIMARY KEY (`lineage_id`),
   FOREIGN KEY (`assembly_id`) REFERENCES assembly(`assembly_id`),
   CONSTRAINT lineage UNIQUE (assembly_id, bioproject_id)
-) ENGINE=MyISAM AUTO_INCREMENT=1 DEFAULT CHARSET=latin1;
+) ENGINE=MyISAM AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 DROP TABLE IF EXISTS main_bioproject;
 
@@ -168,14 +212,14 @@ CREATE TABLE genebuild_status (
   genebuild_status_id int NOT NULL AUTO_INCREMENT,
   assembly_id int NOT NULL,
   gca_accession VARCHAR(20) NOT NULL, 
-  gb_status ENUM('in_progress', 'insufficient_data', 'check_busco', 'completed', 'pre_released','handed_over', 'live', 'archive'),
+  gb_status ENUM(enum('in_progress', 'abandoned', 'insufficient_data', 'check_busco', 'completed', 'pre_released', 'handed_over', 'live', 'poor_genome_busco', 'coming_soon', 'faulty', 'suppressed', 'large_sequence')),
   last_attempt int(2),
   genebuilder varchar(20) NOT NULL,
-  annotation_source ENUM('ensembl', 'external','import_refseq', 'import_community', 'import_wormbase', 'import_flybase', 'import_genbank', 'import_noninsdc'),
-  annotation_method ENUM('pending','full_genebuild', 'anno', 'braker', 'helixer','projection_build', 'mixed_strategy_build','import', 'external_annotation_import'),
+  annotation_source ENUM('ensembl', 'external','import_refseq', 'import_community', 'import_wormbase', 'import_flybase', 'import_genbank', 'import_noninsdc', 'helixer', 'braker'),
+  annotation_method ENUM('pending','full_genebuild', 'anno', 'braker', 'helixer','projection_build', 'mixed_strategy_build','import', 'external_annotation_import', 'manual_annotation'),
   date_started date NOT NULL,
   date_status_update date NULL,
-  genebuild_version varchar(10) NOT NULL,
+  genebuild_version varchar(10) NULL,
   last_genebuild_update date NULL,
   release_date date NULL,
   release_type ENUM('main', 'beta', 'not_available'),
@@ -185,15 +229,53 @@ CREATE TABLE genebuild_status (
 ) ENGINE=MyISAM AUTO_INCREMENT=1 DEFAULT CHARSET=latin1;
 
 
-DROP TABLE IF EXISTS genebuild_metrics;
+DROP TABLE IF EXISTS annotation_events;
 
-CREATE TABLE genebuild_metrics (
-  gb_metrics_id int NOT NULL AUTO_INCREMENT,
-  genebuild_id int NOT NULL,
-  metrics_name varchar(50),
-  metrics_value varchar(225),
-  PRIMARY KEY (`gb_metrics_id`),
-  FOREIGN KEY (`genebuild_id`) REFERENCES genebuild_status(`genebuild_id`)
+CREATE TABLE annotation_events (
+  anno_event_id int NOT NULL AUTO_INCREMENT,
+  genebuild_status_id int NOT NULL,
+  event varchar(255) NOT NULL,
+  value varchar(255) NOT NULL,
+  PRIMARY KEY (`anno_event_id`),
+  FOREIGN KEY (`genebuild_status_id`) REFERENCES genebuild_status(`genebuild_status_id`),
+  CONSTRAINT metric_record UNIQUE (genebuild_status_id, event, value)
+) ENGINE=MyISAM AUTO_INCREMENT=1 DEFAULT CHARSET=latin1;
+
+DROP TABLE IF EXISTS new_metrics;
+
+create table new_metrics
+(
+    anno_metrics_id     int auto_increment
+        primary key,
+    assembly_id         int          not null,
+    genebuild_status_id int          not null,
+    metrics_name        varchar(255) null,
+    metrics_value       varchar(225) not null,
+    constraint metric_record
+        unique (assembly_id, genebuild_status_id, metrics_name, metrics_value)
+)
+    engine = MyISAM
+    charset = latin1;
+
+DROP TABLE IF EXISTS annotation_metrics;
+
+CREATE TABLE annotation_metrics (
+  anno_metrics_id int NOT NULL AUTO_INCREMENT,
+  assembly_id int NOT NULL,
+  genebuild_status_id int NOT NULL,
+  metrics_name varchar(255),
+  metrics_value varchar(225) NOT NULL,
+  PRIMARY KEY (`anno_metrics_id`),
+  FOREIGN KEY (`assembly_id`) REFERENCES assembly(`assembly_id`),
+  FOREIGN KEY (`genebuild_status_id`) REFERENCES genebuild_status(`genebuild_status_id`),
+  CONSTRAINT metric_record UNIQUE (assembly_id, genebuild_status_id, metrics_name, metrics_value)
 ) ENGINE=MyISAM AUTO_INCREMENT=1 DEFAULT CHARSET=latin1;
 
 
+DROP TABLE IF EXISTS update_date;
+
+CREATE TABLE update_date (
+  update_type varchar(15) NOT NULL,
+  date_value date NOT NULL,
+  PRIMARY KEY (`update_type`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

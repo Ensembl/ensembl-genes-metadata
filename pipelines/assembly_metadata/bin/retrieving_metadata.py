@@ -32,8 +32,9 @@ import json
 import logging
 from typing import Any, Dict, Tuple
 
-import requests # type: ignore
-from tenacity import retry, stop_after_attempt, wait_random # type: ignore
+import requests  # type: ignore
+from tenacity import retry, stop_after_attempt, wait_random  # type: ignore
+
 
 @retry(stop=stop_after_attempt(10), wait=wait_random(min=1, max=20))
 def connection_ncbi(uri: str) -> requests.Response:
@@ -47,7 +48,10 @@ def connection_ncbi(uri: str) -> requests.Response:
     response.raise_for_status()
     return response
 
-def parse_data(data: Dict) -> Tuple[Dict[str, Dict[Any, Any]], Dict[str, Dict[Any, Any]], Dict[str, Dict[Any, Any]]]:
+
+def parse_data(
+    data: Dict,
+) -> Tuple[Dict[str, Dict[Any, Any]], Dict[str, Dict[Any, Any]], Dict[str, Dict[Any, Any]]]:
     """Parse NCBI results and provides a useful dictionary containing all relevant information
 
     Args:
@@ -57,126 +61,137 @@ def parse_data(data: Dict) -> Tuple[Dict[str, Dict[Any, Any]], Dict[str, Dict[An
         tuple[dict, dict, dict]: a tuple of three dictionaries with relevant metadata to store in db
     """
     # Stablish dictionary structure
-    assembly_dic: Dict[str, Dict[Any, Any]] = {'assembly': {}}
+    assembly_dic: Dict[str, Dict[Any, Any]] = {"assembly": {}}
 
-    organism_dict: Dict[str, Dict[Any, Any]]  = {
-        'organism': {},
-        'assembly_metrics': {},
-        'bioproject': {}}
+    organism_dict: Dict[str, Dict[Any, Any]] = {"organism": {}, "assembly_metrics": {}, "bioproject": {}}
 
-    taxonomy_dict: Dict[str, Dict[Any, Any]] = {'species': {}}
+    taxonomy_dict: Dict[str, Dict[Any, Any]] = {"species": {}}
 
     # Setting Optional keys-values first
-    infraspecific_names = data['reports'][0].get('organism', {}).get('infraspecific_names', {})
+    infraspecific_names = data["reports"][0].get("organism", {}).get("infraspecific_names", {})
     infra_type, infra_name = next(iter(infraspecific_names.items()), ("", ""))
     if infra_name:
         infra_name = infra_name.replace("'", "''")
 
-    if infra_type == 'sex':
+    if infra_type == "sex":
         logging.info("Assembly have incorrect infraspecific type: sex. Setting to empty")
         infra_type = ""
         infra_name = ""
 
     # Building dictionaries for assembly metadata tables
-    assembly_dic['assembly'].update({
-        'lowest_taxon_id' : data['reports'][0]['organism']['tax_id'],
-        'gca_chain' : data['reports'][0]['accession'].split('.')[0],
-        'gca_version' : data['reports'][0]['accession'].split('.')[1],
-        'is_current' : data['reports'][0]['assembly_info']['assembly_status'],
-        'asm_type' : data['reports'][0]['assembly_info']['assembly_type'],
-        'asm_level' : data['reports'][0]['assembly_info']['assembly_level'],
-        'asm_name' : data['reports'][0]['assembly_info']['assembly_name'],
-        'refseq_accession': data['reports'][0].get('paired_accession',""),
-        'release_date' : data['reports'][0]['assembly_info']['release_date'],
-        'submitter' : data['reports'][0].get('assembly_info').get('submitter', "").replace("'", "''").lstrip('\ufeff')
-    })
+    assembly_dic["assembly"].update(
+        {
+            "lowest_taxon_id": data["reports"][0]["organism"]["tax_id"],
+            "gca_chain": data["reports"][0]["accession"].split(".")[0],
+            "gca_version": data["reports"][0]["accession"].split(".")[1],
+            "is_current": data["reports"][0]["assembly_info"]["assembly_status"],
+            "asm_type": data["reports"][0]["assembly_info"]["assembly_type"],
+            "asm_level": data["reports"][0]["assembly_info"]["assembly_level"],
+            "asm_name": data["reports"][0]["assembly_info"]["assembly_name"],
+            "refseq_accession": data["reports"][0].get("paired_accession", ""),
+            "release_date": data["reports"][0]["assembly_info"]["release_date"],
+            "submitter": data["reports"][0]
+            .get("assembly_info")
+            .get("submitter", "")
+            .replace("'", "''")
+            .lstrip("\ufeff"),
+        }
+    )
 
-    logging.info("current column: %s", data['reports'][0]['assembly_info']['assembly_status'])
+    logging.info("current column: %s", data["reports"][0]["assembly_info"]["assembly_status"])
     logging.info("Get warning information if available")
-    warning = data['reports'][0].get('assembly_info').get('atypical', {}).get('warnings', "NA")
+    warning = data["reports"][0].get("assembly_info").get("atypical", {}).get("warnings", "NA")
     logging.info(warning)
     if warning != "NA":
         logging.info("Updating assembly JSON with warning data")
-        assembly_dic['assembly'].update({'is_current':warning[0]})
+        assembly_dic["assembly"].update({"is_current": warning[0]})
 
+    taxonomy_dict["species"].update(
+        {
+            "lowest_taxon_id": data["reports"][0]["organism"]["tax_id"],
+            "scientific_name": data["reports"][0]["organism"]["organism_name"].replace("'", "''"),
+            "common_name": data["reports"][0].get("organism").get("common_name", "").replace("'", "''"),
+        }
+    )
 
-    taxonomy_dict['species'].update({
-        'lowest_taxon_id' : data['reports'][0]['organism']['tax_id'],
-        'scientific_name' : data['reports'][0]['organism']['organism_name'].replace("'", "''") ,
-        'common_name' : data['reports'][0].get('organism').get('common_name', "").replace("'", "''")
-    })
+    organism_dict["organism"].update(
+        {
+            "biosample_id": data.get("reports", [{}])[0]
+            .get("assembly_info", {})
+            .get("biosample", {})
+            .get("accession", ""),
+            "bioproject_id": data["reports"][0]["assembly_info"]["bioproject_accession"],
+            "infra_type": infra_type,
+            "infra_name": infra_name,
+        }
+    )
 
-    organism_dict['organism'].update({
-        'assembly_metrics':data['reports'][0]['assembly_stats'],
-        'biosample_id' : data.get('reports', [{}])[0].get('assembly_info', {}).get('biosample', {}).get('accession', ""),
-        'bioproject_id' : data['reports'][0]['assembly_info']['bioproject_accession'],
-        'infra_type':infra_type,
-        'infra_name':infra_name
-    })
+    organism_dict["assembly_metrics"].update(data["reports"][0]["assembly_stats"])
 
     # Parsing bioproject metadata
     bioproject_lineage = {}
     seen_accessions = set()
 
-    bioproject_dict = data['reports'][0]['assembly_info']['bioproject_lineage'][0]['bioprojects']
+    bioproject_dict = data["reports"][0]["assembly_info"]["bioproject_lineage"][0]["bioprojects"]
     for item in bioproject_dict:
-        accession = item['accession']
-        title = item['title'].replace("'", "")
+        accession = item["accession"]
+        title = item["title"].replace("'", "")
         # Check if accession is not seen before
         if accession not in seen_accessions:
             seen_accessions.add(accession)
             bioproject_lineage[accession] = title
 
-    organism_dict.update({'bioproject':bioproject_lineage})
+    organism_dict.update({"bioproject": bioproject_lineage})
 
     return assembly_dic, organism_dict, taxonomy_dict
 
+
 def main():
-    """Module's entry-point
-    """
-    logging.basicConfig(filename="retrieving_metadata.log", level=logging.DEBUG, filemode='w',
-                    format="%(asctime)s:%(levelname)s:%(message)s")
+    """Module's entry-point"""
+    logging.basicConfig(
+        filename="retrieving_metadata.log",
+        level=logging.DEBUG,
+        filemode="w",
+        format="%(asctime)s:%(levelname)s:%(message)s",
+    )
 
-    parser = argparse.ArgumentParser(prog='retrieving_metadata.py',
-                                    description="Retrieve metadata from NCBI API for a given GCA accession and store it in JSON files to be inserted in the database.")
+    parser = argparse.ArgumentParser(
+        prog="retrieving_metadata.py",
+        description="Retrieve metadata from NCBI API for a given GCA accession and store it in JSON files to be inserted in the database.",
+    )
 
-    parser.add_argument('--accession',
-                        type=str,
-                        required=True,
-                        help='GCA accession to retrieve metadata')
-    parser.add_argument('--ncbi_url',
-                        type=str,
-                        required=True,
-                        help='NCBI API URL')
+    parser.add_argument("--accession", type=str, required=True, help="GCA accession to retrieve metadata")
+    parser.add_argument("--ncbi_url", type=str, required=True, help="NCBI API URL")
 
     args = parser.parse_args()
     logging.info(args)
     accession = args.accession.strip()
 
     uri = f"{args.ncbi_url}/genome/accession/{accession}/dataset_report?filters.exclude_atypical=false&filters.assembly_version=all_assemblies"
-    logging.info("URI: %s",uri)
+    logging.info("URI: %s", uri)
     response = connection_ncbi(uri)
     data = response.json()
-    #logging.info(f"DATA: {data}")
+    # logging.info(f"DATA: {data}")
 
-    logging.info("Retrieved data for %s",accession)
+    logging.info("Retrieved data for %s", accession)
     assembly_dict, organism_dict, taxonomy_dict = parse_data(data)
 
     logging.info("Saving data in JSON files")
     file1 = f"{accession}_assembly.json"
-    with open(file1, 'w', encoding='utf-8') as file:
+    with open(file1, "w", encoding="utf-8") as file:
         json.dump(assembly_dict, file)
     file.close()
 
     file2 = f"{accession}_metadata.tmp"
-    with open(file2, 'w', encoding='utf-8') as file:
+    with open(file2, "w", encoding="utf-8") as file:
         json.dump(organism_dict, file)
     file.close()
 
     file3 = f"{accession}_species.tmp"
-    with open(file3, 'w', encoding='utf-8') as file:
+    with open(file3, "w", encoding="utf-8") as file:
         json.dump(taxonomy_dict, file)
     file.close()
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

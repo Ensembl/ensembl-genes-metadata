@@ -1,0 +1,45 @@
+#!/usr/bin/env nextflow
+/*
+See the NOTICE file distributed with this work for additional information
+regarding copyright ownership.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+/*
+INTEGRITY TAXONOMY
+This process checks the integrity of the taxonomy for a given GCA accession using the species_checker.py script.
+Inputs:
+- gca: The GCA accession for which to check taxonomy.
+- taxon_id: The taxon ID associated with the GCA accession.
+Outputs:
+- taxonomy_${taxon_id}.json: The JSON file containing the taxonomy information.
+*/
+
+process INTEGRITY_TAXONOMY {
+
+    label 'python'
+    tag "${gca}"
+    publishDir "${params.output_dir}/nextflow_output/${gca}", mode: 'copy'
+
+    input:
+    tuple val(gca), val(taxon_id)
+    path species_checker_script
+
+    output:
+    tuple val(gca), path("taxonomy_${taxon_id}.json")
+
+    script:
+    """
+    python ${species_checker_script} --taxon_id ${taxon_id} --ncbi_url ${params.ncbi_url} --taxonomy_update
+    """
+}

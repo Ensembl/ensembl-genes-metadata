@@ -69,8 +69,7 @@ def discover_pipelines(root: Path) -> list[Pipeline]:
 
         if not pipeline_dir.is_dir():
             continue
-        if not pipeline_dir.name.startswith("short_read_alignment"):
-            continue
+
         print(f"Pipeline: {pipeline_dir.name}")
         pipeline = Pipeline(
             name=pipeline_dir.name,
