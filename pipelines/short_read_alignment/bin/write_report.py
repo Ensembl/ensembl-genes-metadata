@@ -136,7 +136,7 @@ def enrich_csv_with_paths(  # pylint: disable=too-many-statements, too-many-loca
 
     df.to_csv(output_csv, index=False)
     print(f"[✓] Output saved to {output_csv}")
-
+__version__ = "1.0.0"
 
 if __name__ == "__main__":
     """Main function to handle command-line arguments and enrich the CSV."""
@@ -187,10 +187,8 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--version",
-        type=int,
-        default=1,
-        required=False,
-        help="option to diplay report fot merged tissue",
+        action="version",
+        version=f"%(prog)s {__version__}",
     )
 
     args = parser.parse_args()

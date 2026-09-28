@@ -40,7 +40,7 @@ process BAM2CRAM {
     tuple val(meta), path(aligned_file)
     output:
     tuple val(meta), path("*.cram"), emit:cram_output
-    val("versions.yml"), emit: versions_file
+    path("versions.yml"), emit: versions_file
 
     script:
     def bam_basename = aligned_file.baseName  // strips .bam
