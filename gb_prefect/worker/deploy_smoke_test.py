@@ -1,8 +1,14 @@
 """Deploys the `slurm-cli` smoke-test flow to a work pool, for one-off validation.
 
-Example:
+The worker clones --branch from GitHub at run time (same convention as
+gb_prefect/deployments/deploy_flows.py), so commit and push the branch first --
+including this file and gb_prefect/worker/smoke_test_flow.py.
+
+Example (run from the repository root, with PREFECT_API_URL pointing at the
+Prefect server):
 
     python gb_prefect/worker/deploy_smoke_test.py \
+        --branch dev/gb_prefect \
         --working-dir /nfs/production/flicek/ensembl/genebuild/<you>/slurm_cli_smoke_test \
         --asm-venv /path/to/asm_venv
 
@@ -11,12 +17,13 @@ end to end against a real Slurm job.
 """
 
 import argparse
-from pathlib import Path
 
-from gb_prefect.worker.smoke_test_flow import slurm_cli_smoke_test_flow
+from prefect import flow  # type: ignore
+from prefect.runner.storage import GitRepository  # type: ignore
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
+    parser.add_argument("--branch", default="main", help="Git branch the worker clones.")
     parser.add_argument(
         "--pool", default="codon-slurm-smoke-pool", help="Work pool to deploy to (type slurm-cli)."
     )
@@ -34,14 +41,11 @@ if __name__ == "__main__":
     parser.add_argument("--partition", default=None, help="Slurm partition, optional.")
     args = parser.parse_args()
 
-    # `.deploy()` needs to know how to fetch the flow's code at run time. With no
-    # Docker image, that means a storage source -- `from_source()` with a local
-    # directory records a "run from this path" pull step (no image, no git clone),
-    # which only works because this path is on storage shared between the submitter
-    # VM and the compute nodes (e.g. the /hps mount).
-    slurm_cli_smoke_test_flow.from_source(
-        source=str(Path(__file__).parent),
-        entrypoint="smoke_test_flow.py:slurm_cli_smoke_test_flow",
+    source = GitRepository(url="https://github.com/Ensembl/ensembl-genes-metadata.git", branch=args.branch)
+
+    deployment_id = flow.from_source(
+        source=source,
+        entrypoint="gb_prefect/worker/smoke_test_flow.py:slurm_cli_smoke_test_flow",
     ).deploy(
         name="slurm-cli-smoke-test",
         work_pool_name=args.pool,
@@ -54,3 +58,4 @@ if __name__ == "__main__":
             "setup_commands": [f"source {args.asm_venv}/bin/activate"],
         },
     )
+    print(f"Deployed slurm-cli-smoke-test ({deployment_id})")
