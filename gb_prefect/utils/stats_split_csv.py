@@ -1,5 +1,22 @@
 import csv
 from pathlib import Path
+from typing import Optional
+
+
+def write_single_gca_csv(
+    gca: str, taxon_id: str, outdir: str, busco_dataset: Optional[str] = None
+) -> str:
+    """Write a single-row `gca,taxon_id,busco_dataset` CSV for one genome, returning its path."""
+    outdir_path = Path(outdir)
+    outdir_path.mkdir(parents=True, exist_ok=True)
+    csv_path = outdir_path / f"{gca}.csv"
+
+    with open(csv_path, "w", newline="", encoding="utf-8") as f:
+        writer = csv.writer(f)
+        writer.writerow(["gca", "taxon_id", "busco_dataset"])
+        writer.writerow([gca, taxon_id, busco_dataset or ""])
+
+    return str(csv_path)
 
 
 def split_csv(csv_file: str, outdir: str) -> list[str]:
