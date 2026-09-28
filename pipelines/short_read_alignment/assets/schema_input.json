@@ -1,0 +1,77 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://raw.githubusercontent.com/ensembl/ensembl-genes-metadata/main/pipelines/short_read_alignment/assets/schema_input.json",
+    "title": "nf-core/short_read_alignment pipeline - params.input schema",
+    "description": "Schema for the file provided with params.input",
+    "type": "array",
+    "items": {
+        "type": "object",
+        "required": ["taxon_id", "assembly_accession", "platform", "paired", "tissue", "run_accession", "pair1", "md5_1"],
+        "additionalProperties": false,
+        "properties": {
+            "taxon_id": {
+                "type": "integer",
+                "description": "NCBI taxon ID",
+                "pattern": "^\\d+$",
+                "errorMessage": "Taxon ID must be a number"
+            },
+            "assembly_accession": {
+                "type": "string",
+                "description": "Genome assembly accession",
+                "pattern": "^GCA_\\d{9}\\.\\d$",
+                "errorMessage": "GCA must be in the format GCA_000000000.0"
+            },
+            "platform": {
+                "type": "string",
+                "description": "Sequencing platform",
+                "enum": ["ILLUMINA", "IONTORRENT", "PACBIO", "OXFORDNANOPORE"]
+            },
+            "paired": {
+                "type": "boolean",
+                "description": "Whether the reads are paired-end or single-end"
+            },
+            "tissue": {
+                "type": "string",
+                "description": "Tissue type",
+                "pattern": "^\\S+$",
+                "errorMessage": "Tissue type must be provided and cannot contain spaces"
+            },
+            "run_accession": {
+                "type": "string",
+                "description": "Run accession number",
+                "errorMessage": "Run accession must be provided and cannot contain spaces"
+            },
+            "pair1": {
+                "type": "string",
+                "description": "Path to the first read file",
+                "pattern": "^\\S+\\.fastq\\.gz$",
+                "errorMessage": "Pair 1 file must be a gzipped FASTQ file"
+            },
+            "md5_1": {
+                "type": "string",
+                "description": "MD5 checksum for the first read file",
+                "errorMessage": "MD5 checksum must be a 32-character hexadecimal string"
+            },
+            "pair2": {
+                "type": "string",
+                "description": "Path to the second read file",
+                "pattern": "^\\S+\\.fastq\\.gz$",
+                "errorMessage": "Pair 2 file must be a gzipped FASTQ file"
+            },
+            
+            "md5_2": {
+                "type": "string",
+                "description": "MD5 checksum for the second read file",
+                "errorMessage": "MD5 checksum must be a 32-character hexadecimal string"
+            },
+            "genome_file": {
+                "type": "string",
+                "description": "Path to the genome file",
+                "errorMessage": "Genome file must be a FASTA file"
+            }
+        }
+    },
+    "allOf": [
+        {"if": {"properties": {"paired": {"const": true}}}, "then": {"required": ["pair2", "md5_2"]}}
+    ]
+}

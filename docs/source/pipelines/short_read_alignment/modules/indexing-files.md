@@ -1,0 +1,48 @@
+# INDEXING_FILES
+
+INDEXING_FILES
+Index aligned files (BAM or CRAM) using samtools.
+Input:
+- meta: metadata map containing taxon_id, genomeDir, tissue, platform, output_dir, etc.
+- aligned_file: path to the input aligned file (BAM or CRAM)
+- extension: file extension for the index file (e.g., 'bai' for BAM, 'crai' for CRAM)
+Output:
+- Indexed aligned file
+- Software versions
+The module uses samtools index to create an index for the aligned file and creates a symbolic link to the output index file.
+
+## Process Details
+
+| Property | Value |
+|----------|-------|
+| Process | `INDEXING_FILES` |
+| Label | `'samtools'` |
+| Tag | `${meta.taxon_id}` |
+| Publish directory | `"${meta.alignment_dir}", mode: 'copy'` |
+
+## Inputs
+
+### Nextflow interface
+
+```nextflow
+tuple val(meta), path(aligned_file)
+val extension
+```
+
+## Outputs
+
+### Nextflow interface
+
+```nextflow
+tuple val(meta), path(aligned_file), path("*${extension}"),emit:indexed_output
+val(meta), emit:meta_value
+path "versions.yml", emit: versions_file
+```
+
+## Implementation Summary
+
+- Generate software version report
+
+## Source
+
+`/Users/ftricomi/Downloads/ensembl-genes-metadata/pipelines/short_read_alignment/modules/indexing_files.nf`

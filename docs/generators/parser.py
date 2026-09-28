@@ -70,6 +70,7 @@ def discover_pipelines(root: Path) -> list[Pipeline]:
         if not pipeline_dir.is_dir():
             continue
 
+        print(f"Pipeline: {pipeline_dir.name}")
         pipeline = Pipeline(
             name=pipeline_dir.name,
             root=pipeline_dir,
@@ -85,11 +86,7 @@ def discover_pipelines(root: Path) -> list[Pipeline]:
 
             for nf in sorted(modules_dir.glob("*.nf")):
 
-                module = parse_module(nf)
-
-                module.source = nf.relative_to(root.parent)
-
-                pipeline.add_module(module)
+                pipeline.add_module(parse_module(nf))
 
         #
         # workflow(s)
@@ -101,11 +98,7 @@ def discover_pipelines(root: Path) -> list[Pipeline]:
 
             pipeline.workflow_file = workflow
 
-            parsed_workflow = parse_workflow(workflow)
-
-            parsed_workflow.source = workflow.relative_to(root.parent)
-
-            pipeline.add_workflow(parsed_workflow)
+            pipeline.add_workflow(parse_workflow(workflow))
 
         #
         # schema
@@ -242,7 +235,9 @@ def parse_module(path: Path) -> Module:
     module.script_summary = _summarise_script(
         lines,
     )
-
+    print("PARSER")
+    print(module.process)
+    print(module.documented_inputs)
     return module
 
 
@@ -438,7 +433,6 @@ def _clean_comment(comment: str) -> str:
 
     return "\n".join(lines)
 
-
 # ---------------------------------------------------------------------
 # Nextflow directives
 # ---------------------------------------------------------------------
@@ -613,7 +607,7 @@ def _parse_io(
 # ---------------------------------------------------------------------
 
 
-def _summarise_script(  # pylint: disable=too-many-branches,too-many-statements
+def _summarise_script(#pylint: disable=too-many-branches,too-many-statements
     lines: list[str],
 ) -> list[str]:
     """
@@ -719,7 +713,7 @@ def _summarise_script(  # pylint: disable=too-many-branches,too-many-statements
 
 def _all_comments(text: str) -> str:
     """
-    Return all /* ... */ comment blocks, excluding the license header.
+    Return all /* ... */ comment blocks.
     """
 
     blocks = re.findall(
@@ -727,8 +721,8 @@ def _all_comments(text: str) -> str:
         text,
         flags=re.S,
     )
-
-    return "\n\n".join(block.strip() for block in blocks if "Licensed under the Apache License" not in block)
+    print(blocks)
+    return "\n\n".join(block.strip() for block in blocks)
 
 
 def _first_comment(text: str) -> str:

@@ -1,4 +1,4 @@
-# pylint: disable=too-many-instance-attributes,missing-function-docstring,too-many-public-methods
+#pylint: disable=too-many-instance-attributes,missing-function-docstring,too-many-public-methods
 """
 Markdown renderer for generated documentation.
 """
@@ -29,6 +29,8 @@ def heading(title: str, level: int = 1) -> str:
 # ---------------------------------------------------------------------
 # Module pages
 # ---------------------------------------------------------------------
+
+
 
 
 def render_pipeline_modules(
@@ -93,8 +95,7 @@ def render_pipeline_modules(
     )
 
 
-def render_module(module: Module) -> str:
-    # pylint: disable=too-many-statements,too-many-branches,too-many-locals
+def render_module(module: Module) -> str:#pylint: disable=too-many-statements,too-many-branches,too-many-locals
     """
     Render one module page.
     """
@@ -260,7 +261,9 @@ def render_pipeline_index(pipeline: Pipeline) -> str:
 
         description = module.description.split("\n")[0]
 
-        lines.append("| " f"[`{module.process}`](modules/{module.slug}.md)" f" | {description} |")
+        lines.append(
+            "| " f"[`{module.process}`](modules/{module.slug}.md)" f" | {description} |"
+        )
 
     lines.append("")
 
@@ -293,7 +296,9 @@ def render_global_index(
 
         lines.append(f"- [{pipeline.title} modules]({pipeline.name}/index.md)")
 
-        lines.append(f"- [{pipeline.title} parameters](../generated/{pipeline.name}-parameters.md)")
+        lines.append(
+            f"- [{pipeline.title} parameters](../generated/{pipeline.name}-parameters.md)"
+        )
 
         lines.append("")
 
