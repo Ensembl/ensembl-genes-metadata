@@ -1,0 +1,48 @@
+# BAM2STRAND
+
+BAM2STRAND
+Split a BAM file into forward and reverse strand BAM files.
+Input:
+- meta: metadata map containing taxon_id, platform, tissue, etc.
+- aligned_file: BAM file to split
+Output:
+- Forward strand BAM file
+- Reverse strand BAM file
+- Software versions
+The process uses samtools to filter the input BAM file based on the strand information
+and generates two separate BAM files for forward and reverse strands.
+
+## Process Details
+
+| Property | Value |
+|----------|-------|
+| Process | `BAM2STRAND` |
+| Label | `'samtools'` |
+| Tag | `$aligned_file` |
+| Publish directory | `"${meta.alignment_dir}", mode: 'copy'` |
+
+## Inputs
+
+### Nextflow interface
+
+```nextflow
+tuple val(meta), path(aligned_file)
+```
+
+## Outputs
+
+### Nextflow interface
+
+```nextflow
+tuple val(meta), path("*_forward_strand.bam"), path("*_reverse_strand.bam"), path("*_forward_strand.bam.csi"), path("*_reverse_strand.bam.csi"), emit:aligned_output
+val(meta), emit:meta_value
+path "versions.yml", emit: versions_file
+```
+
+## Implementation Summary
+
+- Generate software version report
+
+## Source
+
+`/home/runner/work/ensembl-genes-metadata/ensembl-genes-metadata/pipelines/short_read_alignment/modules/bam2strand.nf`

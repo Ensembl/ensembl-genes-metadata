@@ -1,0 +1,261 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Troubleshooting &mdash; Ensembl Genes Nextflow Pipelines</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../_static/custom.css" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            Ensembl Genes Metadata Nextflow Pipelines
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Pipelines</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../index.html">Pipelines</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="README.html">Short Read Alignment Pipeline</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="README.html#quick-links">Quick Links</a></li>
+<li class="toctree-l3"><a class="reference internal" href="README.html#overview">Overview</a></li>
+<li class="toctree-l3"><a class="reference internal" href="README.html#features">Features</a></li>
+<li class="toctree-l3"><a class="reference internal" href="README.html#workflow">Workflow</a></li>
+<li class="toctree-l3"><a class="reference internal" href="README.html#supported-sequencing-platforms">Supported sequencing platforms</a></li>
+<li class="toctree-l3"><a class="reference internal" href="README.html#running-the-pipeline">Running the pipeline</a></li>
+<li class="toctree-l3"><a class="reference internal" href="README.html#optional-processing">Optional processing</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="README.html#merge-bam-files-by-tissue">Merge BAM files by tissue</a></li>
+<li class="toctree-l4"><a class="reference internal" href="README.html#generate-stranded-bams">Generate stranded BAMs</a></li>
+<li class="toctree-l4"><a class="reference internal" href="README.html#generate-bigwig-files">Generate BigWig files</a></li>
+<li class="toctree-l4"><a class="reference internal" href="README.html#convert-bam-to-cram">Convert BAM to CRAM</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="README.html#bam-validation">BAM validation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="README.html#software">Software</a></li>
+<li class="toctree-l3"><a class="reference internal" href="README.html#module-documentation">Module Documentation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="README.html#software-versions">Software versions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="README.html#error-handling">Error handling</a></li>
+<li class="toctree-l3"><a class="reference internal" href="README.html#license">License</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">Ensembl Genes Metadata Nextflow Pipelines</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Troubleshooting</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/pipelines/short_read_alignment/troubleshooting.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="troubleshooting">
+<h1>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Link to this heading"></a></h1>
+<section id="invalid-input-samplesheet">
+<h2>Invalid input samplesheet<a class="headerlink" href="#invalid-input-samplesheet" title="Link to this heading"></a></h2>
+<p>If the pipeline fails during startup with a schema validation error, check that your input CSV:</p>
+<ul class="simple">
+<li><p>Contains all required columns.</p></li>
+<li><p>Uses the correct column names.</p></li>
+<li><p>Does not contain empty values in required fields.</p></li>
+<li><p>Uses <code class="docutils literal notranslate"><span class="pre">true</span></code> or <code class="docutils literal notranslate"><span class="pre">false</span></code> for the <code class="docutils literal notranslate"><span class="pre">paired</span></code> column.</p></li>
+</ul>
+<p>You can validate the samplesheet against the schema in <code class="docutils literal notranslate"><span class="pre">assets/schema_input.json</span></code>.</p>
+</section>
+<hr class="docutils" />
+<section id="genome-download-fails">
+<h2>Genome download fails<a class="headerlink" href="#genome-download-fails" title="Link to this heading"></a></h2>
+<p>If the reference genome cannot be downloaded:</p>
+<ul class="simple">
+<li><p>Verify that the <code class="docutils literal notranslate"><span class="pre">gca</span></code> accession is valid.</p></li>
+<li><p>Check your internet connection.</p></li>
+<li><p>Ensure the NCBI Datasets API is reachable.</p></li>
+<li><p>If the genome is already available locally, specify it using the <code class="docutils literal notranslate"><span class="pre">genome_file</span></code> column.</p></li>
+</ul>
+</section>
+<hr class="docutils" />
+<section id="fastq-download-fails">
+<h2>FASTQ download fails<a class="headerlink" href="#fastq-download-fails" title="Link to this heading"></a></h2>
+<p>Common causes include:</p>
+<ul class="simple">
+<li><p>Incorrect FASTQ URLs or paths.</p></li>
+<li><p>FTP server temporarily unavailable.</p></li>
+<li><p>Network connectivity problems.</p></li>
+</ul>
+<p>If downloads repeatedly fail, verify that the files are accessible manually:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>wget<span class="w"> </span>&lt;FASTQ_URL&gt;
+</pre></div>
+</div>
+</section>
+<hr class="docutils" />
+<section id="corrupted-bam-files">
+<h2>Corrupted BAM files<a class="headerlink" href="#corrupted-bam-files" title="Link to this heading"></a></h2>
+<p>The pipeline validates BAM files using <code class="docutils literal notranslate"><span class="pre">samtools</span> <span class="pre">quickcheck</span></code>.</p>
+<p>If a BAM fails validation, it is excluded from downstream analyses.</p>
+<p>Common causes are:</p>
+<ul class="simple">
+<li><p>Interrupted alignment jobs.</p></li>
+<li><p>Filesystem issues.</p></li>
+<li><p>Incomplete file transfers.</p></li>
+<li><p>Missing BAM EOF marker.</p></li>
+</ul>
+<p>Inspect the corresponding process log in the Nextflow work directory for details.</p>
+</section>
+<hr class="docutils" />
+<section id="bam-indexing-fails">
+<h2>BAM indexing fails<a class="headerlink" href="#bam-indexing-fails" title="Link to this heading"></a></h2>
+<p>Large genomes may contain chromosomes exceeding the size limit supported by BAI indexes.</p>
+<p>The pipeline automatically falls back to creating a CSI index when BAI indexing is not possible.</p>
+</section>
+<hr class="docutils" />
+<section id="tissue-merge-fails">
+<h2>Tissue merge fails<a class="headerlink" href="#tissue-merge-fails" title="Link to this heading"></a></h2>
+<p>The merge step requires that all BAM files within a tissue:</p>
+<ul class="simple">
+<li><p>are coordinate sorted,</p></li>
+<li><p>originate from the same reference genome,</p></li>
+<li><p>have valid BAM headers.</p></li>
+</ul>
+<p>If <code class="docutils literal notranslate"><span class="pre">samtools</span> <span class="pre">merge</span></code> reports header incompatibilities, verify that all samples were aligned against the same genome assembly.</p>
+</section>
+<hr class="docutils" />
+<section id="bigwig-generation-fails">
+<h2>BigWig generation fails<a class="headerlink" href="#bigwig-generation-fails" title="Link to this heading"></a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">bamCoverage</span></code> requires:</p>
+<ul class="simple">
+<li><p>an indexed BAM file,</p></li>
+<li><p>a coordinate-sorted BAM,</p></li>
+<li><p>sufficient disk space.</p></li>
+</ul>
+<p>If stranded BigWigs are requested, ensure that the stranded BAM generation step completed successfully.</p>
+</section>
+<hr class="docutils" />
+<section id="cram-conversion-fails">
+<h2>CRAM conversion fails<a class="headerlink" href="#cram-conversion-fails" title="Link to this heading"></a></h2>
+<p>CRAM conversion requires access to the reference genome used during alignment.</p>
+<p>If CRAM creation fails, verify that:</p>
+<ul class="simple">
+<li><p>the reference FASTA exists,</p></li>
+<li><p>the FASTA index (<code class="docutils literal notranslate"><span class="pre">.fai</span></code>) is available,</p></li>
+<li><p>the BAM header matches the reference.</p></li>
+</ul>
+</section>
+<hr class="docutils" />
+<section id="running-out-of-disk-space">
+<h2>Running out of disk space<a class="headerlink" href="#running-out-of-disk-space" title="Link to this heading"></a></h2>
+<p>Alignment files can be large.</p>
+<p>Consider:</p>
+<ul class="simple">
+<li><p>enabling FASTQ deletion after alignment,</p></li>
+<li><p>storing the Nextflow work directory on a filesystem with sufficient capacity,</p></li>
+<li><p>periodically cleaning the work directory after successful runs.</p></li>
+</ul>
+</section>
+<hr class="docutils" />
+<section id="filesystem-latency">
+<h2>Filesystem latency<a class="headerlink" href="#filesystem-latency" title="Link to this heading"></a></h2>
+<p>On networked filesystems (e.g. Lustre, GPFS, NFS), recently created files may not be immediately visible.</p>
+<p>Increase the value of:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>--files_latency
+</pre></div>
+</div>
+<p>if you observe intermittent “file not found” errors.</p>
+</section>
+<hr class="docutils" />
+<section id="resuming-failed-runs">
+<h2>Resuming failed runs<a class="headerlink" href="#resuming-failed-runs" title="Link to this heading"></a></h2>
+<p>After fixing the underlying issue, rerun the workflow using:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>nextflow<span class="w"> </span>run<span class="w"> </span>main.nf<span class="w"> </span>-resume
+</pre></div>
+</div>
+<p>Nextflow will reuse completed processes and execute only the missing or failed steps.</p>
+</section>
+<hr class="docutils" />
+<section id="inspecting-logs">
+<h2>Inspecting logs<a class="headerlink" href="#inspecting-logs" title="Link to this heading"></a></h2>
+<p>Useful files include:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">.nextflow.log</span></code> — overall workflow log.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">work/&lt;hash&gt;/.command.log</span></code> — process stdout/stderr.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">work/&lt;hash&gt;/.command.err</span></code> — process errors.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">work/&lt;hash&gt;/.command.sh</span></code> — executed script.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">work/&lt;hash&gt;/.exitcode</span></code> — process exit status.</p></li>
+</ul>
+<p>These files are usually sufficient to diagnose most failures.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Ensembl.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

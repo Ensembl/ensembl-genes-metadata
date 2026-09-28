@@ -1,0 +1,46 @@
+# BAM2BIGWIG
+
+BAM2BIGWIG
+Convert a BAM file to BigWig format using bamCoverage.
+Input:
+- meta: metadata map containing taxon_id, platform, tissue, etc.
+- bam_file1: BAM file to convert (forward strand)
+- bam_file2: BAM file to convert (reverse strand, optional)
+Output:
+- BigWig files for forward and reverse strands
+The process uses bamCoverage to generate BigWig files from the input BAM files.
+
+## Process Details
+
+| Property | Value |
+|----------|-------|
+| Process | `BAM2BIGWIG` |
+| Label | `'bamCoverage'` |
+| Tag | `$meta.taxon_id` |
+| Publish directory | `"${meta.alignment_dir}", mode: 'copy'` |
+
+## Inputs
+
+### Nextflow interface
+
+```nextflow
+tuple val(meta), path(bams, arity: '1..2'), path(indexes, arity: '1..2')
+```
+
+## Outputs
+
+### Nextflow interface
+
+```nextflow
+tuple val(meta),path("*.bw", arity: '1..2'),emit:bigwig_output
+val(meta), emit:meta_value
+path("versions.yml"), emit: versions_file
+```
+
+## Implementation Summary
+
+- Generate software version report
+
+## Source
+
+`/home/runner/work/ensembl-genes-metadata/ensembl-genes-metadata/pipelines/short_read_alignment/modules/bam2bigWig.nf`
