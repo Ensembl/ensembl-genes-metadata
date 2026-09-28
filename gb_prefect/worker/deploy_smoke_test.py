@@ -11,6 +11,7 @@ end to end against a real Slurm job.
 """
 
 import argparse
+from pathlib import Path
 
 from gb_prefect.worker.smoke_test_flow import slurm_cli_smoke_test_flow
 
@@ -33,7 +34,15 @@ if __name__ == "__main__":
     parser.add_argument("--partition", default=None, help="Slurm partition, optional.")
     args = parser.parse_args()
 
-    slurm_cli_smoke_test_flow.deploy(
+    # `.deploy()` needs to know how to fetch the flow's code at run time. With no
+    # Docker image, that means a storage source -- `from_source()` with a local
+    # directory records a "run from this path" pull step (no image, no git clone),
+    # which only works because this path is on storage shared between the submitter
+    # VM and the compute nodes (e.g. the /hps mount).
+    slurm_cli_smoke_test_flow.from_source(
+        source=str(Path(__file__).parent),
+        entrypoint="smoke_test_flow.py:slurm_cli_smoke_test_flow",
+    ).deploy(
         name="slurm-cli-smoke-test",
         work_pool_name=args.pool,
         job_variables={
