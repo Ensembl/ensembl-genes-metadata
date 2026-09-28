@@ -107,13 +107,6 @@ workflow SHORT_READ_ALIGNMENT {
     def bamForDownstream
     def data 
 
-    def merge_bam_per_tissue_version
-    def check_bam_merged_version
-    def index_bam_merged_version
-    def bam2strand_version
-    def bam2bigWig_version
-    def bam2cram_version
-    def indexCram_version
     data = channel.fromPath(csvFile, type: 'file', checkIfExists: true)
                 .splitCsv(sep:',', header:true)
                 .filter { row -> row.get('taxon_id') && row.get('run_accession') && row.get('pair1') }
@@ -235,7 +228,6 @@ workflow SHORT_READ_ALIGNMENT {
         bamForDownstream = output2process.flatten()
         reportInput = reportInput.mix(
             bamForDownstream.map { meta, _bam -> meta })
-        //reportInput=reportInput.mix(bamForDownstream.meta_value)
     }
 
     if (params.stranded){
@@ -281,31 +273,7 @@ workflow SHORT_READ_ALIGNMENT {
 
     WRITE_REPORT(input_set)
     ch_versions_file  = ch_versions_file.mix(WRITE_REPORT.out.versions_file)
-/*
-    ch_all_versions = channel.empty()
-        .mix(fetch_genome_version)
-        .mix(download_fastqs_version)
-        .mix(star_index_params_version)
-        .mix(star_index_genome_version)
-        .mix(star_version)
-        .mix(check_bam_version)
-        .mix(delete_fastqs_version)
-        .mix(minimap_index_version)
-        .mix(minimap2_version)
-        .mix(check_bam_minimap_version)
-        .mix(delete_fastqs_minimap_version)
-        .mix(sam2bam_version)
-        .mix(minimap_index_bam_version)
-        .mix(merge_bam_per_tissue_version)
-        .mix(check_bam_merged_version)
-        .mix(index_bam_merged_version)
-        .mix(bam2strand_version)
-        .mix(bam2bigWig_version)
-        .mix(bam2cram_version)
-        .mix(indexCram_version)
-        .mix(star_index_bam_version)
-        .mix(write_report_version)
-        */
+
     // Merge into single file and publish
     COLLECT_SOFTWARE_VERSIONS(ch_versions_file.collect())
 
