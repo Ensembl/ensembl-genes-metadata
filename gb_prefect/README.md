@@ -17,6 +17,7 @@ Each flow can be run two ways:
 - [Flows](#flows)
 - [Common Behavior](#common-behavior)
 - [Outputs](#outputs)
+- [`slurm-cli` Worker](#slurm-cli-worker)
 
 ---
 
@@ -53,7 +54,8 @@ This installs `gb_prefect` as part of the `ensembl-genes-metadata` package (see 
 
 | Flow | Module | Runs | Purpose |
 |------|--------|------|---------|
-| `gb_registry_flow` | [flows/gb_registry.py](flows/gb_registry.py) | [pipelines/assembly_metadata](../pipelines/assembly_metadata) | Register new assemblies released on a given date |
+| `gb_registry_flow` | [flows/gb_registry.py](flows/gb_registry.py) | [pipelines/assembly_metadata](../pipelines/assembly_metadata) | Register new assemblies released after a given date (default: 60 days ago) |
+| `gb_registry_by_gca_flow` | [flows/gb_registry_by_gca.py](flows/gb_registry_by_gca.py) | [pipelines/assembly_metadata](../pipelines/assembly_metadata) | Register the GCA accessions listed in a file |
 | `gb_registry_update_flow` | [flows/gb_registry_update.py](flows/gb_registry_update.py) | [pipelines/assembly_metadata_update](../pipelines/assembly_metadata_update) | Check/update metadata for a list of existing GCA accessions |
 | `genome_busco_flow` | [flows/gb_busco_genome.py](flows/gb_busco_genome.py) | `ensembl-genes-nf/pipelines/statistics` | Run BUSCO genome statistics for a single CSV file |
 | `genome_busco_master_flow` | [flows/gb_busco_genome_single_bulk.py](flows/gb_busco_genome_single_bulk.py) | `ensembl-genes-nf/pipelines/statistics` | Split a CSV into one row per file and run `genome_busco_flow`'s task in parallel for each |
@@ -61,22 +63,42 @@ This installs `gb_prefect` as part of the `ensembl-genes-metadata` package (see 
 
 ### `gb_registry_flow`
 
+Screens NCBI for assemblies released after a date (default: 60 days before today) and registers the ones missing from the metadata DB.
+
 ```bash
 python gb_prefect/flows/gb_registry.py \
-    --date 01-15-2026 \
     --outdir /path/to/output \
     --enscode $ENSCODE \
     --asm_venv /path/to/venv \
+    [--date 2026-01-15] \
+    [--metadata-params-string '{...}'] \
     [--dry-run]
 ```
 
 | Argument | Required | Description |
 |----------|----------|-------------|
-| `--date` | Yes | Date to register assemblies for. Format: `MM-DD-YYYY` |
-| `--outdir` | Yes | Base output directory (a `<date>` subdirectory is created under it) |
+| `--outdir` | Yes | Base output directory (an `asm_registry_<today's date>` subdirectory is created under it) |
 | `--enscode` | Yes | Path to the `ENSCODE` directory |
 | `--asm_venv` | Yes | Path to the virtual environment used to run the Nextflow pipeline |
+| `--date` | No | Screen for assemblies released after this date. Format: `YYYY-MM-DD` (converted to the pipeline's `MM/DD/YYYY`). Defaults to 60 days before today |
+| `--metadata-params-string` | No | JSON string with metadata DB connection parameters. If omitted, loaded from the `gb-metadata-db-params` Prefect Secret block |
 | `--dry-run` | No | Build the sbatch script and log it, but don't submit the job |
+
+### `gb_registry_by_gca_flow`
+
+Registers the GCA accessions listed in a file (`--add_gca` mode), without screening NCBI.
+
+```bash
+python gb_prefect/flows/gb_registry_by_gca.py \
+    --gca-list /path/to/gcas.txt \
+    --outdir /path/to/output \
+    --enscode $ENSCODE \
+    --asm_venv /path/to/venv \
+    [--metadata-params-string '{...}'] \
+    [--dry-run]
+```
+
+Output goes to an `asm_registry_gca_<YYYY-MM-DD>` subdirectory; the other arguments are as for `gb_registry_flow`.
 
 ### `gb_registry_update_flow`
 
@@ -86,7 +108,7 @@ python gb_prefect/flows/gb_registry_update.py \
     --outdir /path/to/output \
     --asm_venv /path/to/venv \
     --enscode $ENSCODE \
-    [--date YYYY-MM-DD] \
+    [--folder-name my_run] \
     [--slack-report] \
     [--dry-run]
 ```
@@ -94,10 +116,10 @@ python gb_prefect/flows/gb_registry_update.py \
 | Argument | Required | Description |
 |----------|----------|-------------|
 | `--gca-list` | Yes | Path to a file listing the GCA accessions to check/update |
-| `--outdir` | Yes | Base output directory (an `asm_update_<date>` subdirectory is created under it) |
+| `--outdir` | Yes | Base output directory (output goes to a `--folder-name` subdirectory under it) |
 | `--asm_venv` | Yes | Path to the virtual environment used to run the Nextflow pipeline |
 | `--enscode` | Yes | Path to the `ENSCODE` directory |
-| `--date` | No | Defaults to today (`YYYY-MM-DD`) if not set |
+| `--folder-name` | No | Output folder name under `--outdir`. Defaults to `asm_update_<today>` |
 | `--slack-report` | No | Enables Slack reporting in the underlying pipeline |
 | `--dry-run` | No | Build the sbatch script and log it, but don't submit the job |
 
@@ -170,3 +192,39 @@ Return values differ slightly by task:
 - `register_assemblies` / `update_assemblies` return a Prefect `Completed`/`Failed` state wrapping a result dict (`returncode`, `command`, `command_file`, `log_file`, `slurm_job_id`, `pipeline_run_date`, `pipeline_ran`, `dry_run`).
 - `run_nextflow_busco` returns the same kind of result dict directly, without wrapping it in a Prefect state.
 - `is_reference` returns the output CSV path as a string on success, or raises `RuntimeError` on failure.
+
+---
+
+## `slurm-cli` Worker
+
+`gb_prefect.worker.SlurmCliWorker` is a custom Prefect worker type (`type: slurm-cli`) that submits an entire flow run as a single Slurm job via the `sbatch` CLI. It's registered under `[project.entry-points."prefect.collections"]` in [pyproject.toml](../pyproject.toml), so once the package is installed it's available to `prefect work-pool create` / `prefect worker start` like any built-in worker type.
+
+As with any Prefect worker, the **whole flow run** — including any task that shells out to Nextflow — executes inside one Slurm job; tasks are not separate Slurm jobs.
+
+### Job configuration fields
+
+| Field | Description |
+|---|---|
+| `cpu` | CPU count (`--cpus-per-task`) |
+| `memory` | Memory in GB (`--mem`) |
+| `partition` | Slurm partition (`--partition`), optional |
+| `account` | Slurm account (`--account`), optional |
+| `qos` | Slurm QOS (`--qos`), optional |
+| `time_limit` | Wall time in hours (`--time`) |
+| `working_dir` | Directory the job runs from; also where the generated sbatch script and `slurm_%j.out`/`.err` files are written |
+| `setup_commands` | Shell commands run before the flow-run command, e.g. `module load nextflow/24.10.3`, `source ~/asm_venv/bin/activate` |
+
+**Important**: the environment produced by `setup_commands` must have this package (`gb_prefect`) and `prefect` importable — the flow run's own Python process executes inside the submitted Slurm job, not just any Nextflow subprocess it launches.
+
+### Example: creating a pool
+
+```bash
+prefect work-pool create codon-slurm-busco-pool --type slurm-cli
+prefect work-pool update codon-slurm-busco-pool --concurrency-limit 10
+```
+
+Job configuration values (`cpu`, `memory`, `setup_commands`, etc.) are then set on the pool's base job template or overridden per-deployment, the same as any other Prefect worker type.
+
+### Current scope
+
+This is an initial implementation. `sbatch` submission is retried with backoff (`GB_PREFECT_WORKER_MAX_ATTEMPTS`, default 3, plus `GB_PREFECT_WORKER_RETRY_MIN_DELAY_SECONDS`/`..._JITTER_SECONDS` env vars) for transient `slurmctld` errors.

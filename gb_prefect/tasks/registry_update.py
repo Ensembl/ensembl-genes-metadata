@@ -8,6 +8,7 @@ from prefect.states import Failed, Completed  # type: ignore
 
 from gb_prefect.models.pipeline_options import PipelineCredentials, TaskRunOptions
 from gb_prefect.utils.artifact_utils import create_registry_run_artifact
+from gb_prefect.utils.credentials_utils import redact_credentials
 from gb_prefect.utils.enscode_utils import resolve_enscode
 from gb_prefect.utils.logging_utils import append_log
 from gb_prefect.utils.shell_utils import run_cmd_bash_capture
@@ -66,9 +67,12 @@ run {enscode}/ensembl-genes-metadata/pipelines/assembly_metadata_update/main.nf 
     -with-dag {outdir}/assembly_update_dag_{date}.png
 """
 
-    append_log(log, f"[{datetime.now()}] INFO: sbatch script:\n{sbatch_script}\n")
+    # The command file holds the real credentials so it is owner-only; everything that is
+    # logged, returned or published as an artifact gets the redacted copy.
+    redacted_script = redact_credentials(sbatch_script, credentials)
+    append_log(log, f"[{datetime.now()}] INFO: sbatch script:\n{redacted_script}\n")
     command_file.write_text(sbatch_script)
-    command_file.chmod(0o755)
+    command_file.chmod(0o700)
 
     rc, job_id = _submit_and_collect(command_file, outdir_path, log, run_options.dry_run)
 
@@ -79,15 +83,15 @@ run {enscode}/ensembl-genes-metadata/pipelines/assembly_metadata_update/main.nf 
             date=date,
             outdir=outdir,
             command_file=str(command_file),
-            cmd=sbatch_script,
-            log_text=log.read_text(),
+            cmd=redacted_script,
+            log_text=redact_credentials(log.read_text(), credentials),
             rc=rc,
             dry_run=run_options.dry_run,
         )
 
     result = {
         "returncode": rc,
-        "command": sbatch_script,
+        "command": redacted_script,
         "command_file": str(command_file),
         "log_file": str(log),
         "slurm_job_id": job_id if not run_options.dry_run else None,
@@ -158,9 +162,12 @@ run {enscode}/ensembl-genes-metadata/pipelines/assembly_metadata_update/main.nf 
     -with-dag {outdir}/assembly_update_dag_{screen_date}.png
 """
 
-    append_log(log, f"[{datetime.now()}] INFO: sbatch script:\n{sbatch_script}\n")
+    # The command file holds the real credentials so it is owner-only; everything that is
+    # logged, returned or published as an artifact gets the redacted copy.
+    redacted_script = redact_credentials(sbatch_script, credentials)
+    append_log(log, f"[{datetime.now()}] INFO: sbatch script:\n{redacted_script}\n")
     command_file.write_text(sbatch_script)
-    command_file.chmod(0o755)
+    command_file.chmod(0o700)
 
     rc, job_id = _submit_and_collect(command_file, outdir_path, log, run_options.dry_run)
 
@@ -171,15 +178,15 @@ run {enscode}/ensembl-genes-metadata/pipelines/assembly_metadata_update/main.nf 
             date=screen_date,
             outdir=outdir,
             command_file=str(command_file),
-            cmd=sbatch_script,
-            log_text=log.read_text(),
+            cmd=redacted_script,
+            log_text=redact_credentials(log.read_text(), credentials),
             rc=rc,
             dry_run=run_options.dry_run,
         )
 
     result = {
         "returncode": rc,
-        "command": sbatch_script,
+        "command": redacted_script,
         "command_file": str(command_file),
         "log_file": str(log),
         "slurm_job_id": job_id if not run_options.dry_run else None,
