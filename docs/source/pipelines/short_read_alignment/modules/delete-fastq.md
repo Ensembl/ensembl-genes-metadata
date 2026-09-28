@@ -18,9 +18,6 @@ successfully and the BAM file has been generated.
 ### Nextflow interface
 
 ```nextflow
-//tuple val(taxon_id), val(genomeDir),  val(tissue),  path(aligned_file)
-//tuple val(taxon_id), val(genomeDir), val(tissue),val(platform),  val(output_dir), path(aligned_file)
-//tuple val(taxon_id), val(genomeDir), val(tissue), val(platform), val(run_accession), path(aligned_file)
 tuple val(meta), path(aligned_file)
 ```
 
@@ -29,8 +26,6 @@ tuple val(meta), path(aligned_file)
 ### Nextflow interface
 
 ```nextflow
-//tuple val(taxon_id), val(genomeDir), val(tissue), val(platform), val(run_accession), path(aligned_file)
-//tuple val(taxon_id), val(genomeDir), val(tissue), val(platform), val(output_dir), path(aligned_file)
 tuple val(meta), path(aligned_file) , emit:aligned_output
 path "versions.yml", emit: versions_file
 ```

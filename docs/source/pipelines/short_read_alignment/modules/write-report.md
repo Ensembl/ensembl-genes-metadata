@@ -1,4 +1,4 @@
-# DOWNLOAD_FASTQS
+# WRITE_REPORT
 
 DOWNLOAD_FASTQS
 Download FASTQ files from ENA using the download_fastq.py script.
@@ -13,11 +13,9 @@ The module checks if the FASTQ files already exist before downloading to avoid r
 
 | Property | Value |
 |----------|-------|
-| Process | `DOWNLOAD_FASTQS` |
+| Process | `WRITE_REPORT` |
 | Label | `python` |
-| Tag | `$meta.taxon_id:$meta.run_accession` |
-| maxForks | `25` |
-| storeDir | `"${params.cacheDir}/${meta.taxon_id}/${meta.run_accession}"` |
+| Tag | `${meta.taxon_id}` |
 
 ## Inputs
 
@@ -32,7 +30,6 @@ val(meta)
 ### Nextflow interface
 
 ```nextflow
-tuple val(meta), path("${meta.run_accession}_*.fastq.gz", arity: '1..2'), emit: fastq_file_output
 path "versions.yml", emit: versions_file
 ```
 
@@ -42,4 +39,4 @@ path "versions.yml", emit: versions_file
 
 ## Source
 
-`/Users/ftricomi/Downloads/ensembl-genes-metadata/pipelines/short_read_alignment/modules/download_fastqs.nf`
+`/Users/ftricomi/Downloads/ensembl-genes-metadata/pipelines/short_read_alignment/modules/write_report.nf`

@@ -17,7 +17,7 @@ If the BAM file is valid, it is passed to the next step; otherwise, an error is 
 |----------|-------|
 | Process | `CHECK_BAM` |
 | Label | `samtools` |
-| Tag | `${meta.tissue}` |
+| Tag | `${meta.taxon_id}` |
 
 ## Inputs
 
@@ -32,7 +32,7 @@ tuple val(meta), path(bamFile)
 ### Nextflow interface
 
 ```nextflow
-tuple val(meta), path("${meta.tissue}.bam"), emit: good_bam
+tuple val(meta), path(bamFile), emit: good_bam
 path "versions.yml", emit: versions_file
 ```
 

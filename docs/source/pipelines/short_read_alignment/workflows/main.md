@@ -51,23 +51,26 @@ MAIN WORKFLOW
 
 ## Overview
 
-This workflow invokes **2** modules.
+This workflow invokes **3** modules.
 
 ## Modules
 
 | Order | Module |
 |------:|--------|
-| 1 | `BAM2BIGWIG` |
-| 2 | `INDEX_CRAM` |
+| 1 | `WRITE_REPORT` |
+| 2 | `COLLECT_SOFTWARE_VERSIONS` |
+| 3 | `SHORT_READ_ALIGNMENT` |
 
 ## Workflow Diagram
 
 ```mermaid
 flowchart TD
 
-    BAM2BIGWIG[BAM2BIGWIG]
-    INDEX_CRAM[INDEX_CRAM]
-    BAM2BIGWIG --> INDEX_CRAM
+    WRITE_REPORT[WRITE_REPORT]
+    COLLECT_SOFTWARE_VERSIONS[COLLECT_SOFTWARE_VERSIONS]
+    WRITE_REPORT --> COLLECT_SOFTWARE_VERSIONS
+    SHORT_READ_ALIGNMENT[SHORT_READ_ALIGNMENT]
+    COLLECT_SOFTWARE_VERSIONS --> SHORT_READ_ALIGNMENT
 ```
 
 ## Source

@@ -20,15 +20,13 @@ and validates the merged BAM before indexing.
 | Label | `samtools` |
 | Tag | `${meta.tissue}` |
 | maxForks | `2` |
-| storeDir | `"${params.outDir}/$meta.taxon_id/$meta.platform/$meta.tissue/alignment"` |
+| storeDir | `"${meta.alignment_dir}"` |
 
 ## Inputs
 
 ### Nextflow interface
 
 ```nextflow
-//tuple val(taxon_id), val(genomeDir), val(gca), val(platform), val(paired), val(tissue), val(run_accession), path(aligned_file)
-//tuple val(taxon_id), val(genomeDir), val(tissue), val(platform), path(bamFiles)
 tuple val(meta), path(bamFiles)
 ```
 
@@ -37,9 +35,7 @@ tuple val(meta), path(bamFiles)
 ### Nextflow interface
 
 ```nextflow
-//tuple val(taxon_id), val(genomeDir), val(tissue), val(platform), \
-//val("${params.outDir}/$taxon_id/$platform/$tissue/alignment"),path("${tissue}.bam")
-tuple val(meta), val("${params.outDir}/${meta.taxon_id}/${meta.platform}/${meta.tissue}/alignment"), path("${meta.tissue}.bam"), emit: merged_bam
+tuple val(meta), path("${meta.tissue}.bam"), emit: merged_bam
 path "versions.yml", emit: versions_file
 ```
 

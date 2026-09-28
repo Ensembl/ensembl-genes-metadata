@@ -1,5 +1,15 @@
 # STAR_INDEX_GENOME
 
+STAR_INDEX_GENOME
+Generate STAR genome index for RNA-seq alignment.
+Input:
+- meta: metadata map containing taxon_id, gca, fasta_file, etc.
+- statsJson: path to the JSON file containing genome statistics
+Output:
+- Genome index directory
+- Software versions
+The module uses STAR to generate the genome index and creates a symbolic link to the output index directory.
+
 ## Process Details
 
 | Property | Value |
@@ -7,7 +17,7 @@
 | Process | `STAR_INDEX_GENOME` |
 | Label | `'star'` |
 | Tag | `${meta.taxon_id}:${meta.gca}` |
-| Publish directory | `"${meta.fasta_file.parent}", mode: 'copy'` |
+| Publish directory | `"${meta.genome_dir}", mode: 'copy'` |
 | maxForks | `1` |
 
 ## Inputs
@@ -15,7 +25,6 @@
 ### Nextflow interface
 
 ```nextflow
-//tuple val(taxon_id), val(genomeDir), val(gca), val(platform), val(paired), val(tissue), val(run_accession), val(pair1), val(pair2)
 tuple val(meta),path(statsJson)
 ```
 
@@ -24,10 +33,8 @@ tuple val(meta),path(statsJson)
 ### Nextflow interface
 
 ```nextflow
-//tuple val(taxon_id), val(genomeDir), val(platform),  val(tissue), val(run_accession), val(pair1), val(pair2)
-tuple val(meta), path("${meta.fasta_file.parent}/Genome"), emit: genome_index_output
+val(meta), emit: genome_index_output
 path "versions.yml", emit: versions_file
-when: meta.platform?.toString()?.toLowerCase() == 'illumina'
 ```
 
 ## Implementation Summary

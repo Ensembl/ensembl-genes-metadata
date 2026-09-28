@@ -12,7 +12,7 @@ The fetched genome file is saved with the name "genome.fna".
 | Process | `FETCH_GENOME` |
 | Label | `'fetch_file'` |
 | Tag | `${meta.gca}:genome` |
-| storeDir | `"${params.outDir}/${meta.taxon_id}/${meta.gca}"` |
+| storeDir | `"${meta.output_dir}/${meta.taxon_id}/${meta.gca}"` |
 | maxForks | `1` |
 
 ## Inputs
@@ -21,7 +21,6 @@ The fetched genome file is saved with the name "genome.fna".
 
 ```nextflow
 val meta
-//tuple val(taxon_id), val(gca), val(platform), val(paired), val(tissue), val(run_accession), val(url1), val(md5_1), val(url2),  val(md5_2)
 ```
 
 ## Outputs
@@ -31,7 +30,6 @@ val meta
 ```nextflow
 tuple val(meta), path("*.fna"), emit: fasta_file_output
 path "versions.yml", emit: versions_file
-//tuple val(taxon_id), val(gca), val(platform), val(paired), val(tissue), val(run_accession), val("${params.outDir}/$taxon_id/$gca/"), val(url1), val(md5_1), val(url2), val(md5_2)
 ```
 
 ## Implementation Summary

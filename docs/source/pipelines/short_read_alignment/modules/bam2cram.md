@@ -1,5 +1,15 @@
 # BAM2CRAM
 
+BAM2CRAM
+Convert aligned BAM files to CRAM format using samtools.
+Input:
+- meta: metadata map containing taxon_id, genomeDir, tissue, platform, alignment_dir, etc.
+- aligned_file: path to the input BAM file
+Output:
+- CRAM file (.cram)
+- Software versions
+The module uses samtools view to convert BAM to CRAM format and creates a symbolic link to the output CRAM file.
+
 ## Process Details
 
 | Property | Value |
@@ -7,14 +17,13 @@
 | Process | `BAM2CRAM` |
 | Label | `'samtools'` |
 | Tag | `$aligned_file` |
-| Publish directory | `"${meta.output_dir}", mode: "copy"` |
+| Publish directory | `"${meta.alignment_dir}", mode: "copy"` |
 
 ## Inputs
 
 ### Nextflow interface
 
 ```nextflow
-//tuple val(taxon_id), val(genomeDir), val(tissue), val(platform), val(output_dir), path(aligned_file)
 tuple val(meta), path(aligned_file)
 ```
 
@@ -24,7 +33,7 @@ tuple val(meta), path(aligned_file)
 
 ```nextflow
 tuple val(meta), path("*.cram"), emit:cram_output
-val("versions.yml"), emit: versions_file
+path("versions.yml"), emit: versions_file
 ```
 
 ## Implementation Summary
