@@ -42,12 +42,17 @@ def run_nextflow_busco_gca(
     csv_file = write_single_gca_csv(gca, taxon_id, outdir, busco_dataset)
     append_log(log, f"[{datetime.now()}] INFO: Wrote single-row CSV to {csv_file}.\n")
 
+    dataset_flag = f"--buscoDataset {busco_dataset}" if busco_dataset else ""
+
     nextflow_command = f"""#!/bin/bash
 cd {outdir}
+export ENSCODE={enscode}
 nextflow run {enscode}/ensembl-genes-nf/pipelines/statistics/main.nf \
     --csvFile {csv_file} \
     --run_busco_ncbi \
-    --outdir {outdir}
+    --outdir {outdir} \
+    --enscode {enscode} \
+    {dataset_flag}
 """
     append_log(log, f"[{datetime.now()}] INFO: Nextflow command:\n{nextflow_command}\n")
     command_file.write_text(nextflow_command)
