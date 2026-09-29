@@ -42,7 +42,7 @@ const changelogs = [
   },
     {
     version: "2.0.1",
-    date: "2026-08-13",
+    date: "2026-09-29",
     title: "Minor backend update",
     description:
       "This update adds a backed endpoint to access the ENA RNAseq cache maintained by the app on the VM",
