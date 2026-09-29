@@ -42,6 +42,7 @@ def run_nextflow_busco_gca(
     append_log(log, f"[{datetime.now()}] INFO: Wrote single-row CSV to {csv_file}.\n")
 
     nextflow_command = f"""#!/bin/bash
+cd {outdir}
 nextflow run {enscode}/ensembl-genes-nf/pipelines/statistics/main.nf \
     --csvFile {csv_file} \
     --run_busco_ncbi \
