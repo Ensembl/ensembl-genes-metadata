@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Optional
 
 from prefect import task  # type: ignore
+from prefect.states import Failed, Completed  # type: ignore
 
 from gb_prefect.utils.artifact_utils import create_busco_run_artifact
 from gb_prefect.utils.enscode_utils import resolve_enscode
@@ -76,7 +77,7 @@ nextflow run {enscode}/ensembl-genes-nf/pipelines/statistics/main.nf \
             dry_run=dry_run,
         )
 
-    return {
+    result_data = {
         "returncode": rc,
         "command": nextflow_command,
         "command_file": str(command_file),
@@ -86,3 +87,10 @@ nextflow run {enscode}/ensembl-genes-nf/pipelines/statistics/main.nf \
         "pipeline_ran": not dry_run,
         "dry_run": dry_run,
     }
+
+    if rc != 0:
+        return Failed(
+            message=f"Nextflow BUSCO pipeline failed for {gca} with return code {rc}",
+            data=result_data,
+        )
+    return Completed(data=result_data)
