@@ -4,12 +4,16 @@ import logging
 import pandas as pd
 from typing import Dict, List
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 from metadata_app.backend.app.services.transcriptomics_service import (
     get_transcriptomic_assessment_for_ids,
     add_transc_data_to_df,
     get_metadata_from_registry,
+)
+from metadata_app.backend.app.services.get_transcriptomic_data_ENA_service import (
+    CACHE_FILE as ENA_CACHE_FILE,
 )
 
 # Create router for transcriptomics endpoints
@@ -18,6 +22,18 @@ transcriptomics = APIRouter(tags=["transcriptomics"], responses={404: {"descript
 
 class TranscriptomicRegistryRequest(BaseModel):
     taxon_ids: List[int]
+
+
+@transcriptomics.get("/ena-cache", summary="Download the ENA RNA-seq cache")
+def download_ena_cache():
+    if not ENA_CACHE_FILE.is_file():
+        raise HTTPException(status_code=404, detail="ENA cache file not found")
+
+    return FileResponse(
+        ENA_CACHE_FILE,
+        media_type="application/json",
+        filename=ENA_CACHE_FILE.name,
+    )
 
 
 @transcriptomics.post("/assessment")
