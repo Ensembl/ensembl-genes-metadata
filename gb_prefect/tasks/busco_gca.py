@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import Optional
 
 from prefect import task  # type: ignore
-from prefect.states import Failed, Completed  # type: ignore
+from prefect.states import Completed  # type: ignore
 
 from gb_prefect.utils.artifact_utils import create_busco_run_artifact
 from gb_prefect.utils.enscode_utils import resolve_enscode
@@ -94,8 +94,14 @@ nextflow run {enscode}/ensembl-genes-nf/pipelines/statistics/main.nf \
     }
 
     if rc != 0:
-        return Failed(
-            message=f"Nextflow BUSCO pipeline failed for {gca} with return code {rc}",
-            data=result_data,
+        # Raise rather than `return Failed(data=result_data)`: busco_gca_flow just returns
+        # this task's result directly, and a flow propagating a Failed state whose data is a
+        # plain dict (not an exception) crashes the engine with "dict cannot be resolved into
+        # an exception" during result resolution -- confirmed independent of anything BUSCO-
+        # specific. Raising a real exception avoids that; result_data is still fully captured
+        # in the log file and the artifact above.
+        raise RuntimeError(
+            f"Nextflow BUSCO pipeline failed for {gca} with return code {rc}. "
+            f"See log: {result_data['log']}"
         )
     return Completed(data=result_data)
