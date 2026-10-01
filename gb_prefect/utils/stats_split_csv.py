@@ -19,6 +19,12 @@ def write_single_gca_csv(
     return str(csv_path)
 
 
+def read_gca_csv(csv_file: str) -> list[dict[str, str]]:
+    """Read a `gca,taxon_id,busco_dataset` CSV into a list of row dicts."""
+    with open(csv_file, newline="", encoding="utf-8") as f:
+        return list(csv.DictReader(f))
+
+
 def split_csv(csv_file: str, outdir: str) -> list[str]:
     """Split csv_file into one file per data row (keeping the header), returning the new paths."""
     src = Path(csv_file)
