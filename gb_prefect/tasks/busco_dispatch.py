@@ -2,6 +2,7 @@ from typing import Any, Dict, List
 
 from prefect import task  # type: ignore
 from prefect.deployments import run_deployment  # type: ignore
+from prefect.runtime import flow_run  # type: ignore
 
 from gb_metadata.update_busco_events import get_busco_status
 
@@ -35,6 +36,12 @@ def dispatch_rows(
         if dry_run:
             print(f"[dry run] Would trigger {deployment_name} for {gca}")
         else:
+            # Scoped to this dispatch run, not the bare gca -- an unscoped key would dedupe
+            # against ANY past run for this gca forever (including from a previous dispatch,
+            # hours or days ago), silently returning the old run instead of creating a new
+            # one, with no error. Scoping to flow_run.id still protects against the same row
+            # being double-triggered within this one dispatch run, without blocking a later,
+            # separate dispatch from ever re-triggering the same gca again.
             run_deployment(
                 name=deployment_name,
                 parameters={
@@ -43,7 +50,7 @@ def dispatch_rows(
                     "busco_dataset": row.get("busco_dataset") or None,
                 },
                 timeout=0,
-                idempotency_key=gca,
+                idempotency_key=f"{flow_run.id}-{gca}",
             )
             print(f"Triggered {deployment_name} for {gca}")
 
