@@ -159,6 +159,18 @@ def insert_busco_candidates(db_params: Dict[str, Any], execute: bool) -> Dict[st
     return tier_counts
 
 
+def get_taxon_id(gca: str, db_params: Dict[str, Any]) -> Optional[int]:
+    """Return the lowest_taxon_id for gca, or None if it's not in the metadata DB."""
+    query = f"""
+    SELECT lowest_taxon_id FROM assembly
+    WHERE CONCAT(gca_chain, '.', gca_version) = '{gca}';
+    """
+    rows = execute_query(query, db_params)
+    if not rows:
+        return None
+    return rows[0][0]
+
+
 def get_busco_status(gca: str, db_params: Dict[str, Any]) -> Optional[str]:
     """Return the current genome_busco.status for gca, or None if it has no event yet."""
     query = f"""
