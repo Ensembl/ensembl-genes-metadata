@@ -40,7 +40,7 @@ Usage
 import argparse
 import json
 import logging
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from gb_metadata.db_utils import execute_query, execute_write
 from gb_metadata.utils import connection_api
@@ -157,6 +157,21 @@ def insert_busco_candidates(db_params: Dict[str, Any], execute: bool) -> Dict[st
         insert_busco_event(assembly_id, "pending", priority, db_params, execute)
 
     return tier_counts
+
+
+def get_busco_status(gca: str, db_params: Dict[str, Any]) -> Optional[str]:
+    """Return the current genome_busco.status for gca, or None if it has no event yet."""
+    query = f"""
+    SELECT ae.status
+    FROM assembly asm
+    JOIN assembly_events ae ON ae.assembly_id = asm.assembly_id
+    WHERE CONCAT(asm.gca_chain, '.', asm.gca_version) = '{gca}'
+    AND ae.event = '{STATUS_EVENT}';
+    """
+    rows = execute_query(query, db_params)
+    if not rows:
+        return None
+    return rows[0][0]
 
 
 def parse_args() -> argparse.Namespace:
