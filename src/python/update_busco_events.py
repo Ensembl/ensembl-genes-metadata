@@ -25,20 +25,16 @@ Two independent passes:
    metrics_name='assembly.busco') but no assembly_events row yet are marked
    genome_busco.status=done, genome_busco.priority=high.
 2. insert_busco_candidates: assemblies with no assembly_events row yet that are current,
-   haploid, chromosome/complete-genome level, have a genus-level taxon and a
-   total_sequence_length metric are marked genome_busco.status=pending, with
+   haploid and chromosome/complete-genome level are marked genome_busco.status=pending, with
    genome_busco.priority set from a tier based on genome size and transcriptomic read
    coverage (from the ENA transcriptomics cache API): large_genome, high, medium, or low.
 
 Both passes are read-only unless --execute is passed; without it, the insert queries that
-would have run are logged but not sent to the database. Nothing is printed to stdout/stderr --
-everything (including every query and the run summary) goes to update_busco_events.log.
-
+would have run are logged but not sent to the database. 
 Usage
 -----
-
-    python update_busco_events.py --metadata-params '{"host": "...", "port": 4527,
-        "user": "...", "password": "...", "database": "gb_assembly_metadata"}' [--execute]
+    python update_busco_events.py --metadata-params '{"host": "...", "port": port,
+        "user": "...", "password": "...", "database": "..."}' [--execute]
 """
 
 import argparse
@@ -167,7 +163,7 @@ def parse_args() -> argparse.Namespace:
     """Parse command-line arguments."""
     parser = argparse.ArgumentParser(
         prog="update_busco_events.py",
-        description="Update assembly_events with BUSCO status/priority ahead of deciding what needs running.",
+        description="Update assembly_events with BUSCO status/priority.",
     )
     parser.add_argument(
         "--metadata-params",
