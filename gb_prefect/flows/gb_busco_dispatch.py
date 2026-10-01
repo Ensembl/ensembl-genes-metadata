@@ -4,14 +4,10 @@ import logging
 from typing import Optional
 
 from prefect import flow  # type: ignore
-from prefect.deployments import run_deployment  # type: ignore
 
-from gb_metadata.update_busco_events import (
-    get_busco_status,
-    insert_busco_candidates,
-    mark_existing_busco_done,
-)
+from gb_metadata.update_busco_events import insert_busco_candidates, mark_existing_busco_done
 from gb_prefect.models.pipeline_options import PipelineCredentials
+from gb_prefect.tasks.busco_dispatch import dispatch_rows
 from gb_prefect.utils.credentials_utils import (
     DEFAULT_METADATA_SECRET_BLOCK,
     DEFAULT_SLACK_SECRET_BLOCK,
@@ -45,9 +41,11 @@ def busco_dispatch_flow(  # pylint: disable=too-many-arguments,too-many-position
     deployment parameter. Pass credentials explicitly to override, e.g. for local standalone
     testing without a Prefect server/Secret block available.
 
-    This is scenario 1 of the orchestrator (explicit CSV input). Scenario 2 (bare GCA list,
-    status/taxon_id resolved here) and scenario 3 (fully automatic candidate selection) are
-    not implemented yet -- see gb_prefect README / project backlog.
+    This is scenario 1 of the orchestrator (explicit CSV input). The shared trigger logic
+    (status check, skip/force, run_deployment) lives in gb_prefect.tasks.busco_dispatch.
+    dispatch_rows, also used by scenario 2 (gb_busco_dispatch_from_list.py, bare GCA list).
+    Scenario 3 (fully automatic candidate selection) is not implemented yet -- see gb_prefect
+    README / project backlog.
     """
     # logging.basicConfig() is a no-op here: importing `prefect` already attaches a
     # PrefectConsoleHandler to the root logger, so basicConfig's "only if no handlers
@@ -72,36 +70,7 @@ def busco_dispatch_flow(  # pylint: disable=too-many-arguments,too-many-position
     rows = read_gca_csv(csv_file)
     print(f"Read {len(rows)} GCA(s) from {csv_file}")
 
-    triggered = []
-    skipped = []
-    for row in rows:
-        gca = row["gca"]
-        status = get_busco_status(gca, db_params)
-
-        if status == "done" and not force:
-            print(f"Skipping {gca}: already done (use --force to override)")
-            skipped.append(gca)
-            continue
-
-        if dry_run:
-            print(f"[dry run] Would trigger {deployment_name} for {gca}")
-        else:
-            run_deployment(
-                name=deployment_name,
-                parameters={
-                    "gca": gca,
-                    "taxon_id": row["taxon_id"],
-                    "busco_dataset": row.get("busco_dataset") or None,
-                },
-                timeout=0,
-                idempotency_key=gca,
-            )
-            print(f"Triggered {deployment_name} for {gca}")
-
-        triggered.append(gca)
-
-    print(f"Triggered: {len(triggered)}, skipped: {len(skipped)}")
-    return {"triggered": triggered, "skipped": skipped}
+    return dispatch_rows(rows, db_params, force, dry_run, deployment_name)
 
 
 if __name__ == "__main__":
