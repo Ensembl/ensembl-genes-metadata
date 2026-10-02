@@ -1,4 +1,5 @@
 import json
+import shutil
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
@@ -6,6 +7,7 @@ from typing import Optional
 from prefect import task  # type: ignore
 from prefect.states import Completed  # type: ignore
 
+from gb_metadata.update_busco_events import mark_busco_failed
 from gb_prefect.models.pipeline_options import PipelineCredentials
 from gb_prefect.utils.artifact_utils import create_busco_run_artifact
 from gb_prefect.utils.credentials_utils import (
@@ -141,3 +143,49 @@ nextflow run {enscode}/ensembl-genes-nf/pipelines/statistics/main.nf \
             f"See log: {result_data['log']}"
         )
     return Completed(data=result_data)
+
+
+# Nextflow scratch plus the DB credentials file -- removed after a failed automatic run,
+# while the logs and command script next to them are kept for debugging.
+FAILED_RUN_CLEANUP = ["work", "cache", ".nextflow", "asm_metadata_params.json"]
+
+
+@task(log_prints=True)
+def record_busco_failure(
+    gca: str,
+    credentials: Optional[PipelineCredentials] = None,
+    metadata_secret_block: str = DEFAULT_METADATA_SECRET_BLOCK,
+) -> None:
+    """Mark genome_busco.status as failed for gca after its BUSCO run failed."""
+    credentials = resolve_credentials(
+        credentials, metadata_secret_block, DEFAULT_SLACK_SECRET_BLOCK, slack_report=False
+    )
+    mark_busco_failed(gca, json.loads(credentials.metadata_params_string), execute=True)
+    print(f"Marked {gca} as failed")
+
+
+@task(log_prints=True)
+def cleanup_busco_outdir(run_outdir: str, success: bool) -> None:
+    """Clean a BUSCO_gca run directory (<outdir>/<gca>) after an automatic run.
+
+    success=True removes the whole directory -- the results are already loaded into the
+    assembly metadata DB by the pipeline's --update_registry. success=False removes only
+    FAILED_RUN_CLEANUP, keeping .nextflow.log, the flow log and the command script.
+
+    Removal errors are reported but not raised: a cleanup problem shouldn't turn a
+    successful BUSCO run into a failed one (or hide the original error of a failed one).
+    """
+    run_path = Path(run_outdir)
+    targets = [run_path] if success else [run_path / name for name in FAILED_RUN_CLEANUP]
+
+    for target in targets:
+        if not target.exists():
+            continue
+        try:
+            if target.is_dir():
+                shutil.rmtree(target)
+            else:
+                target.unlink()
+            print(f"Removed {target}")
+        except OSError as err:
+            print(f"WARNING: could not remove {target}: {err}")
