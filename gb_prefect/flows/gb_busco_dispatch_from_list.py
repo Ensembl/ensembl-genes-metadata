@@ -29,7 +29,7 @@ def busco_dispatch_from_list_flow(  # pylint: disable=too-many-arguments,too-man
     gca_file: Optional[str] = None,
     force: bool = False,
     dry_run: bool = False,
-    update_registry: bool = False,
+    update_registry: bool = True,
     deployment_name: str = BUSCO_GCA_DEPLOYMENT,
     credentials: Optional[PipelineCredentials] = None,
     metadata_secret_block: str = DEFAULT_METADATA_SECRET_BLOCK,
@@ -37,8 +37,9 @@ def busco_dispatch_from_list_flow(  # pylint: disable=too-many-arguments,too-man
     """Trigger busco_gca_flow for each GCA given directly -- gca_list and/or gca_file (one
     accession per line); values from both are combined and de-duplicated.
 
-    update_registry=False (the default) just triggers; True also marks genome_busco.status
-    as in_progress right after a successful trigger. See busco_dispatch_flow for details.
+    update_registry=True (the default) marks genome_busco.status as in_progress right after
+    a successful trigger and loads results on completion; False just triggers. See
+    busco_dispatch_flow for details.
 
     taxon_id is resolved per GCA from the metadata DB (assembly.lowest_taxon_id). A GCA not
     found in the DB at all is skipped -- not run -- since there's no taxon_id to dispatch
@@ -106,8 +107,10 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--update_registry",
-        action="store_true",
-        help="Mark genome_busco.status as in_progress right after a successful trigger.",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Mark genome_busco.status as in_progress right after a successful trigger and "
+        "load results on completion (default: on; --no-update_registry to just trigger).",
     )
     parser.add_argument(
         "--deployment-name",
