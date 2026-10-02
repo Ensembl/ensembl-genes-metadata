@@ -40,7 +40,7 @@ Usage
 import argparse
 import json
 import logging
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from gb_metadata.db_utils import execute_query, execute_write
 from gb_metadata.utils import connection_api
@@ -78,6 +78,19 @@ AND asm_level IN ('chromosome', 'Complete genome')
 AND t.taxon_class = 'genus'
 AND am.metrics_name = 'total_sequence_length'
 ;
+"""
+
+PENDING_CANDIDATES_QUERY = f"""
+SELECT CONCAT(asm.gca_chain, '.', asm.gca_version) AS gca,
+       asm.lowest_taxon_id AS taxon_id,
+       pri.status AS priority
+FROM assembly asm
+JOIN assembly_events st  ON st.assembly_id = asm.assembly_id AND st.event = '{STATUS_EVENT}'
+JOIN assembly_events pri ON pri.assembly_id = asm.assembly_id AND pri.event = '{PRIORITY_EVENT}'
+WHERE st.status = 'pending'
+AND pri.status IN ('high', 'medium', 'low')
+ORDER BY FIELD(pri.status, 'high', 'medium', 'low')
+LIMIT {{limit}};
 """
 
 
@@ -157,6 +170,38 @@ def insert_busco_candidates(db_params: Dict[str, Any], execute: bool) -> Dict[st
         insert_busco_event(assembly_id, "pending", priority, db_params, execute)
 
     return tier_counts
+
+
+def get_pending_candidates(
+    db_params: Dict[str, Any], limit: int
+) -> List[Tuple[str, int, str]]:
+    """Return up to `limit` pending candidates as (gca, taxon_id, priority), high priority
+    first. large_genome is excluded -- that tier is run manually, never selected here."""
+    if limit <= 0:
+        return []
+    return execute_query(PENDING_CANDIDATES_QUERY.format(limit=limit), db_params)
+
+
+def mark_busco_in_progress(gca: str, db_params: Dict[str, Any], execute: bool) -> None:
+    """Update genome_busco.status to in_progress for gca, when it's being dispatched.
+
+    This is a real UPDATE on the existing status row -- unlike insert_busco_event's
+    ON DUPLICATE KEY UPDATE assembly_id = assembly_id (a no-op), which would not actually
+    change an existing status value.
+    """
+    query = f"""
+    UPDATE assembly_events ae
+    JOIN assembly asm ON asm.assembly_id = ae.assembly_id
+    SET ae.status = 'in_progress'
+    WHERE CONCAT(asm.gca_chain, '.', asm.gca_version) = '{gca}'
+    AND ae.event = '{STATUS_EVENT}';
+    """
+
+    if not execute:
+        logging.info("Execution skipped for %s:\n%s", gca, query)
+        return
+
+    execute_write(query, db_params)
 
 
 def get_taxon_id(gca: str, db_params: Dict[str, Any]) -> Optional[int]:
