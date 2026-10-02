@@ -38,6 +38,10 @@ def busco_dispatch_automatic_flow(  # pylint: disable=too-many-arguments,too-man
     trigger, so the next automatic run doesn't pick it again while it's still running, and
     each triggered run gets the Nextflow pipeline's --update_registry, which marks it done.
 
+    Each triggered run also gets post_run_cleanup=True (scenario 3 only): a failed run sets
+    genome_busco.status to failed and keeps only its logs; a successful run's directory is
+    removed. See busco_gca_flow.
+
     Refreshes assembly_events first (same as scenarios 1/2). Selects up to N pending
     candidates (genome_busco.status=pending), ordered high -> medium -> low priority;
     large_genome is excluded -- that tier is run manually, never picked here. N is the
@@ -85,6 +89,7 @@ def busco_dispatch_automatic_flow(  # pylint: disable=too-many-arguments,too-man
         dry_run=dry_run,
         deployment_name=deployment_name,
         update_registry=True,
+        post_run_cleanup=True,
     )
 
 
