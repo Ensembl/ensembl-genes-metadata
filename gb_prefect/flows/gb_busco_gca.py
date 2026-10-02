@@ -4,11 +4,13 @@ from typing import Optional
 
 from prefect import flow  # type: ignore
 
+from gb_prefect.models.pipeline_options import PipelineCredentials
 from gb_prefect.tasks.busco_gca import run_nextflow_busco_gca
+from gb_prefect.utils.credentials_utils import DEFAULT_METADATA_SECRET_BLOCK
 
 
 @flow(name="BUSCO_gca", log_prints=True)
-def busco_gca_flow(
+def busco_gca_flow(  # pylint: disable=too-many-arguments,too-many-positional-arguments
     gca: str,
     taxon_id: str,
     outdir: str,
@@ -16,6 +18,9 @@ def busco_gca_flow(
     enscode: Optional[str] = None,
     dry_run: bool = False,
     create_artifact: bool = True,
+    update_registry: bool = False,
+    credentials: Optional[PipelineCredentials] = None,
+    metadata_secret_block: str = DEFAULT_METADATA_SECRET_BLOCK,
 ):
     """Run the BUSCO genome-statistics Nextflow pipeline for one GCA.
 
@@ -23,6 +28,12 @@ def busco_gca_flow(
     run submits as one Slurm job (see gb_prefect/worker/). Results are written
     under outdir/<gca> so concurrent runs against a shared base outdir don't
     collide.
+
+    update_registry=True passes --update_registry to the pipeline, which loads the genome
+    results into the assembly metadata DB and marks genome_busco.status as done on
+    completion. DB connection params come from credentials, or from the
+    metadata_secret_block Prefect Secret block when omitted (the deployment case) -- see
+    gb_prefect.tasks.busco_gca.run_nextflow_busco_gca.
     """
     run_outdir = str(Path(outdir) / gca)
 
@@ -34,6 +45,9 @@ def busco_gca_flow(
         enscode=enscode,
         dry_run=dry_run,
         create_artifact=create_artifact,
+        update_registry=update_registry,
+        credentials=credentials,
+        metadata_secret_block=metadata_secret_block,
     )
 
 
@@ -52,6 +66,17 @@ if __name__ == "__main__":
     parser.add_argument(
         "--create-artifact", action="store_true", help="Create artifact after running the pipeline."
     )
+    parser.add_argument(
+        "--update_registry",
+        action="store_true",
+        help="Load results into the assembly metadata DB and mark genome_busco.status as done.",
+    )
+    parser.add_argument(
+        "--metadata-params-string",
+        required=False,
+        help="JSON string with metadata DB connection parameters, used with --update_registry. "
+        "If omitted, loaded from the Prefect Secret block.",
+    )
     args = parser.parse_args()
 
     busco_gca_flow(
@@ -62,4 +87,10 @@ if __name__ == "__main__":
         enscode=args.enscode,
         dry_run=args.dry_run,
         create_artifact=args.create_artifact,
+        update_registry=args.update_registry,
+        credentials=(
+            PipelineCredentials(metadata_params_string=args.metadata_params_string)
+            if args.metadata_params_string
+            else None
+        ),
     )
