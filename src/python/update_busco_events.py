@@ -182,8 +182,8 @@ def get_pending_candidates(
     return execute_query(PENDING_CANDIDATES_QUERY.format(limit=limit), db_params)
 
 
-def mark_busco_in_progress(gca: str, db_params: Dict[str, Any], execute: bool) -> None:
-    """Update genome_busco.status to in_progress for gca, when it's being dispatched.
+def set_busco_status(gca: str, status: str, db_params: Dict[str, Any], execute: bool) -> None:
+    """Update genome_busco.status to `status` for gca.
 
     This is a real UPDATE on the existing status row -- unlike insert_busco_event's
     ON DUPLICATE KEY UPDATE assembly_id = assembly_id (a no-op), which would not actually
@@ -192,7 +192,7 @@ def mark_busco_in_progress(gca: str, db_params: Dict[str, Any], execute: bool) -
     query = f"""
     UPDATE assembly_events ae
     JOIN assembly asm ON asm.assembly_id = ae.assembly_id
-    SET ae.status = 'in_progress'
+    SET ae.status = '{status}'
     WHERE CONCAT(asm.gca_chain, '.', asm.gca_version) = '{gca}'
     AND ae.event = '{STATUS_EVENT}';
     """
@@ -202,6 +202,17 @@ def mark_busco_in_progress(gca: str, db_params: Dict[str, Any], execute: bool) -
         return
 
     execute_write(query, db_params)
+
+
+def mark_busco_in_progress(gca: str, db_params: Dict[str, Any], execute: bool) -> None:
+    """Update genome_busco.status to in_progress for gca, when it's being dispatched."""
+    set_busco_status(gca, "in_progress", db_params, execute)
+
+
+def mark_busco_failed(gca: str, db_params: Dict[str, Any], execute: bool) -> None:
+    """Update genome_busco.status to failed for gca, when its BUSCO run failed. Automatic
+    dispatch only picks pending candidates, so a failed GCA is not retried automatically."""
+    set_busco_status(gca, "failed", db_params, execute)
 
 
 def get_taxon_id(gca: str, db_params: Dict[str, Any]) -> Optional[int]:
