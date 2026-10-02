@@ -1,3 +1,4 @@
+import json
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
@@ -5,7 +6,13 @@ from typing import Optional
 from prefect import task  # type: ignore
 from prefect.states import Completed  # type: ignore
 
+from gb_prefect.models.pipeline_options import PipelineCredentials
 from gb_prefect.utils.artifact_utils import create_busco_run_artifact
+from gb_prefect.utils.credentials_utils import (
+    DEFAULT_METADATA_SECRET_BLOCK,
+    DEFAULT_SLACK_SECRET_BLOCK,
+    resolve_credentials,
+)
 from gb_prefect.utils.enscode_utils import resolve_enscode
 from gb_prefect.utils.logging_utils import append_log
 from gb_prefect.utils.shell_utils import run_cmd_bash_capture
@@ -13,7 +20,7 @@ from gb_prefect.utils.stats_split_csv import write_single_gca_csv
 
 
 @task(log_prints=True)
-def run_nextflow_busco_gca(
+def run_nextflow_busco_gca(  # pylint: disable=too-many-arguments,too-many-positional-arguments,too-many-locals
     gca: str,
     taxon_id: str,
     outdir: str,
@@ -21,6 +28,9 @@ def run_nextflow_busco_gca(
     enscode: Optional[str] = None,
     dry_run: bool = False,
     create_artifact: bool = True,
+    update_registry: bool = False,
+    credentials: Optional[PipelineCredentials] = None,
+    metadata_secret_block: str = DEFAULT_METADATA_SECRET_BLOCK,
 ):
     """Run the BUSCO genome-statistics Nextflow pipeline for a single GCA.
 
@@ -29,6 +39,13 @@ def run_nextflow_busco_gca(
     inside a Slurm job submitted by the slurm-cli worker (see gb_prefect/worker/),
     with `nextflow` already on PATH via the worker's `setup_commands`. It just runs
     `nextflow run` directly.
+
+    update_registry=True adds the pipeline's --update_registry, which loads the genome
+    results into the assembly metadata DB and marks genome_busco.status as done. The DB
+    connection params it needs (--asm_metadata) are written to a params file readable only
+    by the owner and passed with -params-file, so they never appear in the command file, the
+    log or the artifact. credentials is optional: when omitted (the normal case for a
+    deployment trigger), they're loaded from the metadata_secret_block Prefect Secret block.
     """
     date = datetime.now().strftime("%Y-%m-%d")
     outdir_path = Path(outdir)
@@ -44,6 +61,23 @@ def run_nextflow_busco_gca(
 
     dataset_flag = f"--buscoDataset {busco_dataset}" if busco_dataset else ""
 
+    registry_flag = ""
+    if update_registry:
+        params_file = outdir_path / "asm_metadata_params.json"
+        registry_flag = f"--update_registry -params-file {params_file}"
+        if not dry_run:
+            credentials = resolve_credentials(
+                credentials, metadata_secret_block, DEFAULT_SLACK_SECRET_BLOCK, slack_report=False
+            )
+            # Create with owner-only permissions before writing, so the DB password is never
+            # readable by anyone else, even briefly.
+            params_file.touch(mode=0o600, exist_ok=True)
+            params_file.chmod(0o600)
+            params_file.write_text(
+                json.dumps({"asm_metadata": json.loads(credentials.metadata_params_string)})
+            )
+            append_log(log, f"[{datetime.now()}] INFO: Wrote asm_metadata params file {params_file}.\n")
+
     nextflow_command = f"""#!/bin/bash
 cd {outdir}
 export ENSCODE={enscode}
@@ -52,7 +86,8 @@ nextflow run {enscode}/ensembl-genes-nf/pipelines/statistics/main.nf \
     --run_busco_ncbi \
     --outdir {outdir} \
     --enscode {enscode} \
-    {dataset_flag}
+    {dataset_flag} \
+    {registry_flag}
 """
     append_log(log, f"[{datetime.now()}] INFO: Nextflow command:\n{nextflow_command}\n")
     command_file.write_text(nextflow_command)
@@ -90,6 +125,7 @@ nextflow run {enscode}/ensembl-genes-nf/pipelines/statistics/main.nf \
         "csv_file": csv_file,
         "gca": gca,
         "pipeline_ran": not dry_run,
+        "update_registry": update_registry,
         "dry_run": dry_run,
     }
 
