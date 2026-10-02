@@ -5,7 +5,11 @@ from typing import Optional
 from prefect import flow  # type: ignore
 
 from gb_prefect.models.pipeline_options import PipelineCredentials
-from gb_prefect.tasks.busco_gca import run_nextflow_busco_gca
+from gb_prefect.tasks.busco_gca import (
+    cleanup_busco_outdir,
+    record_busco_failure,
+    run_nextflow_busco_gca,
+)
 from gb_prefect.utils.credentials_utils import DEFAULT_METADATA_SECRET_BLOCK
 
 
@@ -21,6 +25,7 @@ def busco_gca_flow(  # pylint: disable=too-many-arguments,too-many-positional-ar
     update_registry: bool = False,
     credentials: Optional[PipelineCredentials] = None,
     metadata_secret_block: str = DEFAULT_METADATA_SECRET_BLOCK,
+    post_run_cleanup: bool = False,
 ):
     """Run the BUSCO genome-statistics Nextflow pipeline for one GCA.
 
@@ -34,21 +39,42 @@ def busco_gca_flow(  # pylint: disable=too-many-arguments,too-many-positional-ar
     completion. DB connection params come from credentials, or from the
     metadata_secret_block Prefect Secret block when omitted (the deployment case) -- see
     gb_prefect.tasks.busco_gca.run_nextflow_busco_gca.
+
+    post_run_cleanup=True (set only by the automatic dispatcher, scenario 3) adds a step
+    after the pipeline: on success the whole <outdir>/<gca> directory is removed; on failure
+    genome_busco.status is set to failed, Nextflow scratch and the credentials file are
+    removed (logs kept), and the original error is re-raised so the run still shows Failed.
+    A Slurm job killed outright (time limit, OOM) never reaches this step, so its GCA stays
+    in_progress.
     """
     run_outdir = str(Path(outdir) / gca)
 
-    return run_nextflow_busco_gca(
-        gca=gca,
-        taxon_id=taxon_id,
-        outdir=run_outdir,
-        busco_dataset=busco_dataset,
-        enscode=enscode,
-        dry_run=dry_run,
-        create_artifact=create_artifact,
-        update_registry=update_registry,
-        credentials=credentials,
-        metadata_secret_block=metadata_secret_block,
-    )
+    run_kwargs = {
+        "gca": gca,
+        "taxon_id": taxon_id,
+        "outdir": run_outdir,
+        "busco_dataset": busco_dataset,
+        "enscode": enscode,
+        "dry_run": dry_run,
+        "create_artifact": create_artifact,
+        "update_registry": update_registry,
+        "credentials": credentials,
+        "metadata_secret_block": metadata_secret_block,
+    }
+    if not post_run_cleanup or dry_run:
+        return run_nextflow_busco_gca(**run_kwargs)
+
+    try:
+        result = run_nextflow_busco_gca(**run_kwargs)
+    except Exception:
+        try:
+            record_busco_failure(gca, credentials, metadata_secret_block)
+        finally:
+            cleanup_busco_outdir(run_outdir, success=False)
+        raise
+
+    cleanup_busco_outdir(run_outdir, success=True)
+    return result
 
 
 if __name__ == "__main__":
@@ -77,6 +103,12 @@ if __name__ == "__main__":
         help="JSON string with metadata DB connection parameters, used with --update_registry. "
         "If omitted, loaded from the Prefect Secret block.",
     )
+    parser.add_argument(
+        "--post-run-cleanup",
+        action="store_true",
+        help="After the run: on success remove <outdir>/<gca>; on failure mark the GCA as "
+        "failed and remove Nextflow scratch (logs kept). Set by the automatic dispatcher.",
+    )
     args = parser.parse_args()
 
     busco_gca_flow(
@@ -93,4 +125,5 @@ if __name__ == "__main__":
             if args.metadata_params_string
             else None
         ),
+        post_run_cleanup=args.post_run_cleanup,
     )

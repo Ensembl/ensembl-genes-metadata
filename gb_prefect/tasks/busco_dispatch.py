@@ -40,6 +40,7 @@ def dispatch_rows(
     dry_run: bool,
     deployment_name: str,
     update_registry: bool = False,
+    post_run_cleanup: bool = False,
 ) -> Dict[str, List[str]]:
     """Trigger deployment_name for each row {gca, taxon_id, busco_dataset} not already done.
 
@@ -51,6 +52,9 @@ def dispatch_rows(
     True, genome_busco.status is updated to in_progress right after a successful trigger,
     and update_registry=True is also passed on to the triggered run, so the Nextflow
     pipeline's --update_registry loads the results and marks it done on completion.
+
+    post_run_cleanup is passed on to each triggered run (see busco_gca_flow): only the
+    automatic dispatcher sets it, to mark failures and clean run directories afterwards.
     """
     triggered: List[str] = []
     skipped: List[str] = []
@@ -82,6 +86,7 @@ def dispatch_rows(
                     "taxon_id": row["taxon_id"],
                     "busco_dataset": row.get("busco_dataset") or None,
                     "update_registry": update_registry,
+                    "post_run_cleanup": post_run_cleanup,
                 },
                 timeout=0,
                 idempotency_key=f"{flow_run.id}-{gca}",
