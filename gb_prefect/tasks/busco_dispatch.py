@@ -9,6 +9,22 @@ from gb_metadata.update_busco_events import get_busco_status, mark_busco_in_prog
 
 
 @task(log_prints=True)
+def get_deployment_pool(deployment_name: str) -> str:
+    """Return the work pool deployment_name ("flow_name/deployment_name") runs on.
+
+    Looked up at run time rather than configured separately, so the pool the automatic
+    dispatcher sizes its batch against can't drift from where BUSCO_gca actually runs.
+    """
+    with get_client(sync_client=True) as client:
+        deployment = client.read_deployment_by_name(deployment_name)
+
+    if not deployment.work_pool_name:
+        raise ValueError(f"Deployment '{deployment_name}' has no work pool.")
+    print(f"Deployment '{deployment_name}' runs on work pool '{deployment.work_pool_name}'")
+    return deployment.work_pool_name
+
+
+@task(log_prints=True)
 def get_free_slots(pool_name: str) -> int:
     """Return free concurrency slots for pool_name (concurrency_limit - active_slots).
 
