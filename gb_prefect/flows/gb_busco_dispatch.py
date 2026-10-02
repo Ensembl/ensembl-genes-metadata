@@ -23,6 +23,7 @@ def busco_dispatch_flow(  # pylint: disable=too-many-arguments,too-many-position
     csv_file: str,
     force: bool = False,
     dry_run: bool = False,
+    update_registry: bool = False,
     deployment_name: str = BUSCO_GCA_DEPLOYMENT,
     credentials: Optional[PipelineCredentials] = None,
     metadata_secret_block: str = DEFAULT_METADATA_SECRET_BLOCK,
@@ -34,6 +35,11 @@ def busco_dispatch_flow(  # pylint: disable=too-many-arguments,too-many-position
     unless force=True -- every other row runs regardless of its status/priority, since it
     was asked for explicitly in the input CSV rather than selected automatically.
 
+    update_registry=False (the default) just triggers; True also marks genome_busco.status
+    as in_progress right after a successful trigger, and passes update_registry on to each
+    triggered run so the Nextflow pipeline's --update_registry loads the results and marks
+    it done on completion (gb_prefect.tasks.busco_dispatch.dispatch_rows).
+
     credentials is optional: when omitted (the normal case for a deployment trigger, where
     it's never set as a parameter), DB connection params are loaded from the
     metadata_secret_block Prefect Secret block instead (same resolve_credentials() helper
@@ -43,9 +49,9 @@ def busco_dispatch_flow(  # pylint: disable=too-many-arguments,too-many-position
 
     This is scenario 1 of the orchestrator (explicit CSV input). The shared trigger logic
     (status check, skip/force, run_deployment) lives in gb_prefect.tasks.busco_dispatch.
-    dispatch_rows, also used by scenario 2 (gb_busco_dispatch_from_list.py, bare GCA list).
-    Scenario 3 (fully automatic candidate selection) is not implemented yet -- see gb_prefect
-    README / project backlog.
+    dispatch_rows, also used by scenario 2 (gb_busco_dispatch_from_list.py, bare GCA list)
+    and scenario 3 (gb_busco_dispatch_automatic.py, automatic candidate selection sized to
+    free work pool slots, where update_registry is always on).
     """
     # logging.basicConfig() is a no-op here: importing `prefect` already attaches a
     # PrefectConsoleHandler to the root logger, so basicConfig's "only if no handlers
@@ -70,7 +76,7 @@ def busco_dispatch_flow(  # pylint: disable=too-many-arguments,too-many-position
     rows = read_gca_csv(csv_file)
     print(f"Read {len(rows)} GCA(s) from {csv_file}")
 
-    return dispatch_rows(rows, db_params, force, dry_run, deployment_name)
+    return dispatch_rows(rows, db_params, force, dry_run, deployment_name, update_registry)
 
 
 if __name__ == "__main__":
@@ -93,6 +99,11 @@ if __name__ == "__main__":
         help="Refresh assembly_events in log-only mode and don't trigger any runs.",
     )
     parser.add_argument(
+        "--update_registry",
+        action="store_true",
+        help="Mark genome_busco.status as in_progress right after a successful trigger.",
+    )
+    parser.add_argument(
         "--deployment-name",
         default=BUSCO_GCA_DEPLOYMENT,
         help="Deployment to trigger per GCA (flow_name/deployment_name).",
@@ -103,6 +114,7 @@ if __name__ == "__main__":
         csv_file=args.csv_file,
         force=args.force,
         dry_run=args.dry_run,
+        update_registry=args.update_registry,
         deployment_name=args.deployment_name,
         credentials=(
             PipelineCredentials(metadata_params_string=args.metadata_params_string)
