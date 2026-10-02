@@ -29,12 +29,16 @@ def busco_dispatch_from_list_flow(  # pylint: disable=too-many-arguments,too-man
     gca_file: Optional[str] = None,
     force: bool = False,
     dry_run: bool = False,
+    update_registry: bool = False,
     deployment_name: str = BUSCO_GCA_DEPLOYMENT,
     credentials: Optional[PipelineCredentials] = None,
     metadata_secret_block: str = DEFAULT_METADATA_SECRET_BLOCK,
 ):
     """Trigger busco_gca_flow for each GCA given directly -- gca_list and/or gca_file (one
     accession per line); values from both are combined and de-duplicated.
+
+    update_registry=False (the default) just triggers; True also marks genome_busco.status
+    as in_progress right after a successful trigger. See busco_dispatch_flow for details.
 
     taxon_id is resolved per GCA from the metadata DB (assembly.lowest_taxon_id). A GCA not
     found in the DB at all is skipped -- not run -- since there's no taxon_id to dispatch
@@ -77,7 +81,7 @@ def busco_dispatch_from_list_flow(  # pylint: disable=too-many-arguments,too-man
             continue
         rows.append({"gca": gca, "taxon_id": str(taxon_id), "busco_dataset": ""})
 
-    result = dispatch_rows(rows, db_params, force, dry_run, deployment_name)
+    result = dispatch_rows(rows, db_params, force, dry_run, deployment_name, update_registry)
     result["not_found"] = not_found
     return result
 
@@ -101,6 +105,11 @@ if __name__ == "__main__":
         help="Refresh assembly_events in log-only mode and don't trigger any runs.",
     )
     parser.add_argument(
+        "--update_registry",
+        action="store_true",
+        help="Mark genome_busco.status as in_progress right after a successful trigger.",
+    )
+    parser.add_argument(
         "--deployment-name",
         default=BUSCO_GCA_DEPLOYMENT,
         help="Deployment to trigger per GCA (flow_name/deployment_name).",
@@ -115,6 +124,7 @@ if __name__ == "__main__":
         gca_file=args.gca_file,
         force=args.force,
         dry_run=args.dry_run,
+        update_registry=args.update_registry,
         deployment_name=args.deployment_name,
         credentials=(
             PipelineCredentials(metadata_params_string=args.metadata_params_string)
