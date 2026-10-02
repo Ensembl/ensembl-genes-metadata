@@ -40,7 +40,7 @@ def busco_gca_flow(  # pylint: disable=too-many-arguments,too-many-positional-ar
     metadata_secret_block Prefect Secret block when omitted (the deployment case) -- see
     gb_prefect.tasks.busco_gca.run_nextflow_busco_gca.
 
-    post_run_cleanup=True (set only by the automatic dispatcher, scenario 3) adds a step
+    post_run_cleanup=True (always set by the automatic dispatcher, optional in the others) adds a step
     after the pipeline: on success the whole <outdir>/<gca> directory is removed; on failure
     genome_busco.status is set to failed, Nextflow scratch and the credentials file are
     removed (logs kept), and the original error is re-raised so the run still shows Failed.

@@ -53,8 +53,9 @@ def dispatch_rows(
     and update_registry=True is also passed on to the triggered run, so the Nextflow
     pipeline's --update_registry loads the results and marks it done on completion.
 
-    post_run_cleanup is passed on to each triggered run (see busco_gca_flow): only the
-    automatic dispatcher sets it, to mark failures and clean run directories afterwards.
+    post_run_cleanup is passed on to each triggered run (see busco_gca_flow), to mark
+    failures and clean run directories afterwards: always on in the automatic dispatcher,
+    optional (default off) in the CSV / GCA-list ones.
     """
     triggered: List[str] = []
     skipped: List[str] = []

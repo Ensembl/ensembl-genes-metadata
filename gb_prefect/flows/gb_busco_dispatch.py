@@ -24,6 +24,7 @@ def busco_dispatch_flow(  # pylint: disable=too-many-arguments,too-many-position
     force: bool = False,
     dry_run: bool = False,
     update_registry: bool = True,
+    post_run_cleanup: bool = False,
     deployment_name: str = BUSCO_GCA_DEPLOYMENT,
     credentials: Optional[PipelineCredentials] = None,
     metadata_secret_block: str = DEFAULT_METADATA_SECRET_BLOCK,
@@ -40,6 +41,11 @@ def busco_dispatch_flow(  # pylint: disable=too-many-arguments,too-many-position
     triggered run so the Nextflow pipeline's --update_registry loads the results and marks
     it done on completion (gb_prefect.tasks.busco_dispatch.dispatch_rows). False just
     triggers, with no registry writes.
+
+    post_run_cleanup=False (the default) leaves each run's directory as is. True is passed on
+    to each triggered run: on success its <outdir>/<gca> is removed; on failure the GCA is
+    marked failed and Nextflow scratch is removed, keeping logs (see busco_gca_flow). Always
+    on in scenario 3.
 
     credentials is optional: when omitted (the normal case for a deployment trigger, where
     it's never set as a parameter), DB connection params are loaded from the
@@ -77,7 +83,7 @@ def busco_dispatch_flow(  # pylint: disable=too-many-arguments,too-many-position
     rows = read_gca_csv(csv_file)
     print(f"Read {len(rows)} GCA(s) from {csv_file}")
 
-    return dispatch_rows(rows, db_params, force, dry_run, deployment_name, update_registry)
+    return dispatch_rows(rows, db_params, force, dry_run, deployment_name, update_registry, post_run_cleanup)
 
 
 if __name__ == "__main__":
@@ -107,6 +113,12 @@ if __name__ == "__main__":
         "load results on completion (default: on; --no-update_registry to just trigger).",
     )
     parser.add_argument(
+        "--post-run-cleanup",
+        action="store_true",
+        help="After each triggered run: on success remove <outdir>/<gca>; on failure mark the "
+        "GCA as failed and remove Nextflow scratch (logs kept).",
+    )
+    parser.add_argument(
         "--deployment-name",
         default=BUSCO_GCA_DEPLOYMENT,
         help="Deployment to trigger per GCA (flow_name/deployment_name).",
@@ -118,6 +130,7 @@ if __name__ == "__main__":
         force=args.force,
         dry_run=args.dry_run,
         update_registry=args.update_registry,
+        post_run_cleanup=args.post_run_cleanup,
         deployment_name=args.deployment_name,
         credentials=(
             PipelineCredentials(metadata_params_string=args.metadata_params_string)
