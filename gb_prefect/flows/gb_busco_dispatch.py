@@ -23,7 +23,7 @@ def busco_dispatch_flow(  # pylint: disable=too-many-arguments,too-many-position
     csv_file: str,
     force: bool = False,
     dry_run: bool = False,
-    update_registry: bool = False,
+    update_registry: bool = True,
     deployment_name: str = BUSCO_GCA_DEPLOYMENT,
     credentials: Optional[PipelineCredentials] = None,
     metadata_secret_block: str = DEFAULT_METADATA_SECRET_BLOCK,
@@ -35,10 +35,11 @@ def busco_dispatch_flow(  # pylint: disable=too-many-arguments,too-many-position
     unless force=True -- every other row runs regardless of its status/priority, since it
     was asked for explicitly in the input CSV rather than selected automatically.
 
-    update_registry=False (the default) just triggers; True also marks genome_busco.status
-    as in_progress right after a successful trigger, and passes update_registry on to each
+    update_registry=True (the default) marks genome_busco.status as in_progress right after
+    a successful trigger, and passes update_registry on to each
     triggered run so the Nextflow pipeline's --update_registry loads the results and marks
-    it done on completion (gb_prefect.tasks.busco_dispatch.dispatch_rows).
+    it done on completion (gb_prefect.tasks.busco_dispatch.dispatch_rows). False just
+    triggers, with no registry writes.
 
     credentials is optional: when omitted (the normal case for a deployment trigger, where
     it's never set as a parameter), DB connection params are loaded from the
@@ -100,8 +101,10 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--update_registry",
-        action="store_true",
-        help="Mark genome_busco.status as in_progress right after a successful trigger.",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Mark genome_busco.status as in_progress right after a successful trigger and "
+        "load results on completion (default: on; --no-update_registry to just trigger).",
     )
     parser.add_argument(
         "--deployment-name",
