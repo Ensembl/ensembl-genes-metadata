@@ -11,7 +11,7 @@ from gb_metadata.update_busco_events import (
     mark_existing_busco_done,
 )
 from gb_prefect.models.pipeline_options import PipelineCredentials
-from gb_prefect.tasks.busco_dispatch import dispatch_rows, get_free_slots
+from gb_prefect.tasks.busco_dispatch import dispatch_rows, get_deployment_pool, get_free_slots
 from gb_prefect.utils.credentials_utils import (
     DEFAULT_METADATA_SECRET_BLOCK,
     DEFAULT_SLACK_SECRET_BLOCK,
@@ -19,19 +19,18 @@ from gb_prefect.utils.credentials_utils import (
 )
 
 BUSCO_GCA_DEPLOYMENT = "BUSCO_gca/busco-gca"
-BUSCO_POOL = "codon-slurm-smoke-pool"
 
 
 @flow(name="BUSCO_dispatch_automatic", log_prints=True)
 def busco_dispatch_automatic_flow(  # pylint: disable=too-many-arguments,too-many-positional-arguments
-    pool_name: str = BUSCO_POOL,
     dry_run: bool = False,
     deployment_name: str = BUSCO_GCA_DEPLOYMENT,
     credentials: Optional[PipelineCredentials] = None,
     metadata_secret_block: str = DEFAULT_METADATA_SECRET_BLOCK,
 ):
     """Automatically select and trigger busco_gca_flow for pending candidates, sized to
-    pool_name's currently free concurrency slots.
+    the currently free concurrency slots of the work pool deployment_name runs on (looked
+    up from the deployment at run time, not configured here).
 
     Registry update is always on here (no option to turn it off, unlike scenarios 1/2):
     every picked GCA has genome_busco.status set to in_progress right after a successful
@@ -69,6 +68,7 @@ def busco_dispatch_automatic_flow(  # pylint: disable=too-many-arguments,too-man
     mark_existing_busco_done(db_params, execute=not dry_run)
     insert_busco_candidates(db_params, execute=not dry_run)
 
+    pool_name = get_deployment_pool(deployment_name)
     free_slots = get_free_slots(pool_name)
     if free_slots == 0:
         print(f"No free slots in '{pool_name}'; nothing to dispatch.")
@@ -96,9 +96,6 @@ def busco_dispatch_automatic_flow(  # pylint: disable=too-many-arguments,too-man
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--pool-name", default=BUSCO_POOL, help="slurm-cli work pool to size the batch against."
-    )
-    parser.add_argument(
         "--metadata-params-string",
         required=False,
         help="JSON string with metadata DB connection parameters. If omitted, credentials are "
@@ -117,7 +114,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     busco_dispatch_automatic_flow(
-        pool_name=args.pool_name,
         dry_run=args.dry_run,
         deployment_name=args.deployment_name,
         credentials=(
