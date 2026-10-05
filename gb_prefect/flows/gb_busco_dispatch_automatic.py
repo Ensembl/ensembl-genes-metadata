@@ -11,7 +11,7 @@ from gb_metadata.update_busco_events import (
     mark_existing_busco_done,
 )
 from gb_prefect.models.pipeline_options import PipelineCredentials
-from gb_prefect.tasks.busco_dispatch import dispatch_rows, get_deployment_pool, get_free_slots
+from gb_prefect.tasks.busco_dispatch import dispatch_rows, get_free_slots
 from gb_prefect.utils.credentials_utils import (
     DEFAULT_METADATA_SECRET_BLOCK,
     DEFAULT_SLACK_SECRET_BLOCK,
@@ -29,29 +29,26 @@ def busco_dispatch_automatic_flow(  # pylint: disable=too-many-arguments,too-man
     metadata_secret_block: str = DEFAULT_METADATA_SECRET_BLOCK,
 ):
     """Automatically select and trigger busco_gca_flow for pending candidates, sized to
-    the currently free concurrency slots of the work pool deployment_name runs on (looked
-    up from the deployment at run time, not configured here).
-
-    Registry update is always on here (no option to turn it off, unlike scenarios 1/2):
-    every picked GCA has genome_busco.status set to in_progress right after a successful
-    trigger, so the next automatic run doesn't pick it again while it's still running, and
-    each triggered run gets the Nextflow pipeline's --update_registry, which marks it done.
-
-    Each triggered run also gets post_run_cleanup=True (scenario 3 only): a failed run sets
-    genome_busco.status to failed and keeps only its logs; a successful run's directory is
-    removed. See busco_gca_flow.
+    the free slots of the work pool deployment_name runs on (looked up from the deployment
+    at run time, not configured here).
 
     Refreshes assembly_events first (same as scenarios 1/2). Selects up to N pending
     candidates (genome_busco.status=pending), ordered high -> medium -> low priority;
     large_genome is excluded -- that tier is run manually, never picked here. N is the
-    pool's free slots (concurrency_limit - active_slots); refuses to run at all if the pool
-    has no concurrency_limit set, rather than guessing a fallback cap.
+    pool's concurrency_limit minus its active slots minus BUSCO_gca runs still waiting to
+    start (Scheduled/Late); refuses to run at all if the pool has no concurrency_limit set,
+    rather than guessing a fallback cap.
+
+    Registry update is always on here (no option to turn it off, unlike scenarios 1/2):
+    each GCA is claimed (pending -> in_progress) before it is triggered, so concurrent or
+    later dispatches can't pick it again, and each triggered run gets the Nextflow
+    pipeline's --update_registry, which marks it done. Each triggered run also gets
+    post_run_cleanup=True: a failed run sets genome_busco.status to failed and keeps only
+    its logs; a successful run's directory is removed. See dispatch_rows and busco_gca_flow.
 
     No --force here: automatic mode only ever picks genuinely pending candidates, never
-    re-triggers something already done.
-
-    Manual trigger only for now -- not yet wired to a schedule or to a "pool has space"
-    event trigger.
+    re-triggers something already done. Meant to run one at a time (deployment
+    concurrency_limit 1), e.g. on a schedule.
     """
     file_handler = logging.FileHandler("busco_dispatch_automatic.log", mode="w")
     file_handler.setFormatter(logging.Formatter("%(asctime)s:%(levelname)s:%(message)s"))
@@ -68,10 +65,9 @@ def busco_dispatch_automatic_flow(  # pylint: disable=too-many-arguments,too-man
     mark_existing_busco_done(db_params, execute=not dry_run)
     insert_busco_candidates(db_params, execute=not dry_run)
 
-    pool_name = get_deployment_pool(deployment_name)
-    free_slots = get_free_slots(pool_name)
+    free_slots = get_free_slots(deployment_name)
     if free_slots == 0:
-        print(f"No free slots in '{pool_name}'; nothing to dispatch.")
+        print(f"No free slots for {deployment_name}; nothing to dispatch.")
         return {"triggered": [], "skipped": []}
 
     candidates = get_pending_candidates(db_params, free_slots)
