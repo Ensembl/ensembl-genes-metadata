@@ -40,7 +40,7 @@ Usage
 import argparse
 import json
 import logging
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 from gb_metadata.db_utils import execute_query, execute_write
 from gb_metadata.utils import connection_api
@@ -52,6 +52,23 @@ PRIORITY_EVENT = "genome_busco.priority"
 
 LARGE_GENOME_THRESHOLD_BP = 8_000_000_000
 HIGH_PRIORITY_MIN_READS = 10
+
+# assembly_events is MyISAM (table-level locks) and the server's lock_wait_timeout is a year:
+# a statement blocked by another session's lock would otherwise wait indefinitely (a dispatch
+# once hung ~15h on one UPDATE). Every connection here fails after this many seconds instead.
+LOCK_WAIT_TIMEOUT_S = 60
+
+
+def _query(query: str, db_params: Dict[str, Any]) -> Tuple[Tuple[Any, ...], ...]:
+    return execute_query(query, _with_lock_timeout(db_params))
+
+
+def _write(query: str, db_params: Dict[str, Any]) -> int:
+    return execute_write(query, _with_lock_timeout(db_params))
+
+
+def _with_lock_timeout(db_params: Dict[str, Any]) -> Dict[str, Any]:
+    return {**db_params, "init_command": f"SET SESSION lock_wait_timeout = {LOCK_WAIT_TIMEOUT_S}"}
 
 EXISTING_BUSCO_QUERY = """
 select asm.assembly_id, CONCAT(asm.gca_chain, '.', asm.gca_version)
@@ -109,12 +126,12 @@ def insert_busco_event(
         logging.info("Execution skipped for assembly_id %s:\n%s", assembly_id, query)
         return
 
-    execute_write(query, db_params)
+    _write(query, db_params)
 
 
 def mark_existing_busco_done(db_params: Dict[str, Any], execute: bool) -> int:
     """Mark assemblies that already have a BUSCO metric but no assembly_events row as done/high."""
-    rows = execute_query(EXISTING_BUSCO_QUERY, db_params)
+    rows = _query(EXISTING_BUSCO_QUERY, db_params)
     logging.info("Total assemblies with BUSCO metrics fetched: %s", len(rows))
 
     for assembly_id, gca in rows:
@@ -143,7 +160,7 @@ def fetch_transcriptomics_cache() -> Dict[str, Any]:
 
 def insert_busco_candidates(db_params: Dict[str, Any], execute: bool) -> Dict[str, int]:
     """Classify and mark newly-eligible assemblies as pending, with a priority tier."""
-    rows = execute_query(CANDIDATE_ASSEMBLIES_QUERY, db_params)
+    rows = _query(CANDIDATE_ASSEMBLIES_QUERY, db_params)
     logging.info("Total candidate assemblies fetched: %s", len(rows))
 
     transcriptomics_cache = fetch_transcriptomics_cache()
@@ -179,40 +196,62 @@ def get_pending_candidates(
     first. large_genome is excluded -- that tier is run manually, never selected here."""
     if limit <= 0:
         return []
-    return execute_query(PENDING_CANDIDATES_QUERY.format(limit=limit), db_params)
+    return _query(PENDING_CANDIDATES_QUERY.format(limit=limit), db_params)
 
 
-def set_busco_status(gca: str, status: str, db_params: Dict[str, Any], execute: bool) -> None:
-    """Update genome_busco.status to `status` for gca.
+def set_busco_status(
+    gca: str,
+    status: str,
+    db_params: Dict[str, Any],
+    execute: bool,
+    only_if: Optional[Sequence[str]] = None,
+) -> int:
+    """Update genome_busco.status to `status` for gca; return the number of rows changed.
+
+    only_if restricts the update to rows whose current status is one of those values, so
+    a write can never overwrite a status that changed in the meantime (e.g. a late
+    in_progress overwriting a done set by the pipeline).
 
     This is a real UPDATE on the existing status row -- unlike insert_busco_event's
     ON DUPLICATE KEY UPDATE assembly_id = assembly_id (a no-op), which would not actually
     change an existing status value.
     """
+    guard = ""
+    if only_if:
+        guard = "AND ae.status IN (" + ", ".join(f"'{value}'" for value in only_if) + ")"
     query = f"""
     UPDATE assembly_events ae
     JOIN assembly asm ON asm.assembly_id = ae.assembly_id
     SET ae.status = '{status}'
     WHERE CONCAT(asm.gca_chain, '.', asm.gca_version) = '{gca}'
-    AND ae.event = '{STATUS_EVENT}';
+    AND ae.event = '{STATUS_EVENT}'
+    {guard};
     """
 
     if not execute:
         logging.info("Execution skipped for %s:\n%s", gca, query)
-        return
+        return 0
 
-    execute_write(query, db_params)
+    return _write(query, db_params)
 
 
-def mark_busco_in_progress(gca: str, db_params: Dict[str, Any], execute: bool) -> None:
-    """Update genome_busco.status to in_progress for gca, when it's being dispatched."""
-    set_busco_status(gca, "in_progress", db_params, execute)
+def claim_busco(gca: str, from_statuses: Sequence[str], db_params: Dict[str, Any]) -> bool:
+    """Atomically set genome_busco.status to in_progress, only if it is currently one of
+    from_statuses. Returns True if this call changed it -- i.e. this dispatcher owns the GCA
+    now. Two dispatchers can't both claim the same GCA: the second one changes no row."""
+    return set_busco_status(gca, "in_progress", db_params, execute=True, only_if=from_statuses) == 1
+
+
+def release_busco_claim(gca: str, back_to: str, db_params: Dict[str, Any]) -> None:
+    """Undo claim_busco (in_progress -> back_to), e.g. when triggering the run failed."""
+    set_busco_status(gca, back_to, db_params, execute=True, only_if=("in_progress",))
 
 
 def mark_busco_failed(gca: str, db_params: Dict[str, Any], execute: bool) -> None:
-    """Update genome_busco.status to failed for gca, when its BUSCO run failed. Automatic
-    dispatch only picks pending candidates, so a failed GCA is not retried automatically."""
-    set_busco_status(gca, "failed", db_params, execute)
+    """Update genome_busco.status to failed for gca, when its BUSCO run failed -- only from
+    in_progress, so it never overwrites a done. Automatic dispatch only picks pending
+    candidates, so a failed GCA is not retried automatically."""
+    set_busco_status(gca, "failed", db_params, execute, only_if=("in_progress",))
 
 
 def get_taxon_id(gca: str, db_params: Dict[str, Any]) -> Optional[int]:
@@ -221,7 +260,7 @@ def get_taxon_id(gca: str, db_params: Dict[str, Any]) -> Optional[int]:
     SELECT lowest_taxon_id FROM assembly
     WHERE CONCAT(gca_chain, '.', gca_version) = '{gca}';
     """
-    rows = execute_query(query, db_params)
+    rows = _query(query, db_params)
     if not rows:
         return None
     return rows[0][0]
@@ -236,7 +275,7 @@ def get_busco_status(gca: str, db_params: Dict[str, Any]) -> Optional[str]:
     WHERE CONCAT(asm.gca_chain, '.', asm.gca_version) = '{gca}'
     AND ae.event = '{STATUS_EVENT}';
     """
-    rows = execute_query(query, db_params)
+    rows = _query(query, db_params)
     if not rows:
         return None
     return rows[0][0]
