@@ -32,14 +32,14 @@ def busco_dispatch_flow(  # pylint: disable=too-many-arguments,too-many-position
     """Trigger busco_gca_flow for each GCA listed in csv_file (gca,taxon_id,busco_dataset).
 
     Always refreshes assembly_events first (gb_metadata.update_busco_events), so status
-    checks below are current. A GCA already marked genome_busco.status=done is skipped
-    unless force=True -- every other row runs regardless of its status/priority, since it
-    was asked for explicitly in the input CSV rather than selected automatically.
+    checks below are current. A GCA already marked genome_busco.status=done or in_progress
+    is skipped unless force=True -- every other row runs regardless of its status/priority,
+    since it was asked for explicitly in the input CSV rather than selected automatically.
 
-    update_registry=True (the default) marks genome_busco.status as in_progress right after
-    a successful trigger, and passes update_registry on to each
-    triggered run so the Nextflow pipeline's --update_registry loads the results and marks
-    it done on completion (gb_prefect.tasks.busco_dispatch.dispatch_rows). False just
+    update_registry=True (the default) claims each GCA (genome_busco.status -> in_progress,
+    only if unchanged since it was read) before triggering it, and passes update_registry on
+    to each triggered run so the Nextflow pipeline's --update_registry loads the results and
+    marks it done on completion (gb_prefect.tasks.busco_dispatch.dispatch_rows). False just
     triggers, with no registry writes.
 
     post_run_cleanup=False (the default) leaves each run's directory as is. True is passed on
@@ -98,7 +98,7 @@ if __name__ == "__main__":
         "loaded from the Prefect Secret blocks (see gb_prefect/deployments/create_secrets.py).",
     )
     parser.add_argument(
-        "--force", action="store_true", help="Trigger a GCA even if already marked done."
+        "--force", action="store_true", help="Trigger a GCA even if already marked done or in_progress."
     )
     parser.add_argument(
         "--dry-run",
@@ -109,8 +109,8 @@ if __name__ == "__main__":
         "--update_registry",
         action=argparse.BooleanOptionalAction,
         default=True,
-        help="Mark genome_busco.status as in_progress right after a successful trigger and "
-        "load results on completion (default: on; --no-update_registry to just trigger).",
+        help="Claim each GCA (status -> in_progress) before triggering it and load results on "
+        "completion (default: on; --no-update_registry to just trigger).",
     )
     parser.add_argument(
         "--post-run-cleanup",
