@@ -42,6 +42,15 @@ import json
 import logging
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
+from pymysql.err import OperationalError
+from tenacity import (  # type: ignore
+    before_sleep_log,
+    retry,
+    retry_if_exception,
+    stop_after_attempt,
+    wait_exponential,
+)
+
 from gb_metadata.db_utils import execute_query, execute_write
 from gb_metadata.utils import connection_api
 
@@ -53,22 +62,58 @@ PRIORITY_EVENT = "genome_busco.priority"
 LARGE_GENOME_THRESHOLD_BP = 8_000_000_000
 HIGH_PRIORITY_MIN_READS = 10
 
-# assembly_events is MyISAM (table-level locks) and the server's lock_wait_timeout is a year:
-# a statement blocked by another session's lock would otherwise wait indefinitely (a dispatch
-# once hung ~15h on one UPDATE). Every connection here fails after this many seconds instead.
+# The metadata DB is a shared MySQL server where locks happen (MyISAM table locks, server-wide
+# write freezes), and its lock_wait_timeout is a year: a blocked statement once hung a dispatch
+# ~15h. So each attempt here waits at most LOCK_WAIT_TIMEOUT_S for a lock, and a blocked
+# attempt is retried with growing pauses -- 1, 2, 4, 8, 16 min, ~31 min in all -- before the
+# error is raised.
 LOCK_WAIT_TIMEOUT_S = 60
+DB_ATTEMPTS = 6
+
+# Errors after which the statement certainly did not take effect, so a retry can't apply a
+# write twice: lock wait timeout, deadlock (rolled back), can't connect.
+RETRYABLE_WRITE_ERRORS = frozenset({1205, 1213, 2003})
+# A read may also be retried after the connection dropped mid-query (server gone / lost). A
+# write may not: it could already have been applied, and e.g. re-running a claim that did
+# succeed would report it as taken by someone else.
+RETRYABLE_READ_ERRORS = RETRYABLE_WRITE_ERRORS | {2006, 2013}
 
 
+def _mysql_error_in(codes: frozenset) -> Any:
+    return retry_if_exception(
+        lambda err: isinstance(err, OperationalError) and bool(err.args) and err.args[0] in codes
+    )
+
+
+def _db_retry(codes: frozenset) -> Any:
+    return retry(
+        retry=_mysql_error_in(codes),
+        stop=stop_after_attempt(DB_ATTEMPTS),
+        wait=wait_exponential(multiplier=60, max=960),
+        before_sleep=before_sleep_log(logging.getLogger(__name__), logging.WARNING),
+        reraise=True,
+    )
+
+
+@_db_retry(RETRYABLE_READ_ERRORS)
 def _query(query: str, db_params: Dict[str, Any]) -> Tuple[Tuple[Any, ...], ...]:
     return execute_query(query, _with_lock_timeout(db_params))
 
 
+@_db_retry(RETRYABLE_WRITE_ERRORS)
 def _write(query: str, db_params: Dict[str, Any]) -> int:
     return execute_write(query, _with_lock_timeout(db_params))
 
 
 def _with_lock_timeout(db_params: Dict[str, Any]) -> Dict[str, Any]:
-    return {**db_params, "init_command": f"SET SESSION lock_wait_timeout = {LOCK_WAIT_TIMEOUT_S}"}
+    # lock_wait_timeout covers table/metadata locks (MyISAM); innodb_lock_wait_timeout covers
+    # row locks, should the table move to InnoDB.
+    timeout = LOCK_WAIT_TIMEOUT_S
+    return {
+        **db_params,
+        "init_command": f"SET SESSION lock_wait_timeout = {timeout}, innodb_lock_wait_timeout = {timeout}",
+    }
+
 
 EXISTING_BUSCO_QUERY = """
 select asm.assembly_id, CONCAT(asm.gca_chain, '.', asm.gca_version)
@@ -181,17 +226,13 @@ def insert_busco_candidates(db_params: Dict[str, Any], execute: bool) -> Dict[st
         priority = classify_priority(int(genome_size), num_reads, num_reads_genus)
         tier_counts[priority] += 1
 
-        logging.info(
-            "Candidate %s (assembly_id=%s) classified as %s", gca, assembly_id, priority
-        )
+        logging.info("Candidate %s (assembly_id=%s) classified as %s", gca, assembly_id, priority)
         insert_busco_event(assembly_id, "pending", priority, db_params, execute)
 
     return tier_counts
 
 
-def get_pending_candidates(
-    db_params: Dict[str, Any], limit: int
-) -> List[Tuple[str, int, str]]:
+def get_pending_candidates(db_params: Dict[str, Any], limit: int) -> List[Tuple[str, int, str]]:
     """Return up to `limit` pending candidates as (gca, taxon_id, priority), high priority
     first. large_genome is excluded -- that tier is run manually, never selected here."""
     if limit <= 0:
