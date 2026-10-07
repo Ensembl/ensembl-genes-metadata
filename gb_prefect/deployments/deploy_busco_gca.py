@@ -12,7 +12,8 @@ Prefect server):
         --pool codon-slurm-smoke-pool \
         --outdir /path/to/output \
         --enscode /path/to/enscode \
-        --asm-venv /path/to/asm_venv
+        --asm-venv /path/to/asm_venv \
+        --nextflow-module nextflow/25.04.6
 
 This targets a slurm-cli pool (job_variables: cpu/memory/time_limit/partition/
 setup_commands), unlike gb_prefect/deployments/deploy_flows.py's `process`-pool
@@ -44,6 +45,12 @@ if __name__ == "__main__":
         help="Path to the venv with gb_prefect + prefect installed; sourced by the worker "
         "before the flow run starts.",
     )
+    parser.add_argument(
+        "--nextflow-module",
+        default="nextflow/25.04.6",
+        help="Environment module loaded by the worker before the flow run starts; must satisfy "
+        "the pipeline's nextflowVersion requirement.",
+    )
     parser.add_argument("--cpu", type=int, default=2)
     parser.add_argument("--memory", type=int, default=8, help="Memory in GB.")
     parser.add_argument("--time-limit", type=int, default=4, help="Wall time in hours.")
@@ -66,7 +73,7 @@ if __name__ == "__main__":
             "partition": args.partition,
             "working_dir": args.outdir,
             "setup_commands": [
-                "module load nextflow/24.10.3",
+                f"module load {args.nextflow_module}",
                 f"source {args.asm_venv}/bin/activate",
             ],
         },
