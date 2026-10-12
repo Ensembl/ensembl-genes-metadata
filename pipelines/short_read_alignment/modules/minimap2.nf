@@ -33,20 +33,27 @@ process MINIMAP2 {
     tuple val(meta), path(minimap_index_file)
 
     output:
-    tuple val(meta), path("*.sam") , emit: minimap_alignment
+    tuple val(meta), path("*.bam") , emit: minimap_alignment
     path "versions.yml", emit: versions_file
 
     script:
     def sam_file = "${meta.run_accession}.sam"
     def profile = 
-        "${meta.platform}" == 'ont' ? '-x splice' :
-        "${meta.platform}" == 'pacbio' ? '-x splice:hq' :
+        "${meta.platform}".toString().toLowerCase()== 'ont' ? '-x splice' :
+        "${meta.platform}".toString().toLowerCase() == 'pacbio' ? '-x splice:hq' :
         '-ax splice'  // fallback
     //--secondary=no
     """
     minimap2 ${profile} -a -G ${params.max_intron_size} \
     --cs -N 1 -t ${task.cpus}  -u b ${minimap_index_file} \
-    ${meta.fastq1} -o ${sam_file}
+    ${meta.fastq1} | samtools sort \
+    -@ ${task.cpus} \
+    -o ${meta.run_accession}.bam 
+    
+
+    samtools index \
+    -@ ${task.cpus} \
+    ${meta.run_accession}.bam
     
     cat <<-END_VERSIONS > versions.yml
     "${task.process}":
