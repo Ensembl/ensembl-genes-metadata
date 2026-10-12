@@ -24,7 +24,7 @@
             "platform": {
                 "type": "string",
                 "description": "Sequencing platform",
-                "enum": ["ILLUMINA", "IONTORRENT", "PACBIO", "OXFORDNANOPORE"]
+                "enum": ["ILLUMINA", "IONTORRENT", "PACBIO", "OXFORDNANOPORE", "PACBIO_SMRT"]
             },
             "paired": {
                 "type": "boolean",
