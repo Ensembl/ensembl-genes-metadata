@@ -1,0 +1,103 @@
+site_name: Ensembl Genes Metadata Pipelines
+site_description: Documentation for the Ensembl Genes Metadata Nextflow pipelines.
+site_author: Ensembl Genebuild
+# Required so generated absolute-path pages (404.html, sitemap.xml, canonical
+# links) point at the real subpath instead of defaulting to the domain root --
+# without this, 404.html's own assets/nav links 404 because the site is
+# actually served from /ensembl-genes-metadata/, not /.
+site_url: https://ensembl.github.io/ensembl-genes-metadata/
+copyright: Copyright &copy; 2026 <a href="https://www.ebi.ac.uk">EMBL-European Bioinformatics Institute</a>
+repo_url: https://github.com/Ensembl/ensembl-genes-metadata
+repo_name: Ensembl/ensembl-genes-metadata
+docs_dir: docs
+site_dir: site
+# site/ is what docs-ci.yml publishes to the gh-pages branch (required by
+# the repo's github-pages deployment environment, which only allows
+# deployments from that branch) via peaceiris/actions-gh-pages.
+
+# The generator tooling (docs/generators/) and the Sphinx project that
+# builds the "Source" tab (docs/source/) both live alongside the content
+# MkDocs serves. mkdocs itself honors exclude_docs below, but zensical
+# (used in CI, see docs-ci.yml) does not implement exclude_docs as of
+# 0.0.62 -- it copies generators/ and source/ into site/ regardless. The
+# CI build strips the raw source/ copy back out *before* running the real
+# Sphinx build into that same site/source/ path (see docs-ci.yml -- order
+# matters here); do the same for local previews built with zensical (see
+# docs/generators/generate_docs.py).
+exclude_docs: |
+  generators/
+  source/
+  __pycache__/
+
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - navigation.tracking
+    - search.highlight
+    - search.share
+    - content.code.copy
+    - content.code.annotate
+  font:
+    code: IBM Plex Mono
+    text: Lato
+  icon:
+    repo: fontawesome/brands/github
+  logo: img/ebang.png
+
+use_directory_urls: true
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.tabbed:
+      alternate_style: true
+  - tables
+  - toc:
+      permalink: true
+  - attr_list
+  - md_in_html
+
+plugins:
+  - search
+  - minify:
+      minify_html: true
+
+nav:
+  - Assembly Metadata:
+      - Overview: pipelines/assembly_metadata/index.md
+      - Parameters: pipelines/assembly_metadata/parameters.md
+      - Input Format: pipelines/assembly_metadata/input.md
+      - Workflows: pipelines/assembly_metadata/workflows/index.md
+      - Modules: pipelines/assembly_metadata/modules/index.md
+      - Output: pipelines/assembly_metadata/output.md
+      - Troubleshooting: pipelines/assembly_metadata/troubleshooting.md
+  - Assembly Metadata Update:
+      - Overview: pipelines/assembly_metadata_update/index.md
+      - Parameters: pipelines/assembly_metadata_update/parameters.md
+      - Input Format: pipelines/assembly_metadata_update/input.md
+      - Workflows: pipelines/assembly_metadata_update/workflows/index.md
+      - Modules: pipelines/assembly_metadata_update/modules/index.md
+      - Output: pipelines/assembly_metadata_update/output.md
+      - Troubleshooting: pipelines/assembly_metadata_update/troubleshooting.md
+  - Source: source/index.html

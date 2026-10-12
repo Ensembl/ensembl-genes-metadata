@@ -23,4 +23,5 @@ Define where the pipeline should find input data and save output data.
 | `cacheDir` | string | /cache | no | Directory for caching files. |
 | `files_latency` | integer | 60 | no | Latency in seconds for file operations. |
 | `max_intron_size` | integer | 100000 | no | STAR option max_intron_size. |
+| `limitSjdbInsertNsj` | integer | 2000000 | no | STAR option limitSjdbInsertNsj. |
 | `genome_file` | string |  | no | Path for genome file. |

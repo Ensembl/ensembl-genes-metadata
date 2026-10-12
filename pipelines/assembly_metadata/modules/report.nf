@@ -41,6 +41,6 @@ process REPORT {
 
     script:
     """
-    create_report.py --file-list $gca_list --metadata ${params.metadata_params} --update-date $last_update
+    create_report.py --file-list $gca_list --metadata '${params.metadata_params_string}' --update-date $last_update
     """
 }

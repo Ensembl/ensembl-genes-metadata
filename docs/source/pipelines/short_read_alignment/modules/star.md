@@ -22,14 +22,13 @@ Consider using the following parameters for STAR alignment:
 | Process | `STAR` |
 | Label | `'star'` |
 | Tag | `$meta.run_accession` |
-| Publish directory | `"${params.outDir}/$meta.taxon_id/$meta.run_accession/alignment/", mode: 'copy'` |
+| Publish directory | `"$meta.alignment_dir", mode: 'copy'` |
 
 ## Inputs
 
 ### Nextflow interface
 
 ```nextflow
-//tuple val(taxon_id), val(genomeDir), val(platform), val(tissue), val(run_accession), val(pair1), val(pair2)
 val(meta)
 ```
 
@@ -38,15 +37,12 @@ val(meta)
 ### Nextflow interface
 
 ```nextflow
-//tuple val(taxon_id), val(genomeDir), val(gca), val(platform), val(paired), val(tissue), val(run_accession), path("*_Aligned.sortedByCoord.out.bam")
-//tuple val(taxon_id), val(genomeDir), val(tissue), val(platform), val(run_accession), path("*.bam")
-tuple val(meta), val("${params.outDir}/${meta.taxon_id}/${meta.run_accession}/alignment"), path("${meta.run_accession}_Aligned.sortedByCoord.out.bam"), emit: star_output
+tuple val(meta), path("${meta.run_accession}_Aligned.sortedByCoord.out.bam"), emit: star_output
 path "versions.yml", emit: versions_file
 ```
 
 ## Implementation Summary
 
-- Copy output files
 - Create symbolic links
 - Generate software version report
 

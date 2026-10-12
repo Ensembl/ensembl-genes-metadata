@@ -12,7 +12,7 @@ the indexing step is skipped.
 | Process | `MINIMAP2_INDEX_GENOME` |
 | Label | `'minimap2'` |
 | Tag | `${meta.taxon_id}:${meta.gca}` |
-| Publish directory | `"${meta.fasta_file.parent}", mode: 'copy'` |
+| storeDir | `"${meta.fasta_file.parent}"` |
 | maxForks | `10` |
 
 ## Inputs
@@ -20,7 +20,6 @@ the indexing step is skipped.
 ### Nextflow interface
 
 ```nextflow
-//tuple val(taxon_id), val(genomeDir), val(gca), val(platform), val(paired), val(tissue), val(run_accession), val(pair1)
 val(meta)
 ```
 
@@ -35,6 +34,7 @@ path "versions.yml", emit: versions_file
 
 ## Implementation Summary
 
+- Copy output files
 - Generate software version report
 
 ## Source

@@ -19,14 +19,13 @@ and generates two separate BAM files for forward and reverse strands.
 | Process | `BAM2STRAND` |
 | Label | `'samtools'` |
 | Tag | `$aligned_file` |
-| storeDir | `"${meta.output_dir}"` |
+| Publish directory | `"${meta.alignment_dir}", mode: 'copy'` |
 
 ## Inputs
 
 ### Nextflow interface
 
 ```nextflow
-//tuple val(taxon_id), val(genomeDir), val(tissue), val(platform), val(output_dir), path(aligned_file)
 tuple val(meta), path(aligned_file)
 ```
 
@@ -35,7 +34,8 @@ tuple val(meta), path(aligned_file)
 ### Nextflow interface
 
 ```nextflow
-tuple val(meta), path("*_forward_strand.bam"), path("*_reverse_strand.bam"), emit:aligned_output
+tuple val(meta), path("*_forward_strand.bam"), path("*_reverse_strand.bam"), path("*_forward_strand.bam.csi"), path("*_reverse_strand.bam.csi"), emit:aligned_output
+val(meta), emit:meta_value
 path "versions.yml", emit: versions_file
 ```
 

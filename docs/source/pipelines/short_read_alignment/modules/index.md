@@ -9,6 +9,7 @@ bam2bigWig
 bam2cram
 bam2strand
 check-bam
+collect-software-versions
 delete-fastq
 download-fastqs
 fetch-genome
@@ -20,4 +21,5 @@ sam2bam
 star
 star-index-genome
 star-index-params
+write-report
 ```

@@ -13,15 +13,14 @@ in the metadata.
 | Process | `MINIMAP2` |
 | Label | `'minimap2'` |
 | Tag | `$meta.run_accession` |
-| storeDir | `"${params.outDir}/$meta.taxon_id/$meta.run_accession/alignment/"` |
+| storeDir | `"${meta.alignment_dir}"` |
 
 ## Inputs
 
 ### Nextflow interface
 
 ```nextflow
-//tuple val(taxon_id), val(genomeDir), val(platform), val(tissue), val(run_accession), val(input_file), path(minimap_index_file)
-tuple val(meta), path("${params.outDir}/$meta.taxon_id/$meta.run_accession/alignment/") ,path(minimap_index_file)
+tuple val(meta), path(minimap_index_file)
 ```
 
 ## Outputs
@@ -29,7 +28,6 @@ tuple val(meta), path("${params.outDir}/$meta.taxon_id/$meta.run_accession/align
 ### Nextflow interface
 
 ```nextflow
-//tuple val(taxon_id), val(genomeDir), val(tissue),val(platform),  val(run_accession), path("*.sam")
 tuple val(meta), path("*.sam") , emit: minimap_alignment
 path "versions.yml", emit: versions_file
 ```

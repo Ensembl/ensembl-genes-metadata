@@ -13,5 +13,7 @@ Documentation for the available Ensembl Nextflow pipelines.
 ```{toctree}
 :maxdepth: 1
 
+assembly_metadata/README
+assembly_metadata_update/README
 short_read_alignment/README
 ```

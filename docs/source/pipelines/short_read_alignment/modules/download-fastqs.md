@@ -1,10 +1,13 @@
 # DOWNLOAD_FASTQS
 
-This process downloads the FASTQ files for a given run accession.
-It checks if the files already exist in the specified output directory and skips the download if they do.
-The downloaded FASTQ files are saved with the names "<run_accession>_1.fastq.gz" and "<run_accession>_2.fastq.gz" (if paired-end).
-The process also creates symbolic links to the downloaded files in the current working directory for easy access.
-The process takes a tuple containing metadata information as input and outputs a tuple containing the same metadata along with the paths to the downloaded FASTQ files.
+DOWNLOAD_FASTQS
+Download FASTQ files from ENA using the download_fastq.py script.
+Input:
+- meta: metadata map containing taxon_id, run_accession, url1, md5_1, url2, md5_2, paired, etc.
+Output:
+- FASTQ files (_1.fastq.gz and optionally _2.fastq.gz)
+- Software versions
+The module checks if the FASTQ files already exist before downloading to avoid redundant downloads.
 
 ## Process Details
 
@@ -12,16 +15,16 @@ The process takes a tuple containing metadata information as input and outputs a
 |----------|-------|
 | Process | `DOWNLOAD_FASTQS` |
 | Label | `python` |
-| Tag | `${meta.taxonId}:${meta.run_accession}` |
+| Tag | `$meta.taxon_id:$meta.run_accession` |
 | maxForks | `25` |
+| storeDir | `"${params.cacheDir}/${meta.taxon_id}/${meta.run_accession}"` |
 
 ## Inputs
 
 ### Nextflow interface
 
 ```nextflow
-tuple val(meta)
-//tuple val(taxon_id), val(gca), val(platform), val(paired), val(tissue), val(run_accession), val(genomeDir),  val(url1), val(md5_1), val(url2),  val(md5_2)
+val(meta)
 ```
 
 ## Outputs
@@ -29,13 +32,12 @@ tuple val(meta)
 ### Nextflow interface
 
 ```nextflow
-tuple val(meta), path("*_1.fastq.gz"), path("*_2.fastq.gz", optional: true) , emit: fastq_file_output
+tuple val(meta), path("${meta.run_accession}_*.fastq.gz", arity: '1..2'), emit: fastq_file_output
 path "versions.yml", emit: versions_file
 ```
 
 ## Implementation Summary
 
-- Create symbolic links
 - Generate software version report
 
 ## Source

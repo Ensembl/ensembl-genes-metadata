@@ -1,6 +1,15 @@
 # INDEXING_FILES
 
-The process
+INDEXING_FILES
+Index aligned files (BAM or CRAM) using samtools.
+Input:
+- meta: metadata map containing taxon_id, genomeDir, tissue, platform, output_dir, etc.
+- aligned_file: path to the input aligned file (BAM or CRAM)
+- extension: file extension for the index file (e.g., 'bai' for BAM, 'crai' for CRAM)
+Output:
+- Indexed aligned file
+- Software versions
+The module uses samtools index to create an index for the aligned file and creates a symbolic link to the output index file.
 
 ## Process Details
 
@@ -8,16 +17,14 @@ The process
 |----------|-------|
 | Process | `INDEXING_FILES` |
 | Label | `'samtools'` |
-| Tag | `${meta.run_accession}` |
-| Publish directory | `"${params.outDir}/${meta.taxon_id}/${meta.output_dir}/alignment", mode: 'copy'` |
+| Tag | `${meta.taxon_id}` |
+| Publish directory | `"${meta.alignment_dir}", mode: 'copy'` |
 
 ## Inputs
 
 ### Nextflow interface
 
 ```nextflow
-//tuple val(taxon_id), val(genomeDir),  val(tissue),  path(aligned_file)
-//tuple val(taxon_id), val(genomeDir), val(tissue),val(platform),  val(output_dir), path(aligned_file)
 tuple val(meta), path(aligned_file)
 val extension
 ```
@@ -27,8 +34,8 @@ val extension
 ### Nextflow interface
 
 ```nextflow
-//tuple val(taxon_id), val(genomeDir), val(tissue), val(platform), val(output_dir), path(aligned_file)
-tuple val(meta), path(aligned_file), emit:aligned_output
+tuple val(meta), path(aligned_file), path("*${extension}"),emit:indexed_output
+val(meta), emit:meta_value
 path "versions.yml", emit: versions_file
 ```
 

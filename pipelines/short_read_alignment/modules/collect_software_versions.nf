@@ -28,8 +28,8 @@ process COLLECT_SOFTWARE_VERSIONS {
     publishDir "${params.outDir}/pipeline_info", mode: 'copy'
 
     input:
-    //path 'versions_*.yml'
     val versions_files
+    
     output:
     path "software_versions.yml"
 

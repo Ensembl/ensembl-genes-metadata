@@ -1,22 +1,39 @@
-"""Sphinx configuration for the Ensembl Genes Nextflow documentation."""
+"""Sphinx configuration for ensembl-genes-metadata."""
 
-from __future__ import annotations
-
-from datetime import date
-from pathlib import Path
+import os
 import sys
+from datetime import date
 
+sys.path.insert(0, os.path.abspath("../../src/python"))
 
-ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT))
-
-project = "Ensembl Genes Metadata Nextflow Pipelines"
-author = "Ensembl Genebuild"
-copyright = f"{date.today().year}, Ensembl"
+project = "ensembl-genes-metadata"
+author = "Genebuild"
+copyright = f"{date.today().year}, Genebuild"
 
 extensions = [
+    "autoapi.extension",
     "myst_parser",
+    "sphinx.ext.napoleon",
+    "sphinx.ext.viewcode",
     "sphinx.ext.extlinks",
+]
+
+# sphinx-autoapi parses the source tree directly, so it doesn't need
+# gb_metadata's runtime dependencies installed to build the API docs.
+autoapi_type = "python"
+autoapi_dirs = ["../../src/python"]
+autoapi_root = "api"
+# autoapi_add_toctree_entry is meant to auto-link the generated api/index
+# into the root doc's sidebar nav, but it doesn't fire reliably when the
+# root doc is Markdown (ours is, via myst_parser) -- the api/index page
+# builds fine but never appears in any toctree, so it's unreachable from
+# the sidebar. index.md links to it explicitly instead (see its toctree).
+autoapi_add_toctree_entry = False
+autoapi_options = [
+    "members",
+    "undoc-members",
+    "show-inheritance",
+    "show-module-summary",
 ]
 
 source_suffix = {
@@ -34,12 +51,12 @@ myst_enable_extensions = [
 myst_heading_anchors = 3
 
 html_theme = "sphinx_rtd_theme"
-html_title = "Ensembl Genes Nextflow Pipelines"
-html_static_path = ["_static"]
-html_css_files = ["custom.css"]
+html_title = "ensembl-genes-metadata"
+html_logo = "../img/ebang.png"
 html_theme_options = {
     "collapse_navigation": False,
     "navigation_depth": 4,
+    "logo_only": True,
 }
 
 extlinks = {

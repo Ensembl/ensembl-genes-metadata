@@ -38,7 +38,7 @@ process GET_TOLID {
 
     script:
     """
-    get_tolid.py --accession $gca --metadata ${params.metadata_params}
+    get_tolid.py --accession $gca --metadata '${params.metadata_params_string}'
     """
 
 

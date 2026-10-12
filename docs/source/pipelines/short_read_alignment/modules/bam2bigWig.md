@@ -16,25 +16,29 @@ The process uses bamCoverage to generate BigWig files from the input BAM files.
 |----------|-------|
 | Process | `BAM2BIGWIG` |
 | Label | `'bamCoverage'` |
-| Tag | `$bam_file1` |
-| Publish directory | `"${meta.output_dir}", mode: "copy"` |
+| Tag | `$meta.taxon_id` |
+| Publish directory | `"${meta.alignment_dir}", mode: 'copy'` |
 
 ## Inputs
 
 ### Nextflow interface
 
 ```nextflow
-//tuple val(taxon_id), val(genomeDir), val(tissue), val(platform), val(output_dir), path(bam_file1),  path(bam_file2)
-tuple val(meta), path(bam_file1),  path(bam_file2)
+tuple val(meta), path(bams, arity: '1..2'), path(indexes, arity: '1..2')
 ```
 
 ## Outputs
 
-*No outputs documented.*
+### Nextflow interface
+
+```nextflow
+tuple val(meta),path("*.bw", arity: '1..2'),emit:bigwig_output
+val(meta), emit:meta_value
+path("versions.yml"), emit: versions_file
+```
 
 ## Implementation Summary
 
-- Create symbolic links
 - Generate software version report
 
 ## Source

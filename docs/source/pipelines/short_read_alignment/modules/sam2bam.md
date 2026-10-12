@@ -12,14 +12,13 @@ BAM index (.bai) for downstream analyses.
 | Process | `SAM2BAM` |
 | Label | `'samtools'` |
 | Tag | `${meta.run_accession}` |
-| storeDir | `"${params.outDir}/${meta.taxon_id}/${meta.run_accession}/alignment/"` |
+| storeDir | `"${meta.alignment_dir}"` |
 
 ## Inputs
 
 ### Nextflow interface
 
 ```nextflow
-//tuple val(taxon_id), val(genomeDir), val(tissue),val(platform),  val(run_accession), path(sam_file)
 tuple val(meta), path(sam_file)
 ```
 
@@ -28,8 +27,6 @@ tuple val(meta), path(sam_file)
 ### Nextflow interface
 
 ```nextflow
-//tuple val(taxon_id), val(genomeDir), val(gca), val(platform), val(paired), val(tissue), val(run_accession), path("*.bam")
-//tuple val(taxon_id), val(genomeDir), val(tissue),val(platform),  val(run_accession), path("*.bam")
 tuple val(meta), path("*.bam"), emit:sam_output
 path "versions.yml", emit: versions_file
 ```
