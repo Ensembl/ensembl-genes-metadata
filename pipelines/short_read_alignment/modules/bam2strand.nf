@@ -51,13 +51,22 @@ process BAM2STRAND {
    """
    # Plus strand
    # samtools view -h ${aligned_file} | grep -E '^@|XS:A:\\+' | samtools view -Sb - > ${bam_basename}_forward_strand.bam
+   if [[ "${meta.platform}"  == 'illumina' ]]; then 
+
    samtools view -b -f 0x2 -F 0x10 ${aligned_file} > ${bam_basename}_forward_strand.bam
-   
+   samtools view -b -f 0x2 -f 0x10 ${aligned_file} > ${bam_basename}_reverse_strand.bam
+
+   else 
+
+   samtools view -b -F 0x4 -F 0x10 ${aligned_file} > ${bam_basename}_forward_strand.bam
+   samtools view -b -F 0x4 -f 0x10 ${aligned_file} > ${bam_basename}_reverse_strand.bam
+
+   fi
+
    samtools index -c ${bam_basename}_forward_strand.bam ${bam_basename}_forward_strand.bam.csi
 
    # Minus strand
    #samtools view -h ${aligned_file} | grep -E '^@|XS:A:-' | samtools view -Sb - > ${bam_basename}_reverse_strand.bam
-   samtools view -b -f 0x2 -f 0x10 ${aligned_file} > ${bam_basename}_reverse_strand.bam
 
    samtools index -c ${bam_basename}_reverse_strand.bam ${bam_basename}_reverse_strand.bam.csi
 
