@@ -66,7 +66,7 @@ def gzip_ok(path: str) -> bool:
         return False
 
 
-def download_file(url: str, dest: str) -> None:
+def download_file1(url: str, dest: str) -> None:
     """Download a file using wget."""
     subprocess.run(["wget", "-q", "-O", dest, f"ftp://{url}"], check=True)
 
@@ -76,7 +76,7 @@ def file_is_valid(path: str, expected_md5: str) -> bool:
     return os.path.exists(path) and md5(path) == expected_md5 and gzip_ok(path)
 
 
-def ensure_file(
+def ensure_file1(
     url: str, final_path: str, expected_md5: str, max_retries: int = 3
 ) -> None:
     """
@@ -119,6 +119,86 @@ def ensure_file(
         f"{final_path} after {max_retries} attempts"
     )
 
+import os
+import time
+import subprocess
+
+
+def download_file(url: str, dest: str) -> None:
+    """Download a file using wget."""
+    subprocess.run(
+        [
+            "wget",
+            "-q",
+            "--continue",
+            #"--timeout=120",
+            #"--read-timeout=120",
+            #"--tries=4",
+            "-O",
+            dest,
+            f"ftp://{url}",
+        ],
+        check=True,
+    )
+
+
+def ensure_file(
+    url: str,
+    final_path: str,
+    expected_md5: str,
+    max_retries: int = 5,
+) -> None:
+
+    if file_is_valid(final_path, expected_md5):
+        return
+
+    tmp_path = final_path + ".tmp"
+
+    for attempt in range(max_retries):
+        try:
+            #if os.path.exists(tmp_path):
+            #    os.remove(tmp_path)
+
+            download_file(url, tmp_path)
+
+            if not gzip_ok(tmp_path):
+                raise ValueError(
+                    f"gzip check failed for {tmp_path}"
+                )
+
+            if md5(tmp_path) != expected_md5:
+                raise ValueError(
+                    f"MD5 check failed for {tmp_path}"
+                )
+
+            os.replace(tmp_path, final_path)
+            return
+
+        except (subprocess.CalledProcessError, ValueError) as e:
+
+            #if os.path.exists(tmp_path):
+            #    os.remove(tmp_path)
+
+            if attempt == max_retries - 1:
+                raise RuntimeError(
+                    f"Download failed for {final_path} "
+                    f"after {max_retries} attempts" 
+                    ) from e
+
+            # 30 sec, then 60 sec, then 90 sec...
+            delay = 30 * (attempt + 1)
+
+            print(
+                f"Download attempt {attempt + 1}/{max_retries} failed: {e}"
+            )
+            print(f"Retrying in {delay} seconds...")
+
+            time.sleep(delay)
+        except ValueError:
+            # Download completed but resulting file is corrupt/wrong.
+            # In this situation we DON'T want to resume it.
+            if os.path.exists(tmp_path):
+                os.remove(tmp_path)
 
 __version__ = "1.0.0"
 
