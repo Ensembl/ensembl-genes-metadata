@@ -35,57 +35,128 @@ Consider using the following parameters for STAR alignment:
   --alignIntronMax 100000 \ filter long spurious introns
 
 */
-
 process STAR {
-    tag "$meta.run_accession"
+    tag "${meta.run_accession}"
     label 'star'
-    publishDir "$meta.alignment_dir", mode: 'copy'
-    afterScript "sleep $params.files_latency"  // Needed because of file system latency
+
+    publishDir "${meta.alignment_dir}", mode: 'copy'
+
+    afterScript "sleep ${params.files_latency}"
+
+    errorStrategy 'retry'
+    maxRetries 2
 
     input:
     val(meta)
 
     output:
-    tuple val(meta), path("${meta.run_accession}_Aligned.sortedByCoord.out.bam"), emit: star_output
+    tuple val(meta),
+          path("${meta.run_accession}_Aligned.sortedByCoord.out.bam"),
+          path("*SJ*"),
+          emit: star_output
+
     path "versions.yml", emit: versions_file
-    
+
     script:
-    def starTmpDir =  "${meta.alignment_dir}/tmp"
+    def starTmpDir = "${meta.alignment_dir}/tmp"
+    def bamFile = "${meta.run_accession}_Aligned.sortedByCoord.out.bam"
+    def publishedBam = "${meta.alignment_dir}/${bamFile}"
     def outFileNamePrefix = "${meta.run_accession}_"
     def limitBAMsortRAM = (task.memory.toBytes() * 0.9) as long
-    
+
     """
-    if [ ! -s "$meta.alignment_dir/${meta.run_accession}_Aligned.sortedByCoord.out.bam" ]; then
-    rm -rf ${starTmpDir}
-    mkdir -p ${meta.alignment_dir}
-    STAR \
-    --runThreadN ${task.cpus} \
-    --twopassMode Basic \
-    --runMode alignReads \
-    --genomeDir ${meta.genome_dir} \
-    --readFilesIn ${meta.fastq1} ${meta.fastq2} \
-    --outFileNamePrefix ${outFileNamePrefix} \
-    --readFilesCommand zcat \
-    --outSAMattrRGline "ID:${meta.run_accession}" \
-    --outTmpDir ./tmp \
-    --outSAMtype BAM SortedByCoordinate  \
-    --limitSjdbInsertNsj ${params.limitSjdbInsertNsj} \
-    --outFilterIntronMotifs RemoveNoncanonicalUnannotated \
-    --outSAMstrandField intronMotif \
-    --limitBAMsortRAM ${limitBAMsortRAM} 
-    
-    else
-    echo "skip file exists"
-    ln -s ${meta.alignment_dir}/*.bam ./
+    # ------------------------------------------------------------
+    # Check whether a previously generated BAM can be reused
+    # ------------------------------------------------------------
+
+    reuse_bam="${meta.reuse_bam}"
+
+    if [[ -s "${publishedBam}" ]]; then
+
+        echo "Existing BAM found. Checking integrity..."
+
+        if samtools quickcheck -v "${publishedBam}"; then
+
+            mapped=\$(samtools view -c -F 4 "${publishedBam}")
+
+            if [[ "\$mapped" -gt 0 ]]; then
+                echo "Existing BAM is valid and contains \$mapped mapped reads"
+                reuse_bam=true
+            else
+                echo "Existing BAM has no mapped reads. STAR will be rerun."
+            fi
+
+        else
+            echo "Existing BAM failed samtools quickcheck. STAR will be rerun."
+        fi
     fi
 
-    STAR_VERSION=\$(STAR --version | head -n1)
-    cat <<-END_VERSIONS > versions.yml
-    "${task.process}":
-        star: \${STAR_VERSION}
-    END_VERSIONS
-    
+
+    # ------------------------------------------------------------
+    # Either reuse existing BAM or run STAR
+    # ------------------------------------------------------------
+
+    if [[ "\${reuse_bam}" == "true" ]]; then
+
+        ln -s "${publishedBam}" "${bamFile}"
+        ln -s ${meta.alignment_dir}/*SJ* ./
+
+    else
+
+        echo "Running STAR for ${meta.run_accession}"
+
+        rm -rf "${starTmpDir}"
+        rm -f "${publishedBam}"
+
+        mkdir -p "${meta.alignment_dir}"
+
+        STAR \\
+            --runThreadN ${task.cpus} \\
+            --twopassMode Basic \\
+            --runMode alignReads \\
+            --genomeDir "${meta.genome_dir}" \\
+            --readFilesIn "${meta.fastq1}" "${meta.fastq2}" \\
+            --outFileNamePrefix "${outFileNamePrefix}" \\
+            --readFilesCommand zcat \\
+            --outSAMattrRGline "ID:${meta.run_accession}" \\
+            --outTmpDir ./tmp \\
+            --outSAMtype BAM SortedByCoordinate \\
+            --limitSjdbInsertNsj ${params.limitSjdbInsertNsj} \\
+            --outFilterIntronMotifs RemoveNoncanonicalUnannotated \\
+            --outSAMstrandField intronMotif \\
+            --limitBAMsortRAM ${limitBAMsortRAM}
+
+        # --------------------------------------------------------
+        # Validate STAR output
+        # --------------------------------------------------------
+
+        echo "Checking STAR BAM integrity..."
+
+        #samtools quickcheck -v "${bamFile}"
+
+        #mapped=\$(samtools view -c -F 4 "${bamFile}")
+        if ! samtools quickcheck -v "${bamFile}"; then
+    echo "ERROR: ${bamFile} failed samtools quickcheck" >&2
+    echo "BAM may be truncated or missing the EOF block." >&2
+    exit 1
+fi
+        mapped=\$(samtools view -c -F 4 "${bamFile}")
+        if [[ "\$mapped" -eq 0 ]]; then
+            echo "ERROR: ${bamFile} has no mapped reads" >&2
+            exit 1
+        fi
+
+        echo "BAM validation passed: \$mapped mapped reads"
+
+    fi
+
+
+    # ------------------------------------------------------------
+    # Versions
+    # ------------------------------------------------------------
+
+    printf '"${task.process}":\\n' > versions.yml
+    printf '    STAR: %s\\n' "\$(STAR --version 2>&1)" >> versions.yml
+    printf '    samtools: %s\\n' "\$(samtools --version | head -n 1 | awk '{print \$2}')" >> versions.yml
     """
-}    
-
-
+}
