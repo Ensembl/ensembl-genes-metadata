@@ -1,0 +1,162 @@
+#!/usr/bin/env nextflow
+/*
+See the NOTICE file distributed with this work for additional information
+regarding copyright ownership.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+/* 
+The STAR process is used to align short reads to a reference genome. 
+STAR documentation https://physiology.med.cornell.edu/faculty/skrabanek/lab/angsd/lecture_notes/STARmanual.pdf
+
+STAR \
+  --runThreadN 
+  --genomeDir
+  --readFilesIn
+  --outSAMtype BAM SortedByCoordinate \
+  --outSAMstrandField intronMotif \  It adds a tag (XS:A:+ or XS:A:-) tag to each alignment based on the strand of the splice junction. Used by StringTie
+  --twopassMode Basic   Improves splice junction sensitivity/precision. Allows STAR to learn junctions in the first pass and improve mapping in the second.
+  --outFilterIntronMotifs RemoveNoncanonicalUnannotated   Filters out introns that are non-canonical (non-GT/AG) and not annotated. 
+  --limitSjdbInsertNsj 2000000 \  Limits the number of splice junctions to be inserted into the genome index. This is useful for large genomes or when there are many splice junctions.
+
+Consider using the following parameters for STAR alignment:
+  --outFilterType BySJout \  Use spliced junctions to filter alignments use known junctions-keep only those reads that contain junctions that passed filtering into SJ.out.tab
+  --alignIntronMax 100000 \ filter long spurious introns
+
+*/
+process STAR {
+    tag "${meta.run_accession}"
+    label 'star'
+
+    publishDir "${meta.alignment_dir}", mode: 'copy'
+
+    afterScript "sleep ${params.files_latency}"
+
+    errorStrategy 'retry'
+    maxRetries 2
+
+    input:
+    val(meta)
+
+    output:
+    tuple val(meta),
+          path("${meta.run_accession}_Aligned.sortedByCoord.out.bam"),
+          path("*SJ*"),
+          emit: star_output
+
+    path "versions.yml", emit: versions_file
+
+    script:
+    def starTmpDir = "${meta.alignment_dir}/tmp"
+    def bamFile = "${meta.run_accession}_Aligned.sortedByCoord.out.bam"
+    def publishedBam = "${meta.alignment_dir}/${bamFile}"
+    def outFileNamePrefix = "${meta.run_accession}_"
+    def limitBAMsortRAM = (task.memory.toBytes() * 0.9) as long
+
+    """
+    # ------------------------------------------------------------
+    # Check whether a previously generated BAM can be reused
+    # ------------------------------------------------------------
+
+    reuse_bam="${meta.reuse_bam}"
+
+    if [[ -s "${publishedBam}" ]]; then
+
+        echo "Existing BAM found. Checking integrity..."
+
+        if samtools quickcheck -v "${publishedBam}"; then
+
+            mapped=\$(samtools view -c -F 4 "${publishedBam}")
+
+            if [[ "\$mapped" -gt 0 ]]; then
+                echo "Existing BAM is valid and contains \$mapped mapped reads"
+                reuse_bam=true
+            else
+                echo "Existing BAM has no mapped reads. STAR will be rerun."
+            fi
+
+        else
+            echo "Existing BAM failed samtools quickcheck. STAR will be rerun."
+        fi
+    fi
+
+
+    # ------------------------------------------------------------
+    # Either reuse existing BAM or run STAR
+    # ------------------------------------------------------------
+
+    if [[ "\${reuse_bam}" == "true" ]]; then
+
+        ln -s "${publishedBam}" "${bamFile}"
+        ln -s ${meta.alignment_dir}/*SJ* ./
+
+    else
+
+        echo "Running STAR for ${meta.run_accession}"
+
+        rm -rf "${starTmpDir}"
+        rm -f "${publishedBam}"
+
+        mkdir -p "${meta.alignment_dir}"
+
+        STAR \\
+            --runThreadN ${task.cpus} \\
+            --twopassMode Basic \\
+            --runMode alignReads \\
+            --genomeDir "${meta.genome_dir}" \\
+            --readFilesIn "${meta.fastq1}" "${meta.fastq2}" \\
+            --outFileNamePrefix "${outFileNamePrefix}" \\
+            --readFilesCommand zcat \\
+            --outSAMattrRGline "ID:${meta.run_accession}" \\
+            --outTmpDir ./tmp \\
+            --outSAMtype BAM SortedByCoordinate \\
+            --limitSjdbInsertNsj ${params.limitSjdbInsertNsj} \\
+            --outFilterIntronMotifs RemoveNoncanonicalUnannotated \\
+            --outSAMstrandField intronMotif \\
+            --limitBAMsortRAM ${limitBAMsortRAM}
+
+        # --------------------------------------------------------
+        # Validate STAR output
+        # --------------------------------------------------------
+
+        echo "Checking STAR BAM integrity..."
+
+        #samtools quickcheck -v "${bamFile}"
+
+        #mapped=\$(samtools view -c -F 4 "${bamFile}")
+        if ! samtools quickcheck -v "${bamFile}"; then
+    echo "ERROR: ${bamFile} failed samtools quickcheck" >&2
+    echo "BAM may be truncated or missing the EOF block." >&2
+    exit 1
+fi
+        mapped=\$(samtools view -c -F 4 "${bamFile}")
+        if [[ "\$mapped" -eq 0 ]]; then
+            echo "ERROR: ${bamFile} has no mapped reads" >&2
+            exit 1
+        fi
+
+        echo "BAM validation passed: \$mapped mapped reads"
+
+    fi
+
+
+    # ------------------------------------------------------------
+    # Versions
+    # ------------------------------------------------------------
+
+    printf '"${task.process}":\\n' > versions.yml
+    printf '    STAR: %s\\n' "\$(STAR --version 2>&1)" >> versions.yml
+    printf '    samtools: %s\\n' "\$(samtools --version | head -n 1 | awk '{print \$2}')" >> versions.yml
+    """
+}
