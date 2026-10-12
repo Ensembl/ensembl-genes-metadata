@@ -50,7 +50,8 @@ def enrich_csv_with_paths(  # pylint: disable=too-many-statements, too-many-loca
         tissue = str(row["tissue"])
         genome_index_dir = Path(base_dir) / taxon_id / assembly_accession
         df.loc[idx, "genome_file"] = "genome.fna"
-        bam_path = Path(base_dir) / taxon_id / run_accession / "alignment"
+        bam_path = Path(base_dir) / taxon_id / platform / run_accession / "alignment"
+        print(bam_path)
         relative_splice_junction_file = Path("")  # Initialize as empty Path
         if paired:
             star_index_genome = genome_index_dir / "Genome"
