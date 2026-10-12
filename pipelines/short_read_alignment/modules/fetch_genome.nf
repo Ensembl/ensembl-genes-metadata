@@ -36,7 +36,11 @@ process FETCH_GENOME {
     
     script:
     """
-    if [[ -f "${meta.fasta_file}" ]] && [[ -f "${meta.output_dir}/${meta.taxon_id}/${meta.gca}/genome.fna" ]]; then
+    if [[ -s "${meta.output_dir}/${meta.taxon_id}/${meta.gca}/genome.fna" ]]; then 
+        echo "Using cached genome"
+        ln -s "${meta.output_dir}/${meta.taxon_id}/${meta.gca}/genome.fna" genome.fna
+
+    elif [[ -s "${meta.fasta_file}" ]]; then
         echo "Using provided genome file: ${meta.fasta_file}"
         cp -L "${meta.fasta_file}" genome.fna
     else
@@ -55,7 +59,7 @@ process FETCH_GENOME {
     
     # Create versions file
 
-    cat <<-END_VERSIONS > versions.yml
+    cat > versions.yml <<END_VERSIONS 
     "${task.process}":
         fetch_genome.py: \$(fetch_genome.py --version 2>&1)
         python: \$(python --version | sed 's/Python //')
