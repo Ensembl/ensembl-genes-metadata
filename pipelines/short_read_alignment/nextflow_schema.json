@@ -38,6 +38,12 @@
             "default": true,
             "description": "Option to convert BAM files to BigWig format."
         },
+        "reuse_bam": {
+            "type": "boolean",
+            "default": true,
+            "description": "Option to  reuse BAM alignement if it already exists in the destination folder."
+        },
+
         "cleanOutputDir": {
             "type": "boolean",
             "default": true,

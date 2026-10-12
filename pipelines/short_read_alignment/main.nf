@@ -131,7 +131,8 @@ workflow SHORT_READ_ALIGNMENT {
                         md5_2 : row.get('md5_2') ? row.get('md5_2') : null,
                         fasta_file: row.get('genome_file') ?: params.genome_file,
                         csv_path : params.csvFile,
-                        output_dir : params.outDir
+                        output_dir : params.outDir,
+                        reuse_bam : params.reuse_bam
                     ]
                 }
     data.view { row -> "DATA: ${row}" }        
@@ -168,7 +169,7 @@ workflow SHORT_READ_ALIGNMENT {
     ch_versions_file  = ch_versions_file.mix(STAR_INDEX_GENOME.out.versions_file)
 
     def alignStarOutput = STAR(genomeIndexShortData).star_output
-    .map {meta, bamFile -> return tuple(meta, bamFile) }
+    .map {meta, bamFile, _spliceJunctionFile -> return tuple(meta, bamFile) }
     ch_versions_file  = ch_versions_file.mix(STAR.out.versions_file)
 
     def checkedBamStar = CHECK_BAM_STAR(alignStarOutput).good_bam
@@ -194,10 +195,10 @@ workflow SHORT_READ_ALIGNMENT {
     def cleanFile = DELETE_FASTQ_MINIMAP(checkedBamMinimap).aligned_output
     ch_versions_file  = ch_versions_file.mix(DELETE_FASTQ_MINIMAP.out.versions_file)
 
-    sam2bamOutput = SAM2BAM(cleanFile).sam_output
-    ch_versions_file  = ch_versions_file.mix(SAM2BAM.out.versions_file)
+    //sam2bamOutput = SAM2BAM(cleanFile).sam_output
+    //ch_versions_file  = ch_versions_file.mix(SAM2BAM.out.versions_file)
 
-    minimapOutput = INDEX_BAM_MINIMAP(sam2bamOutput, 'bai').indexed_output
+    minimapOutput = INDEX_BAM_MINIMAP(cleanFile, 'bai').indexed_output
     ch_versions_file  = ch_versions_file.mix(INDEX_BAM_MINIMAP.out.versions_file)            
 
     // Collect all aligned BAMs
