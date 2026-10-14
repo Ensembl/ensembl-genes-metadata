@@ -20,7 +20,7 @@ class PipelineCredentials:
 
 @dataclass(frozen=True)
 class TaskRunOptions:
-    """Execution-control flags for a Prefect task, separate from its pipeline inputs.
+    """Execution-control flags for a Prefect task.
 
     Attributes:
         dry_run: If True, build the sbatch script without submitting it.
