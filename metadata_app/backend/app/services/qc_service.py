@@ -26,7 +26,15 @@ STATUS_FILTERS = {
     "in progress": ["in_progress"],
     "handover": ["handed_over", "coming_soon"],
     "completed": ["completed", "pre_released"],
-    "blocked": ["check_busco", "poor_genome_busco", "insufficient_data", "abandoned", "suppressed", "faulty", "large_sequence"],
+    "blocked": [
+        "check_busco",
+        "poor_genome_busco",
+        "insufficient_data",
+        "abandoned",
+        "suppressed",
+        "faulty",
+        "large_sequence",
+    ],
 }
 ANNOTATION_METHOD_GROUPS = {
     "ensembl": ["projection_build", "full_genebuild", "anno"],
@@ -144,8 +152,7 @@ def query_assembly_metrics(annotation_df: pd.DataFrame) -> pd.DataFrame:
         cursor = conn.cursor()
         cursor.execute(
             metrics_query,
-            tuple(assembly_ids)
-            + ("assembly.busco", "assembly.busco_dataset", "assembly.busco_version"),
+            tuple(assembly_ids) + ("assembly.busco", "assembly.busco_dataset", "assembly.busco_version"),
         )
         metric_rows = cursor.fetchall()
 
@@ -336,12 +343,16 @@ def prepare_qc_records(qc_df: pd.DataFrame) -> list[dict]:
                 "assemblyBuscoVersion": _json_value(row.get("assembly_busco_version")),
                 "contigN50Mb": _scaled_number(_first_value(row, ("contig_n50",)), 1_000_000),
                 "scaffoldN50Mb": _scaled_number(_first_value(row, ("scaffold_n50",)), 1_000_000),
-                "genomeSizeGb": _scaled_number(_first_value(row, ("genome_size", "genome_length")), 1_000_000_000),
+                "genomeSizeGb": _scaled_number(
+                    _first_value(row, ("genome_size", "genome_length")), 1_000_000_000
+                ),
                 "gcPercent": _scaled_number(
                     _first_value(row, ("gc", "gc_content", "gc_percent")),
                     fraction_as_percent=True,
                 ),
-                "geneCount": sum(value for value in (coding_genes, non_coding_genes, pseudogenes) if value is not None)
+                "geneCount": sum(
+                    value for value in (coding_genes, non_coding_genes, pseudogenes) if value is not None
+                )
                 or None,
                 "proteinCoding": coding_genes,
                 "transcriptCount": _number(_first_value(row, ("total_transcripts", "transcript_count"))),
@@ -388,11 +399,7 @@ def prepare_qc_records(qc_df: pd.DataFrame) -> list[dict]:
         if qc_df.attrs.get("cohort_scope") == "taxon":
             peers = records
         else:
-            peers = [
-                peer
-                for peer in records
-                if peer["taxonomy"] == record["taxonomy"]
-            ]
+            peers = [peer for peer in records if peer["taxonomy"] == record["taxonomy"]]
         features = ("proteinBuscoComplete", "genomeBuscoComplete", "geneCount", "transcriptCount")
         z_scores = []
         for feature in features:

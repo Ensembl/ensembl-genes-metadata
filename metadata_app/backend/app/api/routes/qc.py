@@ -5,7 +5,11 @@ from pathlib import Path
 from fastapi import APIRouter, HTTPException
 
 from metadata_app.backend.app.models.qc_schemas import QcFilterRequest
-from metadata_app.backend.app.services.qc_service import cohort_feature_means, prepare_qc_records, query_qc_data
+from metadata_app.backend.app.services.qc_service import (
+    cohort_feature_means,
+    prepare_qc_records,
+    query_qc_data,
+)
 
 qc = APIRouter()
 CLADE_SETTINGS_PATH = Path(__file__).resolve().parents[3] / "data" / "clade_settings.json"
@@ -43,18 +47,14 @@ def filter_annotation_qc(filters: QcFilterRequest):
         if filters.gca:
             requested_gcas = {str(value).strip().casefold() for value in filters.gca}
             records = [
-                record
-                for record in records
-                if str(record.get("gca", "")).casefold() in requested_gcas
+                record for record in records if str(record.get("gca", "")).casefold() in requested_gcas
             ]
         if filters.status:
             records = [record for record in records if record.get("status") == filters.status]
         if filters.clade:
             requested_clade = filters.clade.casefold()
             records = [
-                record
-                for record in records
-                if str(record.get("taxonomy", "")).casefold() == requested_clade
+                record for record in records if str(record.get("taxonomy", "")).casefold() == requested_clade
             ]
         return {
             "records": records,
