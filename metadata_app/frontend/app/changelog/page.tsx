@@ -61,6 +61,21 @@ const changelogs = [
       </>,
     ],
   },
+    {
+    version: "2.1.0",
+    date: "2026-10-14",
+    title: "Initial internal QC implementation",
+    description:
+      "This update provides the first iteration of the internal QC page",
+    features: [
+      "Added a new backend service for annotation QC",
+      "Created a frontend page to display live QC metrics from the registry",
+      "Added initial analyses to assess annotation quality",
+    ],
+    changes: [
+      "Improved main navigation",
+    ],
+  },
  
 ].reverse();
 
