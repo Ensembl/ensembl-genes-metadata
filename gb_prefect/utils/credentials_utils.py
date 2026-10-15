@@ -1,5 +1,5 @@
 import json
-from typing import Any, Optional
+from typing import Any, Dict, Optional
 
 from gb_prefect.models.pipeline_options import PipelineCredentials
 
@@ -35,6 +35,18 @@ def resolve_credentials(
     if slack_report:
         slack_params = _secret_to_json_string(Secret.load(slack_secret_block).get())
     return PipelineCredentials(metadata_params_string=metadata_params_string, slack_params=slack_params)
+
+
+def load_metadata_db_params(
+    credentials: Optional[PipelineCredentials],
+    metadata_secret_block: str = DEFAULT_METADATA_SECRET_BLOCK,
+) -> Dict[str, Any]:
+    """Return the assembly metadata DB connection params as a dict, from credentials if given,
+    otherwise from the metadata_secret_block Prefect Secret block."""
+    credentials = resolve_credentials(
+        credentials, metadata_secret_block, DEFAULT_SLACK_SECRET_BLOCK, slack_report=False
+    )
+    return json.loads(credentials.metadata_params_string)
 
 
 def redact_credentials(text: str, credentials: PipelineCredentials) -> str:
