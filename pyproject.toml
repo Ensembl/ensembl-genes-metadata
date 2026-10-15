@@ -60,6 +60,8 @@ packages = [
     "gb_prefect.tasks",
     "gb_prefect.utils",
     "gb_prefect.models",
+    "gb_prefect.nextflow",
+    "gb_prefect.pipelines",
     "gb_prefect.worker",
 ]
 
