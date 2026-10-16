@@ -1,8 +1,10 @@
 # app/services/home_page_service.py
-import logging
-from metadata_app.backend.app.core.database import get_db_connection
-import pandas as pd
 import datetime
+import logging
+
+import pandas as pd
+
+from metadata_app.backend.app.core.database import get_db_connection
 from metadata_app.backend.app.services.taxonomy_service import get_descendant_taxa
 
 
@@ -176,6 +178,83 @@ def get_annotations_per_year():
 
     except Exception as e:
         print(f"Error in get_annotations_per_year: {e}")
+        return []
+
+
+def get_annotation_growth_by_quarter():
+    """Return distinct annotated genomes by quarter for the last four years."""
+    try:
+        with get_db_connection("meta") as conn:
+            cursor = conn.cursor()
+            query = """
+                SELECT
+                    YEAR(g.release_date) AS year,
+                    QUARTER(g.release_date) AS quarter_number,
+                    g.annotation_method,
+                    COUNT(DISTINCT g.genebuild_status_id) AS genome_count
+                FROM genebuild_status g
+                WHERE g.release_date >= DATE_SUB(CURDATE(), INTERVAL 4 YEAR)
+                  AND g.annotation_method IN ('full_genebuild', 'anno', 'braker', 'helixer')
+                  AND g.gb_status = 'live'
+                GROUP BY year, quarter_number, annotation_method
+                ORDER BY year, quarter_number, annotation_method
+            """
+            cursor.execute(query)
+            result = cursor.fetchall()
+
+            baseline_query = """
+                SELECT g.annotation_method, COUNT(DISTINCT g.genebuild_status_id) AS genome_count
+                FROM genebuild_status g
+                WHERE g.release_date < DATE_SUB(CURDATE(), INTERVAL 4 YEAR)
+                  AND g.annotation_method IN ('full_genebuild', 'anno', 'braker', 'helixer')
+                  AND g.gb_status = 'live'
+                GROUP BY g.annotation_method
+            """
+            cursor.execute(baseline_query)
+            baseline_result = cursor.fetchall()
+
+        columns = ["year", "quarter_number", "annotation_method", "genome_count"]
+        df = pd.DataFrame(result, columns=columns)
+        if df.empty:
+            wide = pd.DataFrame(columns=["year", "quarter_number", "quarter"])
+        else:
+            df["quarter"] = df["year"].astype(str) + " Q" + df["quarter_number"].astype(str)
+            wide = (
+                df.pivot_table(
+                    index=["year", "quarter_number", "quarter"],
+                    columns="annotation_method",
+                    values="genome_count",
+                    aggfunc="sum",
+                    fill_value=0,
+                )
+                .reset_index()
+                .sort_values(["year", "quarter_number"])
+            )
+        start_period = (pd.Timestamp.today() - pd.DateOffset(years=4)).to_period("Q")
+        end_period = pd.Timestamp.today().to_period("Q")
+        periods = pd.period_range(start=start_period, end=end_period, freq="Q")
+        quarter_index = pd.DataFrame(
+            {
+                "year": periods.year,
+                "quarter_number": periods.quarter,
+                "quarter": [f"{period.year} Q{period.quarter}" for period in periods],
+            }
+        )
+        wide = quarter_index.merge(wide, on=["year", "quarter_number", "quarter"], how="left")
+        methods = ["full_genebuild", "anno", "braker", "helixer"]
+        for method in methods:
+            if method not in wide:
+                wide[method] = 0
+            wide[method] = wide[method].fillna(0).astype(int)
+        wide[methods] = wide[methods].cumsum()
+        baseline = dict(baseline_result)
+        for method in methods:
+            wide[method] += int(baseline.get(method, 0))
+        wide["total_genomes"] = wide[methods].sum(axis=1)
+        return wide[["quarter", "total_genomes", *methods]].to_dict(orient="records")
+
+    except Exception as e:
+        logging.error(f"Error fetching quarterly annotation growth: {e}")
         return []
 
 
