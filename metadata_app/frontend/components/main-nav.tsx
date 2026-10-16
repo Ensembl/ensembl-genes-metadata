@@ -119,7 +119,7 @@ export function MainNav() {
     <div className="ml-auto flex min-w-0 flex-1 flex-wrap items-center justify-end gap-3 sm:flex-nowrap sm:gap-6">
 
 
-      <NavigationMenu className='*:last:left-auto'>
+      <NavigationMenu className="z-20">
       <NavigationMenuList>
         <NavigationMenuItem>
           <NavigationMenuTrigger className='[&>svg]:size-4'>Search Genebuild</NavigationMenuTrigger>

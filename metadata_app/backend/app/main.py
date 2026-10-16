@@ -20,6 +20,7 @@ from metadata_app.backend.app.api.routes import (
     handover,
     db_clean,
     gca_lookup,
+    qc,
 )
 from metadata_app.backend.app.core.database import setup_logging
 
@@ -67,6 +68,7 @@ app.include_router(handover.handover_router, prefix="/api/handover", tags=["hand
 app.include_router(db_clean.db_clean_router, prefix="/api/clean", tags=["clean"])
 
 app.include_router(gca_lookup.gca_lookup, prefix="/api/gca_lookup", tags=["gca_lookup"])
+app.include_router(qc.qc, prefix="/api/qc", tags=["qc"])
 
 
 # API health check endpoints

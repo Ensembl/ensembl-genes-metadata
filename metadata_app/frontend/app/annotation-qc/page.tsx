@@ -1,1029 +1,940 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, {useEffect, useMemo, useState} from "react";
+import {Bar, BarChart, CartesianGrid, Scatter, ScatterChart, XAxis, YAxis,} from "recharts";
 import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Cell,
-  Line,
-  LineChart,
-  Scatter,
-  ScatterChart,
-  XAxis,
-  YAxis,
-} from "recharts";
-import { Activity, Search, ShieldAlert } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  ChartConfig,
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-} from "@/components/ui/chart";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+  Activity,
+  ArrowRight,
+  ChevronLeft,
+  ChevronRight,
+  Dna,
+  Download,
+  Info,
+  Layers3,
+  Search,
+  ShieldAlert,
+  ShieldCheck
+} from "lucide-react";
+import {Badge} from "@/components/ui/badge";
+import {Button} from "@/components/ui/button";
+import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card";
+import {Input} from "@/components/ui/input";
+import {Label} from "@/components/ui/label";
+import MultipleSelector, {Option} from "@/components/ui/multi_select";
+import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select";
+import {ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent} from "@/components/ui/chart";
+import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from "@/components/ui/table";
+import {Tooltip, TooltipContent, TooltipTrigger} from "@/components/ui/tooltip";
 
-type GenebuildStatus = "live" | "in progress" | "handover" | "blocked";
+type GenebuildStatus = "live" | "in progress" | "handover" | "completed" | "blocked";
+type ScreeningFilter = "all" | "review";
+type SingleReportTab = "Overview" | "Gene structure" | "Quality & validation" | "All metrics";
 
 type QcRecord = {
-  gca: string;
-  species: string;
-  taxonomy: string;
-  taxonId: string;
-  status: GenebuildStatus;
-  contigN50Mb: number;
-  scaffoldN50Mb: number;
-  genomeSizeGb: number;
-  gcPercent: number;
-  geneCount: number;
-  proteinCoding: number;
-  transcriptCount: number;
-  genomeBuscoComplete: number;
-  proteinBuscoComplete: number;
-  buscoComplete: number;
-  buscoDuplicated: number;
-  buscoFragmented: number;
-  buscoMissing: number;
-  repeatPercent: number;
-  annotationScore: number;
-  assemblyScore: number;
-  lncRnaCount: number;
-  pseudogeneCount: number;
-  smallRnaCount: number;
-  pcoa1: number;
-  pcoa2: number;
-  outlierScore: number;
+    gca: string;
+    species: string;
+    taxonomy: string;
+    taxonId: string;
+    status: GenebuildStatus;
+    associatedProject: string | null;
+    groupName: string | null;
+    infraName: string | null;
+    genebuilder: string | null;
+    annotationSource: string | null;
+    annotationMethod: string | null;
+    dateStarted: string | null;
+    releaseDate: string | null;
+    dateStatusUpdate: string | null;
+    lastGenebuildUpdate: string | null;
+    assemblyBuscoLineage: string | null;
+    assemblyBuscoVersion: string | null;
+    proteinBuscoLineage: string | null;
+    proteinBuscoVersion: string | null;
+    contigN50Mb: number | null;
+    scaffoldN50Mb: number | null;
+    genomeSizeGb: number | null;
+    gcPercent: number | null;
+    geneCount: number | null;
+    proteinCoding: number | null;
+    transcriptCount: number | null;
+    genomeBuscoComplete: number | null;
+    genomeBuscoDuplicated: number | null;
+    genomeBuscoFragmented: number | null;
+    genomeBuscoMissing: number | null;
+    proteinBuscoComplete: number | null;
+    buscoComplete: number | null;
+    buscoDuplicated: number | null;
+    buscoFragmented: number | null;
+    buscoMissing: number | null;
+    repeatPercent: number | null;
+    annotationScore: number | null;
+    assemblyScore: number | null;
+    lncRnaCount: number | null;
+    pseudogeneCount: number | null;
+    smallRnaCount: number | null;
+    newMetrics: Record<string, number | string | null>;
+    pcoa1: number;
+    pcoa2: number;
+    outlierScore: number;
 };
 
-type BuscoComparison = {
-  name: string;
-  genomeComplete: number;
-  proteinComplete: number;
-  complete: number;
-  duplicated: number;
-  fragmented: number;
-  missing: number;
-  difference: number;
-  differenceFlagged: boolean;
-  duplicationFlagged: boolean;
-};
-
-const QC_RECORDS: QcRecord[] = [
-  {
-    gca: "GCA_000001405.29",
-    species: "Homo sapiens",
-    taxonomy: "Primates",
-    taxonId: "9606",
-    status: "live",
-    contigN50Mb: 57.9,
-    scaffoldN50Mb: 67.8,
-    genomeSizeGb: 3.1,
-    gcPercent: 41.0,
-    geneCount: 21421,
-    proteinCoding: 19957,
-    transcriptCount: 252316,
-    genomeBuscoComplete: 98.5,
-    proteinBuscoComplete: 98.1,
-    buscoComplete: 98.1,
-    buscoDuplicated: 1.2,
-    buscoFragmented: 0.8,
-    buscoMissing: 1.1,
-    repeatPercent: 50.6,
-    annotationScore: 96,
-    assemblyScore: 94,
-    lncRnaCount: 18422,
-    pseudogeneCount: 14391,
-    smallRnaCount: 7568,
-    pcoa1: -0.18,
-    pcoa2: 0.09,
-    outlierScore: 0.6,
-  },
-  {
-    gca: "GCA_000001635.9",
-    species: "Mus musculus",
-    taxonomy: "Rodentia",
-    taxonId: "10090",
-    status: "live",
-    contigN50Mb: 32.4,
-    scaffoldN50Mb: 61.5,
-    genomeSizeGb: 2.73,
-    gcPercent: 42.0,
-    geneCount: 22612,
-    proteinCoding: 21704,
-    transcriptCount: 149882,
-    genomeBuscoComplete: 97.9,
-    proteinBuscoComplete: 97.4,
-    buscoComplete: 97.4,
-    buscoDuplicated: 1.6,
-    buscoFragmented: 1.2,
-    buscoMissing: 1.4,
-    repeatPercent: 45.3,
-    annotationScore: 93,
-    assemblyScore: 91,
-    lncRnaCount: 14180,
-    pseudogeneCount: 10862,
-    smallRnaCount: 6120,
-    pcoa1: -0.11,
-    pcoa2: 0.05,
-    outlierScore: 0.8,
-  },
-  {
-    gca: "GCA_000002035.6",
-    species: "Danio rerio",
-    taxonomy: "Actinopteri",
-    taxonId: "7955",
-    status: "handover",
-    contigN50Mb: 1.7,
-    scaffoldN50Mb: 55.8,
-    genomeSizeGb: 1.37,
-    gcPercent: 36.5,
-    geneCount: 25143,
-    proteinCoding: 24638,
-    transcriptCount: 60321,
-    genomeBuscoComplete: 94.0,
-    proteinBuscoComplete: 96.2,
-    buscoComplete: 96.2,
-    buscoDuplicated: 3.8,
-    buscoFragmented: 2.1,
-    buscoMissing: 1.7,
-    repeatPercent: 52.8,
-    annotationScore: 89,
-    assemblyScore: 84,
-    lncRnaCount: 9480,
-    pseudogeneCount: 5042,
-    smallRnaCount: 2934,
-    pcoa1: 0.2,
-    pcoa2: -0.08,
-    outlierScore: 1.3,
-  },
-  {
-    gca: "GCA_000146045.2",
-    species: "Arabidopsis thaliana",
-    taxonomy: "Brassicaceae",
-    taxonId: "3702",
-    status: "live",
-    contigN50Mb: 12.1,
-    scaffoldN50Mb: 23.5,
-    genomeSizeGb: 0.12,
-    gcPercent: 36.1,
-    geneCount: 27655,
-    proteinCoding: 27445,
-    transcriptCount: 48219,
-    genomeBuscoComplete: 98.9,
-    proteinBuscoComplete: 98.7,
-    buscoComplete: 98.7,
-    buscoDuplicated: 2.1,
-    buscoFragmented: 0.7,
-    buscoMissing: 0.6,
-    repeatPercent: 15.4,
-    annotationScore: 95,
-    assemblyScore: 92,
-    lncRnaCount: 4120,
-    pseudogeneCount: 924,
-    smallRnaCount: 831,
-    pcoa1: -0.35,
-    pcoa2: -0.24,
-    outlierScore: 0.9,
-  },
-  {
-    gca: "GCA_905319855.2",
-    species: "Salmo salar",
-    taxonomy: "Actinopteri",
-    taxonId: "8030",
-    status: "in progress",
-    contigN50Mb: 4.2,
-    scaffoldN50Mb: 35.6,
-    genomeSizeGb: 2.97,
-    gcPercent: 43.4,
-    geneCount: 46722,
-    proteinCoding: 44081,
-    transcriptCount: 81792,
-    genomeBuscoComplete: 90.1,
-    proteinBuscoComplete: 94.5,
-    buscoComplete: 94.5,
-    buscoDuplicated: 28.4,
-    buscoFragmented: 2.8,
-    buscoMissing: 2.7,
-    repeatPercent: 59.1,
-    annotationScore: 82,
-    assemblyScore: 80,
-    lncRnaCount: 20410,
-    pseudogeneCount: 12254,
-    smallRnaCount: 6881,
-    pcoa1: 0.44,
-    pcoa2: -0.18,
-    outlierScore: 2.7,
-  },
-  {
-    gca: "GCA_964030725.1",
-    species: "Bombus terrestris",
-    taxonomy: "Arthropoda",
-    taxonId: "30195",
-    status: "blocked",
-    contigN50Mb: 0.38,
-    scaffoldN50Mb: 2.4,
-    genomeSizeGb: 0.28,
-    gcPercent: 35.2,
-    geneCount: 14102,
-    proteinCoding: 13218,
-    transcriptCount: 18502,
-    genomeBuscoComplete: 78.2,
-    proteinBuscoComplete: 83.9,
-    buscoComplete: 83.9,
-    buscoDuplicated: 0.9,
-    buscoFragmented: 7.4,
-    buscoMissing: 8.7,
-    repeatPercent: 18.2,
-    annotationScore: 61,
-    assemblyScore: 58,
-    lncRnaCount: 3288,
-    pseudogeneCount: 1844,
-    smallRnaCount: 912,
-    pcoa1: 0.72,
-    pcoa2: 0.43,
-    outlierScore: 3.8,
-  },
-  {
-    gca: "GCA_963924645.1",
-    species: "Canis lupus familiaris",
-    taxonomy: "Carnivora",
-    taxonId: "9615",
-    status: "handover",
-    contigN50Mb: 19.6,
-    scaffoldN50Mb: 41.1,
-    genomeSizeGb: 2.42,
-    gcPercent: 41.6,
-    geneCount: 20954,
-    proteinCoding: 19885,
-    transcriptCount: 73210,
-    genomeBuscoComplete: 95.9,
-    proteinBuscoComplete: 96.8,
-    buscoComplete: 96.8,
-    buscoDuplicated: 1.1,
-    buscoFragmented: 1.5,
-    buscoMissing: 1.7,
-    repeatPercent: 41.7,
-    annotationScore: 88,
-    assemblyScore: 87,
-    lncRnaCount: 8262,
-    pseudogeneCount: 5940,
-    smallRnaCount: 2446,
-    pcoa1: -0.08,
-    pcoa2: 0.18,
-    outlierScore: 1.1,
-  },
-  {
-    gca: "GCA_949987765.1",
-    species: "Lynx lynx",
-    taxonomy: "Carnivora",
-    taxonId: "13125",
-    status: "in progress",
-    contigN50Mb: 8.3,
-    scaffoldN50Mb: 31.4,
-    genomeSizeGb: 2.51,
-    gcPercent: 41.2,
-    geneCount: 20318,
-    proteinCoding: 19304,
-    transcriptCount: 45622,
-    genomeBuscoComplete: 89.4,
-    proteinBuscoComplete: 93.8,
-    buscoComplete: 93.8,
-    buscoDuplicated: 1.0,
-    buscoFragmented: 3.2,
-    buscoMissing: 3.0,
-    repeatPercent: 39.8,
-    annotationScore: 81,
-    assemblyScore: 79,
-    lncRnaCount: 7140,
-    pseudogeneCount: 4812,
-    smallRnaCount: 2180,
-    pcoa1: 0.08,
-    pcoa2: 0.26,
-    outlierScore: 1.9,
-  },
-];
+type CohortMeans = Record<string, number | null>;
 
 const statusOptions: Array<"all" | GenebuildStatus> = [
-  "all",
-  "live",
-  "in progress",
-  "handover",
-  "blocked",
+    "all",
+    "live",
+    "in progress",
+    "handover",
+    "completed",
+    "blocked",
 ];
 
-const qcChartConfig = {
-  genomeComplete: {
-    label: "Genome complete",
-    color: "var(--chart-2)",
-  },
-  proteinComplete: {
-    label: "Protein complete",
-    color: "var(--chart-4)",
-  },
-  mean: {
-    label: "Mean",
-    color: "var(--chart-2)",
-  },
-  median: {
-    label: "Median",
-    color: "var(--chart-4)",
-  },
-  assembly: {
-    label: "Assembly",
-    color: "var(--chart-2)",
-  },
-  annotation: {
-    label: "Annotation",
-    color: "var(--chart-4)",
-  },
-  pcoa1: {
-    label: "PCoA 1",
-  },
-  pcoa2: {
-    label: "PCoA 2",
-  },
+const annotationMethodOptions = ["ensembl", "projection_build", "full_genebuild", "anno", "helixer", "braker"] as const;
+
+const chartConfig = {
+    count: {label: "Annotations", color: "var(--chart-2)"},
+    flagged: {label: "Needs review", color: "var(--destructive)"},
+    genome: {label: "Genome BUSCO", color: "var(--chart-2)"},
+    protein: {label: "Protein BUSCO", color: "var(--chart-4)"},
 } satisfies ChartConfig;
 
-const mean = (values: number[]) =>
-  values.length ? values.reduce((total, value) => total + value, 0) / values.length : 0;
+const PAGE_SIZE = 25;
 
-const median = (values: number[]) => {
-  if (!values.length) return 0;
-  const sorted = [...values].sort((a, b) => a - b);
-  const middle = Math.floor(sorted.length / 2);
-  return sorted.length % 2 === 0
-    ? (sorted[middle - 1] + sorted[middle]) / 2
-    : sorted[middle];
+const numbers = (values: Array<number | null | undefined>) =>
+    values.filter((value): value is number => typeof value === "number" && Number.isFinite(value));
+
+const quantile = (values: Array<number | null | undefined>, fraction: number) => {
+    const valid = numbers(values).sort((a, b) => a - b);
+    if (!valid.length) return 0;
+    const position = (valid.length - 1) * fraction;
+    const lower = Math.floor(position);
+    const upper = Math.ceil(position);
+    return valid[lower] + (valid[upper] - valid[lower]) * (position - lower);
 };
 
-const formatNumber = (value: number, digits = 1) =>
-  new Intl.NumberFormat("en-GB", {
-    maximumFractionDigits: digits,
-    minimumFractionDigits: digits,
-  }).format(value);
+const median = (values: Array<number | null | undefined>) => quantile(values, 0.5);
+
+const formatNumber = (value: number | null | undefined, digits = 1) =>
+    value === null || value === undefined || !Number.isFinite(value)
+        ? "n/a"
+        : new Intl.NumberFormat("en-GB", {
+            maximumFractionDigits: digits,
+            minimumFractionDigits: digits,
+        }).format(value);
+
+const formatCompact = (value: number) =>
+    new Intl.NumberFormat("en-GB", {notation: "compact", maximumFractionDigits: 1}).format(value);
+
+const formatMetricLabel = (name: string) =>
+    name.replace(/^Genebuild\.Stats\./i, "").replace(/^Stats\./i, "").replace(/[_-]+/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
+
+const formatMetricValue = (value: number | string | null) => {
+    if (typeof value === "number") return formatNumber(value, 2);
+    if (typeof value === "string" && value.trim() !== "" && Number.isFinite(Number(value))) {
+        return formatNumber(Number(value), 2);
+    }
+    return value ?? "n/a";
+};
 
 const getStatusBadge = (status: GenebuildStatus) => {
-  if (status === "blocked") return "destructive";
-  if (status === "live") return "default";
-  return "secondary";
+    if (status === "blocked") return "destructive";
+    if (status === "live") return "default";
+    return "secondary";
 };
 
-const getBuscoDifference = (record: QcRecord) =>
-  Math.abs(record.genomeBuscoComplete - record.proteinBuscoComplete);
+const buscoDelta = (record: QcRecord) =>
+    record.genomeBuscoComplete === null || record.proteinBuscoComplete === null
+        ? null
+        : Math.abs(record.genomeBuscoComplete - record.proteinBuscoComplete);
 
-const toBuscoComparison = (
-  record: QcRecord,
-  averageDifference: number,
-  averageDuplicated: number,
-  name = record.species,
-): BuscoComparison => {
-  const difference = getBuscoDifference(record);
+const needsReview = (record: QcRecord) => record.outlierScore >= 2;
 
-  return {
-    name,
-    genomeComplete: record.genomeBuscoComplete,
-    proteinComplete: record.proteinBuscoComplete,
-    complete: record.buscoComplete,
-    duplicated: record.buscoDuplicated,
-    fragmented: record.buscoFragmented,
-    missing: record.buscoMissing,
-    difference,
-    differenceFlagged: difference > averageDifference,
-    duplicationFlagged: record.buscoDuplicated > averageDuplicated,
-  };
+const buscoDeltaThreshold = (records: QcRecord[]) => {
+    const deltas = records.map(buscoDelta).filter((value): value is number => value !== null && Number.isFinite(value));
+    if (deltas.length < 2) return Number.POSITIVE_INFINITY;
+    const mean = deltas.reduce((total, value) => total + value, 0) / deltas.length;
+    const standardDeviation = Math.sqrt(deltas.reduce((total, value) => total + (value - mean) ** 2, 0) / deltas.length);
+    return mean + 2 * standardDeviation;
 };
 
-const getBuscoMedian = (
-  records: QcRecord[],
-  averageDifference: number,
-  averageDuplicated: number,
-  name: string,
-): BuscoComparison => {
-  const genomeComplete = median(records.map((record) => record.genomeBuscoComplete));
-  const proteinComplete = median(records.map((record) => record.proteinBuscoComplete));
-  const difference = Math.abs(genomeComplete - proteinComplete);
-
-  return {
-    name,
-    genomeComplete,
-    proteinComplete,
-    complete: median(records.map((record) => record.buscoComplete)),
-    duplicated: median(records.map((record) => record.buscoDuplicated)),
-    fragmented: median(records.map((record) => record.buscoFragmented)),
-    missing: median(records.map((record) => record.buscoMissing)),
-    difference,
-    differenceFlagged: difference > averageDifference,
-    duplicationFlagged: median(records.map((record) => record.buscoDuplicated)) > averageDuplicated,
-  };
+const needsBuscoReview = (record: QcRecord, threshold: number) => {
+    const delta = buscoDelta(record);
+    return delta !== null && delta > threshold;
 };
+
+const OUTLIER_SCORE_HELP =
+    "This score compares the annotation with live annotations in the same clade. It combines standardized differences in protein BUSCO completeness, genome BUSCO completeness, gene count, and transcript count. A score near 0 means no measurable difference or insufficient live peers; a score of 2 or more flags the annotation for review. It is a screening signal, not a pass/fail judgement.";
+
+const reviewReasons = (record: QcRecord) => {
+    const reasons: string[] = [];
+    if (record.outlierScore >= 2) reasons.push("multivariate outlier");
+    if ((record.buscoMissing ?? 0) >= 5) reasons.push("BUSCO missing");
+    if ((record.buscoDuplicated ?? 0) >= 5) reasons.push("BUSCO duplication");
+    if ((buscoDelta(record) ?? 0) >= 5) reasons.push("BUSCO delta");
+    return reasons.length ? reasons : ["within cohort range"];
+};
+
+const exportHeader = (key: string) =>
+    key.replace(/([a-z])([A-Z])/g, "$1_$2").replace(/\./g, "_").toLowerCase();
+
+const downloadQcCsv = (records: QcRecord[]) => {
+    if (!records.length) return;
+    const preferredColumns = [
+        "gca", "species", "taxonId", "taxonomy", "status", "proteinBuscoComplete",
+        "buscoMissing", "outlierScore", "reviewSignals",
+    ];
+    const metricColumns = [...new Set(records.flatMap((record) => Object.keys(record.newMetrics)))].sort();
+    const baseColumns = [...new Set(records.flatMap((record) => Object.keys(record)))].filter(
+        (key) => key !== "newMetrics" && !preferredColumns.includes(key),
+    );
+    const columns = [...preferredColumns, ...baseColumns, ...metricColumns.map((key) => `newMetrics.${key}`)];
+    const valueFor = (record: QcRecord, column: string) => {
+        if (column === "reviewSignals") return reviewReasons(record).join("; ");
+        if (column.startsWith("newMetrics.")) return record.newMetrics[column.slice("newMetrics.".length)] ?? "";
+        return (record as unknown as Record<string, unknown>)[column] ?? "";
+    };
+    const escape = (value: unknown) => `"${String(value).replace(/"/g, '""')}"`;
+    const csv = [
+        columns.map((column) => escape(exportHeader(column))).join(","),
+        ...records.map((record) => columns.map((column) => escape(valueFor(record, column))).join(",")),
+    ].join("\n");
+    const url = URL.createObjectURL(new Blob([csv], {type: "text/csv;charset=utf-8"}));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `annotation-qc-${new Date().toISOString().slice(0, 10)}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+};
+
+const getRecordText = (record: QcRecord) =>
+    `${record.gca} ${record.species} ${record.taxonomy} ${record.taxonId}`.toLowerCase();
 
 export default function AnnotationQcPage() {
-  const [gca, setGca] = useState("");
-  const [taxonomy, setTaxonomy] = useState("Carnivora");
-  const [status, setStatus] = useState<(typeof statusOptions)[number]>("all");
-  const [submitted, setSubmitted] = useState({ gca: "", taxonomy: "Carnivora", status: "all" });
-
-  const filteredRecords = useMemo(() => {
-    const statusMatches = (record: QcRecord) =>
-      submitted.status === "all" || record.status === submitted.status;
-
-    if (submitted.gca.trim()) {
-      const query = submitted.gca.trim().toLowerCase();
-      return QC_RECORDS.filter(
-        (record) => record.gca.toLowerCase() === query && statusMatches(record),
-      );
-    }
-
-    const taxonQuery = submitted.taxonomy.trim().toLowerCase();
-    return QC_RECORDS.filter(
-      (record) =>
-        statusMatches(record) &&
-        (!taxonQuery ||
-          record.taxonomy.toLowerCase().includes(taxonQuery) ||
-          record.species.toLowerCase().includes(taxonQuery) ||
-          record.taxonId === taxonQuery),
-    );
-  }, [submitted]);
-
-  const singleRecord = submitted.gca.trim() ? filteredRecords[0] : null;
-
-  const cohortStats = useMemo(() => {
-    const metrics = [
-      { key: "proteinCoding", label: "Coding genes" },
-      { key: "lncRnaCount", label: "lncRNA genes" },
-      { key: "pseudogeneCount", label: "Pseudogenes" },
-      { key: "smallRnaCount", label: "Small RNA genes" },
-      { key: "transcriptCount", label: "Transcripts" },
-    ] as const;
-
-    return metrics.map((metric) => {
-      const values = filteredRecords.map((record) => record[metric.key]);
-      const metricMean = mean(values);
-      const metricMedian = median(values);
-
-      return {
-        metric: metric.label,
-        mean: metricMean,
-        median: metricMedian,
-      };
+    const [gca, setGca] = useState("");
+    const [taxonId, setTaxonId] = useState("");
+    const [clade, setClade] = useState<Option[]>([]);
+    const [cladeOptions, setCladeOptions] = useState<Option[]>([]);
+    const [status, setStatus] = useState<(typeof statusOptions)[number]>("all");
+    const [annotationMethod, setAnnotationMethod] = useState<(typeof annotationMethodOptions)[number]>("ensembl");
+    const [submitted, setSubmitted] = useState({
+        gca: "",
+        taxonId: "",
+        clade: "",
+        status: "all",
+        annotationMethod: "ensembl"
     });
-  }, [filteredRecords]);
+    const [records, setRecords] = useState<QcRecord[]>([]);
+    const [comparisonRecords, setComparisonRecords] = useState<QcRecord[]>([]);
+    const [cohortMeans, setCohortMeans] = useState<CohortMeans>({});
+    const [loading, setLoading] = useState(false);
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
+    const [hasRun, setHasRun] = useState(false);
+    const [search, setSearch] = useState("");
+    const [screeningFilter, setScreeningFilter] = useState<ScreeningFilter>("all");
+    const [sortBy, setSortBy] = useState("outlierScore");
+    const [page, setPage] = useState(1);
 
-  const outliers = useMemo(
-    () => filteredRecords.filter((record) => record.outlierScore >= 2).sort((a, b) => b.outlierScore - a.outlierScore),
-    [filteredRecords],
-  );
-
-  const scoreTrend = filteredRecords.map((record) => ({
-    species: record.species.split(" ")[0],
-    assembly: record.assemblyScore,
-    annotation: record.annotationScore,
-  }));
-
-  const pcoaSummary = useMemo(() => {
-    const pcoa1Values = filteredRecords.map((record) => record.pcoa1);
-    const pcoa2Values = filteredRecords.map((record) => record.pcoa2);
-    const formatRange = (values: number[]) =>
-      values.length
-        ? `${formatNumber(Math.min(...values), 2)} to ${formatNumber(Math.max(...values), 2)}`
-        : "n/a";
-
-    return {
-      assemblies: filteredRecords.length,
-      outliers: outliers.length,
-      pcoa1Range: formatRange(pcoa1Values),
-      pcoa2Range: formatRange(pcoa2Values),
+    const loadRecords = async (
+        requestedGca: string,
+        requestedTaxonIds: number[] | null,
+        requestedClade: string,
+        requestedStatus: (typeof statusOptions)[number],
+        requestedAnnotationMethod: string,
+    ) => {
+        setLoading(true);
+        setErrorMessage(null);
+        setRecords([]);
+        setComparisonRecords([]);
+        setCohortMeans({});
+        try {
+            const response = await fetch("/api/qc/annotation/filter", {
+                method: "POST",
+                headers: {"Content-Type": "application/json", accept: "application/json"},
+                body: JSON.stringify({
+                    gca: requestedGca.trim() ? [requestedGca.trim()] : null,
+                    taxon_id: requestedTaxonIds,
+                    clade: requestedClade || null,
+                    status: requestedStatus === "all" ? null : requestedStatus,
+                    annotation_method: requestedAnnotationMethod ? [requestedAnnotationMethod] : null,
+                }),
+            });
+            if (!response.ok) throw new Error(await response.text());
+            const result = await response.json();
+            setRecords(result.records ?? []);
+            setComparisonRecords(result.cohort_records ?? result.records ?? []);
+            setCohortMeans(result.cohort_means ?? {});
+            setPage(1);
+        } catch (error) {
+            setErrorMessage(error instanceof Error ? error.message : String(error));
+            setRecords([]);
+        } finally {
+            setLoading(false);
+        }
     };
-  }, [filteredRecords, outliers.length]);
 
-  const buscoAverageDifference = useMemo(() => {
-    const records = singleRecord
-      ? QC_RECORDS.filter((record) => record.taxonomy === singleRecord.taxonomy)
-      : filteredRecords;
+    useEffect(() => {
+        void fetch("/api/qc/clades")
+            .then(async (response) => {
+                if (!response.ok) throw new Error(await response.text());
+                return response.json();
+            })
+            .then((result) => setCladeOptions((result.clades ?? []).map((value: string) => ({value, label: value}))))
+            .catch((error) => setErrorMessage(error instanceof Error ? error.message : String(error)));
+    }, []);
 
-    return mean(records.map(getBuscoDifference));
-  }, [filteredRecords, singleRecord]);
+    const cohortRecords = useMemo(() => {
+        const cladeQuery = submitted.clade.toLowerCase();
+        const gcaQuery = submitted.gca.trim().toLowerCase();
 
-  const buscoAverageDuplicated = useMemo(() => {
-    const records = singleRecord
-      ? QC_RECORDS.filter((record) => record.taxonomy === singleRecord.taxonomy)
-      : filteredRecords;
+        return records.filter(
+            (record) =>
+                (submitted.status === "all" || record.status === submitted.status) &&
+                (!gcaQuery || record.gca.toLowerCase() === gcaQuery) &&
+                (!cladeQuery || record.taxonomy.toLowerCase() === cladeQuery),
+        );
+    }, [records, submitted]);
 
-    return mean(records.map((record) => record.buscoDuplicated));
-  }, [filteredRecords, singleRecord]);
+    const reviewCount = useMemo(() => cohortRecords.filter(needsReview).length, [cohortRecords]);
+    const singleRecord = submitted.gca.trim() ? cohortRecords[0] : null;
 
-  const buscoComparison = useMemo(() => {
-    if (singleRecord) {
-      const taxonomyPeers = QC_RECORDS.filter(
-        (record) => record.taxonomy === singleRecord.taxonomy,
-      );
+    const metricSummary = useMemo(() => {
+        const metrics = [
+            ["Protein BUSCO complete", cohortRecords.map((record) => record.proteinBuscoComplete), "%"],
+            ["Genome BUSCO complete", cohortRecords.map((record) => record.genomeBuscoComplete), "%"],
+            ["BUSCO missing", cohortRecords.map((record) => record.buscoMissing), "%"],
+            ["Genes", cohortRecords.map((record) => record.geneCount), ""],
+            ["Transcripts", cohortRecords.map((record) => record.transcriptCount), ""],
+        ] as const;
 
-      return [
-        toBuscoComparison(
-          singleRecord,
-          buscoAverageDifference,
-          buscoAverageDuplicated,
-          singleRecord.species,
-        ),
-        getBuscoMedian(
-          taxonomyPeers,
-          buscoAverageDifference,
-          buscoAverageDuplicated,
-          `${singleRecord.taxonomy} median`,
-        ),
-      ];
-    }
+        return metrics.map(([label, values, suffix]) => ({
+            label,
+            median: median(values),
+            p10: quantile(values, 0.1),
+            p90: quantile(values, 0.9),
+            suffix,
+        }));
+    }, [cohortRecords]);
 
-    return filteredRecords.map((record) =>
-      toBuscoComparison(
-        record,
-        buscoAverageDifference,
-        buscoAverageDuplicated,
-        record.species.split(" ")[0],
-      ),
+    const reviewQueue = useMemo(() => {
+        const query = search.trim().toLowerCase();
+        const filtered = cohortRecords.filter(
+            (record) => (!query || getRecordText(record).includes(query)) && (screeningFilter === "all" || needsReview(record)),
+        );
+        return [...filtered].sort((a, b) => {
+            if (sortBy === "buscoMissing") return (b.buscoMissing ?? -1) - (a.buscoMissing ?? -1);
+            if (sortBy === "species") return a.species.localeCompare(b.species);
+            return b.outlierScore - a.outlierScore;
+        });
+    }, [cohortRecords, screeningFilter, search, sortBy]);
+
+    const pageCount = Math.max(1, Math.ceil(reviewQueue.length / PAGE_SIZE));
+    const visibleQueue = reviewQueue.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+    const submitFilters = async () => {
+        const requestedTaxonIds = taxonId.split(",").map((value) => Number.parseInt(value.trim(), 10)).filter((value) => Number.isFinite(value));
+        const requestedClade = clade[0]?.value ?? "";
+        const isCohortQuery = !gca.trim() && Boolean(taxonId.trim() || requestedClade);
+        const requestedStatus = isCohortQuery ? status : "all";
+        const requestedAnnotationMethod = isCohortQuery ? annotationMethod : "";
+        setSubmitted({
+            gca,
+            taxonId,
+            clade: requestedClade,
+            status: requestedStatus,
+            annotationMethod: requestedAnnotationMethod
+        });
+        setHasRun(true);
+        await loadRecords(gca, requestedTaxonIds.length ? requestedTaxonIds : null, requestedClade, requestedStatus, requestedAnnotationMethod);
+    };
+
+    const primaryFilterCount = [gca.trim(), taxonId.trim(), clade[0]?.value ?? ""].filter(Boolean).length;
+    const showAdditionalFilters = !gca.trim() && Boolean(taxonId.trim() || clade[0]?.value);
+    const primaryFilterMessage = primaryFilterCount === 0
+        ? "Choose one primary filter to begin."
+        : primaryFilterCount > 1
+            ? "Please fill out only one primary filter."
+            : "";
+
+    return (
+        <div className="min-h-screen flex justify-center px-4 py-10 sm:px-6 lg:px-8">
+            <div className="w-full max-w-7xl">
+                <Card className="bg-secondary shadow-lg">
+                    <CardHeader className="mb-4">
+                        <CardTitle>Annotation QC screening</CardTitle>
+                        <CardDescription>Screen a clade or taxonomy cohort for annotations that differ from their peers
+                            or get a single annotation report of all metrics.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="space-y-6">
+                            <section aria-labelledby="primary-query-heading">
+                                <div className="mb-4">
+                                    <div className="flex items-center gap-2"><h3 id="primary-query-heading"
+                                                                                 className="text-sm font-semibold">Primary
+                                        query</h3><Tooltip><TooltipTrigger asChild><Button type="button" variant="ghost"
+                                                                                           size="icon"
+                                                                                           className="h-5 w-5"
+                                                                                           aria-label="Explain QC cohort selection"><Info
+                                        className="h-3.5 w-3.5"/></Button></TooltipTrigger><TooltipContent
+                                        className="max-w-xs leading-relaxed">GCA searches use live annotations in the
+                                        GCA&apos;s configured clade as the comparison cohort. Clade searches use the
+                                        selected clade cohort. Taxon ID searches use all annotations returned under that
+                                        taxon ID, including descendants, as one taxon cohort.</TooltipContent></Tooltip>
+                                    </div>
+                                    <p className="mt-1 text-sm text-muted-foreground">Choose exactly one: enter a GCA
+                                        accession, a taxon ID, or select a clade. Leave the other two empty.</p></div>
+                                <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                                    <div><Label htmlFor="gca-accession">GCA accession</Label><Input id="gca-accession"
+                                                                                                    className="mt-3 bg-filter-input-bg dark:bg-transparent"
+                                                                                                    placeholder="GCA_000001405.29"
+                                                                                                    value={gca}
+                                                                                                    onChange={(event) => setGca(event.target.value)}/>
+                                    </div>
+                                    <div><Label htmlFor="taxon-id-filter">Taxon ID</Label><Input id="taxon-id-filter"
+                                                                                                 className="mt-3 bg-filter-input-bg dark:bg-transparent"
+                                                                                                 placeholder="9606"
+                                                                                                 value={taxonId}
+                                                                                                 onChange={(event) => setTaxonId(event.target.value)}/>
+                                    </div>
+                                    <div><Label>Clade</Label><MultipleSelector
+                                        className="mt-3 min-h-8 bg-filter-input-bg dark:bg-transparent"
+                                        commandProps={{className: "bg-transparent"}} value={clade}
+                                        options={cladeOptions} defaultOptions={cladeOptions} maxSelected={1}
+                                        hidePlaceholderWhenSelected placeholder="Type to find a clade..."
+                                        triggerSearchOnFocus onSearchSync={(value) => {
+                                        const query = value.trim().toLowerCase();
+                                        return cladeOptions.filter((option) => option.label.toLowerCase().includes(query));
+                                    }} onChange={setClade}/></div>
+                                </div>
+                                {primaryFilterMessage && <p className="mt-3 text-sm text-destructive"
+                                                            role="alert">{primaryFilterMessage}</p>}
+                            </section>
+                            {showAdditionalFilters &&
+                                <section aria-labelledby="additional-filters-heading" className="border-t pt-5">
+                                    <div className="mb-4"><h3 id="additional-filters-heading"
+                                                              className="text-sm font-semibold">Additional filters</h3>
+                                        <p className="mt-1 text-sm text-muted-foreground">Optionally narrow the taxon or
+                                            clade cohort by genebuild status and annotation method.</p></div>
+                                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                                        <div><Label>Genebuild status</Label><Select value={status}
+                                                                                    onValueChange={(value) => setStatus(value as typeof status)}><SelectTrigger
+                                            className="mt-3 w-full bg-filter-input-bg dark:bg-transparent"><SelectValue
+                                            placeholder="Select status"/></SelectTrigger><SelectContent>{statusOptions.map((option) =>
+                                            <SelectItem key={option}
+                                                        value={option}>{option === "all" ? "All statuses" : option}</SelectItem>)}</SelectContent></Select>
+                                        </div>
+                                        <div><Label>Annotation method</Label><Select value={annotationMethod}
+                                                                                     onValueChange={(value) => setAnnotationMethod(value as (typeof annotationMethodOptions)[number])}><SelectTrigger
+                                            className="mt-3 w-full bg-filter-input-bg dark:bg-transparent"><SelectValue/></SelectTrigger><SelectContent>{annotationMethodOptions.map((option) =>
+                                            <SelectItem key={option}
+                                                        value={option}>{option}</SelectItem>)}</SelectContent></Select>
+                                        </div>
+                                    </div>
+                                </section>}
+                        </div>
+                        <div className="mt-6 flex justify-end"><Button className="w-full sm:w-auto"
+                                                                       onClick={submitFilters}
+                                                                       disabled={loading || primaryFilterCount !== 1}><Search
+                            className="mr-1 h-4 w-4"/>Run QC</Button></div>
+                        {errorMessage && <p className="mt-4 text-sm text-destructive" role="alert">{errorMessage}</p>}
+                    </CardContent>
+                </Card>
+
+                {hasRun && loading &&
+                    <Card className="mt-8"><CardHeader><CardTitle>Running QC</CardTitle><CardDescription>Retrieving
+                        annotations and calculating quality metrics...</CardDescription></CardHeader></Card>}
+                {hasRun && !loading && !errorMessage && submitted.gca.trim() && !singleRecord &&
+                    <Card className="mt-8"><CardHeader><CardTitle>No GCA match</CardTitle><CardDescription>No annotation
+                        matched that accession and filter.</CardDescription></CardHeader></Card>}
+                {hasRun && !loading && !errorMessage && !submitted.gca.trim() &&
+                    <CohortDashboard records={cohortRecords} reviewCount={reviewCount} metricSummary={metricSummary}
+                                     cohortMeans={cohortMeans} multivariateRecords={cohortRecords}
+                                     selectedStatus={submitted.status} search={search} setSearch={(value) => {
+                        setSearch(value);
+                        setPage(1);
+                    }} screeningFilter={screeningFilter} setScreeningFilter={(value) => {
+                        setScreeningFilter(value);
+                        setPage(1);
+                    }} sortBy={sortBy} setSortBy={(value) => {
+                        setSortBy(value);
+                        setPage(1);
+                    }} page={page} pageCount={pageCount} reviewQueueLength={reviewQueue.length}
+                                     visibleQueue={visibleQueue} downloadRecords={reviewQueue} setPage={setPage}/>}
+                {hasRun && !loading && !errorMessage && singleRecord &&
+                    <SingleRecord record={singleRecord} cohortMeans={cohortMeans} cohortRecords={comparisonRecords}/>}
+            </div>
+        </div>
     );
-  }, [buscoAverageDifference, buscoAverageDuplicated, filteredRecords, singleRecord]);
+}
 
-  const submitFilters = () => {
-    setSubmitted({ gca, taxonomy, status });
-  };
+function PointLegend({flaggedLabel = "Needs review (outlier score ≥ 2)", flaggedColor = "var(--destructive)"}: { flaggedLabel?: string; flaggedColor?: string }) {
+    return <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-xs text-muted-foreground"><span
+        className="flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-full"
+                                                  style={{backgroundColor: "var(--chart-2)"}}/>Within cohort range</span><span
+        className="flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-full"
+                                                  style={{backgroundColor: flaggedColor}}/>{flaggedLabel}</span>
+    </div>;
+}
 
-  return (
-    <div className="min-h-screen flex justify-center px-4 py-10 sm:px-6 lg:px-8">
-      <div className="w-full max-w-7xl">
-        <div className="rounded-2xl bg-secondary p-4 gap-10 shadow-lg sm:p-8">
-          <div className="mb-8">
-            <h1 className="text-2xl font-bold mb-2">Annotation QC</h1>
-            <p className="text-muted-foreground">
-              Review assembly and annotation quality metrics by GCA accession or by taxonomy cohort.
-              This view is wired to mock data for frontend validation.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-            <div>
-              <Label htmlFor="gca-accession">GCA accession</Label>
-              <Input
-                id="gca-accession"
-                className="mt-3 bg-filter-input-bg dark:bg-transparent"
-                placeholder="GCA_000001405.29"
-                value={gca}
-                onChange={(event) => setGca(event.target.value)}
-              />
-            </div>
-            <div>
-              <Label htmlFor="taxonomy-filter">Taxonomy</Label>
-              <Input
-                id="taxonomy-filter"
-                className="mt-3 bg-filter-input-bg dark:bg-transparent"
-                placeholder="Carnivora, Primates, 9606"
-                value={taxonomy}
-                onChange={(event) => setTaxonomy(event.target.value)}
-                disabled={gca.trim().length > 0}
-              />
-            </div>
-            <div>
-              <Label>Genebuild status</Label>
-              <Select value={status} onValueChange={(value) => setStatus(value as typeof status)}>
-                <SelectTrigger className="mt-3 w-full bg-filter-input-bg dark:bg-transparent">
-                  <SelectValue placeholder="Select status" />
-                </SelectTrigger>
-                <SelectContent>
-                  {statusOptions.map((option) => (
-                    <SelectItem key={option} value={option}>
-                      {option === "all" ? "All statuses" : option}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div className="mt-6 flex justify-end">
-            <Button className="w-full sm:w-auto" onClick={submitFilters}>
-              <Search className="mr-2 h-4 w-4" />
-              Run QC report
-            </Button>
-          </div>
+function MultivariateTooltip({active, payload}: { active?: boolean; payload?: Array<{ payload?: QcRecord }> }) {
+    const record = payload?.[0]?.payload;
+    if (!active || !record) return null;
+    return <div className="min-w-52 rounded-lg border bg-background px-3 py-2 text-xs shadow-xl">
+        <div className="font-mono font-medium">{record.gca}</div>
+        <div className="mt-1 text-muted-foreground">{record.species}</div>
+        <div className="mt-2 grid gap-1">
+            <span>Profile axis 1: <strong>{formatNumber(record.pcoa1, 2)}</strong></span><span>Profile axis 2: <strong>{formatNumber(record.pcoa2, 2)}</strong></span><span>Outlier score: <strong>{formatNumber(record.outlierScore, 2)}</strong></span>
         </div>
+    </div>;
+}
 
-        {submitted.gca.trim() && !singleRecord && (
-          <Card className="mt-8">
-            <CardHeader>
-              <CardTitle>No GCA match</CardTitle>
-              <CardDescription>
-                The mock data does not include that accession with the selected status filter.
-              </CardDescription>
-            </CardHeader>
-          </Card>
-        )}
+function BuscoTooltip({active, payload, threshold}: {
+    active?: boolean;
+    payload?: Array<{ payload?: QcRecord }>;
+    threshold: number
+}) {
+    const record = payload?.[0]?.payload;
+    if (!active || !record) return null;
+    return <div className="min-w-52 rounded-lg border bg-background px-3 py-2 text-xs shadow-xl">
+        <div className="font-mono font-medium">{record.gca}</div>
+        <div className="mt-2 grid gap-1">
+            <span>Genome BUSCO: <strong>{formatNumber(record.genomeBuscoComplete)}%</strong></span><span>Protein BUSCO: <strong>{formatNumber(record.proteinBuscoComplete)}%</strong></span><span>Completeness delta: <strong>{formatNumber(buscoDelta(record), 2)}%</strong></span><span>Cohort flag threshold: <strong>{formatNumber(threshold, 2)}%</strong></span>
+        </div>
+    </div>;
+}
 
-        {singleRecord && (
-          <div className="mt-8 grid grid-cols-1 gap-6">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <h2 className="text-xl font-semibold">{singleRecord.species}</h2>
-                <p className="text-sm text-muted-foreground">{singleRecord.gca}</p>
-              </div>
-              <Badge variant={getStatusBadge(singleRecord.status)}>{singleRecord.status}</Badge>
-            </div>
-
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-              <MetricCard label="Assembly QC" value={singleRecord.assemblyScore} suffix="/100" />
-              <MetricCard label="Annotation QC" value={singleRecord.annotationScore} suffix="/100" />
-              <MetricCard label="Protein BUSCO" value={singleRecord.proteinBuscoComplete} suffix="%" />
-              <MetricCard label="Outlier score" value={singleRecord.outlierScore} />
-            </div>
-
-            <BuscoComparisonBlock
-              data={buscoComparison}
-              averageDifference={buscoAverageDifference}
-              averageDuplicated={buscoAverageDuplicated}
-              title="BUSCO comparison"
-              description={`Selected assembly compared with the ${singleRecord.taxonomy} median.`}
-            />
-
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Assembly metrics</CardTitle>
-                  <CardDescription>N50, genome size, GC, and repeat content.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <MetricRows
-                    rows={[
-                      ["Contig N50", `${formatNumber(singleRecord.contigN50Mb)} Mb`],
-                      ["Scaffold N50", `${formatNumber(singleRecord.scaffoldN50Mb)} Mb`],
-                      ["Genome size", `${formatNumber(singleRecord.genomeSizeGb, 2)} Gb`],
-                      ["GC", `${formatNumber(singleRecord.gcPercent)}%`],
-                      ["Repeats", `${formatNumber(singleRecord.repeatPercent)}%`],
-                    ]}
-                  />
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Annotation metrics</CardTitle>
-                  <CardDescription>Gene model and transcript-level indicators.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <MetricRows
-                    rows={[
-                      ["Genes", singleRecord.geneCount.toLocaleString("en-GB")],
-                      ["Protein coding", singleRecord.proteinCoding.toLocaleString("en-GB")],
-                      ["Transcripts", singleRecord.transcriptCount.toLocaleString("en-GB")],
-                      ["Genome BUSCO complete", `${formatNumber(singleRecord.genomeBuscoComplete)}%`],
-                      ["Protein BUSCO complete", `${formatNumber(singleRecord.proteinBuscoComplete)}%`],
-                      ["Genome/protein delta", `${formatNumber(getBuscoDifference(singleRecord))}%`],
-                      ["BUSCO duplicated", `${formatNumber(singleRecord.buscoDuplicated)}%`],
-                      ["Taxonomy", `${singleRecord.taxonomy} (${singleRecord.taxonId})`],
-                    ]}
-                  />
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        )}
-
-        {!submitted.gca.trim() && (
-          <div className="mt-8 grid grid-cols-1 gap-6">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <h2 className="text-xl font-semibold">Taxonomy cohort analysis</h2>
-                <p className="text-sm text-muted-foreground">
-                  {filteredRecords.length} assemblies matched {submitted.taxonomy || "all taxonomy"}.
-                </p>
-              </div>
-              <Badge variant="outline">Mock cohort</Badge>
-            </div>
-
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-              <MetricCard label="Assemblies" value={filteredRecords.length} />
-              <MetricCard label="Mean assembly QC" value={mean(filteredRecords.map((item) => item.assemblyScore))} />
-              <MetricCard label="Median annotation QC" value={median(filteredRecords.map((item) => item.annotationScore))} />
-              <MetricCard label="Outliers" value={outliers.length} />
-            </div>
-
-            <BuscoComparisonBlock
-              data={buscoComparison}
-              averageDifference={buscoAverageDifference}
-              averageDuplicated={buscoAverageDuplicated}
-              title="BUSCO comparison"
-              description="Genome and protein BUSCO complete scores, plus C/D/F/M protein BUSCO breakdown across the matched cohort."
-            />
+function CohortDashboard({
+                             records,
+                             reviewCount,
+                             metricSummary,
+                             cohortMeans,
+                             multivariateRecords,
+                             selectedStatus,
+                             search,
+                             setSearch,
+                             screeningFilter,
+                             setScreeningFilter,
+                             sortBy,
+                             setSortBy,
+                             page,
+                             pageCount,
+                             reviewQueueLength,
+                             visibleQueue,
+                             downloadRecords,
+                             setPage,
+                         }: {
+    records: QcRecord[];
+    reviewCount: number;
+    metricSummary: Array<{ label: string; median: number; p10: number; p90: number; suffix: string }>;
+    cohortMeans: CohortMeans;
+    multivariateRecords: QcRecord[];
+    selectedStatus: string;
+    search: string;
+    setSearch: (value: string) => void;
+    screeningFilter: ScreeningFilter;
+    setScreeningFilter: (value: ScreeningFilter) => void;
+    sortBy: string;
+    setSortBy: (value: string) => void;
+    page: number;
+    pageCount: number;
+    reviewQueueLength: number;
+    visibleQueue: QcRecord[];
+    downloadRecords: QcRecord[];
+    setPage: (value: number) => void;
+}) {
+    const reviewPercent = records.length ? (reviewCount / records.length) * 100 : 0;
+    const buscoThreshold = buscoDeltaThreshold(records);
+    return (
+        <div className="mt-8 space-y-6" aria-live="polite">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+                <div><h2 className="text-xl font-semibold">Cohort screening</h2><p
+                    className="text-sm text-muted-foreground">{records.length.toLocaleString("en-GB")} annotations
+                    loaded. Review threshold: multivariate score ≥ 2.</p></div>
+                <Badge variant={reviewCount ? "destructive" : "outline"}>{reviewCount.toLocaleString("en-GB")} need
+                    review</Badge></div>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4"><MetricCard label="Annotations"
+                                                                                              value={records.length}/><MetricCard
+                label="Needs review" value={reviewCount}
+                suffix={records.length ? `${formatNumber(reviewPercent)}%` : ""}/><MetricCard
+                label="Median protein BUSCO" value={median(records.map((record) => record.proteinBuscoComplete))}
+                suffix="%"/><MetricCard label="Genebuild status"
+                                        value={selectedStatus === "all" ? "All statuses" : selectedStatus}/></div>
 
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Gene model means and medians</CardTitle>
-                  <CardDescription>
-                    Coding, non-coding, and biotype count summaries across the matched cohort.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <ChartContainer config={qcChartConfig} className="h-72 w-full">
-                      <BarChart data={cohortStats}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="metric" tick={{ fontSize: 11 }} interval={0} angle={-18} textAnchor="end" height={70} />
-                        <YAxis tickFormatter={(value) => Number(value).toLocaleString("en-GB")} />
-                        <ChartTooltip content={<ChartTooltipContent />} />
-                        <Bar dataKey="mean" fill="var(--chart-2)" name="Mean" radius={[4, 4, 0, 0]} />
-                        <Bar dataKey="median" fill="var(--chart-4)" name="Median" radius={[4, 4, 0, 0]} />
-                      </BarChart>
-                  </ChartContainer>
-                  <div className="mt-4 overflow-x-auto rounded-md border">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Metric</TableHead>
-                          <TableHead className="text-right">Mean</TableHead>
-                          <TableHead className="text-right">Median</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {cohortStats.map((item) => (
-                          <TableRow key={item.metric}>
-                            <TableCell>{item.metric}</TableCell>
-                            <TableCell className="text-right">
-                              {Math.round(item.mean).toLocaleString("en-GB")}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              {Math.round(item.median).toLocaleString("en-GB")}
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                </CardContent>
-              </Card>
+                <Card>
+                    <CardHeader>
+                        <PlotTitle title="Multivariate annotation profile"
+                                   help="Each dot is an annotation positioned by the two coordinates calculated from its clade-standardised metric profile. Dots that are far from the main cloud are more unusual in the multivariate analysis."/>
+                        <CardDescription>All annotations are shown. Red points meet the outlier
+                            threshold.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <ChartContainer config={chartConfig} className="h-72 w-full mb-2">
+                            <ScatterChart accessibilityLayer>
+                                <CartesianGrid strokeDasharray="3 3"/>
+                                <XAxis type="number" dataKey="pcoa1" name="Profile axis 1"/>
+                                <YAxis type="number" dataKey="pcoa2" name="Profile axis 2"/>
+                                <ChartTooltip cursor={{strokeDasharray: "3 3"}} content={<MultivariateTooltip/>}/>
+                                <Scatter data={multivariateRecords.filter((record) => !needsReview(record))}
+                                         fill="var(--chart-2)" name="Within range"/>
+                                <Scatter data={multivariateRecords.filter(needsReview)} fill="var(--destructive)"
+                                         name="Needs review"/>
+                            </ScatterChart></ChartContainer><PointLegend/>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader>
+                        <PlotTitle title="BUSCO concordance"
+                                   help="Each point is one annotation. The x-axis is genome BUSCO completeness and the y-axis is protein BUSCO completeness. Red points have an unusually large absolute difference between annotation and assembly completeness for this cohort; high completeness alone is not flagged. Hover over a point to see its GCA."/>
+                        <CardDescription>Genome versus protein completeness. Red points exceed the cohort mean BUSCO
+                            delta by more than two standard deviations.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <ChartContainer config={chartConfig} className="h-72 w-full">
+                            <ScatterChart accessibilityLayer>
+                                <CartesianGrid strokeDasharray="3 3"/>
+                                <XAxis type="number" dataKey="genomeBuscoComplete" name="Genome BUSCO"
+                                       domain={["auto", "auto"]} unit="%"/>
+                                <YAxis type="number" dataKey="proteinBuscoComplete" name="Protein BUSCO"
+                                       domain={["auto", "auto"]} unit="%"/><ChartTooltip
+                                cursor={{strokeDasharray: "3 3"}} content={<BuscoTooltip threshold={buscoThreshold}/>}/>
+                                <Scatter
+                                    data={multivariateRecords.filter((record) => !needsBuscoReview(record, buscoThreshold))}
+                                    fill="var(--chart-2)" name="BUSCO delta within range"/>
+                                <Scatter
+                                    data={multivariateRecords.filter((record) => needsBuscoReview(record, buscoThreshold))}
+                                    fill="var(--destructive)" name="Unusual BUSCO delta"/>
+                            </ScatterChart></ChartContainer><PointLegend
+                        flaggedLabel="Unusual BUSCO delta (mean + 2 SD)"/>
+                    </CardContent>
+                </Card>
+                <Card><CardHeader><PlotTitle title="Metric reference"
+                                             help="P10 and P90 show the central 80% range of the current cohort, with the median in the middle. These values describe the cohort and are not universal pass/fail limits."/><CardDescription>Cohort
+                    median and central 80% range for screening
+                    context.</CardDescription></CardHeader><CardContent><Table><TableHeader><TableRow><TableHead>Metric</TableHead><TableHead
+                    className="text-right">P10</TableHead><TableHead className="text-right">Median</TableHead><TableHead
+                    className="text-right">P90</TableHead></TableRow></TableHeader><TableBody>{metricSummary.map((item) =>
+                    <TableRow key={item.label}><TableCell>{item.label}</TableCell><TableCell
+                        className="text-right">{formatNumber(item.p10)}{item.suffix}</TableCell><TableCell
+                        className="text-right font-medium">{formatNumber(item.median)}{item.suffix}</TableCell><TableCell
+                        className="text-right">{formatNumber(item.p90)}{item.suffix}</TableCell></TableRow>)}</TableBody></Table></CardContent></Card>
+                <Card><CardHeader><CardTitle>Mean feature counts</CardTitle><CardDescription>Mean gene-structure counts
+                    in the current
+                    cohort.</CardDescription></CardHeader><CardContent><Table><TableHeader><TableRow><TableHead>Feature</TableHead><TableHead
+                    className="text-right">Mean</TableHead></TableRow></TableHeader><TableBody>{[["Genes", "geneCount"], ["Protein coding", "proteinCoding"], ["Transcripts", "transcriptCount"], ["lncRNA", "lncRnaCount"], ["Pseudogenes", "pseudogeneCount"], ["Small RNA", "smallRnaCount"]].map(([label, metric]) =>
+                    <TableRow key={metric}><TableCell>{label}</TableCell><TableCell
+                        className="text-right font-medium">{formatNumber(cohortMeans[metric])}</TableCell></TableRow>)}</TableBody></Table></CardContent></Card>
+            </div>
 
-              <Card>
+            <Card>
                 <CardHeader>
-                  <CardTitle>PCoA metric space</CardTitle>
-                  <CardDescription>Mock ordination using assembly and annotation QC features.</CardDescription>
+                    <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+                        <div>
+                            <CardTitle className="flex items-center gap-2"><ShieldAlert className="h-5 w-5"/>Review
+                                queue</CardTitle>
+                            <CardDescription>Search and rank records without rendering the full
+                                cohort.</CardDescription>
+                        </div>
+                        <div className="flex flex-col gap-3 sm:flex-row">
+                            <Input aria-label="Search annotations" className="w-full sm:w-64"
+                                   placeholder="Search GCA, species, clade..." value={search}
+                                   onChange={(event) => setSearch(event.target.value)}/>
+                            <Select value={screeningFilter}
+                                    onValueChange={(value) => setScreeningFilter(value as ScreeningFilter)}><SelectTrigger
+                                className="w-full sm:w-40"><SelectValue/></SelectTrigger><SelectContent><SelectItem
+                                value="all">All records</SelectItem><SelectItem value="review">Needs review</SelectItem></SelectContent></Select>
+                            <Select value={sortBy} onValueChange={setSortBy}><SelectTrigger
+                                className="w-full sm:w-44"><SelectValue/></SelectTrigger><SelectContent><SelectItem
+                                value="outlierScore">Highest score</SelectItem><SelectItem value="buscoMissing">BUSCO
+                                missing</SelectItem><SelectItem value="species">Species A–Z</SelectItem></SelectContent></Select>
+                            <Button variant="outline" onClick={() => downloadQcCsv(downloadRecords)}
+                                    disabled={!downloadRecords.length}><Download className="mr-1 h-4 w-4"/>Download CSV</Button>
+                        </div>
+                    </div>
                 </CardHeader>
                 <CardContent>
-                  <ChartContainer config={qcChartConfig} className="h-80 w-full">
-                    <ScatterChart>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="pcoa1" name="PCoA 1" type="number" />
-                      <YAxis dataKey="pcoa2" name="PCoA 2" type="number" />
-                      <ChartTooltip
-                        cursor={{ strokeDasharray: "3 3" }}
-                        content={<ChartTooltipContent />}
-                      />
-                      <Scatter data={filteredRecords} name="Assembly">
-                        {filteredRecords.map((entry) => (
-                          <Cell
-                            key={entry.gca}
-                            fill={entry.outlierScore >= 2 ? "var(--destructive)" : "var(--chart-2)"}
-                          />
-                        ))}
-                      </Scatter>
-                    </ScatterChart>
-                  </ChartContainer>
-                  <div className="mt-4 grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
-                    <div className="rounded-md border p-3">
-                      <div className="text-muted-foreground">Assemblies plotted</div>
-                      <div className="mt-1 text-lg font-semibold">{pcoaSummary.assemblies}</div>
-                    </div>
-                    <div className="rounded-md border p-3">
-                      <div className="text-muted-foreground">Outliers</div>
-                      <div className="mt-1 text-lg font-semibold">{pcoaSummary.outliers}</div>
-                    </div>
-                    <div className="rounded-md border p-3">
-                      <div className="text-muted-foreground">PCoA 1 range</div>
-                      <div className="mt-1 font-medium">{pcoaSummary.pcoa1Range}</div>
-                    </div>
-                    <div className="rounded-md border p-3">
-                      <div className="text-muted-foreground">PCoA 2 range</div>
-                      <div className="mt-1 font-medium">{pcoaSummary.pcoa2Range}</div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>QC score profile</CardTitle>
-                  <CardDescription>Assembly and annotation score by matched assembly.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <ChartContainer config={qcChartConfig} className="h-80 w-full">
-                    <LineChart data={scoreTrend}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="species" />
-                      <YAxis domain={[50, 100]} />
-                      <ChartTooltip content={<ChartTooltipContent />} />
-                      <Line type="monotone" dataKey="assembly" stroke="var(--chart-2)" strokeWidth={2} />
-                      <Line type="monotone" dataKey="annotation" stroke="var(--chart-4)" strokeWidth={2} />
-                    </LineChart>
-                  </ChartContainer>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <ShieldAlert className="h-5 w-5" />
-                    Outlier analysis
-                  </CardTitle>
-                  <CardDescription>Records with elevated multivariate distance.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {outliers.length === 0 ? (
-                    <div className="flex h-52 items-center justify-center text-sm text-muted-foreground">
-                      No outliers in the current mock cohort.
-                    </div>
-                  ) : (
                     <div className="overflow-x-auto">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>GCA</TableHead>
-                            <TableHead>Species</TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead className="text-right">Score</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {outliers.map((record) => (
-                            <TableRow key={record.gca}>
-                              <TableCell className="font-mono text-xs">{record.gca}</TableCell>
-                              <TableCell>{record.species}</TableCell>
-                              <TableCell>
-                                <Badge variant={getStatusBadge(record.status)}>{record.status}</Badge>
-                              </TableCell>
-                              <TableCell className="text-right">{formatNumber(record.outlierScore)}</TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
+                        <Table><TableHeader><TableRow><TableHead>GCA</TableHead><TableHead>Species</TableHead><TableHead>Taxon
+                            ID</TableHead><TableHead>Clade</TableHead><TableHead>Status</TableHead><TableHead
+                            className="text-right">Protein BUSCO</TableHead><TableHead
+                            className="text-right">Missing</TableHead><TableHead
+                            className="text-right">Score</TableHead><TableHead>Signals</TableHead></TableRow></TableHeader><TableBody>{visibleQueue.map((record) =>
+                            <TableRow key={`${record.gca}-${record.annotationMethod ?? ""}`}><TableCell
+                                className="font-mono text-xs whitespace-nowrap">{record.gca}</TableCell><TableCell
+                                className="max-w-56 truncate">{record.species}</TableCell><TableCell>{record.taxonId}</TableCell><TableCell>{record.taxonomy}</TableCell><TableCell><Badge
+                                variant={getStatusBadge(record.status)}>{record.status}</Badge></TableCell><TableCell
+                                className="text-right">{formatNumber(record.proteinBuscoComplete)}%</TableCell><TableCell
+                                className="text-right">{formatNumber(record.buscoMissing)}%</TableCell><TableCell
+                                className="text-right font-medium">{formatNumber(record.outlierScore)}</TableCell><TableCell
+                                className="max-w-52 text-xs text-muted-foreground">{reviewReasons(record).join(", ")}</TableCell></TableRow>)}{!visibleQueue.length &&
+                            <TableRow><TableCell colSpan={9} className="h-24 text-center text-muted-foreground">No
+                                records match the current queue filters.</TableCell></TableRow>}</TableBody></Table>
                     </div>
-                  )}
+                    <div className="mt-4 flex items-center justify-between text-sm text-muted-foreground">
+                        <span>{reviewQueueLength.toLocaleString("en-GB")} records in queue · page {page} of {pageCount}</span>
+                        <div className="flex gap-2"><Button variant="outline" size="sm"
+                                                            onClick={() => setPage(Math.max(1, page - 1))}
+                                                            disabled={page <= 1}><ChevronLeft className="h-4 w-4"/>Previous</Button><Button
+                            variant="outline" size="sm" onClick={() => setPage(Math.min(pageCount, page + 1))}
+                            disabled={page >= pageCount}>Next<ChevronRight className="h-4 w-4"/></Button></div>
+                    </div>
                 </CardContent>
-              </Card>
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function MetricCard({
-  label,
-  value,
-  suffix = "",
-}: {
-  label: string;
-  value: number;
-  suffix?: string;
-}) {
-  return (
-    <Card>
-      <CardHeader className="pb-2">
-        <CardDescription>{label}</CardDescription>
-        <CardTitle className="flex items-baseline gap-1 text-2xl">
-          <Activity className="h-4 w-4 text-muted-foreground" />
-          {Number.isInteger(value) ? value.toLocaleString("en-GB") : formatNumber(value)}
-          <span className="text-sm font-normal text-muted-foreground">{suffix}</span>
-        </CardTitle>
-      </CardHeader>
-    </Card>
-  );
-}
-
-function BuscoComparisonBlock({
-  data,
-  averageDifference,
-  averageDuplicated,
-  title,
-  description,
-}: {
-  data: BuscoComparison[];
-  averageDifference: number;
-  averageDuplicated: number;
-  title: string;
-  description: string;
-}) {
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{title}</CardTitle>
-        <CardDescription>
-          {description} Flag threshold: above {formatNumber(averageDifference)}% average
-          genome/protein difference or above {formatNumber(averageDuplicated)}% average BUSCO duplication.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-1 gap-6">
-          <div className="min-w-0">
-            <ChartContainer config={qcChartConfig} className="h-96 w-full">
-              <BarChart data={data}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-                <YAxis domain={[0, 100]} />
-                <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
-                <Bar dataKey="genomeComplete" fill="var(--chart-2)" name="Genome complete %" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="proteinComplete" fill="var(--chart-4)" name="Protein complete %" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ChartContainer>
-          </div>
-
-          <div className="max-h-96 overflow-auto rounded-md border">
-            <Table>
-              <TableHeader className="sticky top-0 bg-card">
-                <TableRow>
-                  <TableHead>Sample</TableHead>
-                  <TableHead className="text-right">Genome C</TableHead>
-                  <TableHead className="text-right">Protein C</TableHead>
-                  <TableHead className="text-right">D</TableHead>
-                  <TableHead className="text-right">Delta</TableHead>
-                  <TableHead>Flags</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {data.map((item) => (
-                  <TableRow key={item.name}>
-                    <TableCell className="max-w-64 truncate">{item.name}</TableCell>
-                    <TableCell className="text-right">{formatNumber(item.genomeComplete)}%</TableCell>
-                    <TableCell className="text-right">{formatNumber(item.proteinComplete)}%</TableCell>
-                    <TableCell className="text-right">{formatNumber(item.duplicated)}%</TableCell>
-                    <TableCell className="text-right">{formatNumber(item.difference)}%</TableCell>
-                    <TableCell>
-                      <div className="flex flex-wrap gap-1">
-                        {item.differenceFlagged && (
-                          <Badge variant="destructive">Delta above avg</Badge>
-                        )}
-                        {item.duplicationFlagged && (
-                          <Badge variant="destructive">Duplication above avg</Badge>
-                        )}
-                        {!item.differenceFlagged && !item.duplicationFlagged && (
-                          <Badge variant="outline">OK</Badge>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-
-          <div className="max-h-72 overflow-auto rounded-md border p-3">
-            <div className="grid grid-cols-1 gap-2 text-xs text-muted-foreground sm:grid-cols-2 lg:grid-cols-4">
-                {data.map((item) => (
-                  <div key={`${item.name}-breakdown`} className="rounded-md border p-2">
-                    <div className="mb-1 truncate font-medium text-foreground">{item.name}</div>
-                    <div>C {formatNumber(item.complete)}%</div>
-                    <div>D {formatNumber(item.duplicated)}%</div>
-                    <div>F {formatNumber(item.fragmented)}%</div>
-                    <div>M {formatNumber(item.missing)}%</div>
-                  </div>
-                ))}
-              </div>
-          </div>
+            </Card>
         </div>
-      </CardContent>
-    </Card>
-  );
+    );
 }
 
-function MetricRows({ rows }: { rows: Array<[string, string]> }) {
-  return (
-    <div className="divide-y">
-      {rows.map(([label, value]) => (
-        <div key={label} className="flex items-center justify-between gap-6 py-3">
-          <span className="text-sm text-muted-foreground">{label}</span>
-          <span className="text-right text-sm font-medium">{value}</span>
+function SingleRecord({record, cohortMeans, cohortRecords}: {
+    record: QcRecord;
+    cohortMeans: CohortMeans;
+    cohortRecords: QcRecord[]
+}) {
+    const [tab, setTab] = useState<SingleReportTab>("Overview");
+    const buscoProfile = [
+        {
+            metric: "Assembly BUSCO",
+            singleCopy: Math.max(0, (record.genomeBuscoComplete ?? 0) - (record.genomeBuscoDuplicated ?? 0)),
+            duplicated: record.genomeBuscoDuplicated ?? 0,
+            fragmented: record.genomeBuscoFragmented ?? 0,
+            missing: record.genomeBuscoMissing ?? 0
+        },
+        {
+            metric: "Annotation BUSCO",
+            singleCopy: Math.max(0, (record.buscoComplete ?? 0) - (record.buscoDuplicated ?? 0)),
+            duplicated: record.buscoDuplicated ?? 0,
+            fragmented: record.buscoFragmented ?? 0,
+            missing: record.buscoMissing ?? 0
+        },
+    ];
+    const countProfile = [
+        {metric: "Genes", value: record.geneCount ?? 0},
+        {metric: "Protein coding", value: record.proteinCoding ?? 0},
+        {metric: "Transcripts", value: record.transcriptCount ?? 0},
+        {metric: "lncRNA", value: record.lncRnaCount ?? 0},
+        {metric: "Pseudogenes", value: record.pseudogeneCount ?? 0},
+        {metric: "Small RNA", value: record.smallRnaCount ?? 0},
+    ];
+    const featureComparison = [
+        ["Genes", "geneCount", record.geneCount],
+        ["Protein coding", "proteinCoding", record.proteinCoding],
+        ["Transcripts", "transcriptCount", record.transcriptCount],
+        ["lncRNA", "lncRnaCount", record.lncRnaCount],
+        ["Pseudogenes", "pseudogeneCount", record.pseudogeneCount],
+        ["Small RNA", "smallRnaCount", record.smallRnaCount],
+    ] as const;
+    const targetGca = record.gca.toLowerCase();
+    const cohortBuscoRecords = cohortRecords.filter((item) => item.genomeBuscoComplete !== null && item.proteinBuscoComplete !== null);
+    const cohortProfileRecords = cohortRecords.filter((item) => Number.isFinite(item.pcoa1) && Number.isFinite(item.pcoa2));
+    const isTarget = (item: QcRecord) => item.gca.toLowerCase() === targetGca;
+
+    return (
+        <div className="mt-8 space-y-6" aria-live="polite">
+            <Card>
+                <CardHeader>
+                    <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="flex items-center gap-4">
+                            <div
+                                className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-secondary text-primary">
+                                <Dna className="h-7 w-7"/></div>
+                            <div>
+                                <div className="mb-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                                    <Badge variant="outline">{record.taxonomy}</Badge><Badge
+                                    variant="outline">Taxon {record.taxonId}</Badge><Badge variant="outline"
+                                                                                           className="font-mono">{record.gca}</Badge><Badge
+                                    variant={getStatusBadge(record.status)}>{record.status}</Badge></div>
+                                <CardTitle className="text-2xl">{record.species}</CardTitle><CardDescription>Annotation
+                                quality report for one assembly</CardDescription></div>
+                        </div>
+                    </div>
+                </CardHeader>
+                <CardContent>
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                        <MetricCard label="Genome BUSCO complete" value={record.genomeBuscoComplete} suffix="%"/>
+                        <MetricCard label="Protein BUSCO complete" value={record.proteinBuscoComplete} suffix="%"/>
+                        <MetricCard label="BUSCO delta" value={buscoDelta(record)} suffix="%"/>
+                        <MetricCard label="Clade outlier score" value={record.outlierScore} help={OUTLIER_SCORE_HELP}/>
+                    </div>
+                    <div className="mt-4 flex flex-wrap gap-2 text-sm text-muted-foreground">
+                        {reviewReasons(record).map((reason) => <Badge key={reason}
+                                                                      variant={needsReview(record) ? "destructive" : "outline"}>{reason}</Badge>)}
+                    </div>
+                </CardContent>
+            </Card>
+
+            <div className="flex gap-1 overflow-x-auto border-b" role="tablist"
+                 aria-label="Single annotation report sections">{(["Overview", "Gene structure", "Quality & validation", "All metrics"] as SingleReportTab[]).map((item) =>
+                <Button key={item} role="tab" aria-selected={tab === item} variant="ghost"
+                        className={`shrink-0 rounded-none border-b-2 px-3 ${tab === item ? "border-primary text-primary" : "border-transparent text-muted-foreground"}`}
+                        onClick={() => setTab(item)}>{item}{item === "All metrics" && <span
+                    className="ml-2 text-xs text-muted-foreground">{Object.keys(record.newMetrics).length}</span>}</Button>)}</div>
+
+            {tab === "Overview" && <>
+                <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1.4fr_1fr]">
+                    <Card><CardHeader><CardTitle className="flex items-center gap-2"><Layers3
+                        className="h-5 w-5 text-primary"/>Annotation composition</CardTitle><CardDescription>Gene and
+                        transcript content from the new metrics
+                        table.</CardDescription></CardHeader><CardContent><MetricRows
+                        rows={[["Total genes", record.geneCount], ["Protein-coding genes", record.proteinCoding], ["Transcripts", record.transcriptCount], ["lncRNA", record.lncRnaCount], ["Pseudogenes", record.pseudogeneCount], ["Small RNA", record.smallRnaCount]]}/></CardContent></Card>
+                    <Card><CardHeader><CardTitle className="flex items-center gap-2"><ShieldCheck
+                        className="h-5 w-5 text-primary"/>Quality & completeness</CardTitle><CardDescription>Independent
+                        quality signals for this annotation.</CardDescription></CardHeader><CardContent><MetricRows
+                        rows={[["Assembly BUSCO", record.genomeBuscoComplete, "%"], ["Annotation BUSCO", record.proteinBuscoComplete, "%"], ["BUSCO delta", buscoDelta(record), "%"], ["Clade outlier score", record.outlierScore]]}/><Button
+                        variant="link" className="mt-3 px-0" onClick={() => setTab("Quality & validation")}>View quality
+                        details <ArrowRight className="ml-1 h-4 w-4"/></Button></CardContent></Card>
+                </div>
+                <Card><CardHeader><CardTitle>Assembly context</CardTitle><CardDescription>Assembly measurements used
+                    when interpreting annotation quality.</CardDescription></CardHeader><CardContent><MetricRows
+                    rows={[["Genome size", record.genomeSizeGb, " Gb"], ["Contig N50", record.contigN50Mb, " Mb"], ["Scaffold N50", record.scaffoldN50Mb, " Mb"], ["GC", record.gcPercent, "%"], ["Repeats", record.repeatPercent, "%"]]}/></CardContent></Card>
+            </>}
+
+            {tab === "Gene structure" &&
+                <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_1.35fr]"><Card><CardHeader><CardTitle>Annotation
+                    detail</CardTitle><CardDescription>Counts and feature composition returned for this
+                    annotation.</CardDescription></CardHeader><CardContent><MetricRows
+                    rows={[["Genes", record.geneCount], ["Protein coding", record.proteinCoding], ["Transcripts", record.transcriptCount], ["lncRNA", record.lncRnaCount], ["Pseudogenes", record.pseudogeneCount], ["Small RNA", record.smallRnaCount]]}/></CardContent></Card><Card><CardHeader><PlotTitle
+                    title="Annotation scale"
+                    help="Annotation counts use a normal linear axis. Smaller categories may appear shorter when counts differ greatly."/><CardDescription>Counts
+                    from the new metrics table on a linear
+                    scale.</CardDescription></CardHeader><CardContent><ChartContainer config={chartConfig}
+                                                                                      className="h-80 w-full"><BarChart
+                    data={countProfile} layout="vertical" accessibilityLayer><CartesianGrid
+                    strokeDasharray="3 3"/><XAxis type="number" tickFormatter={formatCompact}/><YAxis dataKey="metric"
+                                                                                                      type="category"
+                                                                                                      width={100}
+                                                                                                      tick={{fontSize: 11}}/><ChartTooltip
+                    content={<ChartTooltipContent/>}/><Bar dataKey="value" fill="var(--chart-2)" name="Count"
+                                                           radius={[0, 4, 4, 0]}/></BarChart></ChartContainer></CardContent></Card>
+                </div>}
+
+            {tab === "Gene structure" &&
+                <Card><CardHeader><CardTitle>Comparison with cohort mean</CardTitle><CardDescription>Feature counts
+                    compared with the mean of the relevant QC cohort. The selected annotation is excluded from the mean
+                    when peer records are available.</CardDescription></CardHeader><CardContent>
+                    <div className="overflow-x-auto">
+                        <Table><TableHeader><TableRow><TableHead>Feature</TableHead><TableHead className="text-right">This
+                            annotation</TableHead><TableHead className="text-right">Cohort mean</TableHead><TableHead
+                            className="text-right">Difference</TableHead></TableRow></TableHeader><TableBody>{featureComparison.map(([label, metric, value]) => {
+                            const mean = cohortMeans[metric];
+                            const difference = typeof value === "number" && typeof mean === "number" ? value - mean : null;
+                            return <TableRow key={metric}><TableCell>{label}</TableCell><TableCell
+                                className="text-right">{formatNumber(value)}</TableCell><TableCell
+                                className="text-right">{formatNumber(mean)}</TableCell><TableCell
+                                className={`text-right ${difference !== null && difference < 0 ? "text-destructive" : ""}`}>{formatNumber(difference)}</TableCell></TableRow>;
+                        })}</TableBody></Table></div>
+                </CardContent></Card>}
+
+            {tab === "Quality & validation" && <>
+                <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1.35fr_1fr]"><Card><CardHeader><PlotTitle
+                    title="BUSCO profile"
+                    help="Each row is a stacked BUSCO run. Complete BUSCOs are split into single-copy and duplicated; duplicated is not added on top of complete because it is a subset of complete."/><CardDescription>Assembly
+                    and annotation BUSCO composition on the same percentage
+                    scale.</CardDescription></CardHeader><CardContent><ChartContainer config={chartConfig}
+                                                                                      className="h-72 w-full"><BarChart
+                    data={buscoProfile} layout="vertical" accessibilityLayer><CartesianGrid
+                    strokeDasharray="3 3"/><XAxis type="number" domain={[0, 100]}
+                                                  tickFormatter={(value) => `${Math.round(value)}%`}/><YAxis
+                    dataKey="metric" type="category" width={110}/><ChartTooltip content={<ChartTooltipContent/>}/><Bar
+                    dataKey="singleCopy" stackId="busco" fill="var(--chart-2)" name="Single-copy complete"/><Bar
+                    dataKey="duplicated" stackId="busco" fill="var(--chart-4)" name="Duplicated complete"/><Bar
+                    dataKey="fragmented" stackId="busco" fill="var(--chart-3)" name="Fragmented"/><Bar dataKey="missing"
+                                                                                                       stackId="busco"
+                                                                                                       fill="var(--destructive)"
+                                                                                                       name="Missing"/></BarChart></ChartContainer></CardContent></Card><Card><CardHeader><CardTitle>Screening
+                    interpretation</CardTitle><CardDescription>Compared with live annotations in the same clade. A score
+                    of 2 or more prioritises manual review; it is not an automatic
+                    failure.</CardDescription></CardHeader><CardContent><MetricRows
+                    rows={[["Clade outlier score", record.outlierScore], ["BUSCO delta", buscoDelta(record), "%"], ["BUSCO missing", record.buscoMissing, "%"], ["BUSCO duplicated", record.buscoDuplicated, "%"], ["Review status", needsReview(record) ? "Needs review" : "Within cohort range"]]}/>
+                    <div
+                        className="mt-4 rounded-md bg-secondary/50 p-3 text-sm text-muted-foreground">{OUTLIER_SCORE_HELP}</div>
+                    <div className="mt-4 flex flex-wrap gap-2">{reviewReasons(record).map((reason) => <Badge
+                        key={reason} variant={needsReview(record) ? "destructive" : "outline"}>{reason}</Badge>)}</div>
+                </CardContent></Card></div>
+                <div className="grid grid-cols-1 gap-6 lg:grid-cols-2"><Card>
+                    <CardHeader>
+                        <PlotTitle title="BUSCO cohort comparison"
+                                   help="Each point is one annotation in the comparison cohort. The selected GCA is highlighted. The tooltip reports the completeness delta between assembly and annotation BUSCO."/>
+                        <CardDescription>Assembly BUSCO versus annotation BUSCO for the cohort.</CardDescription>
+                    </CardHeader><CardContent><ChartContainer config={chartConfig} className="h-80 w-full">
+                    <ScatterChart accessibilityLayer>
+                        <CartesianGrid strokeDasharray="3 3"/>
+                        <XAxis type="number" dataKey="genomeBuscoComplete" name="Assembly BUSCO"
+                               domain={["auto", "auto"]} unit="%"/>
+                        <YAxis type="number" dataKey="proteinBuscoComplete" name="Annotation BUSCO"
+                               domain={["auto", "auto"]} unit="%"/>
+                        <ChartTooltip cursor={{strokeDasharray: "3 3"}}
+                                      content={<BuscoTooltip threshold={buscoDeltaThreshold(cohortBuscoRecords)}/>}/>
+                        <Scatter data={cohortBuscoRecords.filter((item) => !isTarget(item))} fill="var(--chart-2)"
+                                 name="Cohort annotations"/>
+                        <Scatter data={cohortBuscoRecords.filter(isTarget)} fill="var(--foreground)" name="Selected GCA"/></ScatterChart></ChartContainer><PointLegend
+                    flaggedLabel="Selected GCA" flaggedColor="var(--foreground)"/></CardContent></Card><Card><CardHeader><PlotTitle
+                    title="Multivariate cohort position"
+                    help="This shows the selected GCA against the same multivariate cohort used for screening. The selected GCA is highlighted; the other annotations are shown for context."/><CardDescription>Multivariate
+                    profile with the selected GCA
+                    highlighted.</CardDescription></CardHeader><CardContent><ChartContainer config={chartConfig}
+                                                                                            className="h-80 w-full"><ScatterChart
+                    accessibilityLayer><CartesianGrid strokeDasharray="3 3"/><XAxis type="number" dataKey="pcoa1"
+                                                                                    name="Profile axis 1"/><YAxis
+                    type="number" dataKey="pcoa2" name="Profile axis 2"/><ChartTooltip cursor={{strokeDasharray: "3 3"}}
+                                                                                       content={
+                                                                                           <MultivariateTooltip/>}/><Scatter
+                    data={cohortProfileRecords.filter((item) => !isTarget(item))} fill="var(--chart-2)"
+                    name="Cohort annotations"/><Scatter data={cohortProfileRecords.filter(isTarget)}
+                                                        fill="var(--foreground)"
+                                                        name="Selected GCA"/></ScatterChart></ChartContainer><PointLegend
+                    flaggedLabel="Selected GCA" flaggedColor="var(--foreground)"/></CardContent></Card></div>
+            </>}
+
+            {tab === "All metrics" && <>
+                <Card><CardHeader><CardTitle>Build and provenance</CardTitle><CardDescription>Registry metadata for this
+                    annotation.</CardDescription></CardHeader><CardContent>
+                    <div className="grid grid-cols-1 gap-x-8 gap-y-1 md:grid-cols-2"><MetricRows
+                        rows={[["BioProject", record.associatedProject], ["Group", record.groupName], ["Infrastructure", record.infraName], ["Genebuilder", record.genebuilder], ["Annotation source", record.annotationSource], ["Annotation method", record.annotationMethod]]}/><MetricRows
+                        rows={[["Started", record.dateStarted], ["Release date", record.releaseDate], ["Status updated", record.dateStatusUpdate], ["Last genebuild update", record.lastGenebuildUpdate], ["Assembly BUSCO lineage", record.assemblyBuscoLineage], ["Assembly BUSCO version", record.assemblyBuscoVersion], ["Annotation BUSCO lineage", record.proteinBuscoLineage], ["Annotation BUSCO version", record.proteinBuscoVersion]]}/>
+                    </div>
+                </CardContent></Card>
+                <Card><CardHeader><CardTitle>Complete metric detail</CardTitle><CardDescription>Assembly, annotation
+                    BUSCO, and every metric returned from the new metrics
+                    table.</CardDescription></CardHeader><CardContent>
+                    <div className="grid grid-cols-1 gap-x-8 gap-y-1 md:grid-cols-2"><MetricRows
+                        rows={[["Assembly BUSCO complete", record.genomeBuscoComplete, "%"], ["Assembly BUSCO duplicated", record.genomeBuscoDuplicated, "%"], ["Assembly BUSCO fragmented", record.genomeBuscoFragmented, "%"], ["Assembly BUSCO missing", record.genomeBuscoMissing, "%"], ["Annotation BUSCO complete", record.proteinBuscoComplete, "%"], ["Annotation BUSCO duplicated", record.buscoDuplicated, "%"], ["Annotation BUSCO fragmented", record.buscoFragmented, "%"], ["Annotation BUSCO missing", record.buscoMissing, "%"], ["Review signals", reviewReasons(record).join(", ")]]}/>
+                    </div>
+                    <div className="mt-6"><h3 className="mb-2 text-sm font-medium">New metrics</h3><MetricRows
+                        rows={Object.entries(record.newMetrics).sort(([left], [right]) => left.localeCompare(right)).map(([name, value]) => [formatMetricLabel(name), formatMetricValue(value)])}/>
+                    </div>
+                </CardContent></Card>
+            </>}
         </div>
-      ))}
-    </div>
-  );
+    );
+}
+
+function MetricCard({label, value, suffix = "", help}: {
+    label: string;
+    value: number | string | null | undefined;
+    suffix?: string;
+    help?: string
+}) {
+    const displayValue = typeof value === "number" ? formatNumber(value) : value ?? "n/a";
+    return <Card><CardHeader className="pb-2"><CardDescription className="flex items-center gap-1">{label}{help &&
+        <Tooltip><TooltipTrigger asChild><Button type="button" variant="ghost" size="icon" className="h-5 w-5"
+                                                 aria-label={`Explain ${label}`}><Info
+            className="h-3.5 w-3.5"/></Button></TooltipTrigger><TooltipContent
+            className="max-w-xs leading-relaxed">{help}</TooltipContent></Tooltip>}</CardDescription><CardTitle
+        className="flex items-baseline gap-1 text-2xl"><Activity
+        className="h-4 w-4 text-muted-foreground"/>{displayValue}<span
+        className="text-sm font-normal text-muted-foreground">{suffix}</span></CardTitle></CardHeader></Card>;
+}
+
+function PlotTitle({title, help}: { title: string; help: string }) {
+    return <div className="flex items-center gap-2"><CardTitle>{title}</CardTitle><Tooltip><TooltipTrigger
+        asChild><Button type="button" variant="ghost" size="icon" className="h-6 w-6"
+                        aria-label={`Explain ${title}`}><Info
+        className="h-4 w-4"/></Button></TooltipTrigger><TooltipContent
+        className="max-w-xs leading-relaxed">{help}</TooltipContent></Tooltip></div>;
+}
+
+function MetricRows({rows}: { rows: Array<[string, number | string | null | undefined, string?]> }) {
+    return <div className="divide-y">{rows.map(([label, value, suffix = ""]) => <div key={label}
+                                                                                     className="flex items-center justify-between gap-6 py-3">
+        <span className="text-sm text-muted-foreground">{label}</span><span
+        className="text-right text-sm font-medium">{typeof value === "number" ? `${formatNumber(value)}${suffix}` : value ?? "n/a"}</span>
+    </div>)}</div>;
 }

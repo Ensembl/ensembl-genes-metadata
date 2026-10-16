@@ -12,6 +12,7 @@ from metadata_app.backend.app.services.home_page_service import get_metadata_reg
 from metadata_app.backend.app.services.home_page_service import get_transcriptomic_registry_update_dates
 from metadata_app.backend.app.services.home_page_service import bin_by_genebuild_method
 from metadata_app.backend.app.services.home_page_service import get_annotation_counts_by_group
+from metadata_app.backend.app.services.home_page_service import get_annotation_growth_by_quarter
 
 
 home_page = APIRouter()
@@ -53,6 +54,12 @@ def get_annotations_year():
     Get counts of assemblies per year.
     """
     return get_annotations_per_year()
+
+
+@home_page.get("/home/annotation_growth")
+def get_annotation_growth():
+    """Get distinct annotated genome counts by quarter for the last four years."""
+    return get_annotation_growth_by_quarter()
 
 
 @home_page.get("/home/meta_update")

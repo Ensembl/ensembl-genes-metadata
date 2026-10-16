@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { Dot } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 
@@ -37,6 +38,42 @@ const changelogs = [
     fixes: [
       "Added a warning state when Assemblies quick filters hide every row in the table",
       "Reset Assemblies row selection correctly when fetching a new result set",
+    ],
+  },
+    {
+    version: "2.0.1",
+    date: "2026-09-29",
+    title: "Minor backend update",
+    description:
+      "This update adds a backed endpoint to access the ENA RNAseq cache maintained by the app on the VM",
+    features: [
+      <>
+        Added a dedicated backend API call. See API documentation{" "}
+        <a
+          href="http://genebuild-metadata.ebi.ac.uk:8000/docs#/transcriptomics/download_ena_cache_api_transcriptomics_ena_cache_get"
+          target="_blank"
+          rel="noreferrer"
+          className="underline"
+        >
+          here
+        </a>
+        .
+      </>,
+    ],
+  },
+    {
+    version: "2.1.0",
+    date: "2026-10-14",
+    title: "Initial internal QC implementation",
+    description:
+      "This update provides the first iteration of the internal QC page",
+    features: [
+      "Added a new backend service for annotation QC",
+      "Created a frontend page to display live QC metrics from the registry",
+      "Added initial analyses to assess annotation quality",
+    ],
+    changes: [
+      "Improved main navigation",
     ],
   },
  
@@ -116,7 +153,7 @@ const ChangelogSection = ({
   items,
 }: {
   title: string;
-  items: string[];
+  items: ReactNode[];
 }) => {
   return (
     <div>
@@ -124,8 +161,8 @@ const ChangelogSection = ({
         {title}
       </h4>
       <ul className="list-disc pl-5">
-        {items.map((item) => (
-          <li key={item}>{item}</li>
+        {items.map((item, index) => (
+          <li key={index}>{item}</li>
         ))}
       </ul>
     </div>
