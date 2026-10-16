@@ -10,8 +10,8 @@ import {AnnotationGrowthChart} from "@/components/ui/card_annotation_growth"
 export default function Page() {
     return (
         <div className="min-h-screen flex justify-center px-4 sm:px-6 lg:px-8">
-            <div className="w-full max-w-6xl py-10 sm:py-16">
-                <div className="pt-4 pb-10 sm:pt-8">
+            <div className="w-full max-w-6xl py-8 sm:py-16">
+                <div className="pb-8">
                     <div className="w-full mb-8">
                         <WelcomeCard></WelcomeCard>
                     </div>
