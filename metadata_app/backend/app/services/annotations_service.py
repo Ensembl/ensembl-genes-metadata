@@ -97,7 +97,17 @@ def build_ensemblorganisms_ftp_url(row):
     return f"{ENSEMBL_ORGANISMS_FTP_BASE_URL}/" f"{accession_path}/{provider}/{annotation_date}/"
 
 
-def query_meta_registry(annotation_date, taxon_id, bioproject_id, group_name, gca):
+def query_meta_registry(
+    annotation_date,
+    taxon_id,
+    bioproject_id,
+    group_name,
+    gca,
+    *,
+    include_internal_ids=False,
+    gb_statuses=None,
+    annotation_methods=None,
+):
     """Get annotataions"""
     try:
         # Connect to database
@@ -181,6 +191,20 @@ def query_meta_registry(annotation_date, taxon_id, bioproject_id, group_name, gc
                 conditions.append(f"gb.gca_accession IN ({gca_list_filter})")
                 parameters.extend(gca)
                 logging.info(f"Filtering by GCA: {', '.join(gca)}")
+
+            if gb_statuses:
+                if isinstance(gb_statuses, str):
+                    gb_statuses = [gb_statuses]
+                conditions.append(f"gb.gb_status IN ({','.join(['%s'] * len(gb_statuses))})")
+                parameters.extend(gb_statuses)
+                logging.info(f"Filtering by genebuild statuses: {', '.join(gb_statuses)}")
+
+            if annotation_methods:
+                if isinstance(annotation_methods, str):
+                    annotation_methods = [annotation_methods]
+                conditions.append(f"gb.annotation_method IN ({','.join(['%s'] * len(annotation_methods))})")
+                parameters.extend(annotation_methods)
+                logging.info(f"Filtering by annotation methods: {', '.join(annotation_methods)}")
 
             conditions.append("gb.last_attempt = 1")
             where_clause = " WHERE " + " AND ".join(conditions)
@@ -347,9 +371,10 @@ def query_meta_registry(annotation_date, taxon_id, bioproject_id, group_name, gc
                 metric_name, pd.Series(pd.NA, index=df_meta_genebuild.index)
             )
 
-        df_meta_genebuild = df_meta_genebuild.drop(
-            columns=["genebuild_status_id", "assembly_id", "genebuild.id"], errors="ignore"
-        )
+        if not include_internal_ids:
+            df_meta_genebuild = df_meta_genebuild.drop(
+                columns=["genebuild_status_id", "assembly_id", "genebuild.id"], errors="ignore"
+            )
 
         # Add clade, species, and genus information
         clade_data = load_clade_data()
