@@ -314,8 +314,7 @@ export default function Page() {
         .map((item, index) => ({
           ...item,
           id: `${item.gca ?? "handover"}-${item.core_name ?? index}-${index}`,
-        }))
-        .filter((item) => item.core_name),
+        })),
     [handoverReadyItems],
   );
   const allHandoverRowsSelected =
@@ -642,7 +641,7 @@ export default function Page() {
               <CardAction>
                 <CopyButton
                   text={selectedHandoverCoreNames}
-                  disabled={!selectedHandoverIds.length}
+                  disabled={!selectedHandoverCoreNames}
                   defaultLabel="Copy core names"
                 />
               </CardAction>
