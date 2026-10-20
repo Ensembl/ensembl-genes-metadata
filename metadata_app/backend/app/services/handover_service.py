@@ -394,6 +394,7 @@ def get_ready_to_ho(genebuilder):
                         "scientific_name",
                         "bioproject_name",
                         "gb_status",
+                        "pipeline",
                         "date_status_update",
                         "core_name",
                     ]
