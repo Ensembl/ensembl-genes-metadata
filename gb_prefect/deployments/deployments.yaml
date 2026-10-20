@@ -1,0 +1,117 @@
+# Deployment config read by gb_prefect/deployments/deploy.py.
+#
+# Values are layered: this file, then deployments.local.yaml next to it (gitignored, your
+# real paths), then --set name=value on the command line. Dicts are merged key by key; any
+# other value is replaced.
+#
+# "{name}" anywhere in a string is replaced with the variable `name`. Variables left as null
+# here must be set in deployments.local.yaml (or with --set) before deploying, e.g.:
+#
+#   variables:
+#     outdir: /nfs/production/.../asm_prefect
+#     busco_outdir: /nfs/production/.../busco_gca
+#     enscode: /hps/software/.../modenv/ensembl/asm_update_dev
+#     asm_venv: /hps/software/.../.venv/ensembl/asm_update_dev
+#
+# deploy.py adds to every deployment: the "genebuild" tag first and the branch tag last,
+# " from branch <branch>." at the end of the description, and --name-suffix to the name.
+
+repo: https://github.com/Ensembl/ensembl-genes-metadata.git
+
+variables:
+  outdir: null          # base output directory for the registry/update flows (a dated folder per run)
+  busco_outdir: null    # base output directory for BUSCO_gca (a <gca> subdirectory per run)
+  enscode: null         # ENSCODE directory
+  asm_venv: null        # venv with gb_prefect + gb_metadata + prefect installed
+  nextflow_module: nextflow/25.04.6
+
+# Settings every deployment on that pool inherits; a deployment's own job_variables are
+# merged on top (its keys win).
+work_pools:
+  genebuild-pool: {}    # process pool
+  genebuild-busco:      # slurm-cli pool
+    job_variables:
+      working_dir: "{busco_outdir}"
+      setup_commands:
+        - "module load {nextflow_module}"
+        - "source {asm_venv}/bin/activate"
+  genebuild-codon:      # slurm-cli pool, no pool concurrency limit: registry + update flows
+    job_variables:
+      working_dir: "{outdir}"
+      setup_commands:
+        - "module load {nextflow_module}"
+        - "source {asm_venv}/bin/activate"
+
+# Keys: entrypoint, work_pool (required); parameters, job_variables, tags, description,
+# concurrency_limit (optional).
+deployments:
+  # Each flow run is one Slurm job running the Nextflow head job, which submits the pipeline's
+  # processes to Slurm itself (the pipelines' standard profile); time_limit must cover the
+  # whole pipeline. concurrency_limit 1: two runs of the same flow never write to the metadata
+  # DB at once (extra runs wait for the slot).
+  gb_metadata_update:
+    entrypoint: gb_prefect/flows/gb_registry_update.py:gb_registry_update_flow
+    work_pool: genebuild-codon
+    parameters: {outdir: "{outdir}", enscode: "{enscode}"}
+    job_variables: {cpu: 1, memory: 4, time_limit: 2, partition: null}
+    concurrency_limit: 1
+    tags: [metadata_update]
+    description: Assembly metadata update
+
+  gb_metadata_update_per_date:
+    entrypoint: gb_prefect/flows/gb_registry_update_by_date.py:gb_registry_update_by_date_flow
+    work_pool: genebuild-codon
+    parameters: {outdir: "{outdir}", enscode: "{enscode}"}
+    job_variables: {cpu: 1, memory: 4, time_limit: 2, partition: null}
+    concurrency_limit: 1
+    tags: [metadata_update]
+    description: Assembly metadata by_date
+
+  gb_metadata_registry:
+    entrypoint: gb_prefect/flows/gb_registry.py:gb_registry_flow
+    work_pool: genebuild-codon
+    parameters: {outdir: "{outdir}", enscode: "{enscode}"}
+    job_variables: {cpu: 1, memory: 4, time_limit: 2, partition: null}
+    concurrency_limit: 1
+    tags: [metadata_registry]
+    description: Assembly metadata register
+
+  gb_metadata_registry_per_gca:
+    entrypoint: gb_prefect/flows/gb_registry_by_gca.py:gb_registry_by_gca_flow
+    work_pool: genebuild-codon
+    parameters: {outdir: "{outdir}", enscode: "{enscode}"}
+    job_variables: {cpu: 1, memory: 4, time_limit: 2, partition: null}
+    concurrency_limit: 1
+    tags: [metadata_registry]
+    description: Assembly metadata register_by_gca
+
+  busco-gca:
+    entrypoint: gb_prefect/flows/gb_busco_gca.py:busco_gca_flow
+    work_pool: genebuild-busco
+    parameters: {outdir: "{busco_outdir}", enscode: "{enscode}"}
+    job_variables: {cpu: 2, memory: 8, time_limit: 4, partition: null}
+    tags: [busco]
+    description: BUSCO for a single GCA
+
+  # The dispatchers run on a process pool, which has no venv-activation step: `command`
+  # points the flow run at asm_venv's python instead of the worker's own environment.
+  busco-dispatch:
+    entrypoint: gb_prefect/flows/gb_busco_dispatch.py:busco_dispatch_flow
+    work_pool: genebuild-pool
+    job_variables: {command: "{asm_venv}/bin/python -m prefect.engine"}
+    tags: [busco]
+    description: BUSCO orchestrator (explicit CSV input)
+
+  busco-dispatch-list:
+    entrypoint: gb_prefect/flows/gb_busco_dispatch_from_list.py:busco_dispatch_from_list_flow
+    work_pool: genebuild-pool
+    job_variables: {command: "{asm_venv}/bin/python -m prefect.engine"}
+    tags: [busco]
+    description: BUSCO orchestrator (bare GCA list input)
+
+  busco-dispatch-automatic:
+    entrypoint: gb_prefect/flows/gb_busco_dispatch_automatic.py:busco_dispatch_automatic_flow
+    work_pool: genebuild-pool
+    job_variables: {command: "{asm_venv}/bin/python -m prefect.engine"}
+    tags: [busco]
+    description: BUSCO orchestrator (automatic, slot-sized)

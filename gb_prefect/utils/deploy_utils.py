@@ -1,8 +1,8 @@
-"""Shared code of the deploy scripts in gb_prefect/deployments/ for Nextflow flows on slurm-cli pools.
+"""Deploy code for Nextflow flows on slurm-cli pools (used by gb_prefect/deployments/deploy_flows.py).
 
 A deploy script lists its flows as FlowDeployment entries and calls main(); this module adds the
-common command-line options, builds each deployment's parameters and slurm-cli job variables,
-and deploys them (or prints them with --dry-run).
+command-line options, builds each deployment's parameters and slurm-cli job variables, and
+deploys them (or prints them with --dry-run).
 
 The flow code always comes from this repository (cloned by the worker at run time), whichever
 repository the Nextflow pipeline itself lives in -- the pipeline is found under ENSCODE.
@@ -10,6 +10,7 @@ repository the Nextflow pipeline itself lives in -- the pipeline is found under 
 
 import argparse
 import json
+import sys
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Mapping, Optional, Sequence
 
@@ -31,6 +32,9 @@ class FlowDeployment:  # pylint: disable=too-many-instance-attributes
             which must outlive the whole pipeline. memory in GB, time_limit in hours.
         concurrency_limit: Max simultaneous runs of this deployment (None: no limit).
         parameters: Extra default parameters, on top of outdir and enscode.
+        separate_outdir: The flow's output normally lives apart from the shared --outdir (e.g.
+            BUSCO's per-GCA run directories): a warning is printed if it isn't given its own
+            with --flow-outdir.
     """
 
     name: str
@@ -43,6 +47,7 @@ class FlowDeployment:  # pylint: disable=too-many-instance-attributes
     time_limit: int = 2
     concurrency_limit: Optional[int] = None
     parameters: Mapping[str, Any] = field(default_factory=dict)
+    separate_outdir: bool = False
 
 
 def parse_args(flows: Mapping[str, FlowDeployment], description: str) -> argparse.Namespace:
@@ -55,7 +60,18 @@ def parse_args(flows: Mapping[str, FlowDeployment], description: str) -> argpars
         help="Appended to the deployment names, e.g. _test; leave empty to replace the production ones.",
     )
     parser.add_argument("--flows", nargs="+", choices=sorted(flows), default=sorted(flows))
-    parser.add_argument("--outdir", required=True, help="Base output directory (also the job's working dir).")
+    parser.add_argument(
+        "--outdir",
+        required=True,
+        help="Base output directory of every flow (also the job's working dir), unless --flow-outdir.",
+    )
+    parser.add_argument(
+        "--flow-outdir",
+        action="append",
+        default=[],
+        metavar="KEY=PATH",
+        help="Base output directory of one flow instead of --outdir, e.g. busco_gca=/path; repeatable.",
+    )
     parser.add_argument("--enscode", required=True, help="Path to the ENSCODE directory.")
     parser.add_argument(
         "--asm-venv",
@@ -75,11 +91,28 @@ def parse_args(flows: Mapping[str, FlowDeployment], description: str) -> argpars
     parser.add_argument(
         "--dry-run", action="store_true", help="Print the deployments that would be made; deploy nothing."
     )
-    return parser.parse_args()
+    args = parser.parse_args()
+
+    flow_outdirs: Dict[str, str] = {}
+    for value in args.flow_outdir:
+        key, sep, path = value.partition("=")
+        if not sep or not path:
+            parser.error(f"--flow-outdir must be KEY=PATH, got {value!r}")
+        if key not in flows:
+            parser.error(f"--flow-outdir: unknown flow {key!r} (choose from {', '.join(sorted(flows))})")
+        flow_outdirs[key] = path
+    args.flow_outdir = flow_outdirs
+    return args
 
 
-def build_deployment(flow_deployment: FlowDeployment, args: argparse.Namespace) -> Dict[str, Any]:
-    """Return the deploy() arguments of flow_deployment for the given options."""
+def build_deployment(
+    flow_deployment: FlowDeployment, args: argparse.Namespace, outdir: Optional[str] = None
+) -> Dict[str, Any]:
+    """Return the deploy() arguments of flow_deployment for the given options.
+
+    outdir is the flow's base output directory (its --flow-outdir); defaults to args.outdir.
+    """
+    outdir = outdir or args.outdir
 
     def override(value: Optional[int], default: int) -> int:
         return default if value is None else value
@@ -88,13 +121,13 @@ def build_deployment(flow_deployment: FlowDeployment, args: argparse.Namespace) 
         "name": f"{flow_deployment.name}{args.name_suffix}",
         "entrypoint": flow_deployment.entrypoint,
         "work_pool_name": args.work_pool or flow_deployment.work_pool,
-        "parameters": {"outdir": args.outdir, "enscode": args.enscode, **flow_deployment.parameters},
+        "parameters": {"outdir": outdir, "enscode": args.enscode, **flow_deployment.parameters},
         "job_variables": {
             "cpu": override(args.cpu, flow_deployment.cpu),
             "memory": override(args.memory, flow_deployment.memory),
             "time_limit": override(args.time_limit, flow_deployment.time_limit),
             "partition": args.partition,
-            "working_dir": args.outdir,
+            "working_dir": outdir,
             "setup_commands": [
                 f"module load {args.nextflow_module}",
                 f"source {args.asm_venv}/bin/activate",
@@ -111,7 +144,16 @@ def build_deployment(flow_deployment: FlowDeployment, args: argparse.Namespace) 
 def main(flows: Mapping[str, FlowDeployment], description: str) -> None:
     """Parse the options, then deploy (or with --dry-run print) the selected flows."""
     args = parse_args(flows, description)
-    specs: List[Dict[str, Any]] = [build_deployment(flows[key], args) for key in args.flows]
+    for key in args.flows:
+        if flows[key].separate_outdir and key not in args.flow_outdir:
+            print(
+                f"WARNING: {key} uses --outdir {args.outdir}; its output usually has its own "
+                f"directory (--flow-outdir {key}=PATH).",
+                file=sys.stderr,
+            )
+    specs: List[Dict[str, Any]] = [
+        build_deployment(flows[key], args, args.flow_outdir.get(key)) for key in args.flows
+    ]
 
     if args.dry_run:
         print(json.dumps(specs, indent=2))
