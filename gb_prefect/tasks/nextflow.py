@@ -29,33 +29,32 @@ def run_nextflow_pipeline(
     run_options: Optional[TaskRunOptions] = None,
     resume_on_retry: bool = True,
 ) -> NextflowResult:
-    """Write run's files to its outdir and run Nextflow there; the one task every Nextflow flow uses.
+    """Universal Nextflow pipeline runner that takes a NextflowRun object, executes it, 
+    and returns a NextflowResult
 
-    Assumes it executes inside the Slurm job the slurm-cli worker submitted for the flow run,
-    with nextflow on PATH via the worker's setup_commands -- it runs `nextflow run` directly.
-
-    Steps: write the input CSV (if any) and the owner-only -params-file (if any secret_params),
-    run nextflow from outdir -- directly, no shell -- streaming its output to the log and the
-    Prefect logs, then publish an artifact (run_options.create_artifact). An equivalent bash
-    script is written to the command file as a record, re-runnable by hand; it isn't executed.
-
-    resume_on_retry adds -resume when the flow run is a retry (run_count > 1): its outdir is
-    the same, so Nextflow picks up the cached tasks.
-
-    On a dry run nothing is executed and the params file is not written (the command still
-    refers to it). A non-zero exit raises NextflowRunError, so every Nextflow flow fails the
-    same way -- returning a Failed state carrying a dict crashes Prefect's result resolution.
+    run: NextflowRun object containing the pipeline run configuration.
+    run_options: Optional TaskRunOptions object containing additional run options.
+    resume_on_retry: Boolean flag indicating whether to resume the run on retry.
     """
+    # Initialize run options and determine if this is a dry run.
     run_options = run_options or TaskRunOptions()
     dry_run = run_options.dry_run
+
+    # Determine if the run should be resumed based on the retry count and the resume_on_retry flag.
     if resume_on_retry and not run.resume and (flow_run.run_count or 0) > 1:
         run = dataclasses.replace(run, resume=True)
 
+    # Generate DAG file if specified
+    if run.dag_file:
+        run = dataclasses.replace(run, dag_file=datetime.now().strftime(run.dag_file))
+
+    # Prepare output directories and secret strings.
     paths = run_paths(run)
     Path(run.outdir).mkdir(parents=True, exist_ok=True)
     secrets = secret_strings(run.secret_params)
     files = {}
 
+    # Initialize CSV input file
     csv_file = None
     if run.csv_input is not None:
         write_csv_input(paths.csv_file, run.csv_input)
@@ -63,6 +62,7 @@ def run_nextflow_pipeline(
         files["csv"] = str(csv_file)
         append_log(paths.log, f"[{datetime.now()}] INFO: Wrote input CSV {csv_file}.\n")
 
+    # Initialize params file
     params_file = None
     if run.secret_params:
         params_file = paths.params_file
@@ -71,12 +71,14 @@ def run_nextflow_pipeline(
             write_params_file(params_file, run.secret_params)
             append_log(paths.log, f"[{datetime.now()}] INFO: Wrote params file {params_file}.\n")
 
+    # Build and write the Nextflow command script
     command = build_command_script(run, params_file, csv_file)
     paths.command_file.write_text(command, encoding="utf-8")
     paths.command_file.chmod(0o755)
     append_log(paths.log, f"[{datetime.now()}] INFO: Nextflow command:\n{command}\n")
     print(f"Nextflow command for {run.name}:\n{command}")
 
+    # Execute the Nextflow command or perform a dry run
     if dry_run:
         rc = 0
         append_log(paths.log, f"[{datetime.now()}] INFO: Dry run enabled; Nextflow was not executed.\n")
@@ -91,6 +93,7 @@ def run_nextflow_pipeline(
         )
     append_log(paths.log, f"[{datetime.now()}] INFO: Return code {rc}.\n")
 
+    # collect the results into a NextflowResult object
     result = NextflowResult(
         name=run.name,
         returncode=rc,
@@ -103,6 +106,7 @@ def run_nextflow_pipeline(
         files=files,
     )
 
+    # Create an artifact for the Nextflow run if requested
     if run_options.create_artifact:
         create_nextflow_run_artifact(
             title=f"Nextflow run {run.name}",
@@ -119,7 +123,8 @@ def run_nextflow_pipeline(
             rc=rc,
             dry_run=dry_run,
         )
-
+    
+    # Raise an error if the Nextflow run failed
     if rc != 0:
         raise NextflowRunError(result)
     return result
