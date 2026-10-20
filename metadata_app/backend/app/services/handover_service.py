@@ -115,7 +115,9 @@ def get_ready_to_ho(genebuilder):
                     FROM taxonomy
                     WHERE lowest_taxon_id IN ({})
                     ORDER BY FIELD(taxon_class, 'species', 'genus', 'family', 'order', 'class', 'phylum', 'kingdom');
-                """.format(",".join(["%s"] * len(lowest_taxon_ids)))
+                """.format(
+                    ",".join(["%s"] * len(lowest_taxon_ids))
+                )
                 cursor.execute(taxonomy_query, tuple(lowest_taxon_ids))
                 taxonomy_results = cursor.fetchall()
 
