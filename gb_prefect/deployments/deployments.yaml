@@ -35,7 +35,7 @@ work_pools:
       setup_commands:
         - "module load {nextflow_module}"
         - "source {asm_venv}/bin/activate"
-  genebuild-codon:      # slurm-cli pool, no pool concurrency limit: registry + update flows
+  genebuild-metadata:      # slurm-cli pool, no pool concurrency limit: registry + update flows
     job_variables:
       working_dir: "{outdir}"
       setup_commands:
@@ -51,7 +51,7 @@ deployments:
   # DB at once (extra runs wait for the slot).
   gb_metadata_update:
     entrypoint: gb_prefect/flows/gb_registry_update.py:gb_registry_update_flow
-    work_pool: genebuild-codon
+    work_pool: genebuild-metadata
     parameters: {outdir: "{outdir}", enscode: "{enscode}"}
     job_variables: {cpu: 1, memory: 4, time_limit: 2, partition: null}
     concurrency_limit: 1
@@ -60,7 +60,7 @@ deployments:
 
   gb_metadata_update_per_date:
     entrypoint: gb_prefect/flows/gb_registry_update_by_date.py:gb_registry_update_by_date_flow
-    work_pool: genebuild-codon
+    work_pool: genebuild-metadata
     parameters: {outdir: "{outdir}", enscode: "{enscode}"}
     job_variables: {cpu: 1, memory: 4, time_limit: 2, partition: null}
     concurrency_limit: 1
@@ -69,7 +69,7 @@ deployments:
 
   gb_metadata_registry:
     entrypoint: gb_prefect/flows/gb_registry.py:gb_registry_flow
-    work_pool: genebuild-codon
+    work_pool: genebuild-metadata
     parameters: {outdir: "{outdir}", enscode: "{enscode}"}
     job_variables: {cpu: 1, memory: 4, time_limit: 2, partition: null}
     concurrency_limit: 1
@@ -78,7 +78,7 @@ deployments:
 
   gb_metadata_registry_per_gca:
     entrypoint: gb_prefect/flows/gb_registry_by_gca.py:gb_registry_by_gca_flow
-    work_pool: genebuild-codon
+    work_pool: genebuild-metadata
     parameters: {outdir: "{outdir}", enscode: "{enscode}"}
     job_variables: {cpu: 1, memory: 4, time_limit: 2, partition: null}
     concurrency_limit: 1
