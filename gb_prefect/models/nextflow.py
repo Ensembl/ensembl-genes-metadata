@@ -41,8 +41,7 @@ class NextflowRun:  # pylint: disable=too-many-instance-attributes
         weblog_url: Send run events to nf-metro serve endpoint (-with-weblog).
         resume: Add -resume.
         fail_on_ignored_errors: Fail the run when Nextflow exits 0 but its output shows tasks that
-            failed for good and were ignored (errorStrategy 'ignore'): the pipeline then reports
-            "Successful" although those tasks produced nothing.
+            failed and were ignored (errorStrategy 'ignore').
     """
 
     name: str
