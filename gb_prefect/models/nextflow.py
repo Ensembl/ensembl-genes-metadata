@@ -3,7 +3,7 @@ Collection of Prefect Nextflow input and output classes.
 """
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, Mapping, Optional, Sequence
+from typing import Any, Dict, List, Mapping, Optional, Sequence
 
 
 @dataclass(frozen=True)
@@ -40,6 +40,9 @@ class NextflowRun:  # pylint: disable=too-many-instance-attributes
         dag_file: Write the DAG to <outdir>/<dag_file> (-with-dag).
         weblog_url: Send run events to nf-metro serve endpoint (-with-weblog).
         resume: Add -resume.
+        fail_on_ignored_errors: Fail the run when Nextflow exits 0 but its output shows tasks that
+            failed for good and were ignored (errorStrategy 'ignore'): the pipeline then reports
+            "Successful" although those tasks produced nothing.
     """
 
     name: str
@@ -55,6 +58,7 @@ class NextflowRun:  # pylint: disable=too-many-instance-attributes
     dag_file: Optional[str] = None
     weblog_url: Optional[str] = None
     resume: bool = False
+    fail_on_ignored_errors: bool = True
 
     def __post_init__(self) -> None:
         """Reject a parameter given twice: Nextflow would silently pick one.
@@ -87,6 +91,8 @@ class NextflowResult:  # pylint: disable=too-many-instance-attributes
         dry_run: True if Nextflow was not executed.
         resumed: True if the run was launched with -resume.
         files: Other files written for the run (csv, params, ...), by type.
+        ignored_errors: Tasks that failed and were ignored by the pipeline, as
+            "<task> (exit <status>)".
     """
 
     name: str
@@ -98,16 +104,24 @@ class NextflowResult:  # pylint: disable=too-many-instance-attributes
     dry_run: bool
     resumed: bool
     files: Dict[str, str] = field(default_factory=dict)
+    ignored_errors: List[str] = field(default_factory=list)
 
 
 class NextflowRunError(RuntimeError):
-    """Raised when a Nextflow run exits non-zero; result holds everything about the run."""
+    """Raised when a Nextflow run exits non-zero, or exits 0 with ignored task failures (see
+    NextflowRun.fail_on_ignored_errors); result holds everything about the run."""
 
     def __init__(self, result: NextflowResult):
-        super().__init__(
-            f"Nextflow run {result.name} failed with return code {result.returncode}. "
-            f"See log: {result.log_file}"
-        )
+        if result.returncode != 0:
+            reason = f"failed with return code {result.returncode}"
+        else:
+            shown = ", ".join(result.ignored_errors[:5])
+            more = f" and {len(result.ignored_errors) - 5} more" if len(result.ignored_errors) > 5 else ""
+            reason = (
+                f"exited 0, but {len(result.ignored_errors)} task(s) failed and were ignored by the "
+                f"pipeline: {shown}{more}"
+            )
+        super().__init__(f"Nextflow run {result.name} {reason}. See log: {result.log_file}")
         self.result = result
 
     def __reduce__(self):

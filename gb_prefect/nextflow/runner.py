@@ -1,6 +1,7 @@
 """Run a command, streaming its output to a log file as it goes."""
 
 import os
+import re
 import shlex
 import subprocess
 from datetime import datetime
@@ -15,6 +16,27 @@ NOT_STARTED_RC = 127
 # How long a stopped command gets to shut down after SIGTERM before it is killed. Nextflow uses
 # this time to cancel the Slurm jobs it submitted.
 STOP_TIMEOUT_S = 60
+
+# Terminal colour/formatting escape codes, e.g. in nf-schema's parameter summary, which is coloured
+# even with -ansi-log false.
+_ANSI_ESCAPE = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]")
+
+# The line Nextflow prints when a task fails for good and the pipeline's errorStrategy is 'ignore':
+# NOTE: Process `RUN_BUSCO:FETCH_GENOME (GCA_1.1:genome)` terminated with an error exit status (1)
+# -- Error is ignored. A failure that is retried prints "-- Execution is retried" instead.
+_IGNORED_ERROR = re.compile(
+    r"Process `([^`]+)` terminated with an error exit status \((-?\d+)\) -- Error is ignored"
+)
+
+
+def strip_ansi(text: str) -> str:
+    """Remove terminal colour/formatting escape codes from text."""
+    return _ANSI_ESCAPE.sub("", text)
+
+
+def ignored_errors(output: str) -> List[str]:
+    """Return the tasks Nextflow's output says failed and were ignored, as "<task> (exit <status>)"."""
+    return [f"{task} (exit {status})" for task, status in _IGNORED_ERROR.findall(output)]
 
 
 def run_streaming(  # pylint: disable=too-many-arguments
@@ -32,7 +54,8 @@ def run_streaming(  # pylint: disable=too-many-arguments
 
     stdout and stderr are merged and each line is appended to log_path as it arrives
     (earlier log content is kept), and passed to echo -- e.g. print, which a Prefect task
-    with log_prints=True turns into live run logs. Lines are redacted with secrets first.
+    with log_prints=True turns into live run logs. Lines have terminal escape codes removed and
+    are redacted with secrets first.
     Output is read as UTF-8; undecodable bytes are replaced rather than ending the run.
 
     If argv can't be started (e.g. nextflow not on PATH), that is logged and NOT_STARTED_RC
@@ -74,7 +97,7 @@ def run_streaming(  # pylint: disable=too-many-arguments
         try:
             assert proc.stdout is not None
             for line in proc.stdout:
-                emit(redact(line, secrets))
+                emit(redact(strip_ansi(line), secrets))
             return proc.wait()
         except BaseException:
             _stop(proc)

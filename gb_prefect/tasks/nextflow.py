@@ -18,7 +18,7 @@ from gb_prefect.nextflow.command import (
     write_csv_input,
     write_params_file,
 )
-from gb_prefect.nextflow.runner import run_streaming
+from gb_prefect.nextflow.runner import ignored_errors, run_streaming
 from gb_prefect.utils.artifact_utils import artifact_key, create_nextflow_run_artifact
 from gb_prefect.utils.logging_utils import append_log
 
@@ -29,12 +29,16 @@ def run_nextflow_pipeline(
     run_options: Optional[TaskRunOptions] = None,
     resume_on_retry: bool = True,
 ) -> NextflowResult:
-    """Universal Nextflow pipeline runner that takes a NextflowRun object, executes it, 
+    """Universal Nextflow pipeline runner that takes a NextflowRun object, executes it,
     and returns a NextflowResult
 
     run: NextflowRun object containing the pipeline run configuration.
     run_options: Optional TaskRunOptions object containing additional run options.
     resume_on_retry: Boolean flag indicating whether to resume the run on retry.
+
+    Raises NextflowRunError if Nextflow exits non-zero, or exits 0 but ignored failed tasks
+    (unless run.fail_on_ignored_errors is False). The artifact shows only this run's part of
+    the log, which is appended to across reruns in the same outdir.
     """
     # Initialize run options and determine if this is a dry run.
     run_options = run_options or TaskRunOptions()
@@ -48,9 +52,10 @@ def run_nextflow_pipeline(
     if run.dag_file:
         run = dataclasses.replace(run, dag_file=datetime.now().strftime(run.dag_file))
 
-    # Prepare output directories and secret strings.
+    # Prepare output directories and secret strings; note where this run's part of the log starts.
     paths = run_paths(run)
     Path(run.outdir).mkdir(parents=True, exist_ok=True)
+    log_start = paths.log.stat().st_size if paths.log.exists() else 0
     secrets = secret_strings(run.secret_params)
     files = {}
 
@@ -93,6 +98,18 @@ def run_nextflow_pipeline(
         )
     append_log(paths.log, f"[{datetime.now()}] INFO: Return code {rc}.\n")
 
+    # Check this run's output for tasks the pipeline let fail (errorStrategy 'ignore')
+    run_log = _read_from(paths.log, log_start)
+    ignored = [] if dry_run else ignored_errors(run_log)
+    failed = rc != 0 or bool(ignored and run.fail_on_ignored_errors)
+    if ignored:
+        append_log(
+            paths.log,
+            f"[{datetime.now()}] {'ERROR' if failed else 'WARNING'}: {len(ignored)} task(s) failed and "
+            f"were ignored by the pipeline: {', '.join(ignored)}.\n",
+        )
+        run_log = _read_from(paths.log, log_start)
+
     # collect the results into a NextflowResult object
     result = NextflowResult(
         name=run.name,
@@ -104,6 +121,7 @@ def run_nextflow_pipeline(
         dry_run=dry_run,
         resumed=run.resume,
         files=files,
+        ignored_errors=ignored,
     )
 
     # Create an artifact for the Nextflow run if requested
@@ -117,14 +135,23 @@ def run_nextflow_pipeline(
                 "Command file": result.command_file,
                 "Log file": result.log_file,
                 "Resumed": run.resume,
+                "Ignored task failures": len(ignored),
             },
             cmd=command,
-            log_text=redact(paths.log.read_text(encoding="utf-8"), secrets),
+            log_text=redact(run_log, secrets),
             rc=rc,
             dry_run=dry_run,
+            status=f"FAILED ({len(ignored)} ignored task failure(s))" if failed and rc == 0 else None,
         )
-    
+
     # Raise an error if the Nextflow run failed
-    if rc != 0:
+    if failed:
         raise NextflowRunError(result)
     return result
+
+
+def _read_from(path: Path, offset: int) -> str:
+    """Return path's content from byte offset on (this run's part of an appended log)."""
+    with path.open("rb") as fh:
+        fh.seek(offset)
+        return fh.read().decode("utf-8", errors="replace")
