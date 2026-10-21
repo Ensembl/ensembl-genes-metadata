@@ -26,7 +26,7 @@ Usage: run from the repository root, with PREFECT_API_URL pointing at the Prefec
 
 from gb_prefect.utils.deploy_utils import FlowDeployment, main
 
-METADATA_POOL = "genebuild-codon"
+METADATA_POOL = "genebuild-metadata"
 
 FLOWS = {
     # ensembl-genes-metadata pipelines
