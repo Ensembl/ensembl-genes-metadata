@@ -149,7 +149,7 @@ def generate_tables(
             pipeline=None,
             release_date=end_date,
             taxon_id=taxon_id,
-            current=True,
+            current=False,
             transc=transc,
             transc_ena=transc_ena,
             non_annotated=non_annotated and not candidate,
