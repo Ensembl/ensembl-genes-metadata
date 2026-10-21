@@ -1,5 +1,5 @@
 import re
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from prefect.artifacts import create_markdown_artifact  # type: ignore
 
@@ -102,13 +102,14 @@ def create_nextflow_run_artifact(  # pylint: disable=too-many-arguments,too-many
     log_text: str,
     rc: int,
     dry_run: bool,
+    status: Optional[str] = None,
 ) -> None:
     """Publish a Prefect markdown artifact summarizing any Nextflow run.
 
     fields are shown as a table under the status; key must be lowercase letters, digits and
-    dashes (see artifact_key).
+    dashes (see artifact_key). status overrides the status derived from rc.
     """
-    status = "SUCCESS" if rc == 0 else f"FAILED (rc={rc})"
+    status = status or ("SUCCESS" if rc == 0 else f"FAILED (rc={rc})")
     dry_run_badge = " *(dry run)*" if dry_run else ""
     rows = "\n".join(f"| {name} | `{value}` |" for name, value in {**fields, "Return code": rc}.items())
     log_lines = log_text.strip().splitlines()
