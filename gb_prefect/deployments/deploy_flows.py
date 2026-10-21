@@ -34,6 +34,7 @@ from gb_prefect.utils.deploy_utils import FlowDeployment, main
 POOLS = {
     "metadata": "genebuild-metadata",
     "busco": "genebuild-busco",
+    "dispatch": "genebuild-dispatch",
     # "omark": "genebuild-omark",
 }
 
@@ -82,6 +83,22 @@ FLOWS = {
         memory=8,
         time_limit=4,
         separate_outdir=True,
+    ),
+    "busco_dispatch_automatic": FlowDeployment(
+        name="busco-dispatch-automatic",
+        entrypoint="gb_prefect/flows/gb_busco_dispatch_automatic.py:busco_dispatch_automatic_flow",
+        work_pool="dispatch",
+        description="Automatic BUSCO dispatch",
+        tags=["dispatch", "busco"],
+        concurrency_limit=1,
+    ),
+    "busco_dispatch_list": FlowDeployment(
+        name="busco-dispatch-list",
+        entrypoint="gb_prefect/flows/gb_busco_dispatch_from_list.py:busco_dispatch_from_list_flow",
+        work_pool="dispatch",
+        description="BUSCO dispatch from a list",
+        tags=["dispatch", "busco"],
+        concurrency_limit=1,
     ),
     # "omark_db": FlowDeployment(name="omark-db", entrypoint=..., work_pool="omark", ...),
 }
