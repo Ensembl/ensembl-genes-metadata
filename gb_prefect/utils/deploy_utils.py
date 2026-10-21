@@ -1,8 +1,9 @@
 """Deploy code for Nextflow flows on slurm-cli pools (used by gb_prefect/deployments/deploy_flows.py).
 
-A deploy script lists its flows as FlowDeployment entries and calls main(); this module adds the
-command-line options, builds each deployment's parameters and slurm-cli job variables, and
-deploys them (or prints them with --dry-run).
+A deploy script lists its work pools (key -> default pool name) and its flows as FlowDeployment
+entries, and calls main(); this module adds the command-line options -- including one
+--<key>-pool per pool, to deploy to a different pool -- builds each deployment's parameters and
+slurm-cli job variables, and deploys them (or prints them with --dry-run).
 
 The flow code always comes from this repository (cloned by the worker at run time), whichever
 repository the Nextflow pipeline itself lives in -- the pipeline is found under ENSCODE.
@@ -25,7 +26,8 @@ class FlowDeployment:  # pylint: disable=too-many-instance-attributes
     Attributes:
         name: Deployment name (--name-suffix is appended).
         entrypoint: Flow entrypoint, relative to the repository root ("path.py:function").
-        work_pool: Default slurm-cli work pool (--work-pool overrides it for every flow).
+        work_pool: Key of the flow's slurm-cli work pool in the script's pools; the pool name is
+            that key's default, or --<key>-pool, or --work-pool (every flow).
         description: Shown in the Prefect UI; " from branch <branch>." is appended.
         tags: Extra tags, between "genebuild" and the branch tag.
         cpu, memory, time_limit: Slurm resources of the flow run's job -- the Nextflow head job,
@@ -50,8 +52,21 @@ class FlowDeployment:  # pylint: disable=too-many-instance-attributes
     separate_outdir: bool = False
 
 
-def parse_args(flows: Mapping[str, FlowDeployment], description: str) -> argparse.Namespace:
-    """Parse the deploy options shared by every deploy script; --flows chooses among flows' keys."""
+def _pool_dest(key: str) -> str:
+    return f"pool_{key.replace('-', '_')}"
+
+
+def parse_args(
+    flows: Mapping[str, FlowDeployment], pools: Mapping[str, str], description: str
+) -> argparse.Namespace:
+    """Parse the deploy options; --flows chooses among flows' keys, --<key>-pool renames a pool.
+
+    args.pools is set to the resolved pool names, by key.
+    """
+    unknown = sorted({flow.work_pool for flow in flows.values()} - set(pools))
+    if unknown:
+        raise ValueError(f"Flows use work pool key(s) missing from pools: {unknown}")
+
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument("--branch", default="main", help="Git branch the worker clones.")
     parser.add_argument(
@@ -83,7 +98,18 @@ def parse_args(flows: Mapping[str, FlowDeployment], description: str) -> argpars
         default=DEFAULT_NEXTFLOW_MODULE,
         help="Environment module loaded by the worker before the flow run.",
     )
-    parser.add_argument("--work-pool", help="slurm-cli work pool for every flow (default: each flow's own).")
+    for key, default in pools.items():
+        users = ", ".join(sorted(name for name, flow in flows.items() if flow.work_pool == key)) or "none"
+        parser.add_argument(
+            f"--{key}-pool",
+            dest=_pool_dest(key),
+            default=default,
+            metavar="POOL",
+            help=f"slurm-cli work pool of the {key} flows ({users}). Default: {default}.",
+        )
+    parser.add_argument(
+        "--work-pool", help="slurm-cli work pool for every selected flow, e.g. a personal test pool."
+    )
     parser.add_argument("--partition", help="Slurm partition, optional.")
     parser.add_argument("--cpu", type=int, help="Override every flow's CPU count.")
     parser.add_argument("--memory", type=int, help="Override every flow's memory, in GB.")
@@ -102,6 +128,7 @@ def parse_args(flows: Mapping[str, FlowDeployment], description: str) -> argpars
             parser.error(f"--flow-outdir: unknown flow {key!r} (choose from {', '.join(sorted(flows))})")
         flow_outdirs[key] = path
     args.flow_outdir = flow_outdirs
+    args.pools = {key: getattr(args, _pool_dest(key)) for key in pools}
     return args
 
 
@@ -120,7 +147,7 @@ def build_deployment(
     spec: Dict[str, Any] = {
         "name": f"{flow_deployment.name}{args.name_suffix}",
         "entrypoint": flow_deployment.entrypoint,
-        "work_pool_name": args.work_pool or flow_deployment.work_pool,
+        "work_pool_name": args.work_pool or args.pools[flow_deployment.work_pool],
         "parameters": {"outdir": outdir, "enscode": args.enscode, **flow_deployment.parameters},
         "job_variables": {
             "cpu": override(args.cpu, flow_deployment.cpu),
@@ -141,9 +168,9 @@ def build_deployment(
     return spec
 
 
-def main(flows: Mapping[str, FlowDeployment], description: str) -> None:
+def main(flows: Mapping[str, FlowDeployment], pools: Mapping[str, str], description: str) -> None:
     """Parse the options, then deploy (or with --dry-run print) the selected flows."""
-    args = parse_args(flows, description)
+    args = parse_args(flows, pools, description)
     for key in args.flows:
         if flows[key].separate_outdir and key not in args.flow_outdir:
             print(
