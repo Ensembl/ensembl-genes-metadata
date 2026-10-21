@@ -12,11 +12,16 @@ repository the Nextflow pipeline itself lives in -- the pipeline is found under 
 import argparse
 import json
 import sys
+from pathlib import Path
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Mapping, Optional, Sequence
 
 FLOW_REPO_URL = "https://github.com/Ensembl/ensembl-genes-metadata.git"
 DEFAULT_NEXTFLOW_MODULE = "nextflow/25.04.6"
+
+# Folder inside each flow's output directory for the worker's sbatch scripts (slurm_cli_<run>.sh)
+# and Slurm's slurm_<job>.out/.err; also the Slurm job's working directory.
+DEFAULT_JOB_DIR = "slurm_jobs"
 
 
 @dataclass(frozen=True)
@@ -37,6 +42,11 @@ class FlowDeployment:  # pylint: disable=too-many-instance-attributes
         separate_outdir: The flow's output normally lives apart from the shared --outdir (e.g.
             BUSCO's per-GCA run directories): a warning is printed if it isn't given its own
             with --flow-outdir.
+        runs_nextflow: True for a flow running a Nextflow pipeline on a slurm-cli pool. False
+            for an orchestration flow on a process pool (e.g. the BUSCO dispatchers): it gets only
+            its own parameters (no outdir/enscode), and its one job variable points the process
+            worker at the venv's python, since a process pool has no venv-activation step.
+            --work-pool, --cpu/--memory/--time-limit and --flow-outdir don't apply to it.
     """
 
     name: str
@@ -50,6 +60,7 @@ class FlowDeployment:  # pylint: disable=too-many-instance-attributes
     concurrency_limit: Optional[int] = None
     parameters: Mapping[str, Any] = field(default_factory=dict)
     separate_outdir: bool = False
+    runs_nextflow: bool = True
 
 
 def _pool_dest(key: str) -> str:
@@ -87,6 +98,14 @@ def parse_args(
         metavar="KEY=PATH",
         help="Base output directory of one flow instead of --outdir, e.g. busco_gca=/path; repeatable.",
     )
+    parser.add_argument(
+        "--job-dir",
+        default=DEFAULT_JOB_DIR,
+        metavar="NAME",
+        help="Folder inside each flow's output directory (--outdir or --flow-outdir) for the worker's "
+        "sbatch scripts and Slurm .out/.err files; also the job's working directory. "
+        f"Default: {DEFAULT_JOB_DIR}.",
+    )
     parser.add_argument("--enscode", required=True, help="Path to the ENSCODE directory.")
     parser.add_argument(
         "--asm-venv",
@@ -108,7 +127,8 @@ def parse_args(
             help=f"slurm-cli work pool of the {key} flows ({users}). Default: {default}.",
         )
     parser.add_argument(
-        "--work-pool", help="slurm-cli work pool for every selected flow, e.g. a personal test pool."
+        "--work-pool",
+        help="slurm-cli work pool for every selected Nextflow flow, e.g. a personal test pool.",
     )
     parser.add_argument("--partition", help="Slurm partition, optional.")
     parser.add_argument("--cpu", type=int, help="Override every flow's CPU count.")
@@ -126,7 +146,11 @@ def parse_args(
             parser.error(f"--flow-outdir must be KEY=PATH, got {value!r}")
         if key not in flows:
             parser.error(f"--flow-outdir: unknown flow {key!r} (choose from {', '.join(sorted(flows))})")
+        if not flows[key].runs_nextflow:
+            parser.error(f"--flow-outdir: {key} doesn't run a Nextflow pipeline and takes no outdir")
         flow_outdirs[key] = path
+    if not args.job_dir or "/" in args.job_dir:
+        parser.error(f"--job-dir must be a single folder name, not a path: {args.job_dir!r}")
     args.flow_outdir = flow_outdirs
     args.pools = {key: getattr(args, _pool_dest(key)) for key in pools}
     return args
@@ -138,7 +162,10 @@ def build_deployment(
     """Return the deploy() arguments of flow_deployment for the given options.
 
     outdir is the flow's base output directory (its --flow-outdir); defaults to args.outdir.
+    The job's working directory (sbatch script, Slurm .out/.err) is <outdir>/<args.job_dir>.
     """
+    if not flow_deployment.runs_nextflow:
+        return _process_pool_deployment(flow_deployment, args)
     outdir = outdir or args.outdir
 
     def override(value: Optional[int], default: int) -> int:
@@ -154,7 +181,7 @@ def build_deployment(
             "memory": override(args.memory, flow_deployment.memory),
             "time_limit": override(args.time_limit, flow_deployment.time_limit),
             "partition": args.partition,
-            "working_dir": outdir,
+            "working_dir": str(Path(outdir) / args.job_dir),
             "setup_commands": [
                 f"module load {args.nextflow_module}",
                 f"source {args.asm_venv}/bin/activate",
@@ -168,11 +195,27 @@ def build_deployment(
     return spec
 
 
+def _process_pool_deployment(flow_deployment: FlowDeployment, args: argparse.Namespace) -> Dict[str, Any]:
+    """Return the deploy() arguments of an orchestration flow on a process pool (runs_nextflow=False)."""
+    spec: Dict[str, Any] = {
+        "name": f"{flow_deployment.name}{args.name_suffix}",
+        "entrypoint": flow_deployment.entrypoint,
+        "work_pool_name": args.pools[flow_deployment.work_pool],
+        "parameters": dict(flow_deployment.parameters),
+        "job_variables": {"command": f"{args.asm_venv}/bin/python -m prefect.engine"},
+        "tags": ["genebuild", *flow_deployment.tags, args.branch],
+        "description": f"{flow_deployment.description} from branch {args.branch}.",
+    }
+    if flow_deployment.concurrency_limit is not None:
+        spec["concurrency_limit"] = flow_deployment.concurrency_limit
+    return spec
+
+
 def main(flows: Mapping[str, FlowDeployment], pools: Mapping[str, str], description: str) -> None:
     """Parse the options, then deploy (or with --dry-run print) the selected flows."""
     args = parse_args(flows, pools, description)
     for key in args.flows:
-        if flows[key].separate_outdir and key not in args.flow_outdir:
+        if flows[key].runs_nextflow and flows[key].separate_outdir and key not in args.flow_outdir:
             print(
                 f"WARNING: {key} uses --outdir {args.outdir}; its output usually has its own "
                 f"directory (--flow-outdir {key}=PATH).",

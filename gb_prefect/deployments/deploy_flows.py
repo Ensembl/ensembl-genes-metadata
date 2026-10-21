@@ -7,12 +7,18 @@ The work pools must exist before deploying the flows.
   metadata DB at once (extra runs wait for the slot).
 - busco_gca: the busco pool (default genebuild-busco), whose own concurrency limit sizes the
   automatic dispatch. Give it its own output directory with --flow-outdir busco_gca=PATH.
+- BUSCO dispatchers: the dispatch process pool (default genebuild-dispatch). They run no Nextflow
+  (runs_nextflow=False): no outdir/enscode parameters, the flow run uses <asm-venv>/bin/python,
+  and --work-pool / --flow-outdir / Slurm resource options don't apply to them.
 
 Pool names are the POOLS defaults below; change one with --<key>-pool (e.g. --metadata-pool
 my-test-pool), or send every selected flow to one pool with --work-pool.
 
 The flow code always comes from this repository; an ensembl-genes-nf pipeline is found under
 ENSCODE. To add a flow (e.g. OMArk), add its pool to POOLS and a FlowDeployment to FLOWS.
+
+The worker's sbatch scripts (slurm_cli_<flow run>.sh) and Slurm's slurm_<job>.out/.err go to a
+folder inside each flow's output directory: <outdir>/slurm_jobs (--job-dir to rename it).
 
 The worker clones --branch from GitHub at run time, so commit and push the branch first.
 
@@ -24,7 +30,7 @@ Usage: run from the repository root, with PREFECT_API_URL pointing at the Prefec
         --flow-outdir busco_gca=/path/to/busco_output \\
         --enscode /path/to/enscode \\
         --asm-venv /path/to/asm_venv \\
-        [--metadata-pool POOL] [--busco-pool POOL] [--work-pool POOL] \\
+        [--metadata-pool POOL] [--busco-pool POOL] [--work-pool POOL] [--job-dir slurm_jobs] \\
         [--flows register update busco_gca] [--name-suffix _test] [--dry-run]
 """
 
@@ -88,6 +94,7 @@ FLOWS = {
         name="busco-dispatch-automatic",
         entrypoint="gb_prefect/flows/gb_busco_dispatch_automatic.py:busco_dispatch_automatic_flow",
         work_pool="dispatch",
+        runs_nextflow=False,
         description="Automatic BUSCO dispatch",
         tags=["dispatch", "busco"],
         concurrency_limit=1,
@@ -96,7 +103,17 @@ FLOWS = {
         name="busco-dispatch-list",
         entrypoint="gb_prefect/flows/gb_busco_dispatch_from_list.py:busco_dispatch_from_list_flow",
         work_pool="dispatch",
+        runs_nextflow=False,
         description="BUSCO dispatch from a list",
+        tags=["dispatch", "busco"],
+        concurrency_limit=1,
+    ),
+    "busco_dispatch": FlowDeployment(
+        name="busco-dispatch",
+        entrypoint="gb_prefect/flows/gb_busco_dispatch.py:busco_dispatch_flow",
+        work_pool="dispatch",
+        runs_nextflow=False,
+        description="BUSCO dispatch from a CSV",
         tags=["dispatch", "busco"],
         concurrency_limit=1,
     ),

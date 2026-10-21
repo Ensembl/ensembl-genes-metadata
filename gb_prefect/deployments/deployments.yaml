@@ -29,15 +29,16 @@ variables:
 # merged on top (its keys win).
 work_pools:
   genebuild-pool: {}    # process pool
+  genebuild-dispatch: {}  # process pool: BUSCO dispatchers
   genebuild-busco:      # slurm-cli pool
     job_variables:
-      working_dir: "{busco_outdir}"
+      working_dir: "{busco_outdir}/slurm_jobs"   # sbatch scripts + Slurm .out/.err
       setup_commands:
         - "module load {nextflow_module}"
         - "source {asm_venv}/bin/activate"
   genebuild-metadata:      # slurm-cli pool, no pool concurrency limit: registry + update flows
     job_variables:
-      working_dir: "{outdir}"
+      working_dir: "{outdir}/slurm_jobs"
       setup_commands:
         - "module load {nextflow_module}"
         - "source {asm_venv}/bin/activate"
@@ -97,21 +98,24 @@ deployments:
   # points the flow run at asm_venv's python instead of the worker's own environment.
   busco-dispatch:
     entrypoint: gb_prefect/flows/gb_busco_dispatch.py:busco_dispatch_flow
-    work_pool: genebuild-pool
+    work_pool: genebuild-dispatch
     job_variables: {command: "{asm_venv}/bin/python -m prefect.engine"}
-    tags: [busco]
-    description: BUSCO orchestrator (explicit CSV input)
+    concurrency_limit: 1
+    tags: [dispatch, busco]
+    description: BUSCO dispatch from a CSV
 
   busco-dispatch-list:
     entrypoint: gb_prefect/flows/gb_busco_dispatch_from_list.py:busco_dispatch_from_list_flow
-    work_pool: genebuild-pool
+    work_pool: genebuild-dispatch
     job_variables: {command: "{asm_venv}/bin/python -m prefect.engine"}
-    tags: [busco]
-    description: BUSCO orchestrator (bare GCA list input)
+    concurrency_limit: 1
+    tags: [dispatch, busco]
+    description: BUSCO dispatch from a list
 
   busco-dispatch-automatic:
     entrypoint: gb_prefect/flows/gb_busco_dispatch_automatic.py:busco_dispatch_automatic_flow
-    work_pool: genebuild-pool
+    work_pool: genebuild-dispatch
     job_variables: {command: "{asm_venv}/bin/python -m prefect.engine"}
-    tags: [busco]
-    description: BUSCO orchestrator (automatic, slot-sized)
+    concurrency_limit: 1
+    tags: [dispatch, busco]
+    description: Automatic BUSCO dispatch
