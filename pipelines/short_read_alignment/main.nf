@@ -33,21 +33,21 @@ include { validateParameters; paramsSummaryLog; samplesheetToList} from 'plugin/
 */
 
 
-include { FETCH_GENOME } from '../modules/fetch_genome'
-include { DOWNLOAD_FASTQS } from '../modules/download_fastqs'
-include { STAR_INDEX_GENOME } from '../modules/star_index_genome'
-include { STAR } from '../modules/star'
-include { MINIMAP2_INDEX_GENOME } from '../modules/minimap2_index_genome'
-include { MINIMAP2 } from '../modules/minimap2'
-include { SAM2BAM } from '../modules/sam2bam'
-include { MERGE_BAM_PER_TISSUE } from '../modules/merge_bam_per_tissue'
-include { BAM2STRAND } from '../modules/bam2strand'
-include { INDEXING_FILES as INDEX_BAM } from '../modules/indexing_files'
-include { INDEXING_FILES as INDEX_CRAM } from '../modules/indexing_files'
-include { INDEXING_FILES as INDEX_BIGWIG } from '../modules/indexing_files'
-include { BAM2CRAM } from '../modules/bam2cram'
-include { BAM2BIGWIG } from '../modules/bam2bigWig'
-include { DELETE_FASTQ } from '../modules/delete_fastq'
+include { FETCH_GENOME } from './modules/fetch_genome.nf'
+include { DOWNLOAD_FASTQS } from './modules/download_fastqs.nf'
+include { STAR_INDEX_GENOME } from './modules/star_index_genome.nf'
+include { STAR } from './modules/star.nf'
+include { MINIMAP2_INDEX_GENOME } from './modules/minimap2_index_genome.nf'
+include { MINIMAP2 } from './modules/minimap2.nf'
+include { SAM2BAM } from './modules/sam2bam.nf'
+include { MERGE_BAM_PER_TISSUE } from './modules/merge_bam_per_tissue.nf'
+include { BAM2STRAND } from './modules/bam2strand.nf'
+include { INDEXING_FILES as INDEX_BAM } from './modules/indexing_files.nf'
+include { INDEXING_FILES as INDEX_CRAM } from './modules/indexing_files.nf'
+include { INDEXING_FILES as INDEX_BIGWIG } from './modules/indexing_files.nf'
+include { BAM2CRAM } from './modules/bam2cram.nf'
+include { BAM2BIGWIG } from './modules/bam2bigWig.nf'
+include { DELETE_FASTQ } from './modules/delete_fastq.nf'
 
 
 /*
@@ -56,7 +56,7 @@ include { DELETE_FASTQ } from '../modules/delete_fastq'
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
-workflow ALIGNMENT_PIPELINE {
+workflow {
     take:
     csvFile
     bam2cram
@@ -65,32 +65,46 @@ workflow ALIGNMENT_PIPELINE {
     bam2bigWig
 
     main:
-    def data = Channel.fromList(samplesheetToList(csvFile, "${projectDir}/assets/schema_input.json"))
-            .map { row ->
-                def(taxonId, assembly_accession, instrument_platform, paired_sample, tissue_name, run_accession_name, pair1_path, md5_1_sum, pair2, md5_2) = row
-                def url2 = paired_sample  ? pair2 : null
-                def md5sum_2 = paired_sample  ? md5_2 : null
-                //tuple(taxonId, assembly_accession, instrument_platform, paired_sample, tissue_name, run_accession_name, pair1_path, md5_1_sum, url2, md5sum_2)
-               // }
-                //data.view()
+    // Validate input parameters
+    validateParameters()
 
-                [taxon_id:taxonId, gca:assembly_accession,platform:instrument_platform, \
-                paired:paired_sample,
-                tissue:tissue_name,run_accession:run_accession_name, pair1:pair1_path,
-                md5_1:md5_1_sum,pair2:url2,md5_2:md5sum_2]}
-    //def data = Channel.fromPath(params.csvFile, type: 'file', checkIfExists: true)
-    //           .splitCsv(sep:',', header:true)
-    //            .map { row -> [taxon_id:row.get('taxon_id'), gca:row.get('gca'), \
-    //            run_accession:row.get('run_accession'), pair1:row.get('pair1'),
-    //            pair2:row.get('pair2'),md5_1:row.get('md5_1'),md5_2:row.get('md5_2')]}
-    data.each { dataRow -> dataRow.view() }    
+    // Print summary of supplied parameters
+    log.info(paramsSummaryLog(workflow))
+    ch_versions_file = channel.empty()
+    paired_sample = ""
+    def data 
+    data = channel.fromPath(csvFile, type: 'file', checkIfExists: true)
+                .splitCsv(sep:',', header:true)
+                .filter { row -> row.get('taxon_id') && row.get('run_accession') && row.get('pair1') }
+                .map { row ->
+                    [
+                        taxonId : row.get('taxon_id'),
+                        assembly_accession : row.get('gca'),
+                        instrument_platform : row.get('platform'),
+                        paired : row.get('paired')?.toBoolean(),
+                        tissue_name : row.get('tissue'),
+                        run_accession : row.get('run_accession'),
+                        pair1_path : row.get('pair1'),
+                        md5_1_sum : row.get('md5_1'),
+                        pair2_path : paired_sample ? row.get('pair2') : null,
+                        md5_2 : paired_sample ? row.get('md5_2') : null,
+                        genome_file: row.get('genome_file')
+                    ]
+                }
+    data.view { row -> "DATA: ${row}" }        
+
     def alignOutput
     def finalBam
 
-    def genomeAndDataToAlign = FETCH_GENOME(data.flatten())
-    def downloadedFastqFiles=DOWNLOAD_FASTQS(genomeAndDataToAlign)
-     //downloadedFastqFiles.each { dataRow -> dataRow.view() }
-    if (downloadedFastqFiles.filter { it[4] == true }){
+    def genomeAndDataToAlign = FETCH_GENOME(data).fasta_file_output
+    .map {meta, genomeFile -> return tuple(meta + [fasta_file: genomeFile]) }
+    ch_versions_file = ch_versions_file.mix(FETCH_GENOME.out.versions_file)
+
+    def downloadedFastqFiles=DOWNLOAD_FASTQS(genomeAndDataToAlign).fastq_file_output
+    .map {meta, fastq1, fastq2 -> return tuple(meta + [fastq1: fastq1, fastq2: fastq2]) }
+    ch_versions_file = ch_versions_file.mix(DOWNLOAD_FASTQS.out.versions_file)
+    if(downloadedFastqFiles.filter { it[4] == true }){
+        log.info("Paired-end data detected. Using STAR for alignment.")
     //|| downloadedFastqFiles[5].toString() == 'true') {
     //if (downloadedFastqFiles[4]==true)
         def genomeIndexShortData = STAR_INDEX_GENOME(downloadedFastqFiles)

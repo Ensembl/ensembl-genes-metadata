@@ -63,6 +63,11 @@
                 "type": "string",
                 "description": "MD5 checksum for the second read file",
                 "errorMessage": "MD5 checksum must be a 32-character hexadecimal string"
+            },
+            "genome_file": {
+                "type": "string",
+                "description": "Path to the genome file",
+                "errorMessage": "Genome file must be a FASTA file"
             }
         }
     },

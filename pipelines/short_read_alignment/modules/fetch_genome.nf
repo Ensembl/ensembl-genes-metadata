@@ -15,36 +15,57 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-
+/*
+This process fetches the genome file for a given GCA accession. 
+If a genome file is provided as part of the metadata, 
+it uses that file instead of downloading it. 
+The fetched genome file is saved with the name "genome.fna".
+*/
 process FETCH_GENOME {
-  tag "$taxon_id:$gca"
-  label 'fetch_file'
+    tag "${meta.gca}:genome"
+    label 'fetch_file'
+    storeDir "${params.outDir}/${meta.taxon_id}/${meta.gca}"
+    afterScript "sleep $params.files_latency"  // Needed because of file system latency
+    maxForks 1
 
-  //publishDir "${params.outDir}/$taxon_id/$gca/", mode: "copy"  doesn't work for multiple files
-  afterScript "sleep $params.files_latency"  // Needed because of file system latency
-  maxForks 1
+    input:
+    val meta
+    //tuple val(taxon_id), val(gca), val(platform), val(paired), val(tissue), val(run_accession), val(url1), val(md5_1), val(url2),  val(md5_2) 
+    
+    output:
+    tuple val(meta), path("*.fna"), emit: fasta_file_output
+    path "versions.yml", emit: versions_file
+    //tuple val(taxon_id), val(gca), val(platform), val(paired), val(tissue), val(run_accession), val("${params.outDir}/$taxon_id/$gca/"), val(url1), val(md5_1), val(url2), val(md5_2)
+    
+    script:
+    """
+    if [[ -f "${meta.genome_file}" ]]; then
+            echo "Using provided genome file: ${meta.genome_file}"
+            cp -L "${meta.genome_file}" genome.fna
+        else
+            fetch_genome.py \
+                --output_dir . \
+                --gca ${meta.gca} \
+                --ncbi_base ${params.ncbiBaseUrl}
 
-  input:
-  tuple val(taxon_id), val(gca), val(platform), val(paired), val(tissue), val(run_accession), val(url1), val(md5_1), val(url2),  val(md5_2) 
-  
-  output:
-  tuple val(taxon_id), val(gca), val(platform), val(paired), val(tissue), val(run_accession), val("${params.outDir}/$taxon_id/$gca/"), val(url1), val(md5_1), val(url2), val(md5_2)
-  
-  script:
-  """
-  mkdir -p ${params.outDir}/${taxon_id}/${gca}
-  if [[ ! -d "${params.outDir}/${taxon_id}/${gca}/" && ! -f "${params.genome_file}" ]]; then
-    echo "Directory ncbi_dataset does not exist. Proceeding with download..."
-    curl --retry 3  -X GET "${params.ncbiBaseUrl}/${gca}/download?include_annotation_type=GENOME_FASTA&hydrated=FULLY_HYDRATED" -H "Accept: application/zip" --output genome_file.zip
-    unzip -j genome_file.zip
-    cp -r * ${params.outDir}/${taxon_id}/${gca}/
-  
-  
-  fi
-  if [[ -f "${params.genome_file}" ]]; then
-        rsync -av --checksum "${params.genome_file}" ${params.outDir}/${taxon_id}/${gca}/genome.fna
-  fi      
-  """
-//    mkdir -p ${params.outDir}/${taxon_id}/${gca}/ncbi_dataset && mv *. ${params.outDir}/${taxon_id}/${gca}/ncbi_dataset
+            downloaded_genome=\$(find . -maxdepth 1 -type f -name "*.fna" | head -n 1)
 
-}
+            if [[ -z "\$downloaded_genome" ]]; then
+                echo "No genome FASTA found for ${meta.gca}" >&2
+                exit 1
+            fi
+        fi
+        
+        # Create versions file
+        PYTHON_VERSION=\$(python --version 2>&1 | awk '{print \$2}')
+        FETCH_GENOME_VERSION=\$(fetch_genome.py  --version 2>&1 || echo "unknown")
+
+        cat <<-END_VERSIONS > versions.yml
+        "${task.process}":
+            fetch_genome.py: \$FETCH_GENOME_VERSION
+            python: \$PYTHON_VERSION
+        END_VERSIONS
+        
+    """
+
+    }
