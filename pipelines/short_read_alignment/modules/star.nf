@@ -40,7 +40,7 @@ process STAR {
     label 'star'
 
     publishDir "${meta.alignment_dir}", mode: 'copy'
-
+    containerOptions "-B ${params.star_tmp_dir}"
     afterScript "sleep ${params.files_latency}"
 
     errorStrategy 'retry'
@@ -104,7 +104,15 @@ process STAR {
     else
 
         echo "Running STAR for ${meta.run_accession}"
+        # Create a unique temporary parent directory for this task
+        STAR_TMP_PARENT=\$(mktemp -d "${params.star_tmp_dir}/${meta.run_accession}.XXXXXX")
+        # STAR creates this directory itself
+    STAR_TMP="\$STAR_TMP_PARENT/tmp"
 
+    echo "STAR temporary directory: \$STAR_TMP"
+
+    # Remove temporary files when the task exits
+    trap 'rm -rf "\$STAR_TMP_PARENT"' EXIT
         rm -rf "${starTmpDir}"
         rm -f "${publishedBam}"
 
@@ -119,7 +127,7 @@ process STAR {
             --outFileNamePrefix "${outFileNamePrefix}" \\
             --readFilesCommand zcat \\
             --outSAMattrRGline "ID:${meta.run_accession}" \\
-            --outTmpDir ./tmp \\
+            --outTmpDir "\$STAR_TMP" \\
             --outSAMtype BAM SortedByCoordinate \\
             --limitSjdbInsertNsj ${params.limitSjdbInsertNsj} \\
             --outFilterIntronMotifs RemoveNoncanonicalUnannotated \\
