@@ -68,7 +68,7 @@ Steps 6 run in parallel for every accession that reached Phase 2. Each compariso
 
 ![Pipeline diagram](./assembly_metadata_update_animated.svg)
 
-*Diagram source: [`assets/metro_map.mmd`](./assets/metro_map.mmd), drawn with [nf-metro](https://github.com/seqeralabs/nf-metro); after editing it, regenerate the SVGs with [`scripts/render_metro_maps.sh`](../../scripts/render_metro_maps.sh).*
+*Diagram source: [`assets/metro_map.mmd`](./assets/metro_map.mmd), drawn with [nf-metro](https://github.com/seqeralabs/nf-metro); after editing it, regenerate the SVGs with [`src/bash/render_metro_maps.sh`](../../src/bash/render_metro_maps.sh).*
 
 ---
 
