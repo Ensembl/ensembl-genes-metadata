@@ -37,7 +37,7 @@ def gb_registry_update_flow(  # pylint: disable=too-many-arguments,too-many-posi
     credentials = resolve_credentials(
         credentials, metadata_secret_block, slack_secret_block, slack_report, dry_run=dry_run
     )
-    
+
     # Run the assembly metadata update pipeline for the specified GCA accessions.
     run = asm_update_run(
         outdir=run_folder(outdir, folder_name, f"asm_update_{datetime.now().strftime('%Y-%m-%d')}"),
