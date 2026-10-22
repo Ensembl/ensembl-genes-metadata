@@ -24,7 +24,7 @@ The worker clones --branch from GitHub at run time, so commit and push the branc
 
 Usage: run from the repository root, with PREFECT_API_URL pointing at the Prefect server
 
-    python gb_prefect/deployments/deploy_flows.py \\
+    python gb_prefect/setup/deploy_flows.py \\
         --branch main \\
         --outdir /path/to/output \\
         --flow-outdir busco_gca=/path/to/busco_output \\
