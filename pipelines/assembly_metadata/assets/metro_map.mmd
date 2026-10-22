@@ -1,0 +1,57 @@
+%% nf-metro map of the assembly_metadata (assembly registry) pipeline.
+%% Source of assembly_metadata_animated.svg -- regenerate with scripts/render_metro_maps.sh.
+%% Each %%metro process line maps a station to the Nextflow process(es) it represents
+%% (regex on the fully qualified name, e.g. ASSEMBLY_METADATA:WRITE2DB_ASSEMBLY), for live progress.
+%%metro title: Assembly Metadata
+%%metro caption: Registers new assemblies (NCBI screen by date, or a GCA list) in the assembly metadata DB
+%%metro line_order: span
+%%metro line: registration | Registration | #2db572
+%%metro line: update_date | Update date | #0570b0 | dashed
+
+%%metro process: set_date | (^|:)SET_DATE$
+%%metro process: fetch_gca | (^|:)FETCH_GCA$
+%%metro process: parse_metadata | (^|:)PARSE_METADATA$
+%%metro process: write2db_assembly | (^|:)WRITE2DB_ASSEMBLY$
+%%metro process: update_keys_metadata | (^|:)UPDATE_KEYS_METADATA$
+%%metro process: write2db_metadata | (^|:)WRITE2DB_METADATA$
+%%metro process: species_checker | (^|:)SPECIES_CHECKER$
+%%metro process: write2db_species | (^|:)WRITE2DB_SPECIES$
+%%metro process: get_tolid | (^|:)GET_TOLID$
+%%metro process: write2db_tolid | (^|:)WRITE2DB_TOLID$
+%%metro process: report | (^|:)REPORT$
+
+graph LR
+    subgraph discover [Find assemblies]
+        set_date([Set date])
+        fetch_gca([Fetch new GCAs])
+        set_date -->|registration| fetch_gca
+    end
+
+    subgraph assembly [Assembly metadata]
+        parse_metadata([Parse metadata])
+        write2db_assembly([Write assembly])
+        update_keys_metadata([Update metadata keys])
+        write2db_metadata([Write metadata])
+        parse_metadata -->|registration| write2db_assembly
+        write2db_assembly -->|registration| update_keys_metadata
+        update_keys_metadata -->|registration| write2db_metadata
+    end
+
+    subgraph species [Species and ToLID]
+        species_checker([Check species])
+        write2db_species([Write species])
+        get_tolid([Get ToLID])
+        write2db_tolid([Write ToLID])
+        species_checker -->|registration| write2db_species
+        write2db_species -->|registration| get_tolid
+        get_tolid -->|registration| write2db_tolid
+    end
+
+    subgraph reporting [Report]
+        report([Report])
+    end
+
+    fetch_gca -->|registration| parse_metadata
+    write2db_metadata -->|registration| species_checker
+    write2db_tolid -->|registration| report
+    set_date -->|update_date| report

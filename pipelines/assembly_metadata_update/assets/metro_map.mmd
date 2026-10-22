@@ -1,0 +1,82 @@
+%% nf-metro map of the assembly_metadata_update pipeline.
+%% Source of assembly_metadata_update_animated.svg -- regenerate with scripts/render_metro_maps.sh.
+%% Each %%metro process line maps a station to the Nextflow process(es) it represents
+%% (regex on the fully qualified name, e.g. ASSEMBLY_METADATA_UPDATE:WRITE2DB). Patterns are
+%% anchored: WRITE2DB must not match INTEGRITY_WRITE2DB, nor TAXONOMY match TAXONOMY_CHECK.
+%%metro title: Assembly Metadata Update
+%%metro caption: Checks registered assemblies (a GCA list, or screened by release date) and updates their metadata; the Slack report runs with slack_report
+%%metro line_order: span
+%%metro line_spread: centered
+%%metro line: checks | Metadata checks | #2db572
+%%metro line: integrity_fix | Integrity taxonomy fix | #0570b0
+%%metro line: taxonomy_pass | Taxonomy unchanged | #f5c542
+%%metro line: taxonomy_fix | Taxonomy update | #e63946
+
+%%metro process: fetch_assemblies | (^|:)FETCH_ASSEMBLIES$
+%%metro process: integrity_checker | (^|:)INTEGRITY_CHECKER$
+%%metro process: integrity_taxonomy | (^|:)INTEGRITY_TAXONOMY$
+%%metro process: integrity_write2db | (^|:)INTEGRITY_WRITE2DB$
+%%metro process: fetch_metadata | (^|:)FETCH_METADATA$
+%%metro process: assembly_status | (^|:)ASSEMBLY_STATUS$
+%%metro process: assembly_refseq | (^|:)ASSEMBLY_REFSEQ$
+%%metro process: assembly_metrics | (^|:)ASSEMBLY_METRICS$
+%%metro process: assembly_name | (^|:)ASSEMBLY_NAME$
+%%metro process: bioproject | (^|:)BIOPROJECT$
+%%metro process: taxonomy_check | (^|:)TAXONOMY_CHECK$
+%%metro process: taxonomy | (^|:)TAXONOMY$
+%%metro process: species_checker | (^|:)SPECIES_CHECKER$
+%%metro process: write2db | (^|:)WRITE2DB$
+%%metro process: new_taxonomy | (^|:)NEW_TAXONOMY$
+%%metro process: report_update | (^|:)REPORT_UPDATE$
+
+graph LR
+    subgraph integrity [Integrity]
+        fetch_assemblies([Fetch assemblies])
+        integrity_checker([Check integrity])
+        integrity_taxonomy([Integrity taxonomy])
+        integrity_write2db([Write fix])
+        fetch_assemblies -->|checks| integrity_checker
+        integrity_checker -->|integrity_fix| integrity_taxonomy
+        integrity_taxonomy -->|integrity_fix| integrity_write2db
+    end
+
+    subgraph metadata [Metadata checks]
+        fetch_metadata([Fetch metadata])
+        assembly_status([Assembly status])
+        assembly_refseq([RefSeq])
+        assembly_metrics([Assembly metrics])
+        assembly_name([Assembly name])
+        bioproject([BioProject])
+        fetch_metadata -->|checks| assembly_status
+        fetch_metadata -->|checks| assembly_refseq
+        fetch_metadata -->|checks| assembly_metrics
+        fetch_metadata -->|checks| assembly_name
+        fetch_metadata -->|checks| bioproject
+    end
+
+    subgraph taxonomy_section [Taxonomy]
+        taxonomy_check([Check taxonomy])
+        taxonomy([Keep taxonomy])
+        species_checker([Check species])
+        write2db([Write taxonomy])
+        new_taxonomy([New taxonomy])
+        taxonomy_check -->|taxonomy_pass| taxonomy
+        taxonomy_check -->|taxonomy_fix| species_checker
+        species_checker -->|taxonomy_fix| write2db
+        write2db -->|taxonomy_fix| new_taxonomy
+    end
+
+    subgraph reporting [Report]
+        report_update([Slack report])
+    end
+
+    integrity_checker -->|checks| fetch_metadata
+    integrity_write2db -->|integrity_fix| fetch_metadata
+    fetch_metadata -->|taxonomy_pass,taxonomy_fix| taxonomy_check
+    assembly_status -->|checks| report_update
+    assembly_refseq -->|checks| report_update
+    assembly_metrics -->|checks| report_update
+    assembly_name -->|checks| report_update
+    bioproject -->|checks| report_update
+    taxonomy -->|taxonomy_pass| report_update
+    new_taxonomy -->|taxonomy_fix| report_update
