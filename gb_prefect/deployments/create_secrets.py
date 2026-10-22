@@ -1,14 +1,19 @@
-"""Create (or update) the Prefect Secret blocks holding the assembly registry credentials.
+"""Create (or update) the Prefect Secret blocks holding the flows' credentials.
 
-The registry update flows load their credentials from these blocks at run time, so the
-database password and Slack token never appear in a deployment's parameters.
+Flows load their credentials from these blocks at run time, so the database password and
+Slack token never appear in a deployment's parameters:
+- gb-metadata-db-params (metadata DB): the registry and update flows, busco_gca_flow with
+  update_registry, and the BUSCO dispatchers;
+- gb-slack-params (Slack bot): the update flows, when slack_report is on.
 
 Each JSON file is read once, validated, and stored in Prefect; the file itself is not needed
 afterwards (delete it, or keep it somewhere owner-readable only).
 
-Example (run from the repository root, with PREFECT_API_URL pointing at the Prefect server):
+Run once when setting up the Prefect server (see the README's "Setting up the Prefect Server"),
+from the repository root with the venv that has gb_prefect installed and PREFECT_API_URL
+pointing at the server:
 
-    PYTHONPATH=. python gb_prefect/deployments/create_secrets.py \
+    python gb_prefect/deployments/create_secrets.py \
         --metadata-json ~/secrets/metadata_params.json \
         --slack-json ~/secrets/slack_params.json
 
