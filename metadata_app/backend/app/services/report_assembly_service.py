@@ -8,6 +8,10 @@ from metadata_app.backend.app.core.database import get_db_connection
 from metadata_app.backend.app.services.assembly_service import (
     get_filtered_assemblies as get_filtered_assemblies_from_service,
 )
+from metadata_app.backend.app.services.assembly_filters import (
+    filter_annotation_candidate_quality,
+    filter_annotation_candidates,
+)
 from metadata_app.backend.app.services.get_transcriptomic_data_ENA_service import (
     add_data_from_ena,
 )
@@ -50,6 +54,12 @@ def _join_unique(values):
     return ", ".join(sorted({str(value) for value in values if pd.notna(value) and value != ""}))
 
 
+def _json_safe_dataframe(df):
+    """Convert missing and non-finite values to JSON-compatible nulls."""
+    safe_df = df.replace([np.inf, -np.inf], np.nan)
+    return safe_df.astype(object).where(pd.notna(safe_df), None)
+
+
 def _add_transcriptomic_evidence(df_wide):
     if "transcriptomic_evidence" in df_wide.columns:
         return df_wide
@@ -72,26 +82,18 @@ def _add_transcriptomic_evidence(df_wide):
     return df_wide
 
 
-def _apply_report_filters(df_wide, candidate, start_date):
+def _apply_report_filters(df_wide, start_date, end_date):
     df_wide = df_wide.copy()
+    df_wide["release_date"] = pd.to_datetime(df_wide["release_date"], errors="coerce")
 
     if start_date:
-        df_wide["release_date"] = pd.to_datetime(df_wide["release_date"], errors="coerce")
-        df_wide = df_wide[df_wide["release_date"] <= pd.to_datetime(start_date)]
-        check_dataframe_not_empty(df_wide, "assemblies before report start date")
+        df_wide = df_wide[df_wide["release_date"] >= pd.to_datetime(start_date)]
 
-    if candidate:
-        if "contig_n50" not in df_wide.columns:
-            raise HTTPException(
-                status_code=404,
-                detail="No contig_n50 metric found for candidate assembly filtering.",
-            )
-        df_wide["contig_n50"] = pd.to_numeric(df_wide["contig_n50"], errors="coerce")
-        df_wide = df_wide[
-            (~df_wide["asm_level"].isin(["Contig", "Scaffold"])) & (df_wide["contig_n50"] >= 100000)
-        ]
-        logging.info("Filtered for annotation candidates (n50>=100000 and asm_level!='Contig')")
-        check_dataframe_not_empty(df_wide, "candidate assemblies (N50 >= 100000, non-contig)")
+    if end_date:
+        df_wide = df_wide[df_wide["release_date"] <= pd.to_datetime(end_date)]
+
+    if start_date or end_date:
+        check_dataframe_not_empty(df_wide, "assemblies in report release-date range")
 
     return df_wide
 
@@ -134,34 +136,48 @@ def generate_tables(
     start_date,
     end_date,
     group_name,
-    non_annotated=True,
+    non_annotated=False,
+    current=False,
+    include_reassessment=False,
+    metric_thresholds=None,
+    asm_level=None,
+    asm_type=None,
+    pipeline=None,
+    gca=None,
 ):
     logging.info(
         f"Generating tables for end date: {end_date}, start date: {start_date}, group name: {group_name}, taxon id: {taxon_id}, bioproject id: {bioproject_id}, non_annotated: {non_annotated}"
     )
 
     try:
+        if start_date and end_date and start_date > end_date:
+            raise HTTPException(
+                status_code=400,
+                detail="Report start date must be before or equal to report end date.",
+            )
+
         assembly_result = get_filtered_assemblies_from_service(
             bioproject_id=bioproject_id,
-            metric_thresholds={},
-            asm_level=None,
-            asm_type=None,
-            pipeline=None,
-            release_date=end_date,
+            metric_thresholds=metric_thresholds or {},
+            asm_level=asm_level,
+            asm_type=asm_type,
+            pipeline=pipeline,
+            release_date=start_date,
             taxon_id=taxon_id,
-            current=False,
+            current=current,
             transc=transc,
             transc_ena=transc_ena,
             non_annotated=non_annotated and not candidate,
             group_name=group_name,
-            gca=None,
+            gca=gca,
             candidate=candidate,
+            include_reassessment=include_reassessment,
         )
         if isinstance(assembly_result[0], str):
             return assembly_result
 
         df_wide, _, _ = assembly_result
-        df_wide = _apply_report_filters(df_wide, candidate, start_date)
+        df_wide = _apply_report_filters(df_wide, start_date, end_date)
         rep_asm_wide, rep_asm_main = _build_report_tables(df_wide)
     except HTTPException:
         logging.error("HTTPException raised during assembly filtering")
@@ -243,15 +259,16 @@ def generate_tables(
         transc_reg_count = f"{(rows_with_transc / total_rows) * 100:.1f}%"
 
     logging.info("Transforming out of range float values that are not JSON compliant")
-    rep_asm_wide = rep_asm_wide.apply(lambda col: col.fillna("") if col.dtype == "object" else col)
-    project_report = project_report.apply(lambda col: col.fillna("") if col.dtype == "object" else col)
-    rep_asm_main = rep_asm_main.apply(lambda col: col.fillna("") if col.dtype == "object" else col)
-    top_3_taxa = top_3_taxa.apply(lambda col: col.fillna("") if col.dtype == "object" else col)
-    asm_type_group = asm_type_group.apply(lambda col: col.fillna("") if col.dtype == "object" else col)
-    asm_level_group = asm_level_group.apply(lambda col: col.fillna("") if col.dtype == "object" else col)
-    clade_group = clade_group.apply(lambda col: col.fillna("") if col.dtype == "object" else col)
-    asm_length = asm_length.apply(lambda col: col.fillna("") if col.dtype == "object" else col)
-    transc_data = transc_data.apply(lambda col: col.fillna("") if col.dtype == "object" else col)
+    rep_asm_wide = _json_safe_dataframe(rep_asm_wide)
+    project_report = _json_safe_dataframe(project_report)
+    rep_asm_main = _json_safe_dataframe(rep_asm_main)
+    top_3_taxa = _json_safe_dataframe(top_3_taxa)
+    asm_type_group = _json_safe_dataframe(asm_type_group)
+    asm_level_group = _json_safe_dataframe(asm_level_group)
+    clade_group = _json_safe_dataframe(clade_group)
+    asm_length = _json_safe_dataframe(asm_length)
+    transc_data = _json_safe_dataframe(transc_data)
+    df_gca_list = _json_safe_dataframe(df_gca_list)
 
     check_dataframe_not_empty(project_report, "final project report")
     check_dataframe_not_empty(top_3_taxa, "final top 3 taxa")
@@ -391,32 +408,29 @@ def generate_overview():
 
         transcriptomic_df = add_data_from_ena(df_wide)
         if transcriptomic_df is not None and not transcriptomic_df.empty:
+            lowest_transcriptomic_df = transcriptomic_df[
+                ["taxon_id", "short_read_paired_end_illumina"]
+            ].rename(columns={"short_read_paired_end_illumina": "short_read_paired_end_illumina_lowest"})
             df_wide = df_wide.merge(
-                transcriptomic_df[["taxon_id", "short_read_paired_end_illumina"]],
-                left_on="genus_taxon_id",
+                lowest_transcriptomic_df,
+                left_on="lowest_taxon_id",
                 right_on="taxon_id",
                 how="left",
             )
             df_wide["transcriptomic_evidence"] = np.where(
-                df_wide["short_read_paired_end_illumina"].fillna(0) > 2, "yes", "no"
+                df_wide["short_read_paired_end_illumina_lowest"].fillna(0) >= 2,
+                "yes",
+                "no",
             )
         else:
             df_wide["transcriptomic_evidence"] = "no"
+            df_wide["short_read_paired_end_illumina_lowest"] = pd.NA
 
-        df_wide["is_annotation_candidate"] = (
-            df_wide["asm_level"].isin(["Complete genome", "Chromosome"])
-            & (df_wide["contig_n50"].astype(float) > 100000)
-            & (df_wide["transcriptomic_evidence"] == "yes")
-            & (df_wide["is_current"] == "current")
-        )
-
-        df_wide["unannotated"] = (
-            df_wide["asm_level"].isin(["Complete genome", "Chromosome"])
-            & (df_wide["contig_n50"].astype(float) > 100000)
-            & (df_wide["transcriptomic_evidence"] == "yes")
-            & (df_wide["is_current"] == "current")
-            & (df_wide["genebuild_status"] == "not_annotated")
-        )
+        candidate_input = df_wide.rename(columns={"genebuild_status": "gb_status"})
+        candidate_quality = filter_annotation_candidate_quality(candidate_input)
+        real_candidates = filter_annotation_candidates(candidate_input)
+        df_wide["is_annotation_candidate"] = df_wide.index.isin(candidate_quality.index)
+        df_wide["unannotated"] = df_wide.index.isin(real_candidates.index)
 
         df_wide["unannotated_main"] = df_wide["unannotated"] & (df_wide["pipeline"] == "main")
         df_wide["unannotated_anno"] = df_wide["unannotated"] & (df_wide["pipeline"] == "anno")

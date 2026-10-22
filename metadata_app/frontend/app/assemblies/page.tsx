@@ -1,6 +1,6 @@
 "use client";
 
-import React, {useEffect, useMemo, useState} from "react";
+import React, {useMemo, useState} from "react";
 import {type ColumnDef, type RowSelectionState} from "@tanstack/react-table";
 import {DownloadIcon, InfoIcon, Loader2, Sparkles, Terminal, XCircle} from "lucide-react";
 import {Input} from "@/components/ui/input";
@@ -12,13 +12,14 @@ import {CopyButton} from "@/components/ui/button-copy";
 import {PopoverWithMultiSelect} from "@/components/ui/metrics_select";
 import MultipleSelector, {Option} from "@/components/ui/multi_select";
 import {ToggleGroup, ToggleGroupItem,} from "@/components/ui/assembly_toggle";
+import {Toggle} from "@/components/ui/toggle";
 import {Assemblies, columns} from "@/features/assemblies/columns";
 import {DataTable} from "@/components/tables/data-table";
 import {cn} from "@/lib/utils";
 import {Tooltip, TooltipContent, TooltipTrigger} from "@/components/ui/tooltip";
 import {Alert, AlertDescription, AlertTitle} from "@/components/ui/alert";
 import {InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput} from "@/components/ui/input-group";
-import {cleanPayload, parseTaxonIds, splitCommaSeparated, splitProjectFilters} from "@/features/shared/filter-utils";
+import {buildScopePayload, cleanPayload, splitCommaSeparated} from "@/features/shared/filter-utils";
 import {PROJECT_OPTIONS} from "@/features/shared/project-options";
 
 
@@ -34,13 +35,13 @@ export default function Page() {
     const [baseFieldValues, setBaseFieldValues] = useState<{ [key: string]: string }>({});
     const [toggleStates, setToggleStates] = useState<{ [key: string]: string[] }>({});
     const [metricValues, setMetricValues] = useState<{ [key: string]: string }>({});
-    const [autoFillRequested, setAutoFillRequested] = useState(false);
     const [assemblies, setAssemblies] = useState<Assemblies[]>([]);
     const [checkENA, setCheckENA] = useState(false);
-    const [nonAnnotated, setNonAnnotated] = useState(true);
+    const [nonAnnotated, setNonAnnotated] = useState(false);
     const [candidate, setCandidate] = useState(false);
+    const [includeReassessment, setIncludeReassessment] = useState(false);
     const [checkTranscript, setCheckTranscript] = useState(false);
-    const [checkCurrent, setCheckCurrent] = useState(true);
+    const [checkCurrent, setCheckCurrent] = useState(false);
     const [gcaInput, setGcaInput] = useState<string>("");
     const [downloadables, setDownloadables] = useState<{
         gca_list: string;
@@ -75,11 +76,6 @@ export default function Page() {
         setLoading(true);
 
         try {
-            const {bioprojectIds, groupNames} = splitProjectFilters(
-                selectedProjects,
-                baseFieldValues["BioProject ID"],
-            );
-
             const metric_thresholds: Record<string, number> = {};
             Object.entries(metricValues)
                 .filter(([, value]) => value) // Only include fields with values
@@ -94,24 +90,26 @@ export default function Page() {
                 return value.toLowerCase();
             });
 
-            const taxonIdArray = parseTaxonIds(baseFieldValues["Taxon ID"]);
             const uniqueGCA = splitCommaSeparated(gcaInput);
 
             // Format the payload according to API expectations
             const payload = {
-                bioproject_id: bioprojectIds.length > 0 ? bioprojectIds : null,
-                group_name: groupNames.length > 0 ? groupNames : null,
+                ...buildScopePayload(
+                    selectedProjects,
+                    baseFieldValues["BioProject ID"],
+                    baseFieldValues["Taxon ID"],
+                ),
                 metric_thresholds: Object.keys(metric_thresholds).length > 0 ? metric_thresholds : null,
                 asm_level: asm_level,
                 asm_type: asm_type,
                 pipeline: pipeline.length > 0 ? pipeline : null,
                 release_date: baseFieldValues["Release date"] || null,
-                taxon_id: taxonIdArray,
                 current: checkCurrent,
                 transc: checkTranscript,
                 transc_ena: checkENA,
                 non_annotated: nonAnnotated,
                 candidate,
+                include_reassessment: includeReassessment,
                 gca: uniqueGCA.length > 0 ? uniqueGCA : null,
             };
 
@@ -180,34 +178,6 @@ export default function Page() {
             alert(`Error downloading ${filename}: ${error instanceof Error ? error.message : String(error)}`);
         }
     };
-
-    const handleAutoFillHighQuality = () => {
-        setSelectedMetrics((prev) => {
-            const updated = [...prev];
-            if (!updated.includes("Contig N50")) updated.push("Contig N50");
-            if (!updated.includes("Assembly level")) updated.push("Assembly level");
-            return updated;
-        });
-        setAutoFillRequested(true);
-    };
-
-    useEffect(() => {
-        if (
-            autoFillRequested &&
-            selectedMetrics.includes("Contig N50") &&
-            selectedMetrics.includes("Assembly level")
-        ) {
-            setMetricValues((prev) => ({
-                ...prev,
-                "Contig N50": "100000",
-            }));
-            setToggleStates((prev) => ({
-                ...prev,
-                "Assembly level": ["Complete genome", "Chromosome"],
-            }));
-            setAutoFillRequested(false);
-        }
-    }, [autoFillRequested, selectedMetrics]);
 
     const toggleMetrics = [
         {
@@ -372,43 +342,118 @@ export default function Page() {
                                 <PopoverWithMultiSelect
                                     selectedItems={selectedMetrics}
                                     setSelectedItems={setSelectedMetrics}
-                                    onAutoFillHighQuality={handleAutoFillHighQuality}
+                                    additionalFilters={
+                                        <>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <div className="flex items-center gap-2">
+                                                        <Switch
+                                                            id="ena"
+                                                            checked={checkENA}
+                                                            onCheckedChange={setCheckENA}
+                                                        />
+                                                        <Label htmlFor="ena">Check ENA</Label>
+                                                    </div>
+                                                </TooltipTrigger>
+                                                <TooltipContent>
+                                                    <p>This will take longer to process.</p>
+                                                </TooltipContent>
+                                            </Tooltip>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <div className="flex items-center gap-2">
+                                                        <Switch
+                                                            id="transcript_check"
+                                                            checked={checkTranscript}
+                                                            onCheckedChange={setCheckTranscript}
+                                                        />
+                                                        <Label htmlFor="transcript_check">
+                                                            Check transcriptomic registry
+                                                        </Label>
+                                                    </div>
+                                                </TooltipTrigger>
+                                                <TooltipContent>
+                                                    <p>Check transcriptomic registry evidence.</p>
+                                                </TooltipContent>
+                                            </Tooltip>
+                                            <div className="flex items-center gap-2">
+                                                <Switch
+                                                    id="current_check"
+                                                    checked={checkCurrent}
+                                                    onCheckedChange={setCheckCurrent}
+                                                />
+                                                <Label htmlFor="current_check">
+                                                    Only show current assemblies
+                                                </Label>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <Switch
+                                                    id="non_annotated"
+                                                    checked={nonAnnotated}
+                                                    onCheckedChange={setNonAnnotated}
+                                                />
+                                                <Label htmlFor="non_annotated">
+                                                    Only show non-annotated assemblies
+                                                </Label>
+                                            </div>
+                                        </>
+                                    }
                                 />
                             </div>
                         </div>
 
                         <div className="grid grid-cols-1 gap-4 mt-6 sm:grid-cols-2 lg:grid-cols-4">
+                            <div
+                                className="col-span-1 py-3 sm:col-span-2 lg:col-span-4">
+                                <div className="flex flex-wrap items-center gap-4">
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <div className="flex items-center gap-2">
+                                                <Toggle
+                                                    id="candidate"
+                                                    type="button"
+                                                    variant="outline"
+                                                    className="cursor-pointer"
+                                                    pressed={candidate}
+                                                    onPressedChange={setCandidate}
+                                                    aria-label="Annotation candidates"
+                                                >
+                                                    Annotation candidates
+                                                </Toggle>
+                                            </div>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                            <p>
+                                                Show current chromosome-level or complete genome assemblies
+                                                with contig N50 &gt; 100 kb, at least 2 paired-end Illumina
+                                                datasets from the lowest taxonomic level, and no previous
+                                                genebuild attempt.
+                                            </p>
+                                        </TooltipContent>
+                                    </Tooltip>
 
-                            <div className="flex items-center space-x-2">
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <div className="flex items-center space-x-2">
-                                            <Switch id="ena" checked={checkENA} onCheckedChange={setCheckENA}/>
-                                            <Label htmlFor="ena">Check ENA</Label>
-                                        </div>
-                                    </TooltipTrigger>
-                                    <TooltipContent>
-                                        <p>This will take longer to process</p>
-                                    </TooltipContent>
-                                </Tooltip>
-                            </div>
-
-                            <div className="flex items-center space-x-2">
-                                <Switch id="transcript_check" checked={checkTranscript}
-                                        onCheckedChange={setCheckTranscript}/>
-                                <Label htmlFor="transcript_check">Check transcriptomic registry</Label>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                                <Switch id="current_check" checked={checkCurrent} onCheckedChange={setCheckCurrent}/>
-                                <Label htmlFor="current_check">Only show current assemblies</Label>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                                <Switch id="non_annotated" checked={nonAnnotated} onCheckedChange={setNonAnnotated}/>
-                                <Label htmlFor="non_annotated">Only show non-annotated assemblies</Label>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                                <Switch id="candidate" checked={candidate} onCheckedChange={setCandidate}/>
-                                <Label htmlFor="candidate">Reconsider for annotation</Label>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <div className="flex items-center gap-2">
+                                                <Switch
+                                                    id="include_reassessment"
+                                                    checked={includeReassessment}
+                                                    onCheckedChange={setIncludeReassessment}
+                                                    disabled={!candidate}
+                                                />
+                                                <Label htmlFor="include_reassessment">
+                                                    Include reassessment statuses
+                                                </Label>
+                                            </div>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                            <p>
+                                                Include assemblies with abandoned, insufficient-data, or
+                                                testing genebuild statuses as reassessment candidates.
+                                            </p>
+                                        </TooltipContent>
+                                    </Tooltip>
+                                </div>
                             </div>
                         </div>
                     </div>

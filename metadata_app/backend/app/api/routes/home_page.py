@@ -13,6 +13,7 @@ from metadata_app.backend.app.services.home_page_service import get_transcriptom
 from metadata_app.backend.app.services.home_page_service import bin_by_genebuild_method
 from metadata_app.backend.app.services.home_page_service import get_annotation_counts_by_group
 from metadata_app.backend.app.services.home_page_service import get_annotation_growth_by_quarter
+from metadata_app.backend.app.services.home_page_service import annotation_time
 
 
 home_page = APIRouter()
@@ -60,6 +61,12 @@ def get_annotations_year():
 def get_annotation_growth():
     """Get distinct annotated genome counts by quarter for the last four years."""
     return get_annotation_growth_by_quarter()
+
+
+@home_page.get("/home/annotation_time")
+def get_annotation_time():
+    """Get annotation duration cards and the historical monthly trend."""
+    return annotation_time()
 
 
 @home_page.get("/home/meta_update")

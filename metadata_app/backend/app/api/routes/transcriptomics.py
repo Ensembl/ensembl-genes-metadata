@@ -118,7 +118,9 @@ async def get_transcriptomic_registry_metadata(req: TranscriptomicRegistryReques
                 df[column] = pd.to_datetime(df[column], errors="coerce").dt.strftime("%Y-%m-%d")
                 df[column] = df[column].where(df[column].notna(), None)
 
-        return {"records": df.where(pd.notna(df), None).to_dict(orient="records")}
+        safe_df = df.replace([float("inf"), float("-inf")], pd.NA)
+        safe_df = safe_df.astype(object).where(pd.notna(safe_df), None)
+        return {"records": safe_df.to_dict(orient="records")}
 
     except Exception as e:
         logging.error(f"Error in transcriptomic registry endpoint: {str(e)}")
