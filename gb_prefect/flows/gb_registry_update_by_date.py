@@ -1,4 +1,3 @@
-import argparse
 from datetime import datetime
 from typing import Optional
 
@@ -52,51 +51,3 @@ def gb_registry_update_by_date_flow(  # pylint: disable=too-many-arguments,too-m
         slack_params=credentials.slack_params,
     )
     return run_nextflow_pipeline(run, TaskRunOptions(dry_run=dry_run))
-
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--screen-date",
-        required=True,
-        help="Retrieve assemblies released after this date (YYYY-MM-DD) to screen for updates.",
-    )
-    parser.add_argument("--outdir", required=True, help="Base output directory.")
-    parser.add_argument("--enscode", help="Path to the ENSCODE directory; defaults to $ENSCODE.")
-    parser.add_argument(
-        "--folder-name",
-        help="Output folder name under --outdir. Defaults to asm_update_screen_<screen_date>_<today>.",
-    )
-    parser.add_argument(
-        "--slack-report", action="store_true", help="Send a Slack report after the Nextflow run."
-    )
-    parser.add_argument(
-        "--slack-params",
-        help="JSON string with Slack bot connection parameters, used with --slack-report.",
-    )
-    parser.add_argument(
-        "--metadata-params-string",
-        help="JSON string with metadata DB connection parameters. If omitted, credentials are "
-        "loaded from the Prefect Secret blocks (see gb_prefect/deployments/create_secrets.py).",
-    )
-    parser.add_argument(
-        "--dry-run", action="store_true", help="Create the Nextflow command without running it."
-    )
-    args = parser.parse_args()
-
-    gb_registry_update_by_date_flow(
-        screen_date=args.screen_date,
-        outdir=args.outdir,
-        slack_report=args.slack_report,
-        folder_name=args.folder_name,
-        enscode=args.enscode,
-        dry_run=args.dry_run,
-        credentials=(
-            PipelineCredentials(
-                metadata_params_string=args.metadata_params_string,
-                slack_params=args.slack_params,
-            )
-            if args.metadata_params_string
-            else None
-        ),
-    )

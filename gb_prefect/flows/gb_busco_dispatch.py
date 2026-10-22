@@ -1,4 +1,3 @@
-import argparse
 import json
 import logging
 from typing import Optional
@@ -84,57 +83,3 @@ def busco_dispatch_flow(  # pylint: disable=too-many-arguments,too-many-position
     print(f"Read {len(rows)} GCA(s) from {csv_file}")
 
     return dispatch_rows(rows, db_params, force, dry_run, deployment_name, update_registry, post_run_cleanup)
-
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--csv-file", required=True, help="CSV with gca,taxon_id,busco_dataset columns."
-    )
-    parser.add_argument(
-        "--metadata-params-string",
-        required=False,
-        help="JSON string with metadata DB connection parameters. If omitted, credentials are "
-        "loaded from the Prefect Secret blocks (see gb_prefect/deployments/create_secrets.py).",
-    )
-    parser.add_argument(
-        "--force", action="store_true", help="Trigger a GCA even if already marked done or in_progress."
-    )
-    parser.add_argument(
-        "--dry-run",
-        action="store_true",
-        help="Refresh assembly_events in log-only mode and don't trigger any runs.",
-    )
-    parser.add_argument(
-        "--update_registry",
-        action=argparse.BooleanOptionalAction,
-        default=True,
-        help="Claim each GCA (status -> in_progress) before triggering it and load results on "
-        "completion (default: on; --no-update_registry to just trigger).",
-    )
-    parser.add_argument(
-        "--post-run-cleanup",
-        action="store_true",
-        help="After each triggered run: on success remove <outdir>/<gca>; on failure mark the "
-        "GCA as failed and remove Nextflow scratch (logs kept).",
-    )
-    parser.add_argument(
-        "--deployment-name",
-        default=BUSCO_GCA_DEPLOYMENT,
-        help="Deployment to trigger per GCA (flow_name/deployment_name).",
-    )
-    args = parser.parse_args()
-
-    busco_dispatch_flow(
-        csv_file=args.csv_file,
-        force=args.force,
-        dry_run=args.dry_run,
-        update_registry=args.update_registry,
-        post_run_cleanup=args.post_run_cleanup,
-        deployment_name=args.deployment_name,
-        credentials=(
-            PipelineCredentials(metadata_params_string=args.metadata_params_string)
-            if args.metadata_params_string
-            else None
-        ),
-    )
