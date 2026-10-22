@@ -37,4 +37,5 @@ def asm_registry_run(
         secret_params={"metadata_params_string": metadata_params_string},
         with_report=True,
         dag_file="assembly_metadata_dag_%Y%m%d-%H%M%S.mmd",
+        metro_map="ensembl-genes-metadata/pipelines/assembly_metadata/assets/metro_map.mmd",
     )

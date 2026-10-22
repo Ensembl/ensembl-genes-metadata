@@ -1,7 +1,7 @@
 import dataclasses
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
+from typing import List, Optional, Tuple
 
 from prefect import task  # type: ignore
 from prefect.runtime import flow_run  # type: ignore
@@ -18,9 +18,15 @@ from gb_prefect.nextflow.command import (
     write_csv_input,
     write_params_file,
 )
+from gb_prefect.nextflow.metro import MetroRun, register_run
 from gb_prefect.nextflow.runner import ignored_errors, run_streaming
-from gb_prefect.utils.artifact_utils import artifact_key, create_nextflow_run_artifact
+from gb_prefect.utils.artifact_utils import (
+    artifact_key,
+    create_live_map_artifact,
+    create_nextflow_run_artifact,
+)
 from gb_prefect.utils.logging_utils import append_log
+from gb_prefect.utils.metro_utils import load_metro_config
 
 
 @task(log_prints=True)
@@ -39,6 +45,11 @@ def run_nextflow_pipeline(
     Raises NextflowRunError if Nextflow exits non-zero, or exits 0 but ignored failed tasks
     (unless run.fail_on_ignored_errors is False). The artifact shows only this run's part of
     the log, which is appended to across reruns in the same outdir.
+
+    If the run has a metro_map and an nf-metro server is configured (Prefect Variable
+    nf-metro-url), the run is registered with it for a live map: -with-weblog is added and a
+    link artifact published. Any problem with that is logged as a warning and the run goes on
+    without a live map. The server's token is redacted from the command, log and artifacts.
     """
     # Initialize run options and determine if this is a dry run.
     run_options = run_options or TaskRunOptions()
@@ -76,8 +87,12 @@ def run_nextflow_pipeline(
             write_params_file(params_file, run.secret_params)
             append_log(paths.log, f"[{datetime.now()}] INFO: Wrote params file {params_file}.\n")
 
-    # Build and write the Nextflow command script
-    command = build_command_script(run, params_file, csv_file)
+    # Register the run with the nf-metro server for a live map (never stops the run)
+    if not dry_run:
+        run, secrets = _with_live_map(run, secrets, paths.log, run_options.create_artifact)
+
+    # Build and write the Nextflow command script (as a record: redacted, unlike the argv run)
+    command = redact(build_command_script(run, params_file, csv_file), secrets)
     paths.command_file.write_text(command, encoding="utf-8")
     paths.command_file.chmod(0o755)
     append_log(paths.log, f"[{datetime.now()}] INFO: Nextflow command:\n{command}\n")
@@ -148,6 +163,61 @@ def run_nextflow_pipeline(
     if failed:
         raise NextflowRunError(result)
     return result
+
+
+def _with_live_map(
+    run: NextflowRun, secrets: List[str], log: Path, create_artifact: bool
+) -> Tuple[NextflowRun, List[str]]:
+    """Return run with -with-weblog set to its live map's events URL, and secrets with the
+    server's token added -- or both unchanged if there is no live map (see _start_live_map)."""
+    live_map = _start_live_map(run, log, create_artifact)
+    if live_map is None:
+        return run, secrets
+    metro_run, token = live_map
+    return dataclasses.replace(run, weblog_url=metro_run.events_url), secrets + ([token] if token else [])
+
+
+def _start_live_map(
+    run: NextflowRun, log: Path, create_artifact: bool
+) -> Optional[Tuple[MetroRun, Optional[str]]]:
+    """Register run with the configured nf-metro server; return it and the server's token.
+
+    Returns None -- and the run goes on without a live map -- if the run has no map, already
+    has a weblog URL, no server is configured, or anything fails (logged as a warning).
+    """
+    if not run.metro_map or run.weblog_url:
+        return None
+    token: Optional[str] = None
+    try:
+        config = load_metro_config()
+        if config is None:
+            return None
+        token = config.token
+        map_text = (Path(run.enscode) / run.metro_map).read_text(encoding="utf-8")
+        name = f"{flow_run.name}-{run.name}" if flow_run.name else run.name
+        metro_run = register_run(config.url, map_text, name, token)
+    except Exception as err:  # pylint: disable=broad-exception-caught  # never stop the run
+        _log(
+            log,
+            f"WARNING: Live map not available ({type(err).__name__}: {err}); running without it.",
+            [token],
+        )
+        return None
+
+    _log(log, f"INFO: Live map: {metro_run.view_url}", [token])
+    if create_artifact:
+        try:
+            create_live_map_artifact(metro_run.view_url, run.name)
+        except Exception as err:  # pylint: disable=broad-exception-caught
+            _log(log, f"WARNING: Could not publish the live map link ({err}).", [token])
+    return metro_run, token
+
+
+def _log(log: Path, message: str, secrets: List[Optional[str]]) -> None:
+    """Append a timestamped message to the log and print it, redacting secrets."""
+    message = redact(message, [s for s in secrets if s])
+    append_log(log, f"[{datetime.now()}] {message}\n")
+    print(message)
 
 
 def _read_from(path: Path, offset: int) -> str:

@@ -50,4 +50,5 @@ def asm_update_run(  # pylint: disable=too-many-arguments
         secret_params=secret_params,
         with_report=True,
         dag_file="assembly_metadata_update_dag_%Y%m%d-%H%M%S.mmd",
+        metro_map="ensembl-genes-metadata/pipelines/assembly_metadata_update/assets/metro_map.mmd",
     )

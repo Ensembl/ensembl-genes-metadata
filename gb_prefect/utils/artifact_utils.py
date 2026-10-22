@@ -1,7 +1,7 @@
 import re
 from typing import Any, Dict, Optional
 
-from prefect.artifacts import create_markdown_artifact  # type: ignore
+from prefect.artifacts import create_link_artifact, create_markdown_artifact  # type: ignore
 
 
 # The artifact shows the end of the log; the full log stays in the run's outdir.
@@ -58,3 +58,14 @@ def create_nextflow_run_artifact(  # pylint: disable=too-many-arguments,too-many
 def artifact_key(name: str) -> str:
     """Turn name into a valid Prefect artifact key (lowercase letters, digits and dashes)."""
     return re.sub(r"-+", "-", re.sub(r"[^a-z0-9-]", "-", name.lower())).strip("-") or "nextflow-run"
+
+
+def create_live_map_artifact(view_url: str, run_name: str) -> None:
+    """Publish a Prefect link artifact to the run's nf-metro live map (see gb_prefect/nextflow/metro.py)."""
+    create_link_artifact(
+        link=view_url,
+        link_text=f"Live pipeline map: {run_name}",
+        key=artifact_key(f"live-map-{run_name}"),
+        description="nf-metro live map of this Nextflow run. The server keeps its newest 100 runs, "
+        "in memory: the link stops working after a server restart.",
+    )
