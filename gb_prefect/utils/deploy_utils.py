@@ -1,4 +1,4 @@
-"""Deploy code for Nextflow flows on slurm-cli pools (used by gb_prefect/deployments/deploy_flows.py).
+"""Deploy code for Nextflow flows on slurm-cli pools (used by gb_prefect/setup/deploy_flows.py).
 
 A deploy script lists its work pools (key -> default pool name) and its flows as FlowDeployment
 entries, and calls main(); this module adds the command-line options -- including one

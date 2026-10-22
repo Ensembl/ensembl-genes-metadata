@@ -13,7 +13,7 @@ Run once when setting up the Prefect server (see the README's "Setting up the Pr
 from the repository root with the venv that has gb_prefect installed and PREFECT_API_URL
 pointing at the server:
 
-    python gb_prefect/deployments/create_secrets.py \
+    python gb_prefect/setup/create_secrets.py \
         --metadata-json ~/secrets/metadata_params.json \
         --slack-json ~/secrets/slack_params.json
 
