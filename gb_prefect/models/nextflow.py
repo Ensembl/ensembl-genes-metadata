@@ -39,6 +39,9 @@ class NextflowRun:  # pylint: disable=too-many-instance-attributes
         with_report: Add -with-report.
         dag_file: Write the DAG to <outdir>/<dag_file> (-with-dag).
         weblog_url: Send run events to nf-metro serve endpoint (-with-weblog).
+        metro_map: The pipeline's nf-metro map (.mmd), relative to enscode. When an nf-metro
+            server is configured, the task registers the run with it and sets weblog_url, for a
+            live map of the run (see gb_prefect/nextflow/metro.py).
         resume: Add -resume.
         fail_on_ignored_errors: Fail the run when Nextflow exits 0 but its output shows tasks that
             failed and were ignored (errorStrategy 'ignore').
@@ -56,6 +59,7 @@ class NextflowRun:  # pylint: disable=too-many-instance-attributes
     with_report: bool = False
     dag_file: Optional[str] = None
     weblog_url: Optional[str] = None
+    metro_map: Optional[str] = None
     resume: bool = False
     fail_on_ignored_errors: bool = True
 
