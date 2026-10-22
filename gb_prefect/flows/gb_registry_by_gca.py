@@ -1,4 +1,3 @@
-import argparse
 from datetime import datetime
 from typing import Optional
 
@@ -46,37 +45,3 @@ def gb_registry_by_gca_flow(  # pylint: disable=too-many-arguments,too-many-posi
         gca_list=check_input_file(gca_list, dry_run),
     )
     return run_nextflow_pipeline(run, TaskRunOptions(dry_run=dry_run))
-
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--gca-list", required=True, help="Absolute path to the file listing the GCA accessions to register."
-    )
-    parser.add_argument("--outdir", required=True, help="Base output directory.")
-    parser.add_argument("--enscode", help="Path to the ENSCODE directory; defaults to $ENSCODE.")
-    parser.add_argument(
-        "--folder-name", help="Output folder name under --outdir. Defaults to asm_registry_gca_<today>."
-    )
-    parser.add_argument(
-        "--metadata-params-string",
-        help="JSON string with metadata DB connection parameters. If omitted, credentials are "
-        "loaded from the Prefect Secret blocks (see gb_prefect/deployments/create_secrets.py).",
-    )
-    parser.add_argument(
-        "--dry-run", action="store_true", help="Create the Nextflow command without running it."
-    )
-    args = parser.parse_args()
-
-    gb_registry_by_gca_flow(
-        gca_list=args.gca_list,
-        outdir=args.outdir,
-        folder_name=args.folder_name,
-        enscode=args.enscode,
-        dry_run=args.dry_run,
-        credentials=(
-            PipelineCredentials(metadata_params_string=args.metadata_params_string)
-            if args.metadata_params_string
-            else None
-        ),
-    )

@@ -1,4 +1,3 @@
-import argparse
 import json
 import logging
 from typing import Optional
@@ -76,35 +75,4 @@ def busco_dispatch_automatic_flow(  # pylint: disable=too-many-arguments,too-man
         deployment_name=deployment_name,
         update_registry=True,
         post_run_cleanup=True,
-    )
-
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--metadata-params-string",
-        required=False,
-        help="JSON string with metadata DB connection parameters. If omitted, credentials are "
-        "loaded from the Prefect Secret blocks (see gb_prefect/deployments/create_secrets.py).",
-    )
-    parser.add_argument(
-        "--dry-run",
-        action="store_true",
-        help="Refresh assembly_events in log-only mode and don't trigger any runs.",
-    )
-    parser.add_argument(
-        "--deployment-name",
-        default=BUSCO_GCA_DEPLOYMENT,
-        help="Deployment to trigger per GCA (flow_name/deployment_name).",
-    )
-    args = parser.parse_args()
-
-    busco_dispatch_automatic_flow(
-        dry_run=args.dry_run,
-        deployment_name=args.deployment_name,
-        credentials=(
-            PipelineCredentials(metadata_params_string=args.metadata_params_string)
-            if args.metadata_params_string
-            else None
-        ),
     )
