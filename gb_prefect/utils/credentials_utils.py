@@ -55,14 +55,3 @@ def load_metadata_db_params(
         credentials, metadata_secret_block, slack_secret_block, slack_report=False
     )
     return json.loads(credentials.metadata_params_string)
-
-
-def redact_credentials(text: str, credentials: PipelineCredentials) -> str:
-    """Replace credential JSON strings in text, so it can be logged or published as an artifact."""
-    for secret in (credentials.metadata_params_string, credentials.slack_params):
-        if secret:
-            text = text.replace(secret, "<REDACTED>")
-    return text
-
-# TODO: 1) Unify credential loading across different parts of the pipeline
-# TODO: 2) Unify resolver function
