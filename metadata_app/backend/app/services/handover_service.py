@@ -49,8 +49,12 @@ def _empty_handover_result():
     return ([], 0, 0, 0, [], [], [], [])
 
 
-def _build_core_name(scientific_name, gca):
+def _build_core_name(scientific_name, gca, last_geneset_update):
     if not scientific_name or not gca:
+        return None
+
+    update_date = pd.to_datetime(last_geneset_update, errors="coerce")
+    if pd.isna(update_date):
         return None
 
     name_parts = str(scientific_name).strip().lower().split()
@@ -59,7 +63,7 @@ def _build_core_name(scientific_name, gca):
 
     species_part = "_".join(name_parts[:2])
     gca_part = str(gca).strip().lower().replace(".", "v").replace("_", "")
-    return f"{species_part}_{gca_part}_core_114_1"
+    return f"{species_part}_{gca_part}_core_114_{update_date.strftime('%Y%m')}"
 
 
 def get_ready_to_ho(genebuilder):
@@ -73,6 +77,7 @@ def get_ready_to_ho(genebuilder):
 					g.assembly_id,
 					g.gb_status,
 					g.date_status_update,
+					am.metrics_value AS last_geneset_update,
 					m.bioproject_name,
 					s.scientific_name,
 					a.lowest_taxon_id,
@@ -90,6 +95,10 @@ def get_ready_to_ho(genebuilder):
 				LEFT JOIN bioproject b ON b.assembly_id = a.assembly_id
 				LEFT JOIN main_bioproject m ON m.bioproject_id = b.bioproject_id
 				LEFT JOIN species s ON s.lowest_taxon_id = a.lowest_taxon_id
+				LEFT JOIN annotation_metrics am
+					ON am.assembly_id = g.assembly_id
+					AND am.genebuild_status_id = g.genebuild_status_id
+					AND am.metrics_name = 'genebuild.last_geneset_update'
 				WHERE g.genebuilder = %s
 			"""
 
@@ -231,6 +240,7 @@ def get_ready_to_ho(genebuilder):
                 "gca": "first",
                 "bioproject_name": clean_bioproject_names,
                 "date_status_update": "first",
+                "last_geneset_update": "first",
                 "gb_status": "first",
                 "scientific_name": "first",
                 "lowest_taxon_id": "first",
@@ -242,7 +252,7 @@ def get_ready_to_ho(genebuilder):
 
         df_ready = collapsed[collapsed["gb_status"].isin(["pre_released", "completed"])].copy()
         df_ready.loc[:, "core_name"] = df_ready.apply(
-            lambda row: _build_core_name(row["scientific_name"], row["gca"]),
+            lambda row: _build_core_name(row["scientific_name"], row["gca"], row["last_geneset_update"]),
             axis=1,
         )
 
@@ -394,6 +404,7 @@ def get_ready_to_ho(genebuilder):
                         "scientific_name",
                         "bioproject_name",
                         "gb_status",
+                        "pipeline",
                         "date_status_update",
                         "core_name",
                     ]

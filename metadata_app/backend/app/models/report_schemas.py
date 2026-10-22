@@ -1,11 +1,9 @@
 from typing import List, Optional, Dict
 from pydantic import BaseModel
 from datetime import date
+from metadata_app.backend.app.models.filter_schemas import ScopeFilterRequest
 
 
-class ReportFilterRequest(BaseModel):
-    bioproject_id: Optional[List[str]] = None
-    group_name: Optional[List[str]] = None
+class ReportFilterRequest(ScopeFilterRequest):
     start_date: Optional[date] = None
     end_date: Optional[date] = None
-    taxon_id: Optional[List[int]] = None

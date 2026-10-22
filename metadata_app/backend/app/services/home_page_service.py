@@ -5,7 +5,7 @@ import logging
 import pandas as pd
 
 from metadata_app.backend.app.core.database import get_db_connection
-from metadata_app.backend.app.services.taxonomy_service import get_descendant_taxa
+from metadata_app.backend.app.services.filter_scope_service import add_scope_conditions
 
 
 def get_annotation_counts_by_bioproject():
@@ -138,9 +138,10 @@ def get_assemblies_per_year():
         # Filter to include only 2019 and later
         df = df[df["year"] >= 2019]
 
-        # Group by year and count
-        counts_by_year = df.groupby("year")["assembly_id"].count().reset_index()
+        # Group by year, then carry the annual totals forward cumulatively.
+        counts_by_year = df.groupby("year")["assembly_id"].nunique().reset_index().sort_values("year")
         counts_by_year.columns = ["year", "assembly_count"]
+        counts_by_year["assembly_count"] = counts_by_year["assembly_count"].cumsum()
 
         return counts_by_year.to_dict(orient="records")
 
@@ -154,25 +155,26 @@ def get_annotations_per_year():
         with get_db_connection("meta") as conn:
             cursor = conn.cursor()
             query = """
-                SELECT g.genebuild_status_id, g.last_genebuild_update
+                SELECT g.genebuild_status_id, g.date_status_update
                 FROM genebuild_status g
             """
             cursor.execute(query)
             result = cursor.fetchall()
 
-        df = pd.DataFrame(result, columns=["genebuild_status_id", "last_genebuild_update"])
+        df = pd.DataFrame(result, columns=["genebuild_status_id", "date_status_update"])
         if df.empty:
             return []
 
         # Convert date_completed to datetime and extract year
-        df["last_genebuild_update"] = pd.to_datetime(df["last_genebuild_update"], errors="coerce")
-        df["year"] = df["last_genebuild_update"].dt.year
+        df["date_status_update"] = pd.to_datetime(df["date_status_update"], errors="coerce")
+        df["year"] = df["date_status_update"].dt.year
         # Filter to include only 2019 and later
         df = df[df["year"] >= 2019]
 
         # Group by year and count
-        counts_by_year = df.groupby("year")["genebuild_status_id"].count().reset_index()
+        counts_by_year = df.groupby("year")["genebuild_status_id"].nunique().reset_index().sort_values("year")
         counts_by_year.columns = ["year", "annotation_count"]
+        counts_by_year["annotation_count"] = counts_by_year["annotation_count"].cumsum()
 
         return counts_by_year.to_dict(orient="records")
 
@@ -318,10 +320,13 @@ def bin_by_genebuild_method(bioproject_id, taxon_id, release_date):
             conditions = []
             params = []
 
-            if bioproject_id:
-                conditions.append(f"b.bioproject_id IN ({','.join(['%s'] * len(bioproject_id))})")
-                params.extend(bioproject_id)
-                logging.info(f"Filtering by BioProject IDs: {', '.join(bioproject_id)}")
+            add_scope_conditions(
+                conditions,
+                params,
+                bioproject_id=bioproject_id,
+                taxon_id=taxon_id,
+                taxon_column="a.lowest_taxon_id",
+            )
 
             if release_date:
                 if isinstance(release_date, pd.Timestamp):
@@ -331,21 +336,6 @@ def bin_by_genebuild_method(bioproject_id, taxon_id, release_date):
                 conditions.append("g.release_date_beta >= %s")
                 params.append(release_date)
                 logging.info(f"Filtering by release date: {release_date}")
-
-            if taxon_id:
-                descendant_taxa = get_descendant_taxa(taxon_id)
-                if not descendant_taxa:
-                    logging.error(f"No descendant taxon IDs found for {taxon_id}.")
-                    return (
-                        f"No descendant taxa found for Taxon ID {taxon_id}.",
-                        None,
-                        None,
-                        None,
-                        None,
-                    )
-                conditions.append(f"a.lowest_taxon_id IN ({','.join(['%s'] * len(descendant_taxa))})")
-                params.extend(descendant_taxa)
-                logging.info(f"Filtering by lowest taxon ID: {', '.join(str(id) for id in descendant_taxa)}")
 
             # If there are conditions, join them with AND; otherwise, select all
             where_clause = " WHERE " + " AND ".join(conditions) if conditions else ""
@@ -387,3 +377,93 @@ def bin_by_genebuild_method(bioproject_id, taxon_id, release_date):
         # Optionally log or re-raise
         print(f"Error in bin_by_genebuld_method: {e}")
         return []
+
+
+def annotation_time():
+    """Return recent duration summaries and the historical monthly trend."""
+    try:
+        with get_db_connection("meta") as conn:
+            cursor = conn.cursor()
+            query = """
+            SELECT
+                g.genebuild_status_id,
+                g.annotation_method,
+                g.date_started,
+                g.last_genebuild_update AS last_geneset_update
+            FROM genebuild_status g
+            WHERE g.annotation_method IN ('anno', 'full_genebuild')
+              AND g.gb_status = 'live'  
+              AND g.date_started IS NOT NULL
+            """
+            cursor.execute(query)
+            result = cursor.fetchall()
+
+        columns = ["genebuild_status_id", "annotation_method", "date_started", "last_geneset_update"]
+        df = pd.DataFrame(result, columns=columns)
+        if df.empty:
+            return {"summary": [], "trend": [], "window_months": 3}
+
+        df["date_started"] = pd.to_datetime(df["date_started"], errors="coerce")
+        df["last_geneset_update"] = pd.to_datetime(df["last_geneset_update"], errors="coerce")
+        df["duration_days"] = (df["last_geneset_update"] - df["date_started"]).dt.total_seconds() / (
+            24 * 60 * 60
+        )
+        df = df.dropna(subset=["annotation_method", "last_geneset_update", "duration_days"])
+        df = df[(df["duration_days"] >= 0) & (df["duration_days"] <= 3650)]
+        df = df.drop_duplicates(subset=["genebuild_status_id", "annotation_method"], keep="first")
+        if df.empty:
+            return {"summary": [], "trend": [], "window_months": 3}
+
+        window_end = df["last_geneset_update"].max()
+        window_start = window_end - pd.DateOffset(months=3)
+        recent = df[df["last_geneset_update"] >= window_start]
+        methods = ["anno", "full_genebuild", "projection_build"]
+        summary = []
+        for method in methods:
+            durations = recent.loc[recent["annotation_method"] == method, "duration_days"]
+            summary.append(
+                {
+                    "annotation_method": method,
+                    "sample_size": int(durations.count()),
+                    "average_days": round(float(durations.mean()), 1) if not durations.empty else None,
+                    "median_days": round(float(durations.median()), 1) if not durations.empty else None,
+                    "minimum_days": round(float(durations.min()), 1) if not durations.empty else None,
+                    "maximum_days": round(float(durations.max()), 1) if not durations.empty else None,
+                }
+            )
+
+        df["month"] = df["last_geneset_update"].dt.to_period("M").astype(str)
+        trend = (
+            df.groupby(["month", "annotation_method"], as_index=False)
+            .agg(average_days=("duration_days", "mean"), sample_size=("duration_days", "count"))
+            .pivot(index="month", columns="annotation_method", values=["average_days", "sample_size"])
+            .reset_index()
+        )
+        trend.columns = [
+            "month" if column[0] == "month" else f"{column[0]}_{column[1]}"
+            for column in trend.columns.to_flat_index()
+        ]
+        for method in methods:
+            for prefix in ("average_days", "sample_size"):
+                column = f"{prefix}_{method}"
+                if column not in trend:
+                    trend[column] = None
+        trend = trend.sort_values("month")
+        for column in trend.columns:
+            if column.startswith("average_days_"):
+                trend[column] = pd.to_numeric(trend[column], errors="coerce").round(1)
+            elif column.startswith("sample_size_"):
+                trend[column] = trend[column].fillna(0).astype(int)
+        trend = trend.astype(object).where(pd.notna(trend), None)
+
+        return {
+            "summary": summary,
+            "trend": trend.to_dict(orient="records"),
+            "window_months": 3,
+            "window_start": window_start.strftime("%Y-%m"),
+            "window_end": window_end.strftime("%Y-%m"),
+        }
+
+    except Exception as e:
+        logging.error(f"Error fetching annotation durations: {e}", exc_info=True)
+        return {"summary": [], "trend": [], "window_months": 3}

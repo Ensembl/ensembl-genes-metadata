@@ -17,8 +17,8 @@ export function splitCommaSeparated(value?: string | null): string[] {
 
 export function parseTaxonIds(value?: string | null): number[] | null {
   const taxonIds = splitCommaSeparated(value)
-    .map((id) => parseInt(id, 10))
-    .filter((id) => !Number.isNaN(id));
+    .filter((id) => /^\d+$/.test(id))
+    .map(Number);
 
   return taxonIds.length > 0 ? taxonIds : null;
 }
@@ -44,6 +44,23 @@ export function splitProjectFilters(
   return {
     bioprojectIds: Array.from(new Set(bioprojectIds)),
     groupNames,
+  };
+}
+
+export function buildScopePayload(
+  selectedProjects: ProjectSelection[],
+  manualBioprojectIds?: string | null,
+  taxonValue?: string | null,
+) {
+  const { bioprojectIds, groupNames } = splitProjectFilters(
+    selectedProjects,
+    manualBioprojectIds,
+  );
+
+  return {
+    bioproject_id: bioprojectIds.length > 0 ? bioprojectIds : null,
+    group_name: groupNames.length > 0 ? groupNames : null,
+    taxon_id: parseTaxonIds(taxonValue),
   };
 }
 
