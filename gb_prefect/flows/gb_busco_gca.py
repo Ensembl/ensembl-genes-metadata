@@ -30,7 +30,7 @@ def busco_gca_flow(  # pylint: disable=too-many-arguments,too-many-positional-ar
     """
     run_outdir = str(Path(outdir) / gca)
     cleanup = post_run_cleanup and not dry_run
-    
+
     try:
         asm_metadata = {}
         if update_registry and not dry_run:
