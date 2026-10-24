@@ -37,13 +37,20 @@ process SUBSAMPLE_FASTQ_FILES {
     def subsampled_fastq2 = "${output_dir}${run_accession}_2.fastq.gz.sub"
 
     """
+    if [[ ! -s ${subsampled_fastq1} && ! -s ${subsampled_fastq2} ]]; then
     seqtk sample -s100 ${fastq1} 50000 > ${subsampled_fastq1}; \
     seqtk sample -s100 ${fastq2} 50000 > ${subsampled_fastq2}; \
     cp  ${subsampled_fastq1} . ;\
     cp  ${subsampled_fastq2} . ;\
     rm ${fastq1}; \
     rm ${fastq2}
-    echo "subsampled  ${subsampled_fastq2}"
-    """
+else
+cp ${subsampled_fastq1} . 
+cp ${subsampled_fastq2} . 
+fi	
+
+echo "subsampled  ${subsampled_fastq2}"
+    
+"""
 }
 

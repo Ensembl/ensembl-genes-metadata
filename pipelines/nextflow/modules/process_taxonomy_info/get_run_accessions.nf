@@ -62,7 +62,8 @@ process GET_RUN_ACCESSIONS {
     def sourceQuery = "library_source=TRANSCRIPTOMIC"
     def usedDateQuery = "first_created >='${lastCheckedDate.trim()}'"
 
-    def searchUrl = "https://www.ebi.ac.uk/ena/portal/api/search?result=read_run&query=${taxonQuery}%20AND%20instrument_platform=ILLUMINA%20AND%20library_layout=PAIRED%20AND%20library_source=TRANSCRIPTOMIC%20AND%20first_created%3E=${lastCheckedDate.trim()}&domain=read&fields=run_accession"
+    def searchUrl = "https://www.ebi.ac.uk/ena/portal/api/search?result=read_run&query=${taxonQuery}%20AND%20instrument_platform=ILLUMINA%20AND%20library_layout=PAIRED%20AND%20library_source=TRANSCRIPTOMIC&domain=read&fields=run_accession"
+    //def searchUrl = "https://www.ebi.ac.uk/ena/portal/api/search?result=read_run&query=${taxonQuery}%20AND%20instrument_platform=ILLUMINA%20AND%20library_layout=PAIRED%20AND%20library_source=TRANSCRIPTOMIC&domain=read&fields=run_accession"
 
     // Open a connection to the URL
     URL url = new URL(searchUrl)

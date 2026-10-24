@@ -97,7 +97,7 @@ process INDEX_GENOME {
     --outFileNamePrefix ${genomeDir} --genomeDir ${genomeDir} \
     --genomeSAindexNbases ${genomeSAindexNbases} \
     --genomeChrBinNbits ${genomeChrBinNbits} \
-    --genomeFastaFiles  ${genomeFile} --outTmpDir _STARtmp  --limitGenomeGenerateRAM  33533119242;fi
+    --genomeFastaFiles  ${genomeFile} --outTmpDir _STARtmp  --limitGenomeGenerateRAM  254064704096;fi
     """
     } else {
     """

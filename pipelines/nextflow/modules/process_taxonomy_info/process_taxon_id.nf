@@ -38,7 +38,7 @@ process PROCESS_TAXON_ID {
     }else{
         // Add the new taxon id and last_check='2019-01-01'
         setLastCheckDate(taxon_id,'insert')
-        lastCheckedDate = '2019-01-01'
+        lastCheckedDate = '2025-03-01'
     }
 
     """
