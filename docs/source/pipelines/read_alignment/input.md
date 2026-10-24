@@ -27,6 +27,8 @@
 
 The pipeline requires a CSV samplesheet.
 
+It can be created using https://github.com/Ensembl/ensembl-genes/blob/main/src/python/ensembl/genes/transcriptomic_data/select_transcriptomic_data.py
+
 Required columns include:
 
 | Column | Description |
