@@ -93,7 +93,7 @@ include { WRITE_REPORT } from './modules/write_report.nf'
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 */
 
-workflow SHORT_READ_ALIGNMENT {
+workflow READ_ALIGNMENT {
     take:
     csvFile
 
@@ -292,5 +292,5 @@ workflow {
     // Print summary of supplied parameters
     log.info(paramsSummaryLog(workflow))
     // Execute main workflow
-    SHORT_READ_ALIGNMENT(params.csvFile)
+    READ_ALIGNMENT(params.csvFile)
 }
