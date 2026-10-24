@@ -11,3 +11,7 @@ This documentation contains all Ensembl Genes Metadata pipelines.
 ### Assembly Metadata Update
 
 - [Assembly Metadata Update](pipelines/assembly_metadata_update/index.md)
+
+### Read Alignment 
+
+- [Read Alignment](pipelines/read_alignment/index.md)
