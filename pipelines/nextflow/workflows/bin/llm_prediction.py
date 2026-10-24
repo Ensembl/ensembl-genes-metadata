@@ -25,11 +25,35 @@ from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
 from huggingface_hub import login
 from datasets import Dataset
 import pymysql
+import sqlalchemy
 from tqdm import tqdm
+from sqlalchemy import create_engine, Table, MetaData
+from sqlalchemy.orm import sessionmaker
 
 
 BATCH_SIZE = 50
 
+from sqlalchemy import create_engine
+
+def connect_to_db_sqlalchemy(host, user, password, database, port=3306):
+        """
+        Establishes a connection to the MySQL database using SQLAlchemy.
+
+        :param host: The hostname or IP address of the MySQL server.
+        :param user: The username to connect to the database.
+        :param password: The password for the user.
+        :param db: The name of the database to connect to.
+        :param port: The port of the MySQL server (default is 3306).
+        :return: An SQLAlchemy engine object.
+        """
+        try:
+            # Use SQLAlchemy to create a database connection string
+            connection_str = f"mysql+pymysql://{user}:{password}@{host}:{port}/{database}"
+            engine = create_engine(connection_str)
+            return engine
+        except Exception as e:
+            print(f"Error connecting to MySQL with SQLAlchemy: {e}")
+            return None
 
 def connect_to_db(host, user, password, database, port=3306):
     """
@@ -49,7 +73,6 @@ def connect_to_db(host, user, password, database, port=3306):
         print(f"Error connecting to MySQL: {e}")
         return None
 
-
 def create_prompt(biosample_tissue, sentence) -> str:
     """
     Create a prompt for the LLM model to extract tissue names from the given sentence.
@@ -59,18 +82,18 @@ def create_prompt(biosample_tissue, sentence) -> str:
     """
     return f"""
 You are an expert in biomedical text processing specialised in eukaryiotic life ontologies. Extract only valid anatomicial entities (tissues, organs, cells) from biomedical text.
-You will be given a biosample tissue or a run description.
-If biosample tissue is available, ignore `run_description`.
-If `biosample_tissue` is missing or ambiguous, fallback to `run_description`.
+You will be given a biosample tissue and a run description.
+If biosample tissue is available process it ignoring run_description.
+If biosample_tissue is missing or ambiguous, process run_description.
 
 Rules:
 1. Extract only tissues or body parts (e.g., "liver," "brain," "whole larvae")  and  return them in lower case singular  with no extra text
 2. Do NOT extract sequencing or experimental terms (e.g., "Illumina", "NovaSeq", "RNA-seq")
 3. STRICTLY IGNORE all taxonomy scientific names and common names of vertebrates, invertebrates, and plants. If an example  matches an animal species only, return "NONE". Example ignored species include (case insensitive): Macaca fascicularis, Macaca nemestrina, Rattus norvegicus, Bos grunniens, Cricetulus griseus, Homo sapiens, Pan troglodytes, Oryctolagus cuniculus, Mus musculus, Gallus gallus, Danio rerio, Drosophila melanogaster, Arabidopsis thaliana, Zea mays, rabbit, sheep, moths, salmon
-4. Normalize extracted tissue names: replace underscores (_) with spaces, remove new line, numbers, dates, stopwords, singularize plurals if possible, remove duplicates.
-5. If multiple tissues are mentioned, return them in a comma-separated list without repetition.
+4. If multiple tissues are mentioned, return them in a comma-separated list, remove repetition in the final output.
+5. Normalize extracted tissue names: replace underscores (_) with spaces, remove new line, numbers, dates, stopwords, singularize plurals if possible, remove duplicates.
 6. If the sentence contains explicit reference to cancer or disease (e.g., 'melanoma', 'glioblastoma', 'tumor sample', 'g2_t2', 'tumor'), add 'CANCER/DISEASE' next to it.
-7. Ignore IDs, alphanumeric codes, and random labels (e.g., xz_l_13b, sample_XYZ123)
+7. Ignore stages, hpf, IDs, alphanumeric codes, and random labels (e.g., xz_l_13b, sample_XYZ123, 55hpf, stage11)
 8  Only output the tissue(s) with no explanation. Do not explain your reasoning. Output only the final result.
 9. If no valid tissue is found, return "NONE" with no extra text.
 
@@ -142,12 +165,10 @@ Examples:
 - "Castor canadensis tissues" -> "NONE"
 - "precancerous microenvironment" -> "precancerous microenvironment, CANCER/DISEASE tissue"
 - "control microenvironment" -> "control microenvironment"
-Based on the above rules and examples, now process the following biosample tissue "{biosample_tissue}". 
-If empty or None process run description "{sentence}". Please respond only with the tissue formatted output as the output 
-of this response will be directly fed into a database. 
+- "caudal section of spinal cord caudal section of spinal cord" -> "caudal section of spinal cord"
+Based on the above rules and examples, now process the following biosample tissue "{biosample_tissue}". If empty or NONE process run description "{sentence}".
 Answer:
 """
-
 
 def load_model(token_input: str) -> pipeline:
     """Model loading function.
@@ -173,7 +194,7 @@ def load_model(token_input: str) -> pipeline:
     model_name = "mistralai/Mistral-7B-Instruct-v0.3"
     tokenizer = AutoTokenizer.from_pretrained(
         model_name, token=token_input
-    ) 
+    )
 
     if tokenizer.pad_token_id is None:
         tokenizer.pad_token = tokenizer.eos_token  # Set pad token to EOS
@@ -185,9 +206,9 @@ def load_model(token_input: str) -> pipeline:
     # Enable gradient checkpointing to save memory
     model.gradient_checkpointing_enable()
     pipe = pipeline("text-generation", model=model, tokenizer=tokenizer)  # , device=device)
+    print("HF device map:", model.hf_device_map)
 
     return pipe
-
 
 def define_model_dataset(df, column_input, column_output, token_input: str, batch_size: int) -> pd.DataFrame:
     """Define the model and dataset for LLM prediction.
@@ -210,8 +231,9 @@ def define_model_dataset(df, column_input, column_output, token_input: str, batc
     # Convert Pandas DataFrame to Hugging Face Dataset
     dataset = Dataset.from_pandas(df)
     start_time = time.time()
+    prompts = list(map(str, dataset[column_input]))
     responses = pipe(
-        dataset[f"{column_input}"],  # Directly pass all prompts
+        prompts,  # Directly pass all prompts
         batch_size=batch_size,
         max_new_tokens=30,
         do_sample=True,
@@ -231,7 +253,6 @@ def define_model_dataset(df, column_input, column_output, token_input: str, batc
     print(f"Total time: {time.time() - start_time:.2f} sec")
 
     return df
-
 
 def clean_tissue_prediction(df: pd.DataFrame) -> pd.DataFrame:
     """
@@ -255,6 +276,9 @@ def clean_tissue_prediction(df: pd.DataFrame) -> pd.DataFrame:
     )
     df["tissue_prediction"] = df["tissue_prediction"].apply(
         lambda x: (m.group(1) if (m := re.search(r"^(.*?)\s*Based on", str(x))) else x)
+    )
+    df["tissue_prediction"] = df["tissue_prediction"].apply(
+            lambda x: (m.group(1) if (m := re.search(r"^(.*?)\s*Example", str(x))) else x)
     )
     df["tissue_prediction"] = df["tissue_prediction"].apply(
             lambda x: re.sub(r"[!\"#$%&()*+,\-.:;<=>?@[\]^`{|}~_\\']", "", str(x)).strip("_")
@@ -349,11 +373,17 @@ def main() -> None:
         + ")"
     )
     # Connect to the database
-    db_connection = connect_to_db(**db_config)
+    #db_connection = connect_to_db(**db_config)
     # Clean the input text
-    cursor = db_connection.cursor()
-    if db_connection:
-        df = pd.read_sql(query, db_connection)
+    #cursor = db_connection.cursor()
+    #if db_connection:
+    #    df = pd.read_sql(query, db_connection)
+    # Use SQLAlchemy to connect to the database
+    engine = connect_to_db_sqlalchemy(**db_config)
+
+    # Now, use the engine with pd.read_sql() to avoid the warning
+    if engine:
+            df = pd.read_sql(query, engine)
     print(f"Loaded {len(df)} rows.")
     if not df.empty:
         start_time = time.time()
@@ -370,25 +400,48 @@ def main() -> None:
         # Update back to DB
         update_query = "UPDATE run set tissue_prediction = %s where run_accession = %s"
         counter = 0
-        for _, row in tqdm(df.iterrows(), total=len(df)):
-            try:
-                run_acc = row["run_accession"]
-                tissue = row["tissue_prediction"]
-                print(f"Updating row {row['run_accession']}")
-                cursor.execute(update_query, (tissue, run_acc))
-                counter += 1
-                # Commit every BATCH_SIZE rows
-                if counter % BATCH_SIZE == 0:
-                    db_connection.commit()
-                    print(f"Committed {counter} rows...")
-            except Exception as e:
-                print(f"Failed to update row {row['run_accession']}: {e}")
+        Session = sessionmaker(bind=engine)
+        session = Session()
+        # Reference the 'run' table using SQLAlchemy
+        metadata = MetaData()
+        run_table = Table('run', metadata, autoload_with=engine)
+                    
+        # Prepare the update query
+        #update_query = run_table.update().where(run_table.c.run_accession == None).values(tissue_prediction=None)  # Dummy where clause
+        try:
+            for _, row in tqdm(df.iterrows(), total=len(df)):
+                try:
+                    run_acc = row["run_accession"]
+                    tissue = row["tissue_prediction"]
+                    print(f"Updating row {row['run_accession']}")
+                    #cursor.execute(update_query, (tissue, run_acc))
+                    # Prepare the update query for each row (SQLAlchemy ORM query)
+                    stmt = run_table.update().where(run_table.c.run_accession == run_acc).values(tissue_prediction=tissue)
+                    session.execute(stmt)
+                    counter += 1
+                    # Commit every BATCH_SIZE rows
+                    if counter % BATCH_SIZE == 0:
+                        #db_connection.commit()
+                        session.commit()
+                        print(f"Committed {counter} rows...")
+                except Exception as e:
+                    print(f"Failed to update row {row['run_accession']}: {e}")
 
-        # Commit changes
-        db_connection.commit()
-        cursor.close()
-        db_connection.close()
-        print("✅ Update complete.")
+            # Commit changes
+            #db_connection.commit()
+            #cursor.close()
+            #db_connection.close()
+            #print("✅ Update complete.")
+            # Final commit after all updates
+            session.commit()
+            print(f"Total {counter} rows updated successfully.")
+        except Exception as e:
+            print(f"Failed to update database: {e}")
+                                                
+        finally:
+            # Close the session after all updates
+            session.close()
+            print("✅ Update complete.")
 
 
 if __name__ == "__main__":
