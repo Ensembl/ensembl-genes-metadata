@@ -1,10 +1,9 @@
-import json
 import logging
 from typing import Optional
 
 from prefect import flow  # type: ignore
 
-from gb_metadata.update_busco_events import ( # type: ignore
+from gb_metadata.update_busco_events import (  # type: ignore
     get_pending_candidates,
     insert_busco_candidates,
     mark_existing_busco_done,
@@ -30,13 +29,13 @@ def busco_dispatch_automatic_flow(  # pylint: disable=too-many-arguments,too-man
     """Automatically select and trigger busco_gca_flow for pending candidates, sized to
     the free slots of the work pool deployment_name runs on.
 
-    Refreshes assembly_events first. Selects up to N pending candidates. Where N is 
-    the pool's concurrency_limit minus its active and waiting slots. It does not try 
+    Refreshes assembly_events first. Selects up to N pending candidates. Where N is
+    the pool's concurrency_limit minus its active and waiting slots. It does not try
     to run if the pool has no concurrency_limit set.
 
     This dispatcher always updates the registry, --update_registry is always feed to the runs.
     So, both busco metakeys and busco event status are updated in the registry.
-    Each triggered run also gets post_run_cleanup=True: a failed run sets genome_busco.status 
+    Each triggered run also gets post_run_cleanup=True: a failed run sets genome_busco.status
     to failed and keeps only its logs; a successful run's directory is removed.
     """
     file_handler = logging.FileHandler("busco_dispatch_automatic.log", mode="w")
@@ -48,7 +47,7 @@ def busco_dispatch_automatic_flow(  # pylint: disable=too-many-arguments,too-man
     credentials = resolve_credentials(
         credentials, metadata_secret_block, DEFAULT_SLACK_SECRET_BLOCK, slack_report=False
     )
-    db_params = json.loads(credentials.metadata_params_string)
+    db_params = credentials.metadata_db_params
 
     print("Refreshing assembly_events before dispatching...")
     mark_existing_busco_done(db_params, execute=not dry_run)

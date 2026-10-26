@@ -1,4 +1,3 @@
-import json
 import logging
 from typing import List, Optional
 
@@ -62,7 +61,7 @@ def busco_dispatch_from_list_flow(  # pylint: disable=too-many-arguments,too-man
     credentials = resolve_credentials(
         credentials, metadata_secret_block, DEFAULT_SLACK_SECRET_BLOCK, slack_report=False
     )
-    db_params = json.loads(credentials.metadata_params_string)
+    db_params = credentials.metadata_db_params
 
     print("Refreshing assembly_events before dispatching...")
     mark_existing_busco_done(db_params, execute=not dry_run)
