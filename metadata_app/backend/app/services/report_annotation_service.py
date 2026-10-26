@@ -6,6 +6,7 @@ from metadata_app.backend.app.services.taxonomy_service import (
     assign_clade_and_species,
     load_clade_data,
 )
+from metadata_app.backend.app.services.busco_utils import parse_busco_string
 from fastapi import HTTPException
 from metadata_app.backend.app.core.database import get_db_connection
 
@@ -85,20 +86,17 @@ def generate_report(start_date, end_date, group_name, taxon_id, bioproject_id):
         .reset_index(name="count")
     )
 
-    if "protein_busco" in anno_wide.columns:
-        extracted = anno_wide["protein_busco"].str.extract(r"C:(\d+\.\d+)%")[0]
-
-        # Convert to float, but invalid values → None instead of NaN
-        extracted = pd.to_numeric(extracted, errors="coerce")
-        # Store cleaned series back in the DataFrame (optional)
-        anno_wide["busco_complete"] = extracted
-        # Compute average only on valid numbers
-        valid = extracted.dropna()
-
-        average_busco = valid.mean() if not valid.empty else "Not available"
-    else:
+    has_protein_busco = "protein_busco" in anno_wide.columns
+    if not has_protein_busco:
         anno_wide["protein_busco"] = "Not available"
-        average_busco = "Not available"
+
+    busco_components = anno_wide["protein_busco"].apply(parse_busco_string).apply(pd.Series)
+    busco_components = busco_components.rename(columns=lambda column: f"busco_{column}")
+    anno_wide = pd.concat([anno_wide, busco_components], axis=1)
+    extracted = pd.to_numeric(anno_wide["busco_complete"], errors="coerce")
+    anno_wide["busco_complete"] = extracted
+    valid = extracted.dropna()
+    average_busco = valid.mean() if has_protein_busco and not valid.empty else "Not available"
 
     if "infra_name" not in anno_wide.columns:
         anno_wide["infra_name"] = ""
@@ -113,6 +111,12 @@ def generate_report(start_date, end_date, group_name, taxon_id, bioproject_id):
             "ftp",
             "latest_annotated",
             "protein_busco",
+            "busco_complete",
+            "busco_single_copy",
+            "busco_duplicated",
+            "busco_fragmented",
+            "busco_missing",
+            "busco_n_genes",
             "last_genebuild_update",
             "release_date",
         ]
@@ -139,9 +143,7 @@ def generate_report(start_date, end_date, group_name, taxon_id, bioproject_id):
 			                FROM taxonomy
 			                WHERE lowest_taxon_id IN ({})
 			                ORDER BY FIELD(taxon_class, 'species', 'genus', 'family', 'order', 'class', 'phylum', 'kingdom');
-			            """.format(
-                ",".join(["%s"] * len(lowest_taxon_ids))
-            )
+			            """.format(",".join(["%s"] * len(lowest_taxon_ids)))
 
             cursor.execute(taxonomy_query, tuple(lowest_taxon_ids))
             taxonomy_results = cursor.fetchall()
