@@ -1,7 +1,8 @@
-"""Shared parameter bundles for the assembly registry/update Prefect tasks and flows."""
+"""Shared parameter bundles for the Prefect tasks and flows."""
 
+import json
 from dataclasses import dataclass
-from typing import Optional
+from typing import Any, Dict, Optional
 
 
 @dataclass(frozen=True)
@@ -16,6 +17,12 @@ class PipelineCredentials:
 
     metadata_params_string: str
     slack_params: Optional[str] = None
+
+    @property
+    def metadata_db_params(self) -> Dict[str, Any]:
+        """The metadata DB connection parameters as a dict, for code connecting to the DB itself
+        (e.g. with pymysql); pipelines get metadata_params_string as it is."""
+        return json.loads(self.metadata_params_string)
 
 
 @dataclass(frozen=True)
