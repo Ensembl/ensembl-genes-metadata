@@ -6,7 +6,11 @@ from prefect import task  # type: ignore
 
 from gb_metadata.update_busco_events import mark_busco_failed
 from gb_prefect.models.pipeline_options import PipelineCredentials
-from gb_prefect.utils.credentials_utils import DEFAULT_METADATA_SECRET_BLOCK, load_metadata_db_params
+from gb_prefect.utils.credentials_utils import (
+    DEFAULT_METADATA_SECRET_BLOCK,
+    DEFAULT_SLACK_SECRET_BLOCK,
+    resolve_credentials,
+)
 
 # Post-run steps for flows running ensembl-genes-nf's statistics pipeline, one run directory per
 # key (e.g. <outdir>/<gca>): cleaning that directory is shared by every statistics mode;
@@ -22,7 +26,10 @@ def record_busco_failure(
     metadata_secret_block: str = DEFAULT_METADATA_SECRET_BLOCK,
 ) -> None:
     """Mark genome_busco.status as failed for gca after its BUSCO run failed."""
-    mark_busco_failed(gca, load_metadata_db_params(credentials, metadata_secret_block), execute=True)
+    credentials = resolve_credentials(
+        credentials, metadata_secret_block, DEFAULT_SLACK_SECRET_BLOCK, slack_report=False
+    )
+    mark_busco_failed(gca, credentials.metadata_db_params, execute=True)
     print(f"Marked {gca} as failed")
 
 

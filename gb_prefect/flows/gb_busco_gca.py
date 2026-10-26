@@ -7,7 +7,11 @@ from gb_prefect.models.pipeline_options import PipelineCredentials, TaskRunOptio
 from gb_prefect.pipelines.statistics_busco_genome import busco_run
 from gb_prefect.tasks.statistics_cleanup import cleanup_statistics_outdir, record_busco_failure
 from gb_prefect.tasks.nextflow import run_nextflow_pipeline
-from gb_prefect.utils.credentials_utils import DEFAULT_METADATA_SECRET_BLOCK, load_metadata_db_params
+from gb_prefect.utils.credentials_utils import (
+    DEFAULT_METADATA_SECRET_BLOCK,
+    DEFAULT_SLACK_SECRET_BLOCK,
+    resolve_credentials,
+)
 from gb_prefect.utils.enscode_utils import resolve_enscode
 
 
@@ -32,9 +36,17 @@ def busco_gca_flow(  # pylint: disable=too-many-arguments,too-many-positional-ar
     cleanup = post_run_cleanup and not dry_run
 
     try:
-        asm_metadata = {}
-        if update_registry and not dry_run:
-            asm_metadata = load_metadata_db_params(credentials, metadata_secret_block)
+        # DB credentials only for --update_registry; inside the try, so a failure to load them
+        # still marks the GCA failed. On a dry run they are a placeholder (nothing loaded).
+        metadata_params_string = None
+        if update_registry:
+            metadata_params_string = resolve_credentials(
+                credentials,
+                metadata_secret_block,
+                DEFAULT_SLACK_SECRET_BLOCK,
+                slack_report=False,
+                dry_run=dry_run,
+            ).metadata_params_string
 
         run = busco_run(
             gca=gca,
@@ -43,7 +55,7 @@ def busco_gca_flow(  # pylint: disable=too-many-arguments,too-many-positional-ar
             enscode=resolve_enscode(enscode, dry_run),
             busco_dataset=busco_dataset,
             update_registry=update_registry,
-            asm_metadata=asm_metadata,
+            metadata_params_string=metadata_params_string,
         )
         result = run_nextflow_pipeline(run, TaskRunOptions(dry_run=dry_run, create_artifact=create_artifact))
     except Exception:
