@@ -10,7 +10,7 @@ def gb_is_reference_flow(
     enscode: str,
     asm_venv: str,
 ):
-    """Run the is_reference check script for file_path via a SLURM job."""
+
     return is_reference(
         file_path=file_path,
         output_path=output_path,
