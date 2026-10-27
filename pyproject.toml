@@ -57,6 +57,8 @@ packages = [
     "gb_metadata",
     "gb_prefect",
     "gb_prefect.flows",
+    "gb_prefect.flows.assembly_metadata",
+    "gb_prefect.flows.statistics",
     "gb_prefect.tasks",
     "gb_prefect.utils",
     "gb_prefect.models",
