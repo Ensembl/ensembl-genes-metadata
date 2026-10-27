@@ -125,7 +125,7 @@ def first_process(text: str) -> str:
 # ---------------------------------------------------------------------
 
 
-def md_heading(title: str, level: int = 1) -> str:  # pylint: disable=missing-function-docstring
+def md_heading(title: str, level: int = 1) -> str:#pylint: disable=missing-function-docstring
     return "#" * level + f" {title}"
 
 

@@ -1,4 +1,4 @@
-# pylint: disable=too-many-instance-attributes,missing-function-docstring,too-many-public-methods
+#pylint: disable=too-many-instance-attributes,missing-function-docstring,too-many-public-methods
 """
 Data models used by the documentation generator.
 
