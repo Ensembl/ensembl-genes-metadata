@@ -48,7 +48,7 @@ FLOWS = {
     # ensembl-genes-metadata pipelines
     "update": FlowDeployment(
         name="gb_metadata_update",
-        entrypoint="gb_prefect/flows/gb_registry_update.py:gb_registry_update_flow",
+        entrypoint="gb_prefect/flows/assembly_metadata/gb_registry_update.py:gb_registry_update_flow",
         work_pool="metadata",
         description="Assembly metadata update",
         tags=["metadata_update"],
@@ -56,7 +56,7 @@ FLOWS = {
     ),
     "by_date": FlowDeployment(
         name="gb_metadata_update_per_date",
-        entrypoint="gb_prefect/flows/gb_registry_update_by_date.py:gb_registry_update_by_date_flow",
+        entrypoint="gb_prefect/flows/assembly_metadata/gb_registry_update_by_date.py:gb_registry_update_by_date_flow",
         work_pool="metadata",
         description="Assembly metadata by_date",
         tags=["metadata_update"],
@@ -64,7 +64,7 @@ FLOWS = {
     ),
     "register": FlowDeployment(
         name="gb_metadata_registry",
-        entrypoint="gb_prefect/flows/gb_registry.py:gb_registry_flow",
+        entrypoint="gb_prefect/flows/assembly_metadata/gb_registry.py:gb_registry_flow",
         work_pool="metadata",
         description="Assembly metadata register",
         tags=["metadata_registry"],
@@ -72,7 +72,7 @@ FLOWS = {
     ),
     "register_by_gca": FlowDeployment(
         name="gb_metadata_registry_per_gca",
-        entrypoint="gb_prefect/flows/gb_registry_by_gca.py:gb_registry_by_gca_flow",
+        entrypoint="gb_prefect/flows/assembly_metadata/gb_registry_by_gca.py:gb_registry_by_gca_flow",
         work_pool="metadata",
         description="Assembly metadata register_by_gca",
         tags=["metadata_registry"],
@@ -81,7 +81,7 @@ FLOWS = {
     # ensembl-genes-nf pipelines
     "busco_gca": FlowDeployment(
         name="busco-gca",
-        entrypoint="gb_prefect/flows/gb_busco_gca.py:busco_gca_flow",
+        entrypoint="gb_prefect/flows/statistics/gb_busco_gca.py:busco_gca_flow",
         work_pool="busco",
         description="BUSCO for a single GCA",
         tags=["busco"],
@@ -92,7 +92,7 @@ FLOWS = {
     ),
     "busco_dispatch_automatic": FlowDeployment(
         name="busco-dispatch-automatic",
-        entrypoint="gb_prefect/flows/gb_busco_dispatch_automatic.py:busco_dispatch_automatic_flow",
+        entrypoint="gb_prefect/flows/statistics/gb_busco_dispatch_automatic.py:busco_dispatch_automatic_flow",
         work_pool="dispatch",
         runs_nextflow=False,
         description="Automatic BUSCO dispatch",
@@ -101,7 +101,7 @@ FLOWS = {
     ),
     "busco_dispatch_list": FlowDeployment(
         name="busco-dispatch-list",
-        entrypoint="gb_prefect/flows/gb_busco_dispatch_from_list.py:busco_dispatch_from_list_flow",
+        entrypoint="gb_prefect/flows/statistics/gb_busco_dispatch_from_list.py:busco_dispatch_from_list_flow",
         work_pool="dispatch",
         runs_nextflow=False,
         description="BUSCO dispatch from a list",
@@ -110,7 +110,7 @@ FLOWS = {
     ),
     "busco_dispatch": FlowDeployment(
         name="busco-dispatch",
-        entrypoint="gb_prefect/flows/gb_busco_dispatch.py:busco_dispatch_flow",
+        entrypoint="gb_prefect/flows/statistics/gb_busco_dispatch.py:busco_dispatch_flow",
         work_pool="dispatch",
         runs_nextflow=False,
         description="BUSCO dispatch from a CSV",
