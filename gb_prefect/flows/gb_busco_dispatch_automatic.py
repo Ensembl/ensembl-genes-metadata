@@ -8,13 +8,8 @@ from gb_metadata.update_busco_events import (  # type: ignore
     insert_busco_candidates,
     mark_existing_busco_done,
 )
-from gb_prefect.models.pipeline_options import PipelineCredentials
 from gb_prefect.tasks.busco_dispatch import dispatch_rows, get_free_slots
-from gb_prefect.utils.credentials_utils import (
-    DEFAULT_METADATA_SECRET_BLOCK,
-    DEFAULT_SLACK_SECRET_BLOCK,
-    resolve_credentials,
-)
+from gb_prefect.utils.credentials_utils import PipelineCredentials, resolve_credentials
 
 BUSCO_GCA_DEPLOYMENT = "BUSCO_gca/busco-gca"
 
@@ -24,7 +19,7 @@ def busco_dispatch_automatic_flow(  # pylint: disable=too-many-arguments,too-man
     dry_run: bool = False,
     deployment_name: str = BUSCO_GCA_DEPLOYMENT,
     credentials: Optional[PipelineCredentials] = None,
-    metadata_secret_block: str = DEFAULT_METADATA_SECRET_BLOCK,
+    metadata_secret_block: Optional[str] = None,
 ):
     """Automatically select and trigger busco_gca_flow for pending candidates, sized to
     the free slots of the work pool deployment_name runs on.
@@ -44,9 +39,7 @@ def busco_dispatch_automatic_flow(  # pylint: disable=too-many-arguments,too-man
     root_logger.addHandler(file_handler)
     root_logger.setLevel(logging.INFO)
 
-    credentials = resolve_credentials(
-        credentials, metadata_secret_block, DEFAULT_SLACK_SECRET_BLOCK, slack_report=False
-    )
+    credentials = resolve_credentials(credentials, metadata_secret_block=metadata_secret_block)
     db_params = credentials.metadata_db_params
 
     print("Refreshing assembly_events before dispatching...")

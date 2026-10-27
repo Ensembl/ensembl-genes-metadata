@@ -4,13 +4,8 @@ from typing import Optional
 from prefect import flow  # type: ignore
 
 from gb_metadata.update_busco_events import insert_busco_candidates, mark_existing_busco_done
-from gb_prefect.models.pipeline_options import PipelineCredentials
 from gb_prefect.tasks.busco_dispatch import dispatch_rows
-from gb_prefect.utils.credentials_utils import (
-    DEFAULT_METADATA_SECRET_BLOCK,
-    DEFAULT_SLACK_SECRET_BLOCK,
-    resolve_credentials,
-)
+from gb_prefect.utils.credentials_utils import PipelineCredentials, resolve_credentials
 from gb_prefect.utils.stats_split_csv import read_gca_csv
 
 BUSCO_GCA_DEPLOYMENT = "BUSCO_gca/busco-gca"
@@ -25,7 +20,7 @@ def busco_dispatch_flow(  # pylint: disable=too-many-arguments,too-many-position
     post_run_cleanup: bool = False,
     deployment_name: str = BUSCO_GCA_DEPLOYMENT,
     credentials: Optional[PipelineCredentials] = None,
-    metadata_secret_block: str = DEFAULT_METADATA_SECRET_BLOCK,
+    metadata_secret_block: Optional[str] = None,
 ):
     """Trigger busco_gca_flow for each GCA listed in csv_file (gca,taxon_id,busco_dataset).
 
@@ -69,9 +64,7 @@ def busco_dispatch_flow(  # pylint: disable=too-many-arguments,too-many-position
     root_logger.addHandler(file_handler)
     root_logger.setLevel(logging.INFO)
 
-    credentials = resolve_credentials(
-        credentials, metadata_secret_block, DEFAULT_SLACK_SECRET_BLOCK, slack_report=False
-    )
+    credentials = resolve_credentials(credentials, metadata_secret_block=metadata_secret_block)
     db_params = credentials.metadata_db_params
 
     print("Refreshing assembly_events before dispatching...")

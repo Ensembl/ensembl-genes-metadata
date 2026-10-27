@@ -3,14 +3,10 @@ from typing import Optional
 
 from prefect import flow  # type: ignore
 
-from gb_prefect.models.pipeline_options import PipelineCredentials, TaskRunOptions
+from gb_prefect.models.pipeline_options import TaskRunOptions
 from gb_prefect.pipelines.assembly_metadata_update import asm_update_run
 from gb_prefect.tasks.nextflow import run_nextflow_pipeline
-from gb_prefect.utils.credentials_utils import (
-    DEFAULT_METADATA_SECRET_BLOCK,
-    DEFAULT_SLACK_SECRET_BLOCK,
-    resolve_credentials,
-)
+from gb_prefect.utils.credentials_utils import PipelineCredentials, resolve_credentials
 from gb_prefect.utils.enscode_utils import resolve_enscode
 from gb_prefect.utils.path_utils import check_input_file, run_folder
 
@@ -24,8 +20,8 @@ def gb_registry_update_flow(  # pylint: disable=too-many-arguments,too-many-posi
     enscode: Optional[str] = None,
     dry_run: bool = False,
     credentials: Optional[PipelineCredentials] = None,
-    metadata_secret_block: str = DEFAULT_METADATA_SECRET_BLOCK,
-    slack_secret_block: str = DEFAULT_SLACK_SECRET_BLOCK,
+    metadata_secret_block: Optional[str] = None,
+    slack_secret_block: Optional[str] = None,
 ):
     """Run the assembly metadata update Nextflow pipeline for the GCA list (the whole file, as
     given). See gb_registry_update_by_date_flow for screening by release date instead.
@@ -35,7 +31,11 @@ def gb_registry_update_flow(  # pylint: disable=too-many-arguments,too-many-posi
     """
     # Resolve credentials
     credentials = resolve_credentials(
-        credentials, metadata_secret_block, slack_secret_block, slack_report, dry_run=dry_run
+        credentials,
+        slack_report=slack_report,
+        dry_run=dry_run,
+        metadata_secret_block=metadata_secret_block,
+        slack_secret_block=slack_secret_block,
     )
 
     # Run the assembly metadata update pipeline for the specified GCA accessions.
