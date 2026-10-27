@@ -3,15 +3,11 @@ from typing import Optional
 
 from prefect import flow  # type: ignore
 
-from gb_prefect.models.pipeline_options import PipelineCredentials, TaskRunOptions
+from gb_prefect.models.pipeline_options import TaskRunOptions
 from gb_prefect.pipelines.statistics_busco_genome import busco_run
 from gb_prefect.tasks.statistics_cleanup import cleanup_statistics_outdir, record_busco_failure
 from gb_prefect.tasks.nextflow import run_nextflow_pipeline
-from gb_prefect.utils.credentials_utils import (
-    DEFAULT_METADATA_SECRET_BLOCK,
-    DEFAULT_SLACK_SECRET_BLOCK,
-    resolve_credentials,
-)
+from gb_prefect.utils.credentials_utils import PipelineCredentials, resolve_credentials
 from gb_prefect.utils.enscode_utils import resolve_enscode
 
 
@@ -26,7 +22,7 @@ def busco_gca_flow(  # pylint: disable=too-many-arguments,too-many-positional-ar
     create_artifact: bool = True,
     update_registry: bool = False,
     credentials: Optional[PipelineCredentials] = None,
-    metadata_secret_block: str = DEFAULT_METADATA_SECRET_BLOCK,
+    metadata_secret_block: Optional[str] = None,
     post_run_cleanup: bool = False,
 ):
     """
@@ -41,11 +37,7 @@ def busco_gca_flow(  # pylint: disable=too-many-arguments,too-many-positional-ar
         metadata_params_string = None
         if update_registry:
             metadata_params_string = resolve_credentials(
-                credentials,
-                metadata_secret_block,
-                DEFAULT_SLACK_SECRET_BLOCK,
-                slack_report=False,
-                dry_run=dry_run,
+                credentials, dry_run=dry_run, metadata_secret_block=metadata_secret_block
             ).metadata_params_string
 
         run = busco_run(

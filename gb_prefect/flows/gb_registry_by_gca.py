@@ -3,14 +3,10 @@ from typing import Optional
 
 from prefect import flow  # type: ignore
 
-from gb_prefect.models.pipeline_options import PipelineCredentials, TaskRunOptions
+from gb_prefect.models.pipeline_options import TaskRunOptions
 from gb_prefect.pipelines.assembly_metadata import asm_registry_run
 from gb_prefect.tasks.nextflow import run_nextflow_pipeline
-from gb_prefect.utils.credentials_utils import (
-    DEFAULT_METADATA_SECRET_BLOCK,
-    DEFAULT_SLACK_SECRET_BLOCK,
-    resolve_credentials,
-)
+from gb_prefect.utils.credentials_utils import PipelineCredentials, resolve_credentials
 from gb_prefect.utils.enscode_utils import resolve_enscode
 from gb_prefect.utils.path_utils import check_input_file, run_folder
 
@@ -23,7 +19,7 @@ def gb_registry_by_gca_flow(  # pylint: disable=too-many-arguments,too-many-posi
     enscode: Optional[str] = None,
     dry_run: bool = False,
     credentials: Optional[PipelineCredentials] = None,
-    metadata_secret_block: str = DEFAULT_METADATA_SECRET_BLOCK,
+    metadata_secret_block: Optional[str] = None,
 ):
     """
     Run the assembly registry Nextflow pipeline for the GCA accessions listed in gca_list
@@ -34,7 +30,7 @@ def gb_registry_by_gca_flow(  # pylint: disable=too-many-arguments,too-many-posi
     """
     # Resolve credentials
     credentials = resolve_credentials(
-        credentials, metadata_secret_block, DEFAULT_SLACK_SECRET_BLOCK, slack_report=False, dry_run=dry_run
+        credentials, dry_run=dry_run, metadata_secret_block=metadata_secret_block
     )
 
     # Run the assembly registry pipeline for the specified GCA accessions.
