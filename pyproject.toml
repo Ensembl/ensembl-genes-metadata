@@ -39,7 +39,7 @@ cicd = [
     "coverage",
     "pylint",
     "mypy",
-    "black==24.10.0",
+    "black==26.10.1",
     "types-requests",
 ]
 docs = [
