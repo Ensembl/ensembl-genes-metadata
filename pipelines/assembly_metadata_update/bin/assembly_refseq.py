@@ -32,38 +32,63 @@ def comparing_refseq(data, accession, metadata_params):
         str: A line with accession, current refseq in Registry, and refseq from NCBI
     """
 
-    # Getting info from Registry
-    query_refseq = (
-        f"SELECT refseq_accession FROM assembly WHERE CONCAT(gca_chain, '.', gca_version) = '{accession}'"
-    )
-    refseq_accession = execute_query(query_refseq, metadata_params)[0][0]
-
     # Getting info from NCBI
     paired_accession = data["reports"][0].get("paired_accession", "")
 
+    # An assembly without a paired RefSeq accession in NCBI does not require
+    # any change in Registry.
+    if not paired_accession:
+        logging.info(f"No update needed for RefSeq accession of assembly {accession}")
+        return f"{accession}, refseq_check, false, NA, NA"
+
+    # Getting the assembly ID and the current RefSeq accession from Registry.
+    # The RefSeq accession is now maintained in refseq_assembly rather than in
+    # assembly.  A LEFT JOIN is needed for assemblies which have no RefSeq row.
+    query_refseq = (
+        "SELECT a.assembly_id, ra.refseq_accession "
+        "FROM assembly a "
+        "LEFT JOIN refseq_assembly ra "
+        "ON ra.assembly_id = a.assembly_id AND ra.is_current = '1' "
+        f"WHERE CONCAT(a.gca_chain, '.', a.gca_version) = '{accession}'"
+    )
+    assembly_rows = execute_query(query_refseq, metadata_params)
+    if not assembly_rows:
+        raise ValueError(f"Assembly {accession} is not registered")
+
+    assembly_id, existing_pair = assembly_rows[0]
+
     # Comparison
-    if refseq_accession == paired_accession:
+    if existing_pair == paired_accession:
         logging.info(f"No update needed for RefSeq accession of assembly {accession}")
         output_line = f"{accession}, refseq_check, false, NA, NA"
-    elif not refseq_accession and paired_accession != "":
+    elif not existing_pair:
         logging.info(
             f"No RefSeq accession found for assembly {accession} in Registry, setting to {paired_accession}"
         )
-        query_update_refseq = f"UPDATE assembly a SET refseq_accession = '{paired_accession}' WHERE CONCAT(a.gca_chain, '.', a.gca_version) = '{accession}';"
-        logging.info(query_update_refseq)
-        affected = execute_write(query_update_refseq, metadata_params)
+        query_insert_refseq = (
+            "INSERT INTO refseq_assembly "
+            f"(assembly_id, refseq_accession, is_current) VALUES ({assembly_id}, '{paired_accession}', '1');"
+        )
+        logging.info(query_insert_refseq)
+        execute_write(query_insert_refseq, metadata_params)
         output_line = f"{accession}, refseq_check, true, no_refseq, {paired_accession}"
-    elif not refseq_accession and paired_accession == "":
-        logging.info(f"No update needed for RefSeq accession of assembly {accession}")
-        output_line = f"{accession}, refseq_check, false, NA, NA"
     else:
         logging.info(
-            f"Update needed for RefSeq accession of assembly {accession}: current RefSeq in Registry is {refseq_accession}, RefSeq from NCBI is {paired_accession}"
+            f"Update needed for RefSeq accession of assembly {accession}: current RefSeq in Registry is {existing_pair}, RefSeq from NCBI is {paired_accession}"
         )
-        query_update_refseq = f"UPDATE assembly a SET refseq_accession = '{paired_accession}' WHERE CONCAT(a.gca_chain, '.', a.gca_version) = '{accession}';"
-        logging.info(query_update_refseq)
-        affected = execute_write(query_update_refseq, metadata_params)
-        output_line = f"{accession}, refseq_check, true, {refseq_accession}, {paired_accession}"
+        query_update_old = (
+            "UPDATE refseq_assembly SET is_current = '0' "
+            f"WHERE assembly_id = {assembly_id} AND refseq_accession = '{existing_pair}' AND is_current = '1';"
+        )
+        query_insert_refseq = (
+            "INSERT INTO refseq_assembly "
+            f"(assembly_id, refseq_accession, is_current) VALUES ({assembly_id}, '{paired_accession}', '1');"
+        )
+        logging.info(query_update_old)
+        execute_write(query_update_old, metadata_params)
+        logging.info(query_insert_refseq)
+        execute_write(query_insert_refseq, metadata_params)
+        output_line = f"{accession}, refseq_check, true, {existing_pair}, {paired_accession}"
 
     return output_line
 

@@ -88,7 +88,6 @@ def parse_data(
             "asm_type": data["reports"][0]["assembly_info"]["assembly_type"],
             "asm_level": data["reports"][0]["assembly_info"]["assembly_level"],
             "asm_name": data["reports"][0]["assembly_info"]["assembly_name"],
-            "refseq_accession": data["reports"][0].get("paired_accession", ""),
             "release_date": data["reports"][0]["assembly_info"]["release_date"],
             "submitter": data["reports"][0]
             .get("assembly_info")
