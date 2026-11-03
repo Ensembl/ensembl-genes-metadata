@@ -35,7 +35,10 @@ process WRITE2DB {
 
     label 'python'
     tag "${gca}"
-    publishDir "${params.output_dir}/nextflow_output/${gca}", mode: 'copy'
+    // Taxonomy lineage rows are shared by multiple assemblies. Serialise
+    // writes so parallel repairs cannot race on taxonomy_name uniqueness.
+    maxForks 1
+    publishDir { "${params.output_dir}/nextflow_output/${gca}" }, mode: 'copy'
 
     input:
     tuple val(gca), path(taxonomy_json), val(passthrough)

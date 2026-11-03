@@ -32,7 +32,7 @@ process SPECIES_CHECKER {
 
     label 'python'
     tag "${gca}"
-    publishDir "${params.output_dir}/nextflow_output/${gca}", mode: 'copy'
+    publishDir { "${params.output_dir}/nextflow_output/${gca}" }, mode: 'copy'
 
     input:
     tuple val(gca), val(attempt_update), path(metadata_json), val(old_taxon_id), val(new_taxon_id)
