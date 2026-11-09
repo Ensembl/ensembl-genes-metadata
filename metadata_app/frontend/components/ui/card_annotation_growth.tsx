@@ -21,7 +21,8 @@ const methods = [
     ["full_genebuild", "Full Genebuild", "var(--chart-5)"],
     ["braker", "Braker", "var(--chart-7)"],
     ["helixer", "Helixer", "var(--chart-8)"],
-    ["anno", "Anno", "var(--chart-6)"]
+    ["anno", "Anno", "var(--chart-6)"],
+    ["projection_build", "Projection", "var(--chart-1)"]
 ] as const
 
 const chartConfig = {
@@ -30,6 +31,7 @@ const chartConfig = {
     braker: {label: "Braker", color: "var(--chart-7)"},
     helixer: {label: "Helixer", color: "var(--chart-8)"},
     anno: {label: "Anno", color: "var(--chart-6)"},
+    projection_build: {label: "Projection", color: "var(--chart-1)"},
 } satisfies ChartConfig
 
 const renderMethodBars = (showMethods: boolean) =>
@@ -55,7 +57,7 @@ const renderMethodBars = (showMethods: boolean) =>
     )
 
 function downloadCsv(data: GrowthRow[]) {
-    const headers = ["quarter", "total_genomes", "full_genebuild", "anno", "braker", "helixer"]
+    const headers = ["quarter", "total_genomes", "full_genebuild", "anno", "braker", "helixer", "projection_build"]
     const csv = [headers, ...data.map((row) => headers.map((header) => row[header as keyof GrowthRow]))]
         .map((row) => row.join(","))
         .join("\n")
@@ -85,8 +87,8 @@ export function AnnotationGrowthChart() {
                     <div>
                         <CardTitle>Ensembl annotation growth</CardTitle>
                         <CardDescription>
-                            Live annotated genomes to date by release date, including the pre-window baseline
-                            and quarterly additions
+                            Live annotated genomes by release quarter, starting from zero at the beginning of the
+                            displayed period
                         </CardDescription>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">

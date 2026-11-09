@@ -184,7 +184,7 @@ def get_annotations_per_year():
 
 
 def get_annotation_growth_by_quarter():
-    """Return distinct annotated genomes by quarter for the last four years."""
+    """Return cumulative distinct live annotations from zero by quarter."""
     try:
         with get_db_connection("meta") as conn:
             cursor = conn.cursor()
@@ -196,24 +196,13 @@ def get_annotation_growth_by_quarter():
                     COUNT(DISTINCT g.genebuild_status_id) AS genome_count
                 FROM genebuild_status g
                 WHERE g.release_date >= DATE_SUB(CURDATE(), INTERVAL 4 YEAR)
-                  AND g.annotation_method IN ('full_genebuild', 'anno', 'braker', 'helixer')
+                  AND g.annotation_method IN ('full_genebuild', 'anno', 'braker', 'helixer', 'projection_build')
                   AND g.gb_status = 'live'
                 GROUP BY year, quarter_number, annotation_method
                 ORDER BY year, quarter_number, annotation_method
             """
             cursor.execute(query)
             result = cursor.fetchall()
-
-            baseline_query = """
-                SELECT g.annotation_method, COUNT(DISTINCT g.genebuild_status_id) AS genome_count
-                FROM genebuild_status g
-                WHERE g.release_date < DATE_SUB(CURDATE(), INTERVAL 4 YEAR)
-                  AND g.annotation_method IN ('full_genebuild', 'anno', 'braker', 'helixer')
-                  AND g.gb_status = 'live'
-                GROUP BY g.annotation_method
-            """
-            cursor.execute(baseline_query)
-            baseline_result = cursor.fetchall()
 
         columns = ["year", "quarter_number", "annotation_method", "genome_count"]
         df = pd.DataFrame(result, columns=columns)
@@ -243,21 +232,86 @@ def get_annotation_growth_by_quarter():
             }
         )
         wide = quarter_index.merge(wide, on=["year", "quarter_number", "quarter"], how="left")
-        methods = ["full_genebuild", "anno", "braker", "helixer"]
+        methods = ["full_genebuild", "anno", "braker", "helixer", "projection_build"]
         for method in methods:
             if method not in wide:
                 wide[method] = 0
             wide[method] = wide[method].fillna(0).astype(int)
         wide[methods] = wide[methods].cumsum()
-        baseline = dict(baseline_result)
-        for method in methods:
-            wide[method] += int(baseline.get(method, 0))
         wide["total_genomes"] = wide[methods].sum(axis=1)
         return wide[["quarter", "total_genomes", *methods]].to_dict(orient="records")
 
     except Exception as e:
         logging.error(f"Error fetching quarterly annotation growth: {e}")
         return []
+
+
+def get_unique_species_annotation_growth(start_date, end_date=None):
+    """Return quarterly and cumulative distinct species with live annotations."""
+    methods = ("full_genebuild", "anno", "braker", "helixer", "projection_build")
+    start = pd.Timestamp(start_date).normalize()
+    end = pd.Timestamp(end_date).normalize() if end_date else pd.Timestamp.today().normalize()
+
+    if start > end:
+        raise ValueError("start_date must be before or equal to end_date")
+
+    try:
+        with get_db_connection("meta") as conn:
+            cursor = conn.cursor()
+            query = """
+                SELECT
+                    g.release_date,
+                    g.annotation_method,
+                    s.species_taxon_id
+                FROM genebuild_status g
+                JOIN assembly a ON a.assembly_id = g.assembly_id
+                JOIN species s ON s.lowest_taxon_id = a.lowest_taxon_id
+                WHERE g.release_date >= %s
+                  AND g.release_date <= %s
+                  AND g.annotation_method IN (%s, %s, %s, %s, %s)
+                  AND g.gb_status = 'live'
+                  AND s.species_taxon_id IS NOT NULL
+            """
+            cursor.execute(query, (start.date(), end.date(), *methods))
+            result = cursor.fetchall()
+
+        df = pd.DataFrame(result, columns=["release_date", "annotation_method", "species_taxon_id"])
+        df["release_date"] = pd.to_datetime(df["release_date"], errors="coerce")
+        df = df.dropna(subset=["release_date", "species_taxon_id"])
+        df["period"] = df["release_date"].dt.to_period("Q")
+
+        periods = pd.period_range(start=start.to_period("Q"), end=end.to_period("Q"), freq="Q")
+        quarter_index = pd.DataFrame({"period": periods})
+
+        if df.empty:
+            quarterly = pd.DataFrame(columns=["period", "quarterly_unique_species", "new_species"])
+        else:
+            quarterly = (
+                df.groupby("period")
+                .agg(quarterly_unique_species=("species_taxon_id", "nunique"))
+                .reset_index()
+            )
+            first_period = df.groupby("species_taxon_id")["period"].min()
+            new_species = first_period.value_counts().rename_axis("period").reset_index(name="new_species")
+            quarterly = quarterly.merge(new_species, on="period", how="outer")
+
+        quarterly = quarter_index.merge(quarterly, on="period", how="left").fillna(0)
+        quarterly["quarterly_unique_species"] = quarterly["quarterly_unique_species"].astype(int)
+        quarterly["new_species"] = quarterly["new_species"].astype(int)
+        quarterly["cumulative_unique_species"] = quarterly["new_species"].cumsum().astype(int)
+        quarterly["quarter"] = quarterly["period"].map(lambda period: f"{period.year} Q{period.quarter}")
+
+        return {
+            "start_date": start.strftime("%Y-%m-%d"),
+            "end_date": end.strftime("%Y-%m-%d"),
+            "total_unique_species": int(df["species_taxon_id"].nunique()),
+            "data": quarterly[
+                ["quarter", "quarterly_unique_species", "new_species", "cumulative_unique_species"]
+            ].to_dict(orient="records"),
+        }
+    except Exception as e:
+        logging.error(f"Error fetching unique species annotation growth: {e}", exc_info=True)
+        raise
 
 
 def get_metadata_registry_update_dates():
@@ -409,7 +463,7 @@ def annotation_time():
             24 * 60 * 60
         )
         df = df.dropna(subset=["annotation_method", "last_geneset_update", "duration_days"])
-        df = df[(df["duration_days"] >= 0) & (df["duration_days"] <= 3650)]
+        df = df[(df["duration_days"] >= 0) & (df["duration_days"] <= 365)]
         df = df.drop_duplicates(subset=["genebuild_status_id", "annotation_method"], keep="first")
         if df.empty:
             return {"summary": [], "trend": [], "window_months": 3}
@@ -417,7 +471,7 @@ def annotation_time():
         window_end = df["last_geneset_update"].max()
         window_start = window_end - pd.DateOffset(months=3)
         recent = df[df["last_geneset_update"] >= window_start]
-        methods = ["anno", "full_genebuild", "projection_build"]
+        methods = ["anno", "full_genebuild"]
         summary = []
         for method in methods:
             durations = recent.loc[recent["annotation_method"] == method, "duration_days"]

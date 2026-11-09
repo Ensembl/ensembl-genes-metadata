@@ -13,6 +13,7 @@ from metadata_app.backend.app.services.home_page_service import get_transcriptom
 from metadata_app.backend.app.services.home_page_service import bin_by_genebuild_method
 from metadata_app.backend.app.services.home_page_service import get_annotation_counts_by_group
 from metadata_app.backend.app.services.home_page_service import get_annotation_growth_by_quarter
+from metadata_app.backend.app.services.home_page_service import get_unique_species_annotation_growth
 from metadata_app.backend.app.services.home_page_service import annotation_time
 
 
@@ -67,6 +68,20 @@ def get_annotation_growth():
 def get_annotation_time():
     """Get annotation duration cards and the historical monthly trend."""
     return annotation_time()
+
+
+@home_page.get("/home/unique_species_annotation_growth")
+def get_unique_species_growth(start_date: date, end_date: Optional[date] = None):
+    """Get quarterly and cumulative distinct species with live annotations."""
+    if end_date is not None and start_date > end_date:
+        raise HTTPException(status_code=400, detail="start_date must be before or equal to end_date")
+    try:
+        return get_unique_species_annotation_growth(start_date, end_date)
+    except HTTPException:
+        raise
+    except Exception:
+        logging.exception("Unhandled error fetching unique species annotation growth")
+        raise HTTPException(status_code=500, detail="Error fetching unique species annotation growth")
 
 
 @home_page.get("/home/meta_update")
