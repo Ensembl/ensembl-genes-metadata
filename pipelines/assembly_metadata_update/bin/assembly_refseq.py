@@ -32,8 +32,14 @@ def comparing_refseq(data, accession, metadata_params):
         str: A line with accession, current refseq in Registry, and refseq from NCBI
     """
 
-    # Getting info from NCBI
-    paired_accession = data["reports"][0].get("paired_accession", "")
+    # Getting the paired RefSeq assembly and its status from NCBI.  The
+    # top-level report is for the requested GCA assembly; paired_assembly is
+    # the corresponding GCF record.
+    report = data["reports"][0]
+    assembly_info = report.get("assembly_info", {})
+    paired_assembly = assembly_info.get("paired_assembly", {})
+    paired_accession = report.get("paired_accession", "") or paired_assembly.get("accession", "")
+    paired_status = paired_assembly.get("status", "unknown")
 
     # An assembly without a paired RefSeq accession in NCBI does not require
     # any change in Registry.
@@ -41,48 +47,63 @@ def comparing_refseq(data, accession, metadata_params):
         logging.info(f"No update needed for RefSeq accession of assembly {accession}")
         return f"{accession}, refseq_check, false, NA, NA"
 
-    # Getting the assembly ID and the current RefSeq accession from Registry.
+    # Getting the assembly ID and the most recently registered RefSeq accession
+    # from Registry.  The latest row is the current row, regardless of whether
+    # its GCF status is current, suppressed, or another NCBI status.
     # The RefSeq accession is now maintained in refseq_assembly rather than in
     # assembly.  A LEFT JOIN is needed for assemblies which have no RefSeq row.
     query_refseq = (
-        "SELECT a.assembly_id, ra.refseq_accession "
+        "SELECT a.assembly_id, ra.refseq_accession, ra.is_current "
         "FROM assembly a "
         "LEFT JOIN refseq_assembly ra "
-        "ON ra.assembly_id = a.assembly_id AND ra.is_current = '1' "
-        f"WHERE CONCAT(a.gca_chain, '.', a.gca_version) = '{accession}'"
+        "ON ra.assembly_id = a.assembly_id "
+        f"WHERE CONCAT(a.gca_chain, '.', a.gca_version) = '{accession}' "
+        "ORDER BY ra.refseq_assembly_id DESC LIMIT 1"
     )
     assembly_rows = execute_query(query_refseq, metadata_params)
     if not assembly_rows:
         raise ValueError(f"Assembly {accession} is not registered")
 
-    assembly_id, existing_pair = assembly_rows[0]
+    assembly_id, existing_pair, existing_status = assembly_rows[0]
 
     # Comparison
-    if existing_pair == paired_accession:
+    if existing_pair == paired_accession and existing_status == paired_status:
         logging.info(f"No update needed for RefSeq accession of assembly {accession}")
         output_line = f"{accession}, refseq_check, false, NA, NA"
     elif not existing_pair:
         logging.info(
-            f"No RefSeq accession found for assembly {accession} in Registry, setting to {paired_accession}"
+            f"No RefSeq accession found for assembly {accession} in Registry, setting to {paired_accession} ({paired_status})"
         )
         query_insert_refseq = (
             "INSERT INTO refseq_assembly "
-            f"(assembly_id, refseq_accession, is_current) VALUES ({assembly_id}, '{paired_accession}', '1');"
+            f"(assembly_id, refseq_accession, is_current) VALUES ({assembly_id}, '{paired_accession}', '{paired_status}');"
         )
         logging.info(query_insert_refseq)
         execute_write(query_insert_refseq, metadata_params)
         output_line = f"{accession}, refseq_check, true, no_refseq, {paired_accession}"
+    elif existing_pair == paired_accession:
+        logging.info(
+            f"Update needed for RefSeq status of assembly {accession}: current status is {existing_status}, GCF status is {paired_status}"
+        )
+        query_update_status = (
+            "UPDATE refseq_assembly SET is_current = "
+            f"'{paired_status}' WHERE assembly_id = {assembly_id} "
+            f"AND refseq_accession = '{existing_pair}';"
+        )
+        logging.info(query_update_status)
+        execute_write(query_update_status, metadata_params)
+        output_line = f"{accession}, refseq_check, true, {existing_status}, {paired_status}"
     else:
         logging.info(
-            f"Update needed for RefSeq accession of assembly {accession}: current RefSeq in Registry is {existing_pair}, RefSeq from NCBI is {paired_accession}"
+            f"Update needed for RefSeq accession of assembly {accession}: current RefSeq in Registry is {existing_pair}, RefSeq from NCBI is {paired_accession} ({paired_status})"
         )
         query_update_old = (
-            "UPDATE refseq_assembly SET is_current = '0' "
-            f"WHERE assembly_id = {assembly_id} AND refseq_accession = '{existing_pair}' AND is_current = '1';"
+            "UPDATE refseq_assembly SET is_current = 'previous' "
+            f"WHERE assembly_id = {assembly_id} AND refseq_accession = '{existing_pair}';"
         )
         query_insert_refseq = (
             "INSERT INTO refseq_assembly "
-            f"(assembly_id, refseq_accession, is_current) VALUES ({assembly_id}, '{paired_accession}', '1');"
+            f"(assembly_id, refseq_accession, is_current) VALUES ({assembly_id}, '{paired_accession}', '{paired_status}');"
         )
         logging.info(query_update_old)
         execute_write(query_update_old, metadata_params)
