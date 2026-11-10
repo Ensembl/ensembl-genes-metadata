@@ -78,6 +78,16 @@ FLOWS = {
         tags=["metadata_registry"],
         concurrency_limit=1,
     ),
+    # ensembl-genes-metadata scripts (run_script; no Nextflow, but a Slurm job like the flows above)
+    "is_reference": FlowDeployment(
+        name="gb_is_reference",
+        entrypoint="gb_prefect/flows/gb_is_reference.py:gb_is_reference_flow",
+        work_pool="metadata",
+        description="NCBI reference assembly check",
+        tags=["metadata_registry"],
+        memory=1,
+        time_limit=1,
+    ),
     # ensembl-genes-nf pipelines
     "busco_gca": FlowDeployment(
         name="busco-gca",
