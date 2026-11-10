@@ -25,7 +25,7 @@ from gb_prefect.utils.artifact_utils import (
     create_live_map_artifact,
     create_nextflow_run_artifact,
 )
-from gb_prefect.utils.logging_utils import append_log
+from gb_prefect.utils.logging_utils import append_log, read_from
 from gb_prefect.utils.metro_utils import load_metro_config
 
 
@@ -114,7 +114,7 @@ def run_nextflow_pipeline(
     append_log(paths.log, f"[{datetime.now()}] INFO: Return code {rc}.\n")
 
     # Check this run's output for tasks the pipeline let fail (errorStrategy 'ignore')
-    run_log = _read_from(paths.log, log_start)
+    run_log = read_from(paths.log, log_start)
     ignored = [] if dry_run else ignored_errors(run_log)
     failed = rc != 0 or bool(ignored and run.fail_on_ignored_errors)
     if ignored:
@@ -123,7 +123,7 @@ def run_nextflow_pipeline(
             f"[{datetime.now()}] {'ERROR' if failed else 'WARNING'}: {len(ignored)} task(s) failed and "
             f"were ignored by the pipeline: {', '.join(ignored)}.\n",
         )
-        run_log = _read_from(paths.log, log_start)
+        run_log = read_from(paths.log, log_start)
 
     # collect the results into a NextflowResult object
     result = NextflowResult(
@@ -218,10 +218,3 @@ def _log(log: Path, message: str, secrets: List[Optional[str]]) -> None:
     message = redact(message, [s for s in secrets if s])
     append_log(log, f"[{datetime.now()}] {message}\n")
     print(message)
-
-
-def _read_from(path: Path, offset: int) -> str:
-    """Return path's content from byte offset on (this run's part of an appended log)."""
-    with path.open("rb") as fh:
-        fh.seek(offset)
-        return fh.read().decode("utf-8", errors="replace")

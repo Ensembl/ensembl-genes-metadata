@@ -8,3 +8,10 @@ def append_log(path: Path, msg: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("a", encoding="utf-8") as fh:
         fh.write(msg)
+
+
+def read_from(path: Path, offset: int) -> str:
+    """Return path's content from byte offset on, e.g. one run's part of a log appended to across reruns."""
+    with path.open("rb") as fh:
+        fh.seek(offset)
+        return fh.read().decode("utf-8", errors="replace")
