@@ -124,7 +124,7 @@ def parse_args(
             dest=_pool_dest(key),
             default=default,
             metavar="POOL",
-            help=f"slurm-cli work pool of the {key} flows ({users}). Default: {default}.",
+            help=f"Work pool of the {key} flows ({users}). Default: {default}.",
         )
     parser.add_argument(
         "--work-pool",

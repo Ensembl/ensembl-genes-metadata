@@ -24,7 +24,8 @@ def gb_registry_update_by_date_flow(  # pylint: disable=too-many-arguments,too-m
     slack_secret_block: Optional[str] = None,
 ):
     """Run the assembly metadata update Nextflow pipeline in --screen_date mode: screens the
-    metadata database for high-priority assemblies released after the specified date (YYYY-MM-DD),
+    metadata database for high-priority assemblies released after screen_date (YYYY-MM-DD) and
+    checks/updates them (see gb_registry_update_flow for a GCA list instead).
 
     Output goes to {outdir}/{folder_name}; folder_name defaults to asm_update_screen_<screen_date>_<today>.
     """

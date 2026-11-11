@@ -30,7 +30,7 @@ class TaskRunOptions:
     """Execution-control flags for a Prefect task.
 
     Attributes:
-        dry_run: If True, build the sbatch script without submitting it.
+        dry_run: If True, write and log the command without running it.
         create_artifact: If True, create a Prefect artifact summarizing the run.
     """
 
