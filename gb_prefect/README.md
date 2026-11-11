@@ -6,6 +6,8 @@ Nextflow flows run on the [`slurm-cli` worker](#slurm-cli-worker): each flow run
 
 Flows are run through their Prefect deployments (see [Running a Flow](#running-a-flow)); there is no per-flow command line.
 
+**New to Prefect, or adding a flow?** Start with the guides on the docs site: [Prefect orchestration](https://ensembl.github.io/ensembl-genes-metadata/prefect/) (concepts and architecture), [Add a Nextflow flow](https://ensembl.github.io/ensembl-genes-metadata/prefect/add-nextflow-flow/), [Add a script flow](https://ensembl.github.io/ensembl-genes-metadata/prefect/add-script-flow/), [Testing](https://ensembl.github.io/ensembl-genes-metadata/prefect/testing/) and [Troubleshooting](https://ensembl.github.io/ensembl-genes-metadata/prefect/troubleshooting/) (sources in [`docs/prefect/`](../docs/prefect)). This README is the reference for the existing flows.
+
 ---
 
 ## Table of Contents
@@ -233,7 +235,7 @@ For quick Python work (DB queries, calling the API), a flow can also call functi
 
 ## Live Maps
 
-When the Prefect Variable `nf-metro-url` is set, every real run of a Nextflow flow whose pipeline has an nf-metro map (`NextflowRun.metro_map`, e.g. `pipelines/<pipeline>/assets/metro_map.mmd`) gets a live map of its progress:
+When the Prefect Variable `nf-metro-url` is set, every real run of a Nextflow flow whose pipeline has an nf-metro map (`NextflowRun.metro_map`) gets a live map of its progress. Maps live in the pipeline's `assets/` folder: `metro_map.mmd` for this repo's pipelines, and one map per mode for a pipeline with several (`metro_map_<mode>.mmd`, e.g. `ensembl-genes-nf/pipelines/statistics/assets/metro_map_busco_genome.mmd`):
 
 1. the task registers the run with the [nf-metro](https://github.com/seqeralabs/nf-metro) server ([`nextflow/metro.py`](nextflow/metro.py)), sending the map from ENSCODE;
 2. Nextflow is launched with `-with-weblog`, so its events reach the server and light up each process's station;
@@ -271,6 +273,8 @@ For each Nextflow flow run, in its output folder:
 | `<name>.csv` | Input CSV, when the spec builds one (e.g. one row per GCA for BUSCO) |
 | `*_dag_<timestamp>.mmd`, `report-<timestamp>.html` | Nextflow DAG (Mermaid) and execution report, when the spec asks for them |
 | Prefect markdown artifact | Run summary (status, command, last 300 log lines) in the Prefect UI |
+
+Each deployment's Slurm job also writes, in `<outdir>/slurm_jobs/` (`--job-dir` when deploying): the worker's sbatch script `slurm_cli_<flow run id>.sh` and Slurm's `slurm_<job id>.out` / `.err`. Look there first when a run crashes before the flow starts.
 
 A script flow writes `script_<name>.log` and `script_<name>_command.sh` instead, plus whatever the script itself writes.
 
