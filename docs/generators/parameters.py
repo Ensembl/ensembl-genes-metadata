@@ -127,7 +127,7 @@ def render(schema: Schema) -> str:
 
     out.append(f"# {schema.pipeline.title()} Parameters")
     out.append("")
-    out.append("Automatically generated from the pipeline `nextflow_schema.json`.")
+    out.append("Automatically generated from the pipeline " "`nextflow_schema.json`.")#pylint: disable=implicit-str-concat
     out.append("")
 
     for group in schema.groups:
