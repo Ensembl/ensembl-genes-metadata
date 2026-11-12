@@ -96,8 +96,8 @@ FLOWS = {
         description="BUSCO for a single GCA",
         tags=["busco"],
         cpu=2,
-        memory=8,
-        time_limit=4,
+        memory=4,
+        time_limit=24,
         separate_outdir=True,
     ),
     "busco_dispatch_automatic": FlowDeployment(
