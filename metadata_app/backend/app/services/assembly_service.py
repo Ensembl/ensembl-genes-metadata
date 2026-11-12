@@ -230,7 +230,9 @@ def get_filtered_assemblies(
 
             # Keep the main BioProject/group filter selective, then expand project
             # names only for the assemblies that already matched that filter.
-            assembly_ids = sorted({row["assembly_id"] for row in results if row.get("assembly_id") is not None})
+            assembly_ids = sorted(
+                {row["assembly_id"] for row in results if row.get("assembly_id") is not None}
+            )
             project_names_by_assembly = {}
             if assembly_ids:
                 project_query = """
@@ -238,17 +240,21 @@ def get_filtered_assemblies(
                     FROM bioproject b
                     LEFT JOIN main_bioproject mb ON b.bioproject_id = mb.bioproject_id
                     WHERE b.assembly_id IN ({})
-                """.format(",".join(["%s"] * len(assembly_ids)))
+                """.format(
+                    ",".join(["%s"] * len(assembly_ids))
+                )
                 cursor.execute(project_query, tuple(assembly_ids))
                 for row in cursor.fetchall():
                     project_name = row.get("bioproject_name")
                     if project_name:
-                        project_names_by_assembly.setdefault(row["assembly_id"], set()).add(project_name.strip())
+                        project_names_by_assembly.setdefault(row["assembly_id"], set()).add(
+                            project_name.strip()
+                        )
 
             for row in results:
-                row["associated_project"] = ", ".join(
-                    sorted(project_names_by_assembly.get(row["assembly_id"], set()))
-                ) or None
+                row["associated_project"] = (
+                    ", ".join(sorted(project_names_by_assembly.get(row["assembly_id"], set()))) or None
+                )
 
             # Get taxonomy data
             lowest_taxon_ids = {
