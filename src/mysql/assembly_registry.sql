@@ -10,7 +10,6 @@ CREATE TABLE assembly (
   asm_type ENUM('haploid', 'diploid', 'haploid-with-alt-loci', 'unresolved-diploid', 'alternate-pseudohaplotype'),
   asm_level ENUM('Scaffold', 'Contig', 'Chromosome', 'Complete genome'),
   asm_name varchar(225) NOT NULL,
-  refseq_accession varchar(30),
   release_date date,
   submitter mediumtext,
   PRIMARY KEY (`assembly_id`),
@@ -30,18 +29,58 @@ CREATE TABLE assembly_metrics (
   CONSTRAINT metric_record UNIQUE (assembly_id, metrics_name, metrics_value)
 ) ENGINE=MyISAM AUTO_INCREMENT=1 DEFAULT CHARSET=latin1;
 
+DROP TABLE IF EXISTS refseq_assembly;
 
-DROP TABLE IF EXISTS refseq_assembly_metrics;
+CREATE TABLE refseq_assembly
+(
+    refseq_assembly_id INT AUTO_INCREMENT PRIMARY KEY,
+    assembly_id        INT NOT NULL,
+    refseq_accession   VARCHAR(30) NOT NULL,
+    is_current         VARCHAR(30) NULL,
 
-CREATE TABLE refseq_assembly_metrics (
-  rasm_metrics_id int NOT NULL AUTO_INCREMENT,
-  assembly_id int NOT NULL,
-  metrics_name varchar(50) NOT NULL,
-  metrics_value varchar(225) NOT NULL,
-  PRIMARY KEY (`rasm_metrics_id`),
-  FOREIGN KEY (`assembly_id`) REFERENCES assembly(`assembly_id`),
-  CONSTRAINT metric_record UNIQUE (assembly_id, metrics_name, metrics_value)
-) ENGINE=MyISAM AUTO_INCREMENT=1 DEFAULT CHARSET=latin1;
+    KEY idx_assembly_id (assembly_id),
+    UNIQUE KEY uk_refseq_accession (refseq_accession)
+)
+ENGINE = MyISAM
+DEFAULT CHARSET = latin1;
+
+DROP TABLE IF EXISTS import_status;
+
+CREATE TABLE import_status
+(
+    import_status_id      INT AUTO_INCREMENT PRIMARY KEY,
+    refseq_assembly_id    INT NOT NULL,
+
+    import_status         ENUM (
+                              'in_progress',
+                              'abandoned',
+                              'completed',
+                              'handed_over',
+                              'live',
+                              'coming_soon',
+                              'faulty',
+                              'suppressed'
+                          ) NULL,
+
+    last_attempt          INT NULL,
+    genebuilder           VARCHAR(20) NOT NULL,
+
+    annotation_source     ENUM (
+                              'import_refseq'
+                          ) NULL,
+
+    date_started          DATE NOT NULL,
+    date_status_update    DATE NULL,
+    genebuild_version     VARCHAR(10) NULL,
+    last_genebuild_update DATE NULL,
+    release_date          DATE NULL,
+
+    KEY idx_refseq_assembly_id (refseq_assembly_id),
+    KEY idx_genebuilder (genebuilder)
+)
+ENGINE = MyISAM
+DEFAULT CHARSET = latin1;
+
 DROP TABLE IF EXISTS annotation_events;
 
 CREATE TABLE annotation_events
@@ -211,7 +250,7 @@ DROP TABLE IF EXISTS genebuild_status;
 CREATE TABLE genebuild_status (
   genebuild_status_id int NOT NULL AUTO_INCREMENT,
   assembly_id int NOT NULL,
-  gca_accession VARCHAR(20) NOT NULL, 
+  gca_accession VARCHAR(20) NOT NULL,
   gb_status ENUM(enum('in_progress', 'abandoned', 'insufficient_data', 'check_busco', 'completed', 'pre_released', 'handed_over', 'live', 'poor_genome_busco', 'coming_soon', 'faulty', 'suppressed', 'large_sequence')),
   last_attempt int(2),
   genebuilder varchar(20) NOT NULL,

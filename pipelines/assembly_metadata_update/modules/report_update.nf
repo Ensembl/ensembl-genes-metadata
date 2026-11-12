@@ -32,7 +32,7 @@ process REPORT_UPDATE {
 
     label 'python'
     tag "${gca}"
-    publishDir "${params.output_dir}/nextflow_output/${gca}", mode: 'copy'
+    publishDir { "${params.output_dir}/nextflow_output/${gca}" }, mode: 'copy'
 
     input:
     tuple val(gca), val(check), val(reporting), val(old_value), val(new_value)

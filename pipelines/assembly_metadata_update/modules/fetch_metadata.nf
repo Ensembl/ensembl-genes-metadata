@@ -29,7 +29,7 @@ process FETCH_METADATA {
 
     label 'python'
     tag "${gca}"
-    publishDir "${params.output_dir}/nextflow_output/${gca}", mode: 'copy'
+    publishDir { "${params.output_dir}/nextflow_output/${gca}" }, mode: 'copy'
 
     input:
     val gca

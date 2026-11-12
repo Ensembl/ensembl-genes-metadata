@@ -82,10 +82,11 @@ def fetch_report_data(metadata_params, gca_list, bioprojects):
             AND CONCAT(GCA_chain, '.', gca_version) IN ({gca_string});
         """,
         "refseq": f"""
-            SELECT CONCAT(GCA_chain, '.', gca_version) AS GCA
-            FROM assembly
-            WHERE CONCAT(GCA_chain, '.', gca_version) IN ({gca_string})
-            AND refseq_accession IS NOT NULL;
+            SELECT CONCAT(a.GCA_chain, '.', a.gca_version) AS GCA
+            FROM assembly a
+            INNER JOIN refseq_assembly ra ON a.assembly_id = ra.assembly_id
+            WHERE CONCAT(a.GCA_chain, '.', a.gca_version) IN ({gca_string})
+            AND ra.is_current = '1';
         """,
         "invalid_taxon": """
             SELECT CONCAT(GCA_chain, '.', gca_version) AS GCA, species.scientific_name, species.lowest_taxon_id, assembly.release_date
