@@ -197,7 +197,7 @@ def get_filtered_assemblies(
 
             # Main query
             query = f"""
-                SELECT b.bioproject_id, mb.bioproject_name AS associated_project, a.asm_level, a.gca_chain, a.gca_version, a.asm_type, a.release_date, a.is_current,
+                SELECT a.assembly_id, b.bioproject_id, mb.bioproject_name AS associated_project, a.asm_level, a.gca_chain, a.gca_version, a.asm_type, a.release_date, a.is_current,
                        m.metrics_name, m.metrics_value, s.scientific_name, s.common_name, a.asm_name,
                        a.lowest_taxon_id, g.group_name, a.refseq_accession, o.infra_type, o.infra_name,
                        gb.gb_status
@@ -227,6 +227,28 @@ def get_filtered_assemblies(
                     detail="No assemblies found matching the specified criteria.",
                 )
             logging.info(f"Query executed successfully, retrieved {len(results)} results.")
+
+            # Keep the main BioProject/group filter selective, then expand project
+            # names only for the assemblies that already matched that filter.
+            assembly_ids = sorted({row["assembly_id"] for row in results if row.get("assembly_id") is not None})
+            project_names_by_assembly = {}
+            if assembly_ids:
+                project_query = """
+                    SELECT b.assembly_id, mb.bioproject_name
+                    FROM bioproject b
+                    LEFT JOIN main_bioproject mb ON b.bioproject_id = mb.bioproject_id
+                    WHERE b.assembly_id IN ({})
+                """.format(",".join(["%s"] * len(assembly_ids)))
+                cursor.execute(project_query, tuple(assembly_ids))
+                for row in cursor.fetchall():
+                    project_name = row.get("bioproject_name")
+                    if project_name:
+                        project_names_by_assembly.setdefault(row["assembly_id"], set()).add(project_name.strip())
+
+            for row in results:
+                row["associated_project"] = ", ".join(
+                    sorted(project_names_by_assembly.get(row["assembly_id"], set()))
+                ) or None
 
             # Get taxonomy data
             lowest_taxon_ids = {
