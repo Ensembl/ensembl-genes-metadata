@@ -1,0 +1,126 @@
+python.is_reference
+===================
+
+.. py:module:: python.is_reference
+
+.. autoapi-nested-parse::
+
+   Given a list of GCA accessions, query the NCBI Datasets API to determine
+   whether each assembly is labeled as the reference assembly for its taxon.
+
+   Usage
+   -----
+
+   Pass accessions directly on the command line::
+
+       python is_reference.py GCA_004027535.1 GCA_000001405.29
+
+   Or supply a file (one GCA per line, or a single-column CSV)::
+
+       python is_reference.py --file gcas.txt
+       python is_reference.py --file gcas.csv
+
+   Choose a custom output path (default: ``reference_check.csv``)::
+
+       python is_reference.py --file gcas.txt --output my_results.csv
+
+   Output columns
+   --------------
+
+   ``gca``
+       Input accession.
+
+   ``species_name``
+       Organism name from NCBI.
+
+   ``taxon_id``
+       NCBI taxonomy ID.
+
+   ``is_reference``
+       ``True``, ``False``, or ``No reference available``.
+
+   ``current_reference``
+       GCA (or GCF paired) accession of the reference, or
+       ``No reference available``.
+
+
+
+Attributes
+----------
+
+.. autoapisummary::
+
+   python.is_reference.NCBI_BASE
+   python.is_reference.RETRY_WAIT
+   python.is_reference.MAX_RETRIES
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   python.is_reference.get_assembly_info
+   python.is_reference.get_reference_for_taxon
+   python.is_reference.check_assembly
+   python.is_reference.load_accessions_from_file
+   python.is_reference.write_csv
+   python.is_reference.parse_args
+   python.is_reference.main
+
+
+Module Contents
+---------------
+
+.. py:data:: NCBI_BASE
+   :value: 'https://api.ncbi.nlm.nih.gov/datasets/v2'
+
+
+.. py:data:: RETRY_WAIT
+   :value: 2
+
+
+.. py:data:: MAX_RETRIES
+   :value: 3
+
+
+.. py:function:: get_assembly_info(accession: str) -> dict
+
+   Return a dict with keys: taxon_id, species_name.
+   Raises if the accession is not found.
+
+
+.. py:function:: get_reference_for_taxon(taxon_id: str) -> dict | None
+
+   Return the first reference-assembly report for taxon_id, or None if
+   no reference exists.
+
+
+.. py:function:: check_assembly(accession: str) -> dict
+
+   Return a result row dict for one GCA accession.
+   Catches all errors so a bad accession doesn't abort the whole run.
+
+
+.. py:function:: load_accessions_from_file(path: str) -> list[str]
+
+   Accept a plain text file (one accession per line) or a CSV whose
+   first column contains accessions (header row is skipped if it does
+   not look like a GCA accession).
+
+
+.. py:function:: write_csv(rows: list[dict], output_path: str) -> None
+
+   Write the result rows to output_path as a CSV file.
+
+
+.. py:function:: parse_args() -> argparse.Namespace
+
+   Parse command-line arguments.
+
+
+.. py:function:: main() -> None
+
+   Module entry point.
+
+

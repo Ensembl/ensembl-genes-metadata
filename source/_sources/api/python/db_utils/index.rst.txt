@@ -1,0 +1,40 @@
+python.db_utils
+===============
+
+.. py:module:: python.db_utils
+
+.. autoapi-nested-parse::
+
+   Shared MySQL connection helpers for the assembly_metadata and assembly_metadata_update
+   pipeline scripts.
+
+
+
+Functions
+---------
+
+.. autoapisummary::
+
+   python.db_utils.execute_query
+   python.db_utils.execute_write
+   python.db_utils.fetch_one_row
+
+
+Module Contents
+---------------
+
+.. py:function:: execute_query(query: str, db_params: Dict[str, Any]) -> Tuple[Tuple[Any, ...], ...]
+
+   Run a query and return every row.
+
+
+.. py:function:: execute_write(query: str, db_params: Dict[str, Any]) -> int
+
+   Execute an INSERT/UPDATE/DELETE and commit. Returns the number of affected rows.
+
+
+.. py:function:: fetch_one_row(query: str, db_params: Dict[str, Any], context: str) -> Tuple[Any, ...]
+
+   Run query and return its single result row, or raise if the row count isn't exactly 1.
+
+
