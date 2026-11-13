@@ -1,5 +1,5 @@
 site_name: Ensembl Genes Metadata Pipelines
-site_description: Documentation for the Ensembl Genes Metadata Nextflow pipelines.
+site_description: Documentation for the Ensembl Genes Metadata Nextflow pipelines and their Prefect orchestration.
 site_author: Ensembl Genebuild
 # Required so generated absolute-path pages (404.html, sitemap.xml, canonical
 # links) point at the real subpath instead of defaulting to the domain root --
@@ -100,4 +100,14 @@ nav:
       - Modules: pipelines/assembly_metadata_update/modules/index.md
       - Output: pipelines/assembly_metadata_update/output.md
       - Troubleshooting: pipelines/assembly_metadata_update/troubleshooting.md
+  - Prefect:
+      - Overview: prefect/index.md
+      - Add a Nextflow flow: prefect/add-nextflow-flow.md
+      - Add a script flow: prefect/add-script-flow.md
+      - Deploying flows: prefect/deploying.md
+      - Credentials: prefect/credentials.md
+      - Testing: prefect/testing.md
+      - Troubleshooting: prefect/troubleshooting.md
+      - Operations: prefect/operations.md
+      - Design notes: prefect/design-notes.md
   - Source: source/index.html

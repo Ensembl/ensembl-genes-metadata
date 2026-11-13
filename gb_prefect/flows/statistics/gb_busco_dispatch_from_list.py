@@ -1,0 +1,95 @@
+import logging
+from typing import List, Optional
+
+from prefect import flow  # type: ignore
+
+from gb_metadata.update_busco_events import get_taxon_id, insert_busco_candidates, mark_existing_busco_done
+from gb_prefect.tasks.busco_dispatch import dispatch_rows
+from gb_prefect.utils.credentials_utils import PipelineCredentials, resolve_credentials
+
+BUSCO_GCA_DEPLOYMENT = "BUSCO_gca/busco-gca"
+
+
+def _read_gca_list_file(path: str) -> List[str]:
+    """Read one GCA accession per line from a plain text file."""
+    with open(path, encoding="utf-8") as f:
+        return [line.strip() for line in f if line.strip()]
+
+
+@flow(name="BUSCO_dispatch_from_list", log_prints=True)
+def busco_dispatch_from_list_flow(  # pylint: disable=too-many-arguments,too-many-positional-arguments
+    gca_list: Optional[List[str]] = None,
+    gca_file: Optional[str] = None,
+    force: bool = False,
+    dry_run: bool = False,
+    update_registry: bool = True,
+    post_run_cleanup: bool = False,
+    deployment_name: str = BUSCO_GCA_DEPLOYMENT,
+    credentials: Optional[PipelineCredentials] = None,
+    metadata_secret_block: Optional[str] = None,
+):
+    """Trigger busco_gca_flow for each GCA given directly -- gca_list and/or gca_file (one
+    accession per line); values from both are combined and de-duplicated.
+
+    update_registry=True (the default) claims each GCA (status -> in_progress) before
+    triggering it and loads results on completion; False just triggers. See
+    busco_dispatch_flow for details.
+
+    post_run_cleanup=False (the default) leaves each run's directory as is; True marks
+    failures and cleans run directories afterwards. See busco_dispatch_flow for details.
+
+    taxon_id is resolved per GCA from the metadata DB (assembly.lowest_taxon_id). A GCA not
+    found in the DB at all is skipped -- not run -- since there's no taxon_id to dispatch
+    with. Otherwise behaves exactly like busco_dispatch_flow (scenario 1): assembly_events is
+    refreshed first, and a GCA already marked done or in_progress is skipped unless
+    force=True. The shared trigger logic lives in gb_prefect.tasks.busco_dispatch.dispatch_rows.
+
+    credentials is optional: when omitted (the normal case for a deployment trigger), DB
+    connection params are loaded from the metadata_secret_block Prefect Secret block instead,
+    credentials and metadata_secret_block are both passed on to the triggered runs, so they
+    write to the same DB (see busco_dispatch_flow).
+    """
+    file_handler = logging.FileHandler("busco_dispatch_from_list.log", mode="w")
+    file_handler.setFormatter(logging.Formatter("%(asctime)s:%(levelname)s:%(message)s"))
+    root_logger = logging.getLogger()
+    root_logger.addHandler(file_handler)
+    root_logger.setLevel(logging.INFO)
+
+    db_params = resolve_credentials(
+        credentials, metadata_secret_block=metadata_secret_block
+    ).metadata_db_params
+
+    print("Refreshing assembly_events before dispatching...")
+    mark_existing_busco_done(db_params, execute=not dry_run)
+    insert_busco_candidates(db_params, execute=not dry_run)
+
+    gcas = list(gca_list or [])
+    if gca_file:
+        gcas += _read_gca_list_file(gca_file)
+    seen = set()
+    unique_gcas = [g for g in gcas if not (g in seen or seen.add(g))]
+    print(f"Resolving taxon_id for {len(unique_gcas)} GCA(s)")
+
+    rows = []
+    not_found = []
+    for gca in unique_gcas:
+        taxon_id = get_taxon_id(gca, db_params)
+        if taxon_id is None:
+            print(f"Skipping {gca}: not found in the metadata DB")
+            not_found.append(gca)
+            continue
+        rows.append({"gca": gca, "taxon_id": str(taxon_id), "busco_dataset": ""})
+
+    result = dispatch_rows(
+        rows,
+        db_params,
+        force,
+        dry_run,
+        deployment_name,
+        update_registry,
+        post_run_cleanup,
+        metadata_secret_block=metadata_secret_block,
+        credentials=credentials,
+    )
+    result["not_found"] = not_found
+    return result
