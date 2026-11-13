@@ -3,6 +3,7 @@ Collection of Prefect Nextflow input and output classes.
 """
 
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any, Dict, List, Mapping, Optional, Sequence
 
 
@@ -64,11 +65,15 @@ class NextflowRun:  # pylint: disable=too-many-instance-attributes
     fail_on_ignored_errors: bool = True
 
     def __post_init__(self) -> None:
-        """Reject a parameter given twice: Nextflow would silently pick one.
+        """Reject a relative outdir, and a parameter given twice: Nextflow would silently pick one.
 
         Command-line params override the -params-file, so a key in both params and
         secret_params would quietly drop the secret value; the CSV parameter likewise.
         """
+        # Nextflow runs with cwd=outdir, so a relative outdir would resolve the params file, CSV
+        # and DAG paths built from it a second time, under itself.
+        if not Path(self.outdir).is_absolute():
+            raise ValueError(f"outdir must be an absolute path: {self.outdir}")
         overlap = set(self.params) & set(self.secret_params)
         if overlap:
             raise ValueError(f"Parameter(s) in both params and secret_params: {sorted(overlap)}")

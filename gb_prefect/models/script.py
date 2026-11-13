@@ -5,6 +5,7 @@ the flow run's own Slurm job, and returns a ScriptResult or raises ScriptRunErro
 """
 
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Mapping, Sequence
 
 
@@ -34,6 +35,10 @@ class ScriptRun:
     def __post_init__(self) -> None:
         if not self.argv:
             raise ValueError("argv must name a command to run")
+        # The command runs with cwd=outdir, so a relative outdir would resolve paths built from
+        # it (log, output files in argv) a second time, under itself.
+        if not Path(self.outdir).is_absolute():
+            raise ValueError(f"outdir must be an absolute path: {self.outdir}")
         overlap = set(self.env) & set(self.secret_env)
         if overlap:
             raise ValueError(f"Variable(s) in both env and secret_env: {sorted(overlap)}")
