@@ -214,6 +214,7 @@ def build_assembly_fallback(gca: str):
     return {
         "summary": {
             "gca": row.get("gca"),
+            "scientific_name": row.get("scientific_name"),
             "gb_status": row.get("gb_status"),
             "asm_level": row.get("asm_level"),
             "contig_n50": contig_n50,

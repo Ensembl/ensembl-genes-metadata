@@ -37,6 +37,7 @@ type Reason = {
 type Result = {
   summary: {
     gca: string;
+    scientific_name?: string | null;
     gb_status?: string | null;
     genebuilder?: string | null;
     annotation_source?: string | null;
@@ -141,6 +142,12 @@ export default function ReportSelectorPage() {
             <CardTitle className="text-2xl font-bold">
               {res.summary.gca}
             </CardTitle>
+
+            {res.summary.scientific_name && (
+              <CardDescription className="text-base italic">
+                {res.summary.scientific_name}
+              </CardDescription>
+            )}
 
             <div className="space-y-1">
               <p className="text-lg font-medium">
