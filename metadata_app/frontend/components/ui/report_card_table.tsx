@@ -170,8 +170,7 @@ export function CardsReportTable() {
     <Card className="min-w-0 dark:bg-secondary">
       <CardHeader className="mb-4">
         <CardTitle className="text-xl">Biodiversity projects overview</CardTitle>
-        <CardDescription>Number of annotations per project. Qualified assemblies shows the number of chromosome level, primary, current assemblies with transciptomic data.
-        In progress shows in progress, completed and handed over annotations. This takes a couple of seconds to load.</CardDescription>
+        <CardDescription>Annotation candidates total shows current Complete genome or Chromosome assemblies with contig N50 above 100,000 and at least 2 lowest-taxon paired-end Illumina transcriptomic read sets, regardless of genebuild status. Annotation candidates unannotated shows only those candidates with no genebuild attempt. In progress includes in-progress, complete, and pre-released genebuild statuses. This takes a couple of seconds to load.</CardDescription>
       </CardHeader>
       <CardContent className="mb-4 min-w-0 overflow-x-auto">
         <div className="min-w-[760px] rounded-md">

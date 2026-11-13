@@ -20,7 +20,7 @@ import {DropdownMenu, DropdownMenuContent, DropdownMenuLabel, DropdownMenuItem, 
 import {CladeItem, RepClade} from "@/components/ui/repo_anno_clade";
 import {CladeLiveItem, RepCladeLive} from "@/components/ui/repo_anno_clade_live";
 import {Tooltip, TooltipContent, TooltipTrigger} from "@/components/ui/tooltip";
-import { cleanPayload, parseTaxonIds, splitProjectFilters } from "@/features/shared/filter-utils";
+import { buildScopePayload, cleanPayload } from "@/features/shared/filter-utils";
 import { PROJECT_OPTION_BY_SLUG, PROJECT_OPTIONS } from "@/features/shared/project-options";
 
 
@@ -81,17 +81,12 @@ export default function Page() {
 
     setLoading(true);
     try {
-      const { bioprojectIds, groupNames } = splitProjectFilters(
-        selectedProjects,
-        baseFieldValues["BioProject ID"],
-      );
-      const taxonIdArray = parseTaxonIds(baseFieldValues["Taxon ID"]);
-
-
       const payload = {
-        bioproject_id: bioprojectIds.length > 0 ? bioprojectIds : null,
-        group_name: groupNames.length > 0 ? groupNames : null,
-        taxon_id: taxonIdArray,
+        ...buildScopePayload(
+          selectedProjects,
+          baseFieldValues["BioProject ID"],
+          baseFieldValues["Taxon ID"],
+        ),
         start_date: baseFieldValues["Report start date"] || null,
         end_date: baseFieldValues["Report end date"] || null
       };

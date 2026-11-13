@@ -11,7 +11,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import MultipleSelector, { Option } from "@/components/ui/multi_select";
 import {InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput} from "@/components/ui/input-group";
 import {Tooltip, TooltipContent, TooltipTrigger} from "@/components/ui/tooltip";
-import { cleanPayload, parseTaxonIds, splitCommaSeparated, splitProjectFilters } from "@/features/shared/filter-utils";
+import { buildScopePayload, cleanPayload, splitCommaSeparated } from "@/features/shared/filter-utils";
 import { PROJECT_OPTIONS } from "@/features/shared/project-options";
 
 
@@ -46,18 +46,15 @@ export default function Page() {
     setLoading(true);
 
     try {
-      const { bioprojectIds, groupNames } = splitProjectFilters(
-        selectedProjects,
-        baseFieldValues["BioProject ID"],
-      );
-      const taxonIdArray = parseTaxonIds(baseFieldValues["Taxon ID"]);
       const uniqueGCA = splitCommaSeparated(gcaInput);
 
       const payload = {
-        bioproject_id: bioprojectIds.length > 0 ? bioprojectIds : null,
-        group_name: groupNames.length > 0 ? groupNames : null,
+        ...buildScopePayload(
+          selectedProjects,
+          baseFieldValues["BioProject ID"],
+          baseFieldValues["Taxon ID"],
+        ),
         annotation_date: baseFieldValues["Annotation date"] || null,
-        taxon_id: taxonIdArray,
         gca: uniqueGCA.length > 0 ? uniqueGCA : null,
       };
 

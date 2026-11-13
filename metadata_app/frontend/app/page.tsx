@@ -1,11 +1,9 @@
 "use client";
 import React from "react"
 import {CardsStats} from "@/components/ui/cards_stats"
-import {CardsDataTable} from "@/components/ui/card_projects"
 import {WelcomeCard} from "@/components/ui/card_welcome"
-import {ReportCard} from "@/components/ui/card_action_report";
-import {CardsDataTableGroup} from "@/components/ui/card_groups"
 import {AnnotationGrowthChart} from "@/components/ui/card_annotation_growth"
+import {AnnotationDurationChart} from "@/components/ui/card_annotation_duration"
 
 export default function Page() {
     return (
@@ -15,22 +13,16 @@ export default function Page() {
                     <div className="w-full mb-8">
                         <WelcomeCard></WelcomeCard>
                     </div>
-                    <div className="columns-1 space-y-4 lg:columns-2">
-                        <div className="w-full mb-4 break-inside-avoid">
-                            <CardsDataTable></CardsDataTable>
-                        </div>
+                    <div className="columns-1 space-y-4">
                         <div className="w-full mb-4 break-inside-avoid lg:break-before-column">
                             <CardsStats></CardsStats>
                         </div>
-                        <div className="w-full mb-4 break-inside-avoid">
-                            <CardsDataTableGroup></CardsDataTableGroup>
+                        <div className="w-full mb-8">
+                            <AnnotationDurationChart/>
                         </div>
-                        <div className="w-full mb-4 break-inside-avoid">
-                            <ReportCard></ReportCard>
+                        <div className="w-full mb-8">
+                            <AnnotationGrowthChart/>
                         </div>
-                    </div>
-                    <div className="w-full mb-8">
-                        <AnnotationGrowthChart/>
                     </div>
                 </div>
             </div>

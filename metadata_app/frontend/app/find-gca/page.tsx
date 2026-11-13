@@ -37,6 +37,7 @@ type Reason = {
 type Result = {
   summary: {
     gca: string;
+    scientific_name?: string | null;
     gb_status?: string | null;
     genebuilder?: string | null;
     annotation_source?: string | null;
@@ -58,6 +59,13 @@ type Result = {
   timeline: TimelineEvent[];
 };
 
+type LookupResponse =
+  | Result[]
+  | {
+      results: Result[];
+      not_found?: string[];
+    };
+
 const TIMELINE_STEP_COUNT = 4;
 
 export default function ReportSelectorPage() {
@@ -65,10 +73,12 @@ export default function ReportSelectorPage() {
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<Result[]>([]);
   const [error, setError] = useState("");
+  const [notFound, setNotFound] = useState<string[]>([]);
 
   const handleSearch = async () => {
     setLoading(true);
     setError("");
+    setNotFound([]);
 
     try {
       const gcaArray = gca
@@ -93,9 +103,19 @@ export default function ReportSelectorPage() {
         throw new Error();
       }
 
-      const data = await response.json();
+      const data: LookupResponse = await response.json();
+      const nextResults = Array.isArray(data) ? data : data.results ?? [];
+      const foundGcas = new Set(
+        nextResults.map((result) => result.summary.gca.toUpperCase()),
+      );
+      const reportedNotFound = Array.isArray(data) ? [] : data.not_found ?? [];
 
-      setResults(Array.isArray(data) ? data : [data]);
+      setResults(nextResults);
+      setNotFound(
+        reportedNotFound.length > 0
+          ? reportedNotFound
+          : gcaArray.filter((accession) => !foundGcas.has(accession.toUpperCase())),
+      );
     } catch {
       setError("Unable to retrieve annotation status.");
     } finally {
@@ -132,6 +152,17 @@ export default function ReportSelectorPage() {
         <p className="text-destructive">{error}</p>
       )}
 
+      {notFound.length > 0 && (
+        <div className="text-destructive">
+          <p>Assembly is not found in the registry:</p>
+          <ul className="list-disc pl-6">
+            {notFound.map((accession) => (
+              <li key={accession}>{accession}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       {results.map((res) => (
         <Card
           key={res.summary.gca}
@@ -141,6 +172,12 @@ export default function ReportSelectorPage() {
             <CardTitle className="text-2xl font-bold">
               {res.summary.gca}
             </CardTitle>
+
+            {res.summary.scientific_name && (
+              <CardDescription className="text-base italic">
+                {res.summary.scientific_name}
+              </CardDescription>
+            )}
 
             <div className="space-y-1">
               <p className="text-lg font-medium">

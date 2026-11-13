@@ -101,6 +101,7 @@ type HandoverReadyApiItem = {
   gca: string | null;
   scientific_name: string | null;
   bioproject_name?: string | null;
+  pipeline?: string | null;
   date_status_update?: string | null;
   core_name?: string | null;
 };
@@ -313,8 +314,7 @@ export default function Page() {
         .map((item, index) => ({
           ...item,
           id: `${item.gca ?? "handover"}-${item.core_name ?? index}-${index}`,
-        }))
-        .filter((item) => item.core_name),
+        })),
     [handoverReadyItems],
   );
   const allHandoverRowsSelected =
@@ -641,13 +641,13 @@ export default function Page() {
               <CardAction>
                 <CopyButton
                   text={selectedHandoverCoreNames}
-                  disabled={!selectedHandoverIds.length}
+                  disabled={!selectedHandoverCoreNames}
                   defaultLabel="Copy core names"
                 />
               </CardAction>
             </CardHeader>
             <CardContent className="min-w-0 overflow-x-auto">
-              <Table className="min-w-[760px]">
+              <Table className="min-w-[860px]">
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-10">
@@ -659,6 +659,7 @@ export default function Page() {
                     </TableHead>
                     <TableHead>Annotation</TableHead>
                     <TableHead>BioProject</TableHead>
+                    <TableHead>Pipeline</TableHead>
                     <TableHead>Last update</TableHead>
                     <TableHead>Core name</TableHead>
                   </TableRow>
@@ -685,6 +686,9 @@ export default function Page() {
                           {stringValue(item.bioproject_name)}
                         </TableCell>
                         <TableCell className="whitespace-nowrap text-muted-foreground">
+                          {stringValue(item.pipeline)}
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap text-muted-foreground">
                           {item.date_status_update ?? "Unknown"}
                         </TableCell>
                         <TableCell className="max-w-[320px] break-all text-muted-foreground">
@@ -694,7 +698,7 @@ export default function Page() {
                     ))
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={5} className="h-20 text-center text-muted-foreground">
+                      <TableCell colSpan={6} className="h-20 text-center text-muted-foreground">
                         No handover-ready annotations.
                       </TableCell>
                     </TableRow>

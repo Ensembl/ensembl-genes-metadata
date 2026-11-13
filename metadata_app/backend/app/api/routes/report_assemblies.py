@@ -22,7 +22,16 @@ def filter_assemblies(filters: ReportFilterRequest):
         candidate=filters.candidate,
         transc=filters.transc,
         transc_ena=filters.transc_ena,
-        non_annotated=(filters.non_annotated if filters.non_annotated is not None else True),
+        non_annotated=(filters.non_annotated if filters.non_annotated is not None else False),
+        current=(filters.current if filters.current is not None else False),
+        include_reassessment=(
+            filters.include_reassessment if filters.include_reassessment is not None else False
+        ),
+        metric_thresholds=filters.metric_thresholds,
+        asm_level=filters.asm_level,
+        asm_type=filters.asm_type,
+        pipeline=filters.pipeline,
+        gca=filters.gca,
     )
 
     if isinstance(result[0], str):  # Error string

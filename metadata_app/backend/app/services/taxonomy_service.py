@@ -8,6 +8,7 @@ import requests
 
 BACKEND_ROOT = Path(__file__).resolve().parents[2]
 CLADE_DATA_FILE = BACKEND_ROOT / "data" / "clade_settings.json"
+NCBI_REQUEST_TIMEOUT_SECONDS = 30
 
 
 def load_clade_data():
@@ -102,7 +103,15 @@ def get_descendant_taxa(taxon_id):
     taxon_ids = set()
 
     while True:
-        response = requests.get(base_url, params=params)
+        try:
+            response = requests.get(
+                base_url,
+                params=params,
+                timeout=NCBI_REQUEST_TIMEOUT_SECONDS,
+            )
+        except requests.RequestException as exc:
+            logging.error("Error retrieving taxonomic data from NCBI: %s", exc)
+            break
         if response.status_code != 200:
             logging.error(
                 "Error retrieving taxonomic data from NCBI. HTTP %s.",

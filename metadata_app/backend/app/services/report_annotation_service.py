@@ -2,7 +2,6 @@ import pandas as pd
 import logging
 from metadata_app.backend.app.services.annotations_service import generate_tables
 from metadata_app.backend.app.services.taxonomy_service import (
-    get_descendant_taxa,
     assign_clade_and_species,
     load_clade_data,
 )
