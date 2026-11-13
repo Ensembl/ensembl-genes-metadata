@@ -51,7 +51,7 @@ from tenacity import (  # type: ignore
     wait_exponential,
 )
 
-from gb_metadata.db_utils import execute_query, execute_write
+from gb_metadata.db_utils import QueryParams, execute_query, execute_write
 from gb_metadata.utils import connection_api
 
 TRANSCRIPTOMICS_URI = "http://genebuild-metadata.ebi.ac.uk:8000/api/transcriptomics/ena-cache"
@@ -96,13 +96,13 @@ def _db_retry(codes: frozenset) -> Any:
 
 
 @_db_retry(RETRYABLE_READ_ERRORS)
-def _query(query: str, db_params: Dict[str, Any]) -> Tuple[Tuple[Any, ...], ...]:
-    return execute_query(query, _with_lock_timeout(db_params))
+def _query(query: str, db_params: Dict[str, Any], params: QueryParams = None) -> Tuple[Tuple[Any, ...], ...]:
+    return execute_query(query, _with_lock_timeout(db_params), params)
 
 
 @_db_retry(RETRYABLE_WRITE_ERRORS)
-def _write(query: str, db_params: Dict[str, Any]) -> int:
-    return execute_write(query, _with_lock_timeout(db_params))
+def _write(query: str, db_params: Dict[str, Any], params: QueryParams = None) -> int:
+    return execute_write(query, _with_lock_timeout(db_params), params)
 
 
 def _with_lock_timeout(db_params: Dict[str, Any]) -> Dict[str, Any]:
@@ -256,24 +256,29 @@ def set_busco_status(
     This is a real UPDATE on the existing status row -- unlike insert_busco_event's
     ON DUPLICATE KEY UPDATE assembly_id = assembly_id (a no-op), which would not actually
     change an existing status value.
+
+    gca, status and the only_if values are bound as query parameters, never formatted into
+    the SQL: a gca from a CSV or list can't change which rows are updated.
     """
+    params: List[Any] = [status, gca, STATUS_EVENT]
     guard = ""
     if only_if:
-        guard = "AND ae.status IN (" + ", ".join(f"'{value}'" for value in only_if) + ")"
+        guard = "AND ae.status IN (" + ", ".join(["%s"] * len(only_if)) + ")"
+        params += list(only_if)
     query = f"""
     UPDATE assembly_events ae
     JOIN assembly asm ON asm.assembly_id = ae.assembly_id
-    SET ae.status = '{status}'
-    WHERE CONCAT(asm.gca_chain, '.', asm.gca_version) = '{gca}'
-    AND ae.event = '{STATUS_EVENT}'
+    SET ae.status = %s
+    WHERE CONCAT(asm.gca_chain, '.', asm.gca_version) = %s
+    AND ae.event = %s
     {guard};
     """
 
     if not execute:
-        logging.info("Execution skipped for %s:\n%s", gca, query)
+        logging.info("Execution skipped for %s:\n%s\nparams: %s", gca, query, params)
         return 0
 
-    return _write(query, db_params)
+    return _write(query, db_params, params)
 
 
 def claim_busco(gca: str, from_statuses: Sequence[str], db_params: Dict[str, Any]) -> bool:
@@ -297,11 +302,11 @@ def mark_busco_failed(gca: str, db_params: Dict[str, Any], execute: bool) -> Non
 
 def get_taxon_id(gca: str, db_params: Dict[str, Any]) -> Optional[int]:
     """Return the lowest_taxon_id for gca, or None if it's not in the metadata DB."""
-    query = f"""
+    query = """
     SELECT lowest_taxon_id FROM assembly
-    WHERE CONCAT(gca_chain, '.', gca_version) = '{gca}';
+    WHERE CONCAT(gca_chain, '.', gca_version) = %s;
     """
-    rows = _query(query, db_params)
+    rows = _query(query, db_params, [gca])
     if not rows:
         return None
     return rows[0][0]
@@ -309,14 +314,14 @@ def get_taxon_id(gca: str, db_params: Dict[str, Any]) -> Optional[int]:
 
 def get_busco_status(gca: str, db_params: Dict[str, Any]) -> Optional[str]:
     """Return the current genome_busco.status for gca, or None if it has no event yet."""
-    query = f"""
+    query = """
     SELECT ae.status
     FROM assembly asm
     JOIN assembly_events ae ON ae.assembly_id = asm.assembly_id
-    WHERE CONCAT(asm.gca_chain, '.', asm.gca_version) = '{gca}'
-    AND ae.event = '{STATUS_EVENT}';
+    WHERE CONCAT(asm.gca_chain, '.', asm.gca_version) = %s
+    AND ae.event = %s;
     """
-    rows = _query(query, db_params)
+    rows = _query(query, db_params, [gca, STATUS_EVENT])
     if not rows:
         return None
     return rows[0][0]

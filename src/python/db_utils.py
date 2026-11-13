@@ -21,26 +21,33 @@ pipeline scripts.
 
 import logging
 
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, Optional, Sequence, Tuple
 
 import pymysql  # type: ignore
 
+# Values bound to a query's %s placeholders by the driver (quoted and escaped), never formatted
+# into the SQL text. Without params, the query is sent as it is: a literal % needs no escaping.
+QueryParams = Optional[Sequence[Any]]
 
-def execute_query(query: str, db_params: Dict[str, Any]) -> Tuple[Tuple[Any, ...], ...]:
-    """Run a query and return every row."""
-    logging.info("QUERY: %s", query)
+
+def execute_query(
+    query: str, db_params: Dict[str, Any], params: QueryParams = None
+) -> Tuple[Tuple[Any, ...], ...]:
+    """Run a query and return every row. params: values for the query's %s placeholders."""
+    logging.info("QUERY: %s PARAMS: %s", query, params)
     with pymysql.connect(**db_params) as conn:
         with conn.cursor() as cursor:
-            cursor.execute(query)
+            cursor.execute(query, params)
             return cursor.fetchall()
 
 
-def execute_write(query: str, db_params: Dict[str, Any]) -> int:
-    """Execute an INSERT/UPDATE/DELETE and commit. Returns the number of affected rows."""
-    logging.info("QUERY: %s", query)
+def execute_write(query: str, db_params: Dict[str, Any], params: QueryParams = None) -> int:
+    """Execute an INSERT/UPDATE/DELETE and commit. Returns the number of affected rows.
+    params: values for the query's %s placeholders."""
+    logging.info("QUERY: %s PARAMS: %s", query, params)
     with pymysql.connect(**db_params) as conn:
         with conn.cursor() as cursor:
-            affected = cursor.execute(query)
+            affected = cursor.execute(query, params)
         conn.commit()
         return affected
 
