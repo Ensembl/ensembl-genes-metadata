@@ -32,6 +32,9 @@ def busco_dispatch_automatic_flow(  # pylint: disable=too-many-arguments,too-man
     So, both busco metakeys and busco event status are updated in the registry.
     Each triggered run also gets post_run_cleanup=True: a failed run sets genome_busco.status
     to failed and keeps only its logs; a successful run's directory is removed.
+
+    credentials and metadata_secret_block are both passed on to the triggered runs, so they
+    write to the same DB as the dispatcher.
     """
     file_handler = logging.FileHandler("busco_dispatch_automatic.log", mode="w")
     file_handler.setFormatter(logging.Formatter("%(asctime)s:%(levelname)s:%(message)s"))
@@ -39,8 +42,9 @@ def busco_dispatch_automatic_flow(  # pylint: disable=too-many-arguments,too-man
     root_logger.addHandler(file_handler)
     root_logger.setLevel(logging.INFO)
 
-    credentials = resolve_credentials(credentials, metadata_secret_block=metadata_secret_block)
-    db_params = credentials.metadata_db_params
+    db_params = resolve_credentials(
+        credentials, metadata_secret_block=metadata_secret_block
+    ).metadata_db_params
 
     print("Refreshing assembly_events before dispatching...")
     mark_existing_busco_done(db_params, execute=not dry_run)
@@ -67,4 +71,6 @@ def busco_dispatch_automatic_flow(  # pylint: disable=too-many-arguments,too-man
         deployment_name=deployment_name,
         update_registry=True,
         post_run_cleanup=True,
+        metadata_secret_block=metadata_secret_block,
+        credentials=credentials,
     )

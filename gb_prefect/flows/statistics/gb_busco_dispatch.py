@@ -45,7 +45,10 @@ def busco_dispatch_flow(  # pylint: disable=too-many-arguments,too-many-position
     metadata_secret_block Prefect Secret block instead (same resolve_credentials() helper
     gb_registry_update_by_date_flow uses), so credentials never appear as a visible
     deployment parameter. Pass credentials explicitly to override, e.g. for local standalone
-    testing without a Prefect server/Secret block available.
+    testing without a Prefect server/Secret block available, or to work on another database.
+    credentials and metadata_secret_block are both passed on to the triggered runs, so they
+    write to the same DB as the dispatcher. Explicit credentials are then stored as a visible
+    parameter of each triggered run.
 
     This is scenario 1 of the orchestrator (explicit CSV input). The shared trigger logic
     (status check, skip/force, run_deployment) lives in gb_prefect.tasks.busco_dispatch.
@@ -64,8 +67,9 @@ def busco_dispatch_flow(  # pylint: disable=too-many-arguments,too-many-position
     root_logger.addHandler(file_handler)
     root_logger.setLevel(logging.INFO)
 
-    credentials = resolve_credentials(credentials, metadata_secret_block=metadata_secret_block)
-    db_params = credentials.metadata_db_params
+    db_params = resolve_credentials(
+        credentials, metadata_secret_block=metadata_secret_block
+    ).metadata_db_params
 
     print("Refreshing assembly_events before dispatching...")
     mark_existing_busco_done(db_params, execute=not dry_run)
@@ -74,4 +78,14 @@ def busco_dispatch_flow(  # pylint: disable=too-many-arguments,too-many-position
     rows = read_gca_csv(csv_file)
     print(f"Read {len(rows)} GCA(s) from {csv_file}")
 
-    return dispatch_rows(rows, db_params, force, dry_run, deployment_name, update_registry, post_run_cleanup)
+    return dispatch_rows(
+        rows,
+        db_params,
+        force,
+        dry_run,
+        deployment_name,
+        update_registry,
+        post_run_cleanup,
+        metadata_secret_block=metadata_secret_block,
+        credentials=credentials,
+    )

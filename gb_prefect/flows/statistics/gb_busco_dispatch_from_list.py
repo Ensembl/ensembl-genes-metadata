@@ -45,7 +45,9 @@ def busco_dispatch_from_list_flow(  # pylint: disable=too-many-arguments,too-man
     force=True. The shared trigger logic lives in gb_prefect.tasks.busco_dispatch.dispatch_rows.
 
     credentials is optional: when omitted (the normal case for a deployment trigger), DB
-    connection params are loaded from the metadata_secret_block Prefect Secret block instead.
+    connection params are loaded from the metadata_secret_block Prefect Secret block instead,
+    credentials and metadata_secret_block are both passed on to the triggered runs, so they
+    write to the same DB (see busco_dispatch_flow).
     """
     file_handler = logging.FileHandler("busco_dispatch_from_list.log", mode="w")
     file_handler.setFormatter(logging.Formatter("%(asctime)s:%(levelname)s:%(message)s"))
@@ -53,8 +55,9 @@ def busco_dispatch_from_list_flow(  # pylint: disable=too-many-arguments,too-man
     root_logger.addHandler(file_handler)
     root_logger.setLevel(logging.INFO)
 
-    credentials = resolve_credentials(credentials, metadata_secret_block=metadata_secret_block)
-    db_params = credentials.metadata_db_params
+    db_params = resolve_credentials(
+        credentials, metadata_secret_block=metadata_secret_block
+    ).metadata_db_params
 
     print("Refreshing assembly_events before dispatching...")
     mark_existing_busco_done(db_params, execute=not dry_run)
@@ -78,7 +81,15 @@ def busco_dispatch_from_list_flow(  # pylint: disable=too-many-arguments,too-man
         rows.append({"gca": gca, "taxon_id": str(taxon_id), "busco_dataset": ""})
 
     result = dispatch_rows(
-        rows, db_params, force, dry_run, deployment_name, update_registry, post_run_cleanup
+        rows,
+        db_params,
+        force,
+        dry_run,
+        deployment_name,
+        update_registry,
+        post_run_cleanup,
+        metadata_secret_block=metadata_secret_block,
+        credentials=credentials,
     )
     result["not_found"] = not_found
     return result

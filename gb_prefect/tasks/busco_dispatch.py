@@ -1,4 +1,4 @@
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from prefect import task  # type: ignore
 from prefect.client.orchestration import get_client  # type: ignore
@@ -14,6 +14,7 @@ from prefect.deployments import run_deployment  # type: ignore
 from prefect.runtime import flow_run  # type: ignore
 
 from gb_metadata.update_busco_events import claim_busco, get_busco_status, release_busco_claim
+from gb_prefect.utils.credentials_utils import PipelineCredentials
 
 
 @task(log_prints=True)
@@ -57,7 +58,7 @@ def get_free_slots(deployment_name: str) -> int:
 
 
 @task(log_prints=True)
-def dispatch_rows(
+def dispatch_rows(  # pylint: disable=too-many-arguments,too-many-positional-arguments
     rows: List[Dict[str, str]],
     db_params: Dict[str, Any],
     force: bool,
@@ -65,6 +66,8 @@ def dispatch_rows(
     deployment_name: str,
     update_registry: bool = False,
     post_run_cleanup: bool = False,
+    metadata_secret_block: Optional[str] = None,
+    credentials: Optional[PipelineCredentials] = None,
 ) -> Dict[str, List[str]]:
     """Trigger deployment_name for each row {gca, taxon_id, busco_dataset} not already done.
 
@@ -85,6 +88,11 @@ def dispatch_rows(
     post_run_cleanup is passed on to each triggered run (see busco_gca_flow), to mark
     failures and clean run directories afterwards: always on in the automatic dispatcher,
     optional (default off) in the CSV / GCA-list ones.
+
+    metadata_secret_block and credentials (the dispatcher's own, as given: None unless
+    explicit) are passed on to each triggered run, so its registry writes go to the same
+    database db_params points at. Explicit credentials take precedence in the run, as in the
+    dispatcher. Note they are then stored as a visible parameter of each triggered run.
     """
     triggered: List[str] = []
     skipped: List[str] = []
@@ -131,6 +139,8 @@ def dispatch_rows(
                     "busco_dataset": row.get("busco_dataset") or None,
                     "update_registry": update_registry,
                     "post_run_cleanup": post_run_cleanup,
+                    "metadata_secret_block": metadata_secret_block,
+                    "credentials": credentials,
                 },
                 timeout=0,
                 idempotency_key=f"{flow_run.id}-{gca}",
