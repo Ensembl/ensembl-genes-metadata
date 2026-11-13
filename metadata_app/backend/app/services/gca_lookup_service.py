@@ -233,6 +233,7 @@ def build_assembly_fallback(gca: str):
 
 def get_gca_info(gcas: list[str]):
     results = []
+    not_found = []
 
     for gca in gcas:
         try:
@@ -247,6 +248,8 @@ def get_gca_info(gcas: list[str]):
             fallback = build_assembly_fallback(gca)
             if fallback:
                 results.append(fallback)
+            else:
+                not_found.append(gca)
             continue
 
         result = anno_wide.loc[anno_wide["gca"] == gca]
@@ -255,6 +258,8 @@ def get_gca_info(gcas: list[str]):
             fallback = build_assembly_fallback(gca)
             if fallback:
                 results.append(fallback)
+            else:
+                not_found.append(gca)
             continue
 
         row = result.iloc[0]
@@ -277,4 +282,4 @@ def get_gca_info(gcas: list[str]):
             }
         )
 
-    return results
+    return {"results": results, "not_found": not_found}
