@@ -123,7 +123,8 @@ def dispatch_rows(  # pylint: disable=too-many-arguments,too-many-positional-arg
     -- only how `rows` gets built differs between them; this is the part that actually
     decides what runs.
 
-    update_registry=False (the default here) just triggers the run, with no DB write. When
+    update_registry=False (the default here) just triggers the run: this task writes nothing
+    to the DB (the calling dispatcher's assembly_events refresh is separate). When
     True, the GCA is first *claimed* -- genome_busco.status set to in_progress only if it
     still has the status read a moment before (claim_busco) -- and only then triggered. A
     failed trigger is retried with the same idempotency key (_trigger_run); if it still fails,

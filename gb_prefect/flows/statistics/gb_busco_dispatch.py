@@ -33,7 +33,9 @@ def busco_dispatch_flow(  # pylint: disable=too-many-arguments,too-many-position
     only if unchanged since it was read) before triggering it, and passes update_registry on
     to each triggered run so the Nextflow pipeline's --update_registry loads the results and
     marks it done on completion (gb_prefect.tasks.busco_dispatch.dispatch_rows). False just
-    triggers, with no registry writes.
+    triggers: no claim, and no BUSCO status or results are written for the dispatched GCAs.
+    The assembly_events refresh above still runs either way (unless dry_run): it only adds
+    rows for assemblies that have none yet, and keeps the done/in_progress skip accurate.
 
     post_run_cleanup=False (the default) leaves each run's directory as is. True is passed on
     to each triggered run: on success its <outdir>/<gca> is removed; on failure the GCA is

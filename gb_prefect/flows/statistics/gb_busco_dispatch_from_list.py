@@ -32,7 +32,8 @@ def busco_dispatch_from_list_flow(  # pylint: disable=too-many-arguments,too-man
     accession per line); values from both are combined and de-duplicated.
 
     update_registry=True (the default) claims each GCA (status -> in_progress) before
-    triggering it and loads results on completion; False just triggers. See
+    triggering it and loads results on completion; False just triggers, with no BUSCO status
+    or results written -- the assembly_events refresh still runs (unless dry_run). See
     busco_dispatch_flow for details.
 
     post_run_cleanup=False (the default) leaves each run's directory as is; True marks
