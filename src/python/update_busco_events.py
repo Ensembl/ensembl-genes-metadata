@@ -204,13 +204,20 @@ def fetch_transcriptomics_cache() -> Dict[str, Any]:
 
 
 def insert_busco_candidates(db_params: Dict[str, Any], execute: bool) -> Dict[str, int]:
-    """Classify and mark newly-eligible assemblies as pending, with a priority tier."""
+    """Classify and mark newly-eligible assemblies as pending, with a priority tier.
+
+    With no new candidates, returns at once without fetching the transcriptomics cache: an
+    unavailable metadata app must not stop the dispatchers from running pending GCAs.
+    """
+    tier_counts = {"large_genome": 0, "high": 0, "medium": 0, "low": 0}
+
     rows = _query(CANDIDATE_ASSEMBLIES_QUERY, db_params)
     logging.info("Total candidate assemblies fetched: %s", len(rows))
+    if not rows:
+        return tier_counts
 
     transcriptomics_cache = fetch_transcriptomics_cache()
 
-    tier_counts = {"large_genome": 0, "high": 0, "medium": 0, "low": 0}
     for assembly_id, gca, taxon_id, genus_taxon_id, genome_size in rows:
         num_reads = (
             transcriptomics_cache.get(f"{taxon_id}:True", {})
