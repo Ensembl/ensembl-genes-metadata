@@ -1,5 +1,6 @@
 from metadata_app.backend.app.services.annotations_service import generate_tables
 from metadata_app.backend.app.services.assembly_service import get_filtered_assemblies
+from metadata_app.backend.app.services.assembly_service import get_live_annotation_counts_by_species
 from fastapi import HTTPException
 
 
@@ -215,6 +216,7 @@ def build_assembly_fallback(gca: str):
         "summary": {
             "gca": row.get("gca"),
             "scientific_name": row.get("scientific_name"),
+            "live_annotation_count_species": row.get("live_annotation_count_species", 0),
             "gb_status": row.get("gb_status"),
             "asm_level": row.get("asm_level"),
             "contig_n50": contig_n50,
@@ -265,10 +267,23 @@ def get_gca_info(gcas: list[str]):
         row = result.iloc[0]
 
         status = str(row["gb_status"]).lower()
+        species_taxon_id = row.get("species_taxon_id")
+        try:
+            species_taxon_id = int(species_taxon_id)
+        except (TypeError, ValueError):
+            species_taxon_id = None
+
+        live_annotation_count = (
+            get_live_annotation_counts_by_species([species_taxon_id]).get(species_taxon_id, 0)
+            if species_taxon_id is not None
+            else 0
+        )
+        summary = row.to_dict()
+        summary["live_annotation_count_species"] = live_annotation_count
 
         results.append(
             {
-                "summary": row.to_dict(),
+                "summary": summary,
                 "status": STATUS_INFO.get(
                     status,
                     {

@@ -1,8 +1,8 @@
 "use client";
 
-import React, {useMemo, useState} from "react";
+import React, {useEffect, useMemo, useRef, useState} from "react";
 import {type ColumnDef, type RowSelectionState} from "@tanstack/react-table";
-import {DownloadIcon, InfoIcon, Loader2, Sparkles, Terminal, XCircle} from "lucide-react";
+import {DownloadIcon, InfoIcon, Loader2, Sparkles, Terminal, UploadIcon, XCircle} from "lucide-react";
 import {Input} from "@/components/ui/input";
 import {Label} from "@/components/ui/label";
 import {Button} from "@/components/ui/button";
@@ -18,10 +18,19 @@ import {DataTable} from "@/components/tables/data-table";
 import {cn} from "@/lib/utils";
 import {Tooltip, TooltipContent, TooltipTrigger} from "@/components/ui/tooltip";
 import {Alert, AlertDescription, AlertTitle} from "@/components/ui/alert";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
 import {InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput} from "@/components/ui/input-group";
 import {buildScopePayload, cleanPayload, splitCommaSeparated} from "@/features/shared/filter-utils";
 import {PROJECT_OPTIONS} from "@/features/shared/project-options";
 
+const ENA_CACHE_DIALOG_KEY = "assemblies-ena-cache-dialog-dismissed";
 
 export default function Page() {
     const baseFields = [
@@ -43,6 +52,8 @@ export default function Page() {
     const [checkTranscript, setCheckTranscript] = useState(false);
     const [checkCurrent, setCheckCurrent] = useState(false);
     const [gcaInput, setGcaInput] = useState<string>("");
+    const [gcaFileError, setGcaFileError] = useState<string | null>(null);
+    const gcaFileInputRef = useRef<HTMLInputElement>(null);
     const [downloadables, setDownloadables] = useState<{
         gca_list: string;
         df_wide: string
@@ -52,8 +63,43 @@ export default function Page() {
     const [filterShortReadPresent, setFilterShortReadPresent] = useState(true);
     const [filterLongReadPresent, setFilterLongReadPresent] = useState(false);
     const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
+    const [isEnaCacheDialogOpen, setIsEnaCacheDialogOpen] = useState(false);
+
+    useEffect(() => {
+        if (window.localStorage.getItem(ENA_CACHE_DIALOG_KEY) !== "true") {
+            setIsEnaCacheDialogOpen(true);
+        }
+    }, []);
+
+    const dismissEnaCacheDialog = () => {
+        window.localStorage.setItem(ENA_CACHE_DIALOG_KEY, "true");
+        setIsEnaCacheDialogOpen(false);
+    };
 
     const isNumeric = (value: string) => /^\d+(\.\d+)?$/.test(value);
+
+    const handleGcaFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        event.target.value = "";
+
+        if (!file) {
+            return;
+        }
+
+        const tokens = (await file.text()).split(/[\s,]+/).filter(Boolean);
+        const validGcas = tokens.filter((token) => /^GCA_\d+\.\d+$/i.test(token));
+        const invalidTokens = tokens.filter((token) => !/^GCA_\d+\.\d+$/i.test(token));
+
+        if (invalidTokens.length > 0) {
+            setGcaFileError(`Could not parse GCA accession(s): ${invalidTokens.join(", ")}`);
+            return;
+        }
+
+        setGcaFileError(null);
+        setGcaInput((current) =>
+            Array.from(new Set([...splitCommaSeparated(current), ...validGcas])).join(", "),
+        );
+    };
 
     const handleToggleChange = (metric: string, values: string[]) => {
         setToggleStates((prev) => ({...prev, [metric]: values}));
@@ -271,6 +317,34 @@ export default function Page() {
 
     return (
         <div className="min-h-screen flex justify-center px-4 py-10 sm:px-6 lg:px-8">
+            <Dialog open={isEnaCacheDialogOpen} onOpenChange={(open) => {
+                if (!open) {
+                    dismissEnaCacheDialog();
+                }
+            }}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>How ENA transcriptomic checks work</DialogTitle>
+                        <DialogDescription>
+                            The Check ENA option uses a local cache of transcriptomic data rather than
+                            querying ENA every time you search.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-3 text-sm">
+                        <p>
+                            The cache is updated every three months, so recent ENA submissions may not
+                            appear immediately.
+                        </p>
+                        <p>
+                            If your work depends on the latest data, or you need to confirm a result,
+                            check ENA or the transcriptomic registry manually.
+                        </p>
+                    </div>
+                    <DialogFooter>
+                        <Button onClick={dismissEnaCacheDialog}>Got it</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
             <div className="w-full max-w-6xl">
                 <div className="rounded-2xl border-accent shadow-lg">
                     {/* Filter Section */}
@@ -295,6 +369,13 @@ export default function Page() {
                                         placeholder="GCA_12345333.1, GCA_23456782.2"
                                         value={gcaInput}
                                         onChange={(e) => setGcaInput(e.target.value)}/>
+                                    <InputGroupButton
+                                        variant="ghost"
+                                        aria-label="Upload GCA text file"
+                                        onClick={() => gcaFileInputRef.current?.click()}
+                                    >
+                                        <UploadIcon/>
+                                    </InputGroupButton>
                                     <InputGroupAddon align="inline-end">
                                         <Tooltip>
                                             <TooltipTrigger asChild>
@@ -312,6 +393,16 @@ export default function Page() {
                                         </Tooltip>
                                     </InputGroupAddon>
                                 </InputGroup>
+                                <input
+                                    ref={gcaFileInputRef}
+                                    type="file"
+                                    accept=".txt,text/plain"
+                                    className="hidden"
+                                    onChange={handleGcaFileUpload}
+                                />
+                                {gcaFileError && (
+                                    <p className="mt-2 text-sm text-destructive">{gcaFileError}</p>
+                                )}
 
                             </div>
                         </div>

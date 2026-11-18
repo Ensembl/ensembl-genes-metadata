@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
-import {InfoIcon, Loader2, Terminal} from "lucide-react";
+import React, { useRef, useState } from "react";
+import {InfoIcon, Loader2, Terminal, UploadIcon} from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -39,6 +39,45 @@ export default function Page() {
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [gcaInput, setGcaInput] = useState<string>("");
+  const [gcaFileError, setGcaFileError] = useState<string | null>(null);
+  const gcaFileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleGcaFileUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+
+    if (!file) {
+      return;
+    }
+
+    const tokens = (await file.text()).split(/[\s,]+/).filter(Boolean);
+    const validGcas = tokens.filter((token) => /^GCA_\d+\.\d+$/i.test(token));
+    const invalidTokens = tokens.filter(
+      (token) => !/^GCA_\d+\.\d+$/i.test(token),
+    );
+
+    if (invalidTokens.length > 0) {
+      setGcaFileError(
+        `Could not parse GCA accession(s): ${invalidTokens.join(", ")}`,
+      );
+      return;
+    }
+
+    setGcaFileError(null);
+    setGcaInput((current) =>
+      Array.from(
+        new Set([
+          ...current
+            .split(",")
+            .map((value) => value.trim())
+            .filter(Boolean),
+          ...validGcas,
+        ]),
+      ).join(", "),
+    );
+  };
 
   const handleGetAnnotations = async (): Promise<void> => {
     setErrorMessage(null);
@@ -147,6 +186,13 @@ export default function Page() {
                     placeholder="GCA_12345333.1, GCA_23456782.2"
                     value={gcaInput}
                     onChange={(e) => setGcaInput(e.target.value)}/>
+                <InputGroupButton
+                  variant="ghost"
+                  aria-label="Upload GCA text file"
+                  onClick={() => gcaFileInputRef.current?.click()}
+                >
+                  <UploadIcon />
+                </InputGroupButton>
                 <InputGroupAddon align="inline-end">
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -164,6 +210,16 @@ export default function Page() {
                 </Tooltip>
               </InputGroupAddon>
             </InputGroup>
+            <input
+              ref={gcaFileInputRef}
+              type="file"
+              accept=".txt,text/plain"
+              className="hidden"
+              onChange={handleGcaFileUpload}
+            />
+            {gcaFileError && (
+              <p className="mt-2 text-sm text-destructive">{gcaFileError}</p>
+            )}
 
               </div>
               </div>

@@ -98,6 +98,20 @@ const changelogs = [
             "Added clear validation for unknown assembly metrics",
         ],
     },
+    {
+        version: "2.3.0",
+        date: "2026-11-18",
+        title: "GCA lookup and assembly workflow improvements",
+        description:
+            "This update improves GCA lookup context, makes accession input easier, and clarifies assembly annotation status.",
+        features: [
+            "Added TXT upload for GCA accessions on the Assemblies, Find GCA, and Annotations pages",
+            "Added species names and the number of distinct live annotations for GCA lookup results",
+            "Added clear reporting for GCA accessions not found in the registry while preserving valid results",
+            "Added Older, Newer, and No labels for live annotations on other GCA versions",
+            "Added a first-visit explanation of the ENA transcriptomic cache and its three-month update cycle",
+        ],
+    },
 
 ].reverse();
 

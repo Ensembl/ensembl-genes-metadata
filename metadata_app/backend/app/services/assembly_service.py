@@ -26,6 +26,26 @@ from metadata_app.backend.app.services.filter_scope_service import (
 )
 
 
+def _classify_live_version(gca: str, live_accessions: list[str]) -> str:
+    try:
+        current_version = int(gca.rsplit(".", 1)[1])
+    except (IndexError, ValueError):
+        return "no"
+
+    live_versions = set()
+    for accession in live_accessions:
+        try:
+            live_versions.add(int(accession.rsplit(".", 1)[1]))
+        except (IndexError, ValueError):
+            continue
+
+    if any(version > current_version for version in live_versions):
+        return "newer"
+    if any(version < current_version for version in live_versions):
+        return "older"
+    return "no"
+
+
 def check_other_version_live(gca: str) -> str:
     """
     Check whether any version of the given GCA accession is live.
@@ -33,9 +53,8 @@ def check_other_version_live(gca: str) -> str:
     Example:
         Input: full gca string expl: GCA_123456789.1
         Checks: gca string without version expl: GCA_123456789.%
-        Returns:
-            "yes" if any version is live
-            "no" otherwise
+    Returns:
+            "older", "newer", or "no" depending on live versions.
     """
     try:
         with get_db_connection("meta") as conn:
@@ -46,23 +65,23 @@ def check_other_version_live(gca: str) -> str:
             gca_base = gca.rsplit(".", 1)[0]
 
             query = """
-                    SELECT 1
+                    SELECT gca_accession
                     FROM genebuild_status
                     WHERE SUBSTRING_INDEX(gca_accession, '.', 1) = %s
                       AND gb_status = 'live'
-                    LIMIT 1
                     """
 
             cursor.execute(query, (gca_base,))
-            result = cursor.fetchone()
+            live_accessions = [row["gca_accession"] for row in cursor.fetchall()]
+            result = _classify_live_version(gca, live_accessions)
 
             logging.info(
                 "Checked for live versions of %s: %s",
                 gca,
-                "found" if result else "not found",
+                result,
             )
 
-            return "yes" if result else "no"
+            return result
 
     except Exception:
         logging.exception("Error checking live version for %s", gca)
@@ -71,10 +90,10 @@ def check_other_version_live(gca: str) -> str:
 
 def get_other_version_live_map(gcas: list[str]) -> dict[str, str]:
     """
-    Check in one query whether any version of each GCA chain has a live genebuild.
+    Check in one query whether an older or newer version of each GCA chain has a live genebuild.
 
     Returns a mapping keyed by full GCA accession, preserving the current
-    "yes"/"no" output used by the frontend.
+    "older"/"newer"/"no" output used by the frontend.
     """
     unique_gcas = sorted({gca for gca in gcas if gca})
     if not unique_gcas:
@@ -91,20 +110,61 @@ def get_other_version_live_map(gcas: list[str]) -> dict[str, str]:
             cursor = conn.cursor()
             placeholders = ",".join(["%s"] * len(gca_bases))
             query = f"""
-                SELECT SUBSTRING_INDEX(gca_accession, '.', 1) AS gca_base
+                SELECT gca_accession
                 FROM genebuild_status
                 WHERE SUBSTRING_INDEX(gca_accession, '.', 1) IN ({placeholders})
                   AND gb_status = 'live'
-                GROUP BY SUBSTRING_INDEX(gca_accession, '.', 1)
             """
             cursor.execute(query, tuple(gca_bases))
-            live_bases = {row["gca_base"] for row in cursor.fetchall() if row.get("gca_base")}
+            live_accessions_by_base = {}
+            for row in cursor.fetchall():
+                accession = row.get("gca_accession")
+                if accession:
+                    live_accessions_by_base.setdefault(
+                        accession.rsplit(".", 1)[0], []
+                    ).append(accession)
 
-        return {gca: "yes" if gca.rsplit(".", 1)[0] in live_bases else "no" for gca in unique_gcas}
+        return {
+            gca: _classify_live_version(
+                gca, live_accessions_by_base.get(gca.rsplit(".", 1)[0], [])
+            )
+            for gca in unique_gcas
+        }
 
     except Exception:
         logging.exception("Error checking live versions in batch")
         return {gca: "no" for gca in unique_gcas}
+
+
+def get_live_annotation_counts_by_species(species_taxon_ids: list[int]) -> dict[int, int]:
+    """Return the number of distinct live annotations for each species."""
+    unique_species_ids = sorted(
+        {int(value) for value in species_taxon_ids if value is not None}
+    )
+    if not unique_species_ids:
+        return {}
+
+    try:
+        with get_db_connection("meta") as conn:
+            cursor = conn.cursor()
+            placeholders = ",".join(["%s"] * len(unique_species_ids))
+            query = f"""
+                SELECT s.species_taxon_id, COUNT(DISTINCT gb.genebuild_status_id) AS live_annotation_count
+                FROM genebuild_status gb
+                JOIN assembly a ON a.assembly_id = gb.assembly_id
+                JOIN species s ON s.lowest_taxon_id = a.lowest_taxon_id
+                WHERE s.species_taxon_id IN ({placeholders})
+                  AND gb.gb_status = 'live'
+                GROUP BY s.species_taxon_id
+            """
+            cursor.execute(query, tuple(unique_species_ids))
+            return {
+                int(row["species_taxon_id"]): int(row["live_annotation_count"])
+                for row in cursor.fetchall()
+            }
+    except Exception:
+        logging.exception("Error counting live annotations by species")
+        return {}
 
 
 def get_filtered_assemblies(
@@ -529,6 +589,14 @@ def get_filtered_assemblies(
                 )
 
         df_wide = df_wide.drop_duplicates(subset="gca", keep="first")
+
+        species_taxon_ids = [
+            int(value) for value in df_wide["species_taxon_id"].dropna().tolist()
+        ]
+        live_annotation_counts = get_live_annotation_counts_by_species(species_taxon_ids)
+        df_wide["live_annotation_count_species"] = (
+            df_wide["species_taxon_id"].map(live_annotation_counts).fillna(0).astype(int)
+        )
 
         columns_to_drop = [
             "contig_l50",

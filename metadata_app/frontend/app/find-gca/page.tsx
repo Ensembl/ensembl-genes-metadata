@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { type ChangeEvent, useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
@@ -21,6 +21,7 @@ import {
   TimelineSeparator,
   TimelineTitle,
 } from "@/components/ui/blocks/timeline";
+import { UploadIcon } from "lucide-react";
 import { cleanPayload } from "@/features/shared/filter-utils";
 
 type TimelineEvent = {
@@ -38,6 +39,7 @@ type Result = {
   summary: {
     gca: string;
     scientific_name?: string | null;
+    live_annotation_count_species?: number | null;
     gb_status?: string | null;
     genebuilder?: string | null;
     annotation_source?: string | null;
@@ -74,6 +76,45 @@ export default function ReportSelectorPage() {
   const [results, setResults] = useState<Result[]>([]);
   const [error, setError] = useState("");
   const [notFound, setNotFound] = useState<string[]>([]);
+  const [gcaFileError, setGcaFileError] = useState<string | null>(null);
+  const gcaFileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleGcaFileUpload = async (
+    event: ChangeEvent<HTMLInputElement>,
+  ) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+
+    if (!file) {
+      return;
+    }
+
+    const tokens = (await file.text()).split(/[\s,]+/).filter(Boolean);
+    const validGcas = tokens.filter((token) => /^GCA_\d+\.\d+$/i.test(token));
+    const invalidTokens = tokens.filter(
+      (token) => !/^GCA_\d+\.\d+$/i.test(token),
+    );
+
+    if (invalidTokens.length > 0) {
+      setGcaFileError(
+        `Could not parse GCA accession(s): ${invalidTokens.join(", ")}`,
+      );
+      return;
+    }
+
+    setGcaFileError(null);
+    setGca((current) =>
+      Array.from(
+        new Set([
+          ...current
+            .split(",")
+            .map((value) => value.trim())
+            .filter(Boolean),
+          ...validGcas,
+        ]),
+      ).join(", "),
+    );
+  };
 
   const handleSearch = async () => {
     setLoading(true);
@@ -143,10 +184,29 @@ export default function ReportSelectorPage() {
           className="flex-1"
         />
 
+        <Button
+          type="button"
+          variant="outline"
+          aria-label="Upload GCA text file"
+          onClick={() => gcaFileInputRef.current?.click()}
+        >
+          <UploadIcon />
+        </Button>
+
+        <input
+          ref={gcaFileInputRef}
+          type="file"
+          accept=".txt,text/plain"
+          className="hidden"
+          onChange={handleGcaFileUpload}
+        />
+
         <Button disabled={loading} onClick={handleSearch}>
           {loading ? "Searching..." : "Search"}
         </Button>
       </Field>
+
+      {gcaFileError && <p className="text-destructive">{gcaFileError}</p>}
 
       {error && (
         <p className="text-destructive">{error}</p>
@@ -220,6 +280,14 @@ export default function ReportSelectorPage() {
                   <td>{res.summary.annotation_method}</td>
                 </tr>
               )}
+
+              {res.summary.live_annotation_count_species !== undefined &&
+                res.summary.live_annotation_count_species !== null && (
+                  <tr className="border-b">
+                    <td className="py-2 font-medium">Live annotations for species</td>
+                    <td>{res.summary.live_annotation_count_species}</td>
+                  </tr>
+                )}
 
               {res.summary.asm_level && (
                 <tr className="border-b">
