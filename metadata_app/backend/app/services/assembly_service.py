@@ -120,14 +120,10 @@ def get_other_version_live_map(gcas: list[str]) -> dict[str, str]:
             for row in cursor.fetchall():
                 accession = row.get("gca_accession")
                 if accession:
-                    live_accessions_by_base.setdefault(
-                        accession.rsplit(".", 1)[0], []
-                    ).append(accession)
+                    live_accessions_by_base.setdefault(accession.rsplit(".", 1)[0], []).append(accession)
 
         return {
-            gca: _classify_live_version(
-                gca, live_accessions_by_base.get(gca.rsplit(".", 1)[0], [])
-            )
+            gca: _classify_live_version(gca, live_accessions_by_base.get(gca.rsplit(".", 1)[0], []))
             for gca in unique_gcas
         }
 
@@ -138,9 +134,7 @@ def get_other_version_live_map(gcas: list[str]) -> dict[str, str]:
 
 def get_live_annotation_counts_by_species(species_taxon_ids: list[int]) -> dict[int, int]:
     """Return the number of distinct live annotations for each species."""
-    unique_species_ids = sorted(
-        {int(value) for value in species_taxon_ids if value is not None}
-    )
+    unique_species_ids = sorted({int(value) for value in species_taxon_ids if value is not None})
     if not unique_species_ids:
         return {}
 
@@ -159,8 +153,7 @@ def get_live_annotation_counts_by_species(species_taxon_ids: list[int]) -> dict[
             """
             cursor.execute(query, tuple(unique_species_ids))
             return {
-                int(row["species_taxon_id"]): int(row["live_annotation_count"])
-                for row in cursor.fetchall()
+                int(row["species_taxon_id"]): int(row["live_annotation_count"]) for row in cursor.fetchall()
             }
     except Exception:
         logging.exception("Error counting live annotations by species")
@@ -590,9 +583,7 @@ def get_filtered_assemblies(
 
         df_wide = df_wide.drop_duplicates(subset="gca", keep="first")
 
-        species_taxon_ids = [
-            int(value) for value in df_wide["species_taxon_id"].dropna().tolist()
-        ]
+        species_taxon_ids = [int(value) for value in df_wide["species_taxon_id"].dropna().tolist()]
         live_annotation_counts = get_live_annotation_counts_by_species(species_taxon_ids)
         df_wide["live_annotation_count_species"] = (
             df_wide["species_taxon_id"].map(live_annotation_counts).fillna(0).astype(int)
