@@ -42,6 +42,21 @@ from typing import Any, Dict, Tuple
 
 import pymysql  # type:ignore
 
+# Lineage rows are shared by many assemblies, so parallel tasks can insert the same row at the
+# same time. INSERT IGNORE skips a row that another task inserted first, instead of failing.
+IGNORE_DUPLICATE_TABLES = {"taxonomy", "taxonomy_name"}
+
+
+def insert_verb(table_name: str) -> str:
+    """INSERT IGNORE INTO for tables in IGNORE_DUPLICATE_TABLES, INSERT INTO otherwise."""
+    return "INSERT IGNORE INTO" if table_name in IGNORE_DUPLICATE_TABLES else "INSERT INTO"
+
+
+def expected_row_count(data_dict: Dict, table_name: str, table_conf) -> int:
+    """Number of rows an insert of data_dict into a per_row table should create."""
+    dkey = table_conf[table_name]["dkey"]
+    return len([key for key in data_dict if key != dkey])
+
 
 def escape_value(value) -> str:
     """Escape a value for safe embedding inside a single-quoted SQL string literal."""
@@ -144,7 +159,7 @@ def insert_query(data_dict: Dict, table_name: str, table_conf, metadata_params) 
         logging.info("Creating basic query for table %s", table_name)
         table_var_string = ", ".join(list(data_dict.keys()))
         values_strings = ",".join(format_sql_value(value) for value in data_dict.values())
-        return f"""INSERT INTO {table_name} ({table_var_string}) VALUES ({values_strings}) ;"""
+        return f"""{insert_verb(table_name)} {table_name} ({table_var_string}) VALUES ({values_strings}) ;"""
 
     logging.info("%s is an attribute table (key:value pairs) ", table_name)
 
@@ -167,7 +182,7 @@ def insert_query(data_dict: Dict, table_name: str, table_conf, metadata_params) 
             value_list.append(value_item)
             values_string = ", ".join(value_list)
 
-        return f"""INSERT INTO {table_name} ({columns_string}) VALUES {values_string}"""
+        return f"""{insert_verb(table_name)} {table_name} ({columns_string}) VALUES {values_string}"""
 
     logging.info("%s is a per_row table with a dkey %s", table_name, dkey)
     dkey_value = data_dict[dkey]
@@ -187,7 +202,7 @@ def insert_query(data_dict: Dict, table_name: str, table_conf, metadata_params) 
 
             value_list.append(value_item)
             values_string = ", ".join(value_list)
-    return f"""INSERT INTO {table_name} ({columns_string}) VALUES {values_string}"""
+    return f"""{insert_verb(table_name)} {table_name} ({columns_string}) VALUES {values_string}"""
 
 
 def update_query(data_dict: Dict, table_name: str, table_conf) -> str:
@@ -297,17 +312,21 @@ def _retrieve_row_id_per_row_method(  # pylint: disable=too-many-branches
                 )
             elif table_name == "taxonomy_name":
                 query_missing_insert = (
-                    f"INSERT INTO {table_name} ({columns[0]}, {columns[1]}) "
+                    f"{insert_verb(table_name)} {table_name} ({columns[0]}, {columns[1]}) "
                     f"VALUES ('{escape_value(key)}', '{escape_value(value)}') ;"
                 )
             else:
                 query_missing_insert = (
-                    f"INSERT INTO {table_name} ({columns[0]}, {columns[1]}, {columns[2]}) "
+                    f"{insert_verb(table_name)} {table_name} ({columns[0]}, {columns[1]}, {columns[2]}) "
                     f"VALUES ('{escape_value(dkey_value)}', '{escape_value(key)}', '{escape_value(value)}') ;"
                 )
             logging.info("Insert/update query: %s", query_missing_insert)
             cur.execute(query_missing_insert)
             last_id = cur.lastrowid
+            if query_missing_insert.startswith("INSERT IGNORE") and cur.rowcount == 0:
+                # Ignored: another task inserted the row in the meantime, so read its id.
+                cur.execute(retrieving_query)
+                last_id = cur.fetchone()[0]
         else:
             logging.info("Retrieved value for last id: %s", last_id_tmp)
             last_id = last_id_tmp[0][0]
@@ -418,6 +437,15 @@ def execute_query(
         # Execute query and get id
         cur.execute(query)
         id_value = cur.lastrowid
+        if (
+            query.startswith("INSERT IGNORE")
+            and isinstance(data_dict, dict)
+            and table_conf[table_name]["method"] in ["per_row", "per_row_key"]
+            and cur.rowcount < expected_row_count(data_dict, table_name, table_conf)
+        ):
+            # Some rows were already there (skipped): get the id the way a duplicate would.
+            logging.info("Rows already present in table %s, retrieving id of the row", table_name)
+            id_value = retrieve_row_id(data_dict, table_name, table_conf, metadata_params)
     except pymysql.IntegrityError as e:
         if e.args[0] == 1062:
             # Retrieve value of a already exiting row
