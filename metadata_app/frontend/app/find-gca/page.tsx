@@ -1,7 +1,6 @@
 "use client";
 
 import { type ChangeEvent, useRef, useState } from "react";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -22,6 +21,7 @@ import {
   TimelineTitle,
 } from "@/components/ui/blocks/timeline";
 import { UploadIcon } from "lucide-react";
+import { InputGroup, InputGroupButton, InputGroupInput } from "@/components/ui/input-group";
 import { cleanPayload } from "@/features/shared/filter-utils";
 
 type TimelineEvent = {
@@ -177,21 +177,20 @@ export default function ReportSelectorPage() {
       </div>
 
       <Field orientation="horizontal" className="max-w-3xl">
-        <Input
-          value={gca}
-          onChange={(e) => setGca(e.target.value)}
-          placeholder="GCA_123456789.1, GCA_987654321.1"
-          className="flex-1"
-        />
-
-        <Button
-          type="button"
-          variant="outline"
-          aria-label="Upload GCA text file"
-          onClick={() => gcaFileInputRef.current?.click()}
-        >
-          <UploadIcon />
-        </Button>
+        <InputGroup className="flex-1">
+          <InputGroupInput
+            value={gca}
+            onChange={(e) => setGca(e.target.value)}
+            placeholder="GCA_123456789.1, GCA_987654321.1"
+          />
+          <InputGroupButton
+            variant="ghost"
+            aria-label="Upload GCA text file"
+            onClick={() => gcaFileInputRef.current?.click()}
+          >
+            <UploadIcon />
+          </InputGroupButton>
+        </InputGroup>
 
         <input
           ref={gcaFileInputRef}

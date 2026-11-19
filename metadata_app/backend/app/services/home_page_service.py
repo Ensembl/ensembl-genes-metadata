@@ -489,8 +489,24 @@ def annotation_time():
         df["month"] = df["last_geneset_update"].dt.to_period("M").astype(str)
         trend = (
             df.groupby(["month", "annotation_method"], as_index=False)
-            .agg(average_days=("duration_days", "mean"), sample_size=("duration_days", "count"))
-            .pivot(index="month", columns="annotation_method", values=["average_days", "sample_size"])
+            .agg(
+                average_days=("duration_days", "mean"),
+                median_days=("duration_days", "median"),
+                lower_quartile_days=("duration_days", lambda values: values.quantile(0.25)),
+                upper_quartile_days=("duration_days", lambda values: values.quantile(0.75)),
+                sample_size=("duration_days", "count"),
+            )
+            .pivot(
+                index="month",
+                columns="annotation_method",
+                values=[
+                    "average_days",
+                    "median_days",
+                    "lower_quartile_days",
+                    "upper_quartile_days",
+                    "sample_size",
+                ],
+            )
             .reset_index()
         )
         trend.columns = [
@@ -498,13 +514,27 @@ def annotation_time():
             for column in trend.columns.to_flat_index()
         ]
         for method in methods:
-            for prefix in ("average_days", "sample_size"):
+            for prefix in (
+                "average_days",
+                "median_days",
+                "lower_quartile_days",
+                "upper_quartile_days",
+                "sample_size",
+            ):
                 column = f"{prefix}_{method}"
                 if column not in trend:
                     trend[column] = None
         trend = trend.sort_values("month")
         for column in trend.columns:
-            if column.startswith("average_days_"):
+            if any(
+                column.startswith(f"{prefix}_")
+                for prefix in (
+                    "average_days",
+                    "median_days",
+                    "lower_quartile_days",
+                    "upper_quartile_days",
+                )
+            ):
                 trend[column] = pd.to_numeric(trend[column], errors="coerce").round(1)
             elif column.startswith("sample_size_"):
                 trend[column] = trend[column].fillna(0).astype(int)

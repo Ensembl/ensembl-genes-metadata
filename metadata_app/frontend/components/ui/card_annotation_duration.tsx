@@ -28,7 +28,16 @@ function formatDays(value: number | null | undefined) {
 }
 
 function downloadCsv(trend: TrendRow[]) {
-    const headers = ["month", ...methods.map(([method]) => `average_days_${method}`)]
+    const headers = [
+        "month",
+        ...methods.flatMap(([method]) => [
+            `average_days_${method}`,
+            `median_days_${method}`,
+            `lower_quartile_days_${method}`,
+            `upper_quartile_days_${method}`,
+            `sample_size_${method}`,
+        ]),
+    ]
     const csv = [headers, ...trend.map((row) => headers.map((header) => row[header] ?? ""))]
         .map((row) => row.join(","))
         .join("\n")
@@ -66,18 +75,17 @@ export function AnnotationDurationChart() {
     return (
         <Card className="dark:bg-secondary">
             <CardHeader>
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div>
-                        <CardTitle>Annotation time</CardTitle>
-                        <CardDescription>
-                            Start to last geneset update. Cards show the {windowLabel}; the chart shows all available
-                            history.
-                        </CardDescription>
-                    </div>
+                <div className="flex items-center justify-between gap-3">
+                    <CardTitle>Annotation time</CardTitle>
                     <Button variant="default" size="sm" onClick={() => downloadCsv(trend)} disabled={!trend.length}>
                         <Download/> Download history
                     </Button>
                 </div>
+                <CardDescription>
+                    Start to last geneset update. Cards show the {windowLabel}; the chart shows monthly
+                    medians across all available history. Tooltips include the mean, middle 50% range, and
+                    sample size.
+                </CardDescription>
             </CardHeader>
             <CardContent>
                 <div className="grid gap-4 md:grid-cols-2">
@@ -87,12 +95,13 @@ export function AnnotationDurationChart() {
                             <div key={method} className="rounded-lg border border-t-4 p-4"
                                  style={{borderTopColor: color}}>
                                 <p className="text-sm font-medium text-muted-foreground">{label}</p>
-                                <p className="mt-2 text-2xl font-bold">{formatDays(item?.average_days)}</p>
+                                <p className="mt-2 text-xs text-muted-foreground">Median duration</p>
+                                <p className="text-2xl font-bold">{formatDays(item?.median_days)}</p>
                                 <p className="mt-1 text-xs text-muted-foreground">
                                     {item?.sample_size ?? 0} completed genome{item?.sample_size === 1 ? "" : "s"}
                                 </p>
                                 <p className="mt-3 text-xs text-muted-foreground">
-                                    Median: {formatDays(item?.median_days)} ·
+                                    Mean: {formatDays(item?.average_days)} ·
                                     Range: {formatDays(item?.minimum_days)}–{formatDays(item?.maximum_days)}
                                 </p>
                             </div>
@@ -108,9 +117,42 @@ export function AnnotationDurationChart() {
                                 <CartesianGrid vertical={false}/>
                                 <XAxis dataKey="month" tickLine={false} axisLine={false}/>
                                 <YAxis allowDecimals={false} tickLine={false} axisLine={false} width={60}/>
-                                <Tooltip formatter={(value) => `${Number(value).toLocaleString()} days`}/>
+                                <Tooltip
+                                    content={({active, label, payload}) => {
+                                        if (!active || !payload?.length) return null
+                                        const row = payload[0].payload as TrendRow
+
+                                        return (
+                                            <div className="rounded-lg border bg-background p-3 text-sm shadow-sm">
+                                                <p className="font-medium">{label}</p>
+                                                {methods.map(([method, methodLabel]) => {
+                                                    const median = row[`median_days_${method}`]
+                                                    const average = row[`average_days_${method}`]
+                                                    const lower = row[`lower_quartile_days_${method}`]
+                                                    const upper = row[`upper_quartile_days_${method}`]
+                                                    const sampleSize = row[`sample_size_${method}`]
+
+                                                    if (sampleSize === 0 || median == null) return null
+
+                                                    return (
+                                                        <div key={method} className="mt-2">
+                                                            <p className="font-medium">{methodLabel}</p>
+                                                            <p>Median: {Number(median).toLocaleString()} days</p>
+                                                            <p>Mean: {Number(average).toLocaleString()} days</p>
+                                                            <p>
+                                                                Middle 50%: {Number(lower).toLocaleString()}–
+                                                                {Number(upper).toLocaleString()} days
+                                                            </p>
+                                                            <p>Completed: {sampleSize}</p>
+                                                        </div>
+                                                    )
+                                                })}
+                                            </div>
+                                        )
+                                    }}
+                                />
                                 {methods.map(([method, label, color]) => (
-                                    <Line key={method} type="monotone" dataKey={`average_days_${method}`} name={label}
+                                    <Line key={method} type="monotone" dataKey={`median_days_${method}`} name={label}
                                           stroke={color} connectNulls dot={false}/>
                                 ))}
                             </LineChart>
