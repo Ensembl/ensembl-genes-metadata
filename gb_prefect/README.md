@@ -99,7 +99,7 @@ Checks/updates the metadata of the GCA accessions listed in `gca_list` (an absol
 
 ### `gb_registry_update_by_date_flow`
 
-Screens the metadata DB for high-priority assemblies released after `screen_date` (`YYYY-MM-DD`) and checks/updates them, instead of using a GCA list. `folder_name` defaults to `asm_update_screen_<screen_date>_<today>`; the other parameters are as for `gb_registry_update_flow`.
+Screens the metadata DB for high-priority assemblies released after `screen_date` (`YYYY-MM-DD`; default: 10 days before today, `SCREEN_DAYS_BACK`) and checks/updates them, instead of using a GCA list. `folder_name` defaults to `asm_update_screen_<screen_date>_<today>`; the other parameters are as for `gb_registry_update_flow`.
 
 ### `busco_gca_flow`
 

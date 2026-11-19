@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Optional
 
 from prefect import flow  # type: ignore
@@ -10,11 +10,14 @@ from gb_prefect.utils.credentials_utils import PipelineCredentials, resolve_cred
 from gb_prefect.utils.enscode_utils import resolve_enscode
 from gb_prefect.utils.path_utils import run_folder
 
+# Without a screen_date, check assemblies released in the last SCREEN_DAYS_BACK days.
+SCREEN_DAYS_BACK = 10
+
 
 @flow(name="gb_registry_update_by_date", log_prints=True)
 def gb_registry_update_by_date_flow(  # pylint: disable=too-many-arguments,too-many-positional-arguments
-    screen_date: str,
     outdir: str,
+    screen_date: Optional[str] = None,
     slack_report: bool = True,
     folder_name: Optional[str] = None,
     enscode: Optional[str] = None,
@@ -24,14 +27,20 @@ def gb_registry_update_by_date_flow(  # pylint: disable=too-many-arguments,too-m
     slack_secret_block: Optional[str] = None,
 ):
     """Run the assembly metadata update Nextflow pipeline in --screen_date mode: screens the
-    metadata database for high-priority assemblies released after screen_date (YYYY-MM-DD) and
-    checks/updates them (see gb_registry_update_flow for a GCA list instead).
+    metadata database for high-priority assemblies released after screen_date (YYYY-MM-DD;
+    default: SCREEN_DAYS_BACK days before today) and checks/updates them (see
+    gb_registry_update_flow for a GCA list instead).
 
     Output goes to {outdir}/{folder_name}; folder_name defaults to asm_update_screen_<screen_date>_<today>.
     """
     # Resolve the screen date and set the default output folder name.
-    screen_date = datetime.strptime(screen_date, "%Y-%m-%d").strftime("%Y-%m-%d")
-    default_folder = f"asm_update_screen_{screen_date}_{datetime.now().strftime('%Y-%m-%d')}"
+    today = datetime.now()
+    if screen_date:
+        screen_date = datetime.strptime(screen_date, "%Y-%m-%d").strftime("%Y-%m-%d")
+    else:
+        screen_date = (today - timedelta(days=SCREEN_DAYS_BACK)).strftime("%Y-%m-%d")
+    print(f"Checking high-priority assemblies released after {screen_date}.")
+    default_folder = f"asm_update_screen_{screen_date}_{today.strftime('%Y-%m-%d')}"
 
     # Resolve credentials
     credentials = resolve_credentials(
