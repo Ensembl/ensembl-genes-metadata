@@ -1,5 +1,6 @@
 import logging
 
+import numpy as np
 import pandas as pd
 
 from metadata_app.backend.app.core.database import get_db_connection
@@ -75,7 +76,11 @@ def _format_project_result(result):
     df["gb_status"] = df["gb_status"].fillna("not_started")
     df = df.drop(columns=["asm_name"])
     df = df.drop_duplicates(subset=["gca", "gb_status"], keep="first")
-    return df.to_dict(orient="records")
+    # FastAPI's JSON encoder rejects NaN and infinity. Missing nullable
+    # database fields must be returned as JSON null instead.
+    safe_df = df.replace([np.inf, -np.inf], np.nan)
+    safe_df = safe_df.astype(object).where(pd.notna(safe_df), None)
+    return safe_df.to_dict(orient="records")
 
 
 def get_project(project_key: str):

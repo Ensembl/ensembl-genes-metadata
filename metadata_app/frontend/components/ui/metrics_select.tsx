@@ -3,7 +3,7 @@
 import * as React from "react"
 import { Button } from "@/components/ui/button"
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
-import { CheckIcon, SlidersHorizontal, ListFilterPlus } from "lucide-react"
+import { CheckIcon, ListFilterPlus } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 function PopoverCheckboxItem({
@@ -43,13 +43,13 @@ function PopoverCheckboxItem({
 interface PopoverWithMultiSelectProps {
   selectedItems: string[]
   setSelectedItems: React.Dispatch<React.SetStateAction<string[]>>
-  onAutoFillHighQuality: () => void
+  additionalFilters?: React.ReactNode
 }
 
 export function PopoverWithMultiSelect({
   selectedItems,
   setSelectedItems,
-  onAutoFillHighQuality,
+  additionalFilters,
 }: PopoverWithMultiSelectProps)  {
 
   const handleToggleItem = (item: string) => {
@@ -74,12 +74,14 @@ export function PopoverWithMultiSelect({
       </PopoverTrigger>
 
       <PopoverContent className="w-full">
-        <Button variant="secondary" className="w-full justify-start cursor-pointer" onClick={onAutoFillHighQuality}>
-          <SlidersHorizontal className="" />
-          Get annotation candidates
-        </Button>
-
-        <div className="bg-border my-2 -mx-2 h-px w-auto" />
+        {additionalFilters && (
+          <>
+            <div className="space-y-3 pb-2">
+              {additionalFilters}
+            </div>
+            <div className="bg-border my-2 -mx-2 h-px w-auto" />
+          </>
+        )}
 
         <div className="space-y-2">
           <div className="grid gap-1">

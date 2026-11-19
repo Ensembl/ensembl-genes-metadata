@@ -1,7 +1,6 @@
 "use client";
 
-import { useState } from "react";
-import { Input } from "@/components/ui/input";
+import { type ChangeEvent, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -21,6 +20,8 @@ import {
   TimelineSeparator,
   TimelineTitle,
 } from "@/components/ui/blocks/timeline";
+import { UploadIcon } from "lucide-react";
+import { InputGroup, InputGroupButton, InputGroupInput } from "@/components/ui/input-group";
 import { cleanPayload } from "@/features/shared/filter-utils";
 
 type TimelineEvent = {
@@ -37,6 +38,8 @@ type Reason = {
 type Result = {
   summary: {
     gca: string;
+    scientific_name?: string | null;
+    live_annotation_count_species?: number | null;
     gb_status?: string | null;
     genebuilder?: string | null;
     annotation_source?: string | null;
@@ -58,6 +61,13 @@ type Result = {
   timeline: TimelineEvent[];
 };
 
+type LookupResponse =
+  | Result[]
+  | {
+      results: Result[];
+      not_found?: string[];
+    };
+
 const TIMELINE_STEP_COUNT = 4;
 
 export default function ReportSelectorPage() {
@@ -65,10 +75,51 @@ export default function ReportSelectorPage() {
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<Result[]>([]);
   const [error, setError] = useState("");
+  const [notFound, setNotFound] = useState<string[]>([]);
+  const [gcaFileError, setGcaFileError] = useState<string | null>(null);
+  const gcaFileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleGcaFileUpload = async (
+    event: ChangeEvent<HTMLInputElement>,
+  ) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+
+    if (!file) {
+      return;
+    }
+
+    const tokens = (await file.text()).split(/[\s,]+/).filter(Boolean);
+    const validGcas = tokens.filter((token) => /^GCA_\d+\.\d+$/i.test(token));
+    const invalidTokens = tokens.filter(
+      (token) => !/^GCA_\d+\.\d+$/i.test(token),
+    );
+
+    if (invalidTokens.length > 0) {
+      setGcaFileError(
+        `Could not parse GCA accession(s): ${invalidTokens.join(", ")}`,
+      );
+      return;
+    }
+
+    setGcaFileError(null);
+    setGca((current) =>
+      Array.from(
+        new Set([
+          ...current
+            .split(",")
+            .map((value) => value.trim())
+            .filter(Boolean),
+          ...validGcas,
+        ]),
+      ).join(", "),
+    );
+  };
 
   const handleSearch = async () => {
     setLoading(true);
     setError("");
+    setNotFound([]);
 
     try {
       const gcaArray = gca
@@ -93,9 +144,19 @@ export default function ReportSelectorPage() {
         throw new Error();
       }
 
-      const data = await response.json();
+      const data: LookupResponse = await response.json();
+      const nextResults = Array.isArray(data) ? data : data.results ?? [];
+      const foundGcas = new Set(
+        nextResults.map((result) => result.summary.gca.toUpperCase()),
+      );
+      const reportedNotFound = Array.isArray(data) ? [] : data.not_found ?? [];
 
-      setResults(Array.isArray(data) ? data : [data]);
+      setResults(nextResults);
+      setNotFound(
+        reportedNotFound.length > 0
+          ? reportedNotFound
+          : gcaArray.filter((accession) => !foundGcas.has(accession.toUpperCase())),
+      );
     } catch {
       setError("Unable to retrieve annotation status.");
     } finally {
@@ -116,11 +177,27 @@ export default function ReportSelectorPage() {
       </div>
 
       <Field orientation="horizontal" className="max-w-3xl">
-        <Input
-          value={gca}
-          onChange={(e) => setGca(e.target.value)}
-          placeholder="GCA_123456789.1, GCA_987654321.1"
-          className="flex-1"
+        <InputGroup className="flex-1">
+          <InputGroupInput
+            value={gca}
+            onChange={(e) => setGca(e.target.value)}
+            placeholder="GCA_123456789.1, GCA_987654321.1"
+          />
+          <InputGroupButton
+            variant="ghost"
+            aria-label="Upload GCA text file"
+            onClick={() => gcaFileInputRef.current?.click()}
+          >
+            <UploadIcon />
+          </InputGroupButton>
+        </InputGroup>
+
+        <input
+          ref={gcaFileInputRef}
+          type="file"
+          accept=".txt,text/plain"
+          className="hidden"
+          onChange={handleGcaFileUpload}
         />
 
         <Button disabled={loading} onClick={handleSearch}>
@@ -128,8 +205,21 @@ export default function ReportSelectorPage() {
         </Button>
       </Field>
 
+      {gcaFileError && <p className="text-destructive">{gcaFileError}</p>}
+
       {error && (
         <p className="text-destructive">{error}</p>
+      )}
+
+      {notFound.length > 0 && (
+        <div className="text-destructive">
+          <p>Assembly is not found in the registry:</p>
+          <ul className="list-disc pl-6">
+            {notFound.map((accession) => (
+              <li key={accession}>{accession}</li>
+            ))}
+          </ul>
+        </div>
       )}
 
       {results.map((res) => (
@@ -141,6 +231,12 @@ export default function ReportSelectorPage() {
             <CardTitle className="text-2xl font-bold">
               {res.summary.gca}
             </CardTitle>
+
+            {res.summary.scientific_name && (
+              <CardDescription className="text-base italic">
+                {res.summary.scientific_name}
+              </CardDescription>
+            )}
 
             <div className="space-y-1">
               <p className="text-lg font-medium">
@@ -183,6 +279,14 @@ export default function ReportSelectorPage() {
                   <td>{res.summary.annotation_method}</td>
                 </tr>
               )}
+
+              {res.summary.live_annotation_count_species !== undefined &&
+                res.summary.live_annotation_count_species !== null && (
+                  <tr className="border-b">
+                    <td className="py-2 font-medium">Live annotations for species</td>
+                    <td>{res.summary.live_annotation_count_species}</td>
+                  </tr>
+                )}
 
               {res.summary.asm_level && (
                 <tr className="border-b">

@@ -5,7 +5,6 @@ import pandas as pd
 import logging
 from metadata_app.backend.app.core.database import get_db_connection
 from metadata_app.backend.app.services.taxonomy_service import (
-    get_descendant_taxa,
     assign_clade_and_species,
     load_clade_data,
 )
@@ -18,13 +17,33 @@ from metadata_app.backend.app.services.get_transcriptomic_data_ENA_service impor
 from metadata_app.backend.app.services.ncbi_reference_service import (
     get_reference_data_for_accessions,
 )
+from metadata_app.backend.app.services.assembly_filters import (
+    filter_by_genebuild_status,
+    filter_annotation_candidates,
+)
+from metadata_app.backend.app.services.filter_scope_service import (
+    add_scope_conditions,
+)
 
 
-# These statuses describe a previous attempt that should be reconsidered when
-# the current assembly and evidence satisfy the candidate criteria.  A
-# ``testing`` genebuild is deliberately non-production and must not block the
-# assembly from being suggested.
-CANDIDATE_REASSESSABLE_STATUSES = frozenset({"not_started", "abandoned", "insufficient_data", "testing"})
+def _classify_live_version(gca: str, live_accessions: list[str]) -> str:
+    try:
+        current_version = int(gca.rsplit(".", 1)[1])
+    except (IndexError, ValueError):
+        return "no"
+
+    live_versions = set()
+    for accession in live_accessions:
+        try:
+            live_versions.add(int(accession.rsplit(".", 1)[1]))
+        except (IndexError, ValueError):
+            continue
+
+    if any(version > current_version for version in live_versions):
+        return "newer"
+    if any(version < current_version for version in live_versions):
+        return "older"
+    return "no"
 
 
 def check_other_version_live(gca: str) -> str:
@@ -34,9 +53,8 @@ def check_other_version_live(gca: str) -> str:
     Example:
         Input: full gca string expl: GCA_123456789.1
         Checks: gca string without version expl: GCA_123456789.%
-        Returns:
-            "yes" if any version is live
-            "no" otherwise
+    Returns:
+            "older", "newer", or "no" depending on live versions.
     """
     try:
         with get_db_connection("meta") as conn:
@@ -47,23 +65,23 @@ def check_other_version_live(gca: str) -> str:
             gca_base = gca.rsplit(".", 1)[0]
 
             query = """
-                    SELECT 1
+                    SELECT gca_accession
                     FROM genebuild_status
                     WHERE SUBSTRING_INDEX(gca_accession, '.', 1) = %s
                       AND gb_status = 'live'
-                    LIMIT 1
                     """
 
             cursor.execute(query, (gca_base,))
-            result = cursor.fetchone()
+            live_accessions = [row["gca_accession"] for row in cursor.fetchall()]
+            result = _classify_live_version(gca, live_accessions)
 
             logging.info(
                 "Checked for live versions of %s: %s",
                 gca,
-                "found" if result else "not found",
+                result,
             )
 
-            return "yes" if result else "no"
+            return result
 
     except Exception:
         logging.exception("Error checking live version for %s", gca)
@@ -72,10 +90,10 @@ def check_other_version_live(gca: str) -> str:
 
 def get_other_version_live_map(gcas: list[str]) -> dict[str, str]:
     """
-    Check in one query whether any version of each GCA chain has a live genebuild.
+    Check in one query whether an older or newer version of each GCA chain has a live genebuild.
 
     Returns a mapping keyed by full GCA accession, preserving the current
-    "yes"/"no" output used by the frontend.
+    "older"/"newer"/"no" output used by the frontend.
     """
     unique_gcas = sorted({gca for gca in gcas if gca})
     if not unique_gcas:
@@ -92,20 +110,54 @@ def get_other_version_live_map(gcas: list[str]) -> dict[str, str]:
             cursor = conn.cursor()
             placeholders = ",".join(["%s"] * len(gca_bases))
             query = f"""
-                SELECT SUBSTRING_INDEX(gca_accession, '.', 1) AS gca_base
+                SELECT gca_accession
                 FROM genebuild_status
                 WHERE SUBSTRING_INDEX(gca_accession, '.', 1) IN ({placeholders})
                   AND gb_status = 'live'
-                GROUP BY SUBSTRING_INDEX(gca_accession, '.', 1)
             """
             cursor.execute(query, tuple(gca_bases))
-            live_bases = {row["gca_base"] for row in cursor.fetchall() if row.get("gca_base")}
+            live_accessions_by_base = {}
+            for row in cursor.fetchall():
+                accession = row.get("gca_accession")
+                if accession:
+                    live_accessions_by_base.setdefault(accession.rsplit(".", 1)[0], []).append(accession)
 
-        return {gca: "yes" if gca.rsplit(".", 1)[0] in live_bases else "no" for gca in unique_gcas}
+        return {
+            gca: _classify_live_version(gca, live_accessions_by_base.get(gca.rsplit(".", 1)[0], []))
+            for gca in unique_gcas
+        }
 
     except Exception:
         logging.exception("Error checking live versions in batch")
         return {gca: "no" for gca in unique_gcas}
+
+
+def get_live_annotation_counts_by_species(species_taxon_ids: list[int]) -> dict[int, int]:
+    """Return the number of distinct live annotations for each species."""
+    unique_species_ids = sorted({int(value) for value in species_taxon_ids if value is not None})
+    if not unique_species_ids:
+        return {}
+
+    try:
+        with get_db_connection("meta") as conn:
+            cursor = conn.cursor()
+            placeholders = ",".join(["%s"] * len(unique_species_ids))
+            query = f"""
+                SELECT s.species_taxon_id, COUNT(DISTINCT gb.genebuild_status_id) AS live_annotation_count
+                FROM genebuild_status gb
+                JOIN assembly a ON a.assembly_id = gb.assembly_id
+                JOIN species s ON s.lowest_taxon_id = a.lowest_taxon_id
+                WHERE s.species_taxon_id IN ({placeholders})
+                  AND gb.gb_status = 'live'
+                GROUP BY s.species_taxon_id
+            """
+            cursor.execute(query, tuple(unique_species_ids))
+            return {
+                int(row["species_taxon_id"]): int(row["live_annotation_count"]) for row in cursor.fetchall()
+            }
+    except Exception:
+        logging.exception("Error counting live annotations by species")
+        return {}
 
 
 def get_filtered_assemblies(
@@ -123,6 +175,7 @@ def get_filtered_assemblies(
     group_name,
     gca,
     candidate=False,
+    include_reassessment=False,
 ):
     """
     Fetch all assemblies and their metrics, filter results based on given thresholds,
@@ -142,7 +195,8 @@ def get_filtered_assemblies(
             non_annotated: Only show non-annotated assemblies
             group_name: Filter assemblies by group name
             gca: Filter assemblies by GCA(s)
-            candidate: Apply candidate-specific genebuild status filtering
+            candidate: Apply the canonical annotation-candidate filter
+            include_reassessment: Include reassessment genebuild statuses
 
     Returns:
             df_main: DataFrame of filtered assembly metrics
@@ -159,24 +213,13 @@ def get_filtered_assemblies(
             # Build query conditions
             conditions = []
             params = []
-            project_conditions = []
-
-            if bioproject_id:
-                project_conditions.append(f"b.bioproject_id IN ({','.join(['%s'] * len(bioproject_id))})")
-                params.extend(bioproject_id)
-                logging.info(f"Filtering by BioProject IDs: {', '.join(bioproject_id)}")
-
-            if group_name:
-                if isinstance(group_name, str):
-                    group_name = [group_name]
-                project_conditions.append(f"g.group_name IN ({','.join(['%s'] * len(group_name))})")
-                params.extend(group_name)
-                logging.info(f"Filtering by group name: {', '.join(group_name)}")
-
-            if len(project_conditions) == 1:
-                conditions.append(project_conditions[0])
-            elif len(project_conditions) > 1:
-                conditions.append(f"({' OR '.join(project_conditions)})")
+            add_scope_conditions(
+                conditions,
+                params,
+                bioproject_id=bioproject_id,
+                group_name=group_name,
+                taxon_id=taxon_id,
+            )
 
             if release_date:
                 if isinstance(release_date, pd.Timestamp):
@@ -200,34 +243,14 @@ def get_filtered_assemblies(
                 logging.info(f"Filtering by GCA: {', '.join(gca)}")
 
             if taxon_id:
-                all_descendant_taxa = set()
-                for tax_id in taxon_id:
-                    descendant_taxa = get_descendant_taxa(tax_id)
-                    if not descendant_taxa:
-                        logging.warning(f"No descendants found for taxon ID {tax_id}")
-                    all_descendant_taxa.update(descendant_taxa)
-
-                if not all_descendant_taxa:
-                    return (
-                        f"No descendant taxa found for any of the provided Taxon IDs: {', '.join(map(str, taxon_id))}",
-                        None,
-                        None,
-                        None,
-                        None,
-                    )
-
-                conditions.append(f"s.lowest_taxon_id IN ({','.join(['%s'] * len(all_descendant_taxa))})")
-                params.extend(list(all_descendant_taxa))
-                logging.info(
-                    f"Filtering by lowest taxon IDs: {', '.join(str(id) for id in all_descendant_taxa)}"
-                )
+                logging.info("Filtering by expanded lowest taxon IDs")
 
             # Create WHERE clause
             where_clause = " WHERE " + " AND ".join(conditions) if conditions else ""
 
             # Main query
             query = f"""
-                SELECT b.bioproject_id, mb.bioproject_name AS associated_project, a.asm_level, a.gca_chain, a.gca_version, a.asm_type, a.release_date, a.is_current,
+                SELECT a.assembly_id, b.bioproject_id, mb.bioproject_name AS associated_project, a.asm_level, a.gca_chain, a.gca_version, a.asm_type, a.release_date, a.is_current,
                        m.metrics_name, m.metrics_value, s.scientific_name, s.common_name, a.asm_name,
                        a.lowest_taxon_id, g.group_name, a.refseq_accession, o.infra_type, o.infra_name,
                        gb.gb_status
@@ -257,6 +280,34 @@ def get_filtered_assemblies(
                     detail="No assemblies found matching the specified criteria.",
                 )
             logging.info(f"Query executed successfully, retrieved {len(results)} results.")
+
+            # Keep the main BioProject/group filter selective, then expand project
+            # names only for the assemblies that already matched that filter.
+            assembly_ids = sorted(
+                {row["assembly_id"] for row in results if row.get("assembly_id") is not None}
+            )
+            project_names_by_assembly = {}
+            if assembly_ids:
+                project_query = """
+                    SELECT b.assembly_id, mb.bioproject_name
+                    FROM bioproject b
+                    LEFT JOIN main_bioproject mb ON b.bioproject_id = mb.bioproject_id
+                    WHERE b.assembly_id IN ({})
+                """.format(
+                    ",".join(["%s"] * len(assembly_ids))
+                )
+                cursor.execute(project_query, tuple(assembly_ids))
+                for row in cursor.fetchall():
+                    project_name = row.get("bioproject_name")
+                    if project_name:
+                        project_names_by_assembly.setdefault(row["assembly_id"], set()).add(
+                            project_name.strip()
+                        )
+
+            for row in results:
+                row["associated_project"] = (
+                    ", ".join(sorted(project_names_by_assembly.get(row["assembly_id"], set()))) or None
+                )
 
             # Get taxonomy data
             lowest_taxon_ids = {
@@ -398,6 +449,13 @@ def get_filtered_assemblies(
         print(df_wide.head(20))
 
         # Convert specified metric columns to numeric
+        unknown_metrics = sorted(set(metric_thresholds).difference(df_wide.columns))
+        if unknown_metrics:
+            raise HTTPException(
+                status_code=400,
+                detail="Unknown assembly metric(s): " + ", ".join(unknown_metrics),
+            )
+
         for metric, _ in metric_thresholds.items():
             if metric in df_wide.columns:
                 df_wide[metric] = pd.to_numeric(df_wide[metric], errors="coerce")
@@ -449,7 +507,7 @@ def get_filtered_assemblies(
         if transc:
             df_wide = add_transc_data_to_df(df_wide)
 
-        if transc_ena:
+        if transc_ena or candidate:
             transcriptomic_df = add_data_from_ena(df_wide)
 
             if transcriptomic_df is not None and not transcriptomic_df.empty:
@@ -498,23 +556,24 @@ def get_filtered_assemblies(
                 )
             else:
                 logging.warning("No transcriptomic data retrieved from ENA")
+                df_wide["short_read_paired_end_illumina_lowest"] = pd.NA
 
         # Candidate suggestions may include assemblies with a previous
         # re-assessable attempt.  Filter at GCA level so a blocked status on
         # one historical/current row cannot be hidden by another row.
         if candidate:
-            status_is_reassessable = df_wide["gb_status"].isin(CANDIDATE_REASSESSABLE_STATUSES)
-            blocked_gcas = set(df_wide.loc[~status_is_reassessable, "gca"])
-            df_wide = df_wide[~df_wide["gca"].isin(blocked_gcas)]
+            before = len(df_wide)
+            df_wide = filter_annotation_candidates(df_wide, include_reassessment=include_reassessment)
             logging.info(
-                "Filtered candidate assemblies by genebuild status; blocked %d GCAs",
-                len(blocked_gcas),
+                "Filtered annotation candidates from %d to %d rows (reassessment=%s)",
+                before,
+                len(df_wide),
+                include_reassessment,
             )
         # Filter non annotated assemblies only
         elif non_annotated:
-            logging.info(f"Filtring for non-annotated assemblies")
-            df_wide = df_wide
-            df_wide = df_wide[df_wide["gb_status"] == "not_started"]
+            logging.info("Filtering for non-annotated assemblies at GCA level")
+            df_wide = filter_by_genebuild_status(df_wide, {"not_started"})
 
             if df_wide.empty:
                 raise HTTPException(
@@ -523,6 +582,12 @@ def get_filtered_assemblies(
                 )
 
         df_wide = df_wide.drop_duplicates(subset="gca", keep="first")
+
+        species_taxon_ids = [int(value) for value in df_wide["species_taxon_id"].dropna().tolist()]
+        live_annotation_counts = get_live_annotation_counts_by_species(species_taxon_ids)
+        df_wide["live_annotation_count_species"] = (
+            df_wide["species_taxon_id"].map(live_annotation_counts).fillna(0).astype(int)
+        )
 
         columns_to_drop = [
             "contig_l50",

@@ -66,15 +66,13 @@ export default function ReportSelectorPage() {
           Quick overview
         </h2>
 
-        <div className="min-w-0">
-          <ProjectsBar></ProjectsBar>
-        </div>
-
-        <div className="mb-8 min-w-0">
+          <div className="mb-8 min-w-0">
           <CardsReportTable></CardsReportTable>
         </div>
 
-
+        <div className="min-w-0">
+          <ProjectsBar></ProjectsBar>
+        </div>
       </div>
     </div>
   );

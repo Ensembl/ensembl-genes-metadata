@@ -10,9 +10,11 @@ import re
 from fastapi import HTTPException
 from metadata_app.backend.app.core.database import get_db_connection
 from metadata_app.backend.app.services.taxonomy_service import (
-    get_descendant_taxa,
     load_clade_data,
     assign_clade_and_species,
+)
+from metadata_app.backend.app.services.filter_scope_service import (
+    add_scope_conditions,
 )
 
 ENSEMBL_ORGANISMS_FTP_BASE_URL = "https://ftp.ebi.ac.uk/pub/ensemblorganisms"
@@ -138,42 +140,13 @@ def query_meta_registry(
             # Build dynamic SQL filtering
             conditions = []
             parameters = []
-            project_conditions = []
-
-            if bioproject_id:
-                project_conditions.append(f"b.bioproject_id IN ({','.join(['%s'] * len(bioproject_id))})")
-                parameters.extend(bioproject_id)
-                logging.info(f"Filtering by BioProject IDs: {', '.join(bioproject_id)}")
-
-            if group_name:
-                project_conditions.append(f"g.group_name IN ({','.join(['%s'] * len(group_name))})")
-                parameters.extend(group_name)
-                logging.info(f"Filtering by group name: {', '.join(group_name)}")
-
-            if len(project_conditions) == 1:
-                conditions.append(project_conditions[0])
-            elif len(project_conditions) > 1:
-                conditions.append(f"({' OR '.join(project_conditions)})")
-
-            if taxon_id:
-                all_descendant_taxa = set()
-                for tax_id in taxon_id:
-                    descendant_taxa = get_descendant_taxa(tax_id)
-                    if not descendant_taxa:
-                        logging.warning(f"No descendants found for taxon ID {tax_id}")
-                    all_descendant_taxa.update(descendant_taxa)
-
-                if not all_descendant_taxa:
-                    raise HTTPException(
-                        status_code=400,
-                        detail=f"No descendant taxa found for any of the provided Taxon IDs: {', '.join(map(str, taxon_id))}",
-                    )
-
-                conditions.append(f"s.lowest_taxon_id IN ({','.join(['%s'] * len(all_descendant_taxa))})")
-                parameters.extend(all_descendant_taxa)
-                logging.info(
-                    f"Filtering by lowest taxon IDs: {', '.join(str(id) for id in all_descendant_taxa)}"
-                )
+            add_scope_conditions(
+                conditions,
+                parameters,
+                bioproject_id=bioproject_id,
+                group_name=group_name,
+                taxon_id=taxon_id,
+            )
 
             if annotation_date:
                 logging.info(f"Retrieving annotation for annotation date {annotation_date}.")

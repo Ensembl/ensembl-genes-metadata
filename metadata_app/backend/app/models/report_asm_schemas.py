@@ -1,15 +1,17 @@
-from typing import List, Optional, Dict
-from pydantic import BaseModel
+from typing import Optional
 from datetime import date
+from metadata_app.backend.app.models.filter_schemas import (
+    AssemblyDimensionFilters,
+    ScopeFilterRequest,
+)
 
 
-class ReportFilterRequest(BaseModel):
-    bioproject_id: Optional[List[str]] = None
-    group_name: Optional[List[str]] = None
+class ReportFilterRequest(ScopeFilterRequest, AssemblyDimensionFilters):
     start_date: Optional[date] = None
     end_date: Optional[date] = None
-    taxon_id: Optional[List[int]] = None
     candidate: Optional[bool] = False
+    include_reassessment: Optional[bool] = False
+    current: Optional[bool] = False
     transc: Optional[bool] = False
     transc_ena: Optional[bool] = False
-    non_annotated: Optional[bool] = True
+    non_annotated: Optional[bool] = False
