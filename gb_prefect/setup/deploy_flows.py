@@ -53,6 +53,9 @@ FLOWS = {
         description="Assembly metadata update",
         tags=["metadata_update"],
         concurrency_limit=1,
+        cpu=2,
+        memory=4,
+        time_limit=24,
     ),
     "by_date": FlowDeployment(
         name="gb_metadata_update_per_date",
@@ -61,6 +64,23 @@ FLOWS = {
         description="Assembly metadata by_date",
         tags=["metadata_update"],
         concurrency_limit=1,
+        cpu=2,
+        memory=4,
+        time_limit=24,
+    ),
+    "from_query": FlowDeployment(
+        name="gb_metadata_update_from_query",
+        entrypoint=(
+            "gb_prefect/flows/assembly_metadata/gb_registry_update_from_query.py"
+            ":gb_registry_update_from_query_flow"
+        ),
+        work_pool="metadata",
+        description="Assembly metadata update for the GCAs a registry query returns",
+        tags=["metadata_update"],
+        concurrency_limit=1,
+        cpu=2,
+        memory=4,
+        time_limit=24,
     ),
     "register": FlowDeployment(
         name="gb_metadata_registry",

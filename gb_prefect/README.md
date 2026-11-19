@@ -68,6 +68,7 @@ This installs `gb_prefect` as part of the `ensembl-genes-metadata` package (see 
 | `gb_registry_by_gca_flow` | [flows/assembly_metadata/gb_registry_by_gca.py](flows/assembly_metadata/gb_registry_by_gca.py) | [pipelines/assembly_metadata](../pipelines/assembly_metadata) | Register the GCA accessions listed in a file |
 | `gb_registry_update_flow` | [flows/assembly_metadata/gb_registry_update.py](flows/assembly_metadata/gb_registry_update.py) | [pipelines/assembly_metadata_update](../pipelines/assembly_metadata_update) | Check/update metadata for a list of existing GCA accessions |
 | `gb_registry_update_by_date_flow` | [flows/assembly_metadata/gb_registry_update_by_date.py](flows/assembly_metadata/gb_registry_update_by_date.py) | [pipelines/assembly_metadata_update](../pipelines/assembly_metadata_update) | Check/update metadata for high-priority assemblies released after a date |
+| `gb_registry_update_from_query_flow` | [flows/assembly_metadata/gb_registry_update_from_query.py](flows/assembly_metadata/gb_registry_update_from_query.py) | [pipelines/assembly_metadata_update](../pipelines/assembly_metadata_update) | Check/update metadata for the GCAs a registry SQL query returns |
 | `busco_gca_flow` | [flows/statistics/gb_busco_gca.py](flows/statistics/gb_busco_gca.py) | `ensembl-genes-nf/pipelines/statistics` | Run BUSCO genome statistics for one GCA (triggered per GCA by the BUSCO dispatchers) |
 | `busco_dispatch_flow` | [flows/statistics/gb_busco_dispatch.py](flows/statistics/gb_busco_dispatch.py) | `busco_gca_flow` | Trigger `busco_gca_flow` for each GCA of a CSV (`gca,taxon_id,busco_dataset`) |
 | `busco_dispatch_from_list_flow` | [flows/statistics/gb_busco_dispatch_from_list.py](flows/statistics/gb_busco_dispatch_from_list.py) | `busco_gca_flow` | Trigger `busco_gca_flow` for GCAs given as a list or a file |
@@ -100,6 +101,17 @@ Checks/updates the metadata of the GCA accessions listed in `gca_list` (an absol
 ### `gb_registry_update_by_date_flow`
 
 Screens the metadata DB for high-priority assemblies released after `screen_date` (`YYYY-MM-DD`; default: 10 days before today, `SCREEN_DAYS_BACK`) and checks/updates them, instead of using a GCA list. `folder_name` defaults to `asm_update_screen_<screen_date>_<today>`; the other parameters are as for `gb_registry_update_flow`.
+
+### `gb_registry_update_from_query_flow`
+
+Runs `query` on the metadata DB, writes the GCAs it returns to `<outdir>/<folder_name>/gca_list.txt` (one per line, de-duplicated), then checks/updates them as `gb_registry_update_flow` does. `query` must be a single `SELECT` whose first column is the GCA accession; it runs in a read-only transaction. The default (`DEFAULT_GCA_QUERY`) is every GCA whose genebuild isn't finished:
+
+```sql
+SELECT gca_accession FROM genebuild_status
+WHERE gb_status NOT IN ('handed_over', 'live', 'coming_soon')
+```
+
+`folder_name` defaults to `asm_update_query_<today>`. No GCAs: the pipeline isn't run. On a dry run the query still runs (so the metadata credentials are loaded) and only the pipeline is skipped. The other parameters are as for `gb_registry_update_flow`.
 
 ### `busco_gca_flow`
 
