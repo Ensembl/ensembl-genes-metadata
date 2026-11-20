@@ -68,7 +68,7 @@ This installs `gb_prefect` as part of the `ensembl-genes-metadata` package (see 
 | `gb_registry_by_gca_flow` | [flows/assembly_metadata/gb_registry_by_gca.py](flows/assembly_metadata/gb_registry_by_gca.py) | [pipelines/assembly_metadata](../pipelines/assembly_metadata) | Register the GCA accessions listed in a file |
 | `gb_registry_update_flow` | [flows/assembly_metadata/gb_registry_update.py](flows/assembly_metadata/gb_registry_update.py) | [pipelines/assembly_metadata_update](../pipelines/assembly_metadata_update) | Check/update metadata for a list of existing GCA accessions |
 | `gb_registry_update_by_date_flow` | [flows/assembly_metadata/gb_registry_update_by_date.py](flows/assembly_metadata/gb_registry_update_by_date.py) | [pipelines/assembly_metadata_update](../pipelines/assembly_metadata_update) | Check/update metadata for high-priority assemblies released after a date |
-| `gb_registry_update_from_query_flow` | [flows/assembly_metadata/gb_registry_update_from_query.py](flows/assembly_metadata/gb_registry_update_from_query.py) | [pipelines/assembly_metadata_update](../pipelines/assembly_metadata_update) | Check/update metadata for the GCAs a registry SQL query returns |
+| `gb_registry_update_from_query_flow` | [flows/assembly_metadata/gb_registry_update_from_query.py](flows/assembly_metadata/gb_registry_update_from_query.py) | [pipelines/assembly_metadata_update](../pipelines/assembly_metadata_update) | Check/update metadata, in sequential batches, for the GCAs a registry SQL query returns |
 | `busco_gca_flow` | [flows/statistics/gb_busco_gca.py](flows/statistics/gb_busco_gca.py) | `ensembl-genes-nf/pipelines/statistics` | Run BUSCO genome statistics for one GCA (triggered per GCA by the BUSCO dispatchers) |
 | `busco_dispatch_flow` | [flows/statistics/gb_busco_dispatch.py](flows/statistics/gb_busco_dispatch.py) | `busco_gca_flow` | Trigger `busco_gca_flow` for each GCA of a CSV (`gca,taxon_id,busco_dataset`) |
 | `busco_dispatch_from_list_flow` | [flows/statistics/gb_busco_dispatch_from_list.py](flows/statistics/gb_busco_dispatch_from_list.py) | `busco_gca_flow` | Trigger `busco_gca_flow` for GCAs given as a list or a file |
@@ -104,14 +104,27 @@ Screens the metadata DB for high-priority assemblies released after `screen_date
 
 ### `gb_registry_update_from_query_flow`
 
-Runs `query` on the metadata DB, writes the GCAs it returns to `<outdir>/<folder_name>/gca_list.txt` (one per line, de-duplicated), then checks/updates them as `gb_registry_update_flow` does. `query` must be a single `SELECT` whose first column is the GCA accession; it runs in a read-only transaction. The default (`DEFAULT_GCA_QUERY`) is every GCA whose genebuild isn't finished:
+Runs `query` on the metadata DB, splits the GCAs it returns into batches of `batch_size` (default 1000), and runs `gb_registry_update_flow` on each batch **one after another**: each batch is its own run of the `gb_registry_update/gb_metadata_update` deployment (`deployment_name`), triggered only once the previous one has finished. It runs on the dispatch pool, which must see `outdir`.
+
+`query` must be a single `SELECT` whose first column is the GCA accession; it runs in a read-only transaction. The default (`DEFAULT_GCA_QUERY`) is every GCA whose genebuild isn't finished:
 
 ```sql
 SELECT gca_accession FROM genebuild_status
 WHERE gb_status NOT IN ('handed_over', 'live', 'coming_soon')
 ```
 
-`folder_name` defaults to `asm_update_query_<today>`. No GCAs: the pipeline isn't run. On a dry run the query still runs (so the metadata credentials are loaded) and only the pipeline is skipped. The other parameters are as for `gb_registry_update_flow`.
+Output, under `<outdir>/<folder_name>` (default `asm_update_query_<today>`):
+
+```
+gca_list.txt              the whole list, one accession per line, de-duplicated
+batch_001/gca_list.txt    each batch's list; the batch's run writes its pipeline output here
+batch_002/...
+```
+
+- A failed batch doesn't stop the others; once all have run, the flow fails if any did, naming them. Retry a failed batch from its own run.
+- Retrying this flow re-runs the query: batches whose GCAs are unchanged get their existing run back; changed ones are triggered again.
+- Each batch sends its own Slack report (`slack_report`). `enscode`, `credentials` and the Secret block names are passed on when given; otherwise the update deployment's defaults apply.
+- No GCAs: nothing is triggered. Dry run: the query runs and the files are written, but no batch is triggered.
 
 ### `busco_gca_flow`
 

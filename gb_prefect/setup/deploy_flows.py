@@ -10,6 +10,9 @@ The work pools must exist before deploying the flows.
 - BUSCO dispatchers: the dispatch process pool (default genebuild-dispatch). They run no Nextflow
   (runs_nextflow=False): no outdir/enscode parameters, the flow run uses <asm-venv>/bin/python,
   and --work-pool / --flow-outdir / Slurm resource options don't apply to them.
+- from_query: also on the dispatch pool (runs_nextflow=False). It runs the update deployment
+  once per batch, one after another, so it does take an outdir (takes_outdir=True: --outdir, or
+  --flow-outdir from_query=PATH) for its GCA list and batch files. The dispatch host must see it.
 
 Pool names are the POOLS defaults below; change one with --<key>-pool (e.g. --metadata-pool
 my-test-pool), or send every selected flow to one pool with --work-pool.
@@ -74,13 +77,12 @@ FLOWS = {
             "gb_prefect/flows/assembly_metadata/gb_registry_update_from_query.py"
             ":gb_registry_update_from_query_flow"
         ),
-        work_pool="metadata",
-        description="Assembly metadata update for the GCAs a registry query returns",
-        tags=["metadata_update"],
+        work_pool="dispatch",
+        runs_nextflow=False,
+        takes_outdir=True,
+        description="Assembly metadata update, in batches, for the GCAs a registry query returns",
+        tags=["dispatch", "metadata_update"],
         concurrency_limit=1,
-        cpu=2,
-        memory=4,
-        time_limit=24,
     ),
     "register": FlowDeployment(
         name="gb_metadata_registry",

@@ -47,6 +47,8 @@ class FlowDeployment:  # pylint: disable=too-many-instance-attributes
             its own parameters (no outdir/enscode), and its one job variable points the process
             worker at the venv's python, since a process pool has no venv-activation step.
             --work-pool, --cpu/--memory/--time-limit and --flow-outdir don't apply to it.
+        takes_outdir: Only for runs_nextflow=False: the flow still gets an outdir parameter
+            (its --flow-outdir, or --outdir), e.g. to write files the runs it triggers read.
     """
 
     name: str
@@ -61,6 +63,7 @@ class FlowDeployment:  # pylint: disable=too-many-instance-attributes
     parameters: Mapping[str, Any] = field(default_factory=dict)
     separate_outdir: bool = False
     runs_nextflow: bool = True
+    takes_outdir: bool = False
 
 
 def _pool_dest(key: str) -> str:
@@ -146,7 +149,7 @@ def parse_args(
             parser.error(f"--flow-outdir must be KEY=PATH, got {value!r}")
         if key not in flows:
             parser.error(f"--flow-outdir: unknown flow {key!r} (choose from {', '.join(sorted(flows))})")
-        if not flows[key].runs_nextflow:
+        if not flows[key].runs_nextflow and not flows[key].takes_outdir:
             parser.error(f"--flow-outdir: {key} doesn't run a Nextflow pipeline and takes no outdir")
         flow_outdirs[key] = path
     if not args.job_dir or "/" in args.job_dir:
@@ -164,9 +167,9 @@ def build_deployment(
     outdir is the flow's base output directory (its --flow-outdir); defaults to args.outdir.
     The job's working directory (sbatch script, Slurm .out/.err) is <outdir>/<args.job_dir>.
     """
-    if not flow_deployment.runs_nextflow:
-        return _process_pool_deployment(flow_deployment, args)
     outdir = outdir or args.outdir
+    if not flow_deployment.runs_nextflow:
+        return _process_pool_deployment(flow_deployment, args, outdir)
 
     def override(value: Optional[int], default: int) -> int:
         return default if value is None else value
@@ -195,13 +198,18 @@ def build_deployment(
     return spec
 
 
-def _process_pool_deployment(flow_deployment: FlowDeployment, args: argparse.Namespace) -> Dict[str, Any]:
+def _process_pool_deployment(
+    flow_deployment: FlowDeployment, args: argparse.Namespace, outdir: str
+) -> Dict[str, Any]:
     """Return the deploy() arguments of an orchestration flow on a process pool (runs_nextflow=False)."""
+    parameters = dict(flow_deployment.parameters)
+    if flow_deployment.takes_outdir:
+        parameters = {"outdir": outdir, **parameters}
     spec: Dict[str, Any] = {
         "name": f"{flow_deployment.name}{args.name_suffix}",
         "entrypoint": flow_deployment.entrypoint,
         "work_pool_name": args.pools[flow_deployment.work_pool],
-        "parameters": dict(flow_deployment.parameters),
+        "parameters": parameters,
         "job_variables": {"command": f"{args.asm_venv}/bin/python -m prefect.engine"},
         "tags": ["genebuild", *flow_deployment.tags, args.branch],
         "description": f"{flow_deployment.description} from branch {args.branch}.",

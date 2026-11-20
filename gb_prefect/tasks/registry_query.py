@@ -56,6 +56,21 @@ def run_select_query(query: str, db_params: Dict[str, Any]) -> List[Any]:
     return rows
 
 
+def write_gca_file(output_file: str, gcas: List[str]) -> str:
+    """Write gcas to output_file, one per line (creating its folder). Returns output_file."""
+    path = Path(output_file)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("".join(f"{gca}\n" for gca in gcas), encoding="utf-8")
+    return output_file
+
+
+def split_batches(gcas: List[str], batch_size: int) -> List[List[str]]:
+    """Split gcas, in order, into batches of batch_size (the last one may be smaller)."""
+    if batch_size < 1:
+        raise ValueError(f"batch_size must be at least 1, got {batch_size}")
+    return [gcas[start : start + batch_size] for start in range(0, len(gcas), batch_size)]
+
+
 @task(log_prints=True)
 def collect_gca_list(query: str, db_params: Dict[str, Any], output_file: str) -> List[str]:
     """Run a SELECT query on the metadata DB and write the GCAs it returns (its first column,
@@ -63,9 +78,6 @@ def collect_gca_list(query: str, db_params: Dict[str, Any], output_file: str) ->
     query = check_select_query(query)
     print(f"Collecting GCAs with:\n{query}")
     gcas = unique_gcas(run_select_query(query, db_params))
-
-    path = Path(output_file)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text("".join(f"{gca}\n" for gca in gcas), encoding="utf-8")
-    print(f"Wrote {len(gcas)} GCA(s) to {path}")
+    write_gca_file(output_file, gcas)
+    print(f"Wrote {len(gcas)} GCA(s) to {output_file}")
     return gcas
