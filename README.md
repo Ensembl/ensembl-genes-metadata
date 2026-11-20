@@ -9,7 +9,7 @@
 
 ## Prefect Orchestrator
 
-- [Genebuild Metadata Prefect](./gb_prefect/README.md): Prefect flows that submit the Nextflow pipelines above (and other scripts) as SLURM jobs.
+- [Genebuild Metadata Prefect](./gb_prefect/README.md): Prefect flows that run the Nextflow pipelines above, `ensembl-genes-nf`'s statistics pipeline and Python scripts as Slurm jobs on Codon. Guides for adding flows: [Prefect orchestration](https://ensembl.github.io/ensembl-genes-metadata/prefect/).
 
 
 ## Web App

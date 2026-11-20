@@ -1,0 +1,76 @@
+import logging
+from typing import Optional
+
+from prefect import flow  # type: ignore
+
+from gb_metadata.update_busco_events import (  # type: ignore
+    get_pending_candidates,
+    insert_busco_candidates,
+    mark_existing_busco_done,
+)
+from gb_prefect.tasks.busco_dispatch import dispatch_rows, get_free_slots
+from gb_prefect.utils.credentials_utils import PipelineCredentials, resolve_credentials
+
+BUSCO_GCA_DEPLOYMENT = "BUSCO_gca/busco-gca"
+
+
+@flow(name="BUSCO_dispatch_automatic", log_prints=True)
+def busco_dispatch_automatic_flow(  # pylint: disable=too-many-arguments,too-many-positional-arguments
+    dry_run: bool = False,
+    deployment_name: str = BUSCO_GCA_DEPLOYMENT,
+    credentials: Optional[PipelineCredentials] = None,
+    metadata_secret_block: Optional[str] = None,
+):
+    """Automatically select and trigger busco_gca_flow for pending candidates, sized to
+    the free slots of the work pool deployment_name runs on.
+
+    Refreshes assembly_events first. Selects up to N pending candidates. Where N is
+    the pool's concurrency_limit minus its active and waiting slots. It does not try
+    to run if the pool has no concurrency_limit set.
+
+    This dispatcher always updates the registry, --update_registry is always feed to the runs.
+    So, both busco metakeys and busco event status are updated in the registry.
+    Each triggered run also gets post_run_cleanup=True: a failed run sets genome_busco.status
+    to failed and keeps only its logs; a successful run's directory is removed.
+
+    credentials and metadata_secret_block are both passed on to the triggered runs, so they
+    write to the same DB as the dispatcher.
+    """
+    file_handler = logging.FileHandler("busco_dispatch_automatic.log", mode="w")
+    file_handler.setFormatter(logging.Formatter("%(asctime)s:%(levelname)s:%(message)s"))
+    root_logger = logging.getLogger()
+    root_logger.addHandler(file_handler)
+    root_logger.setLevel(logging.INFO)
+
+    db_params = resolve_credentials(
+        credentials, metadata_secret_block=metadata_secret_block
+    ).metadata_db_params
+
+    print("Refreshing assembly_events before dispatching...")
+    mark_existing_busco_done(db_params, execute=not dry_run)
+    insert_busco_candidates(db_params, execute=not dry_run)
+
+    free_slots = get_free_slots(deployment_name)
+    if free_slots == 0:
+        print(f"No free slots for {deployment_name}; nothing to dispatch.")
+        return {"triggered": [], "skipped": []}
+
+    candidates = get_pending_candidates(db_params, free_slots)
+    print(f"Selected {len(candidates)} candidate(s) for {free_slots} free slot(s)")
+
+    rows = [
+        {"gca": gca, "taxon_id": str(taxon_id), "busco_dataset": ""}
+        for gca, taxon_id, _priority in candidates
+    ]
+
+    return dispatch_rows(
+        rows,
+        db_params,
+        force=False,
+        dry_run=dry_run,
+        deployment_name=deployment_name,
+        update_registry=True,
+        post_run_cleanup=True,
+        metadata_secret_block=metadata_secret_block,
+        credentials=credentials,
+    )
