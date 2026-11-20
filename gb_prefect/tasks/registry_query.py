@@ -64,6 +64,12 @@ def write_gca_file(output_file: str, gcas: List[str]) -> str:
     return output_file
 
 
+def read_gca_file(path: str) -> List[str]:
+    """Read a GCA list written by write_gca_file: one accession per line, blank lines ignored."""
+    with open(path, encoding="utf-8") as handle:
+        return [line.strip() for line in handle if line.strip()]
+
+
 def split_batches(gcas: List[str], batch_size: int) -> List[List[str]]:
     """Split gcas, in order, into batches of batch_size (the last one may be smaller)."""
     if batch_size < 1:

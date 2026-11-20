@@ -9,6 +9,7 @@ from gb_prefect.tasks.nextflow import run_nextflow_pipeline
 from gb_prefect.utils.credentials_utils import PipelineCredentials, resolve_credentials
 from gb_prefect.utils.enscode_utils import resolve_enscode
 from gb_prefect.utils.path_utils import run_folder
+from gb_prefect.utils.run_utils import run_start
 
 # Without a screen_date, check assemblies released in the last SCREEN_DAYS_BACK days.
 SCREEN_DAYS_BACK = 10
@@ -28,19 +29,24 @@ def gb_registry_update_by_date_flow(  # pylint: disable=too-many-arguments,too-m
 ):
     """Run the assembly metadata update Nextflow pipeline in --screen_date mode: screens the
     metadata database for high-priority assemblies released after screen_date (YYYY-MM-DD;
-    default: SCREEN_DAYS_BACK days before today) and checks/updates them (see
+    default: SCREEN_DAYS_BACK days before the run's start date) and checks/updates them (see
     gb_registry_update_flow for a GCA list instead).
 
-    Output goes to {outdir}/{folder_name}; folder_name defaults to asm_update_screen_<screen_date>_<today>.
+    Output goes to {outdir}/{folder_name}; folder_name defaults to
+    asm_update_screen_<screen_date>_<run start date>.
+
+    The default screen_date and folder count from the flow run's start date, not today's, so a
+    retry -- even on a later day -- screens the same window into the same folder, where
+    Nextflow can -resume.
     """
-    # Resolve the screen date and set the default output folder name.
-    today = datetime.now()
+    # Resolve the screen date and set the default output folder name, from the run's start date.
+    started = run_start()
     if screen_date:
         screen_date = datetime.strptime(screen_date, "%Y-%m-%d").strftime("%Y-%m-%d")
     else:
-        screen_date = (today - timedelta(days=SCREEN_DAYS_BACK)).strftime("%Y-%m-%d")
+        screen_date = (started - timedelta(days=SCREEN_DAYS_BACK)).strftime("%Y-%m-%d")
     print(f"Checking high-priority assemblies released after {screen_date}.")
-    default_folder = f"asm_update_screen_{screen_date}_{today.strftime('%Y-%m-%d')}"
+    default_folder = f"asm_update_screen_{screen_date}_{started.strftime('%Y-%m-%d')}"
 
     # Resolve credentials
     credentials = resolve_credentials(

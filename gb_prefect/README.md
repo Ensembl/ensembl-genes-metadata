@@ -100,7 +100,7 @@ Checks/updates the metadata of the GCA accessions listed in `gca_list` (an absol
 
 ### `gb_registry_update_by_date_flow`
 
-Screens the metadata DB for high-priority assemblies released after `screen_date` (`YYYY-MM-DD`; default: 10 days before today, `SCREEN_DAYS_BACK`) and checks/updates them, instead of using a GCA list. `folder_name` defaults to `asm_update_screen_<screen_date>_<today>`; the other parameters are as for `gb_registry_update_flow`.
+Screens the metadata DB for high-priority assemblies released after `screen_date` (`YYYY-MM-DD`; default: 10 days before the run's start date, `SCREEN_DAYS_BACK`) and checks/updates them, instead of using a GCA list. `folder_name` defaults to `asm_update_screen_<screen_date>_<run start date>`; the other parameters are as for `gb_registry_update_flow`. Both defaults count from the flow run's start date (set once by Prefect), not today's, so a retry on a later day screens the same window into the same folder and Nextflow can `-resume`.
 
 ### `gb_registry_update_from_query_flow`
 
@@ -113,7 +113,7 @@ SELECT gca_accession FROM genebuild_status
 WHERE gb_status NOT IN ('handed_over', 'live', 'coming_soon')
 ```
 
-Output, under `<outdir>/<folder_name>` (default `asm_update_query_<today>`):
+Output, under `<outdir>/<folder_name>` (default `asm_update_query_<run start date>_<flow run name>`, e.g. `asm_update_query_2026-11-20_sigma-normae`; a retry keeps it):
 
 ```
 gca_list.txt              the whole list, one accession per line, de-duplicated
@@ -122,7 +122,7 @@ batch_002/...
 ```
 
 - A failed batch doesn't stop the others; once all have run, the flow fails if any did, naming them. Retry a failed batch from its own run.
-- Retrying this flow re-runs the query: batches whose GCAs are unchanged get their existing run back; changed ones are triggered again.
+- Retrying this flow does **not** run the query again: it reuses `gca_list.txt` from the first attempt (the query runs only if that file was never written), so the batches stay the same and each batch already triggered gets its existing run back. A new run (not a retry) always queries again, even into an existing `folder_name`.
 - Each batch sends its own Slack report (`slack_report`). `enscode`, `credentials` and the Secret block names are passed on when given; otherwise the update deployment's defaults apply.
 - No GCAs: nothing is triggered. Dry run: the query runs and the files are written, but no batch is triggered.
 

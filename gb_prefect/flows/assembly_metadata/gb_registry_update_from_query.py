@@ -1,5 +1,4 @@
 import hashlib
-from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, cast
 
@@ -11,11 +10,13 @@ from prefect.runtime import flow_run  # type: ignore
 from gb_prefect.tasks.registry_query import (
     DEFAULT_GCA_QUERY,
     collect_gca_list,
+    read_gca_file,
     split_batches,
     write_gca_file,
 )
 from gb_prefect.utils.credentials_utils import PipelineCredentials, resolve_credentials
 from gb_prefect.utils.path_utils import run_folder
+from gb_prefect.utils.run_utils import is_retry, run_name_suffix, run_start
 
 GCA_LIST_FILE = "gca_list.txt"
 BATCH_SIZE = 1000
@@ -79,15 +80,21 @@ def gb_registry_update_from_query_flow(  # pylint: disable=too-many-arguments,to
         in genebuild_status not handed_over, live or coming_soon (DEFAULT_GCA_QUERY). It runs
         in a read-only transaction.
 
-    Output, under {outdir}/{folder_name} (folder_name defaults to asm_update_query_<today>):
+    Output, under {outdir}/{folder_name} (folder_name defaults to
+    asm_update_query_<run start date>_<flow run name>, which a retry keeps):
         gca_list.txt                the whole list, one accession per line
         batch_001/gca_list.txt      each batch's list; the batch's run writes its pipeline
         batch_002/...               output in the same folder
 
     A batch whose run fails (or can't be triggered) doesn't stop the others; once every batch
     has run, this flow fails if any of them did, naming them. Retry a failed batch from its own
-    run. Retrying this flow re-runs the query: batches whose GCAs are unchanged get their
-    existing run back (not re-run); changed ones are triggered again.
+    run.
+
+    Retrying this flow doesn't run the query again: the list in gca_list.txt is reused (the
+    query runs only if the first attempt didn't get as far as writing it), so the batches are
+    the same, and each batch already triggered gets its existing run back instead of a new
+    one. A new run of the flow (not a retry) always runs the query, even into an existing
+    folder_name.
 
     Each batch's run sends its own Slack report when slack_report is true. enscode,
     credentials and the Secret block names are passed on to each run when given; otherwise
@@ -96,14 +103,22 @@ def gb_registry_update_from_query_flow(  # pylint: disable=too-many-arguments,to
     dry_run: the query still runs (it only reads) and the list and batch files are written,
     but no batch run is triggered.
     """
-    # The query needs the real DB params, even on a dry run.
-    db_params = resolve_credentials(
-        credentials, metadata_secret_block=metadata_secret_block
-    ).metadata_db_params
-    run_dir = Path(run_folder(outdir, folder_name, f"asm_update_query_{datetime.now().strftime('%Y-%m-%d')}"))
+    # The default folder comes from the flow run, so a retry (even on a later day) finds it again.
+    default_folder = f"asm_update_query_{run_start().strftime('%Y-%m-%d')}{run_name_suffix()}"
+    run_dir = Path(run_folder(outdir, folder_name, default_folder))
+    gca_list = run_dir / GCA_LIST_FILE
 
-    # Collect the GCAs from the registry and split them into batches.
-    gcas = collect_gca_list(query, db_params, str(run_dir / GCA_LIST_FILE))
+    # Collect the GCAs from the registry -- or, on a retry, reuse the list the first attempt
+    # collected, so the batches don't change under runs already triggered.
+    if is_retry() and gca_list.is_file():
+        gcas = read_gca_file(str(gca_list))
+        print(f"Retry: reusing the {len(gcas)} GCA(s) in {gca_list}; the query is not run again.")
+    else:
+        # The query needs the real DB params, even on a dry run.
+        db_params = resolve_credentials(
+            credentials, metadata_secret_block=metadata_secret_block
+        ).metadata_db_params
+        gcas = collect_gca_list(query, db_params, str(gca_list))
     if not gcas:
         print("The query returned no GCAs; nothing to update.")
         return []
