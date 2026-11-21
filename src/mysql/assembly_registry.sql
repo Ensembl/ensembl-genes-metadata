@@ -29,6 +29,18 @@ CREATE TABLE assembly_metrics (
   CONSTRAINT metric_record UNIQUE (assembly_id, metrics_name, metrics_value)
 ) ENGINE=MyISAM AUTO_INCREMENT=1 DEFAULT CHARSET=latin1;
 
+DROP TABLE IF EXISTS assembly_events;
+
+CREATE TABLE assembly_events (
+  asm_event_id int NOT NULL AUTO_INCREMENT,
+  assembly_id int NOT NULL,
+  event varchar(50) NOT NULL,
+  status varchar(50) NOT NULL,
+  PRIMARY KEY (`asm_event_id`),
+  FOREIGN KEY (`assembly_id`) REFERENCES assembly(`assembly_id`),
+  CONSTRAINT assembly_event UNIQUE (assembly_id, event)
+) ENGINE=MyISAM AUTO_INCREMENT=1 DEFAULT CHARSET=latin1;
+
 DROP TABLE IF EXISTS refseq_assembly;
 
 CREATE TABLE refseq_assembly

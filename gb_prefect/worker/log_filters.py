@@ -6,7 +6,7 @@ namely Prefect's API auth (PREFECT_API_KEY, PREFECT_API_AUTH_STRING), which
 every flow run needs to reach the Prefect API.
 
 It does NOT redact database/Slack credentials that individual tasks embed in
-their own Nextflow commands (see gb_prefect/tasks/registry_update.py) -- that
+their own Nextflow commands (see gb_prefect/tasks/nextflow.py) -- that
 is a separate, task-level concern this worker package does not touch.
 """
 

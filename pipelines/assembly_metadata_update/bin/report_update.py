@@ -24,6 +24,11 @@ from slack_sdk.errors import SlackApiError  # type: ignore
 from gb_metadata.db_utils import execute_query
 
 
+# Update checks that send the genebuilder a Slack DM. Keep in step with the REPORT_UPDATE filter in
+# workflow/assembly_metadata_update.nf. Other checks (e.g. refseq_check) only go to report_track.csv.
+SLACK_CHECK_TYPES = ("asm_status",)
+
+
 def fetching_user(accession, metadata_params, slack_users):
 
     query_gb_user = f"""SELECT genebuilder, gb_status FROM genebuild_status
@@ -94,7 +99,7 @@ def main():
         "--check_type",
         type=str,
         required=True,
-        help="Type of update check. Possible values: asm_status, refseq, etc.",
+        help="Type of update check (asm_status, refseq_check, ...). Only SLACK_CHECK_TYPES send a message.",
     )
     parser.add_argument(
         "--previous_value", type=str, required=True, help="Original value previously stored in the registry."
@@ -121,7 +126,7 @@ def main():
 
     slack_id, gb_status = fetching_user(args.accession, args.metadata_params, slack_users)
 
-    if slack_id is not None and gb_status is not None and args.check_type in ("asm_status", "refseq_check"):
+    if slack_id is not None and gb_status is not None and args.check_type in SLACK_CHECK_TYPES:
 
         custom_message = slack_message(
             args.accession, gb_status, args.check_type, args.previous_value, args.current_value

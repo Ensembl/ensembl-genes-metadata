@@ -52,11 +52,8 @@ def fetch_gca_list(metadata_params, full_screen, screen_date):
             AND a.is_current = 'current'
             AND a.release_date > '{screen_date}'
             AND (t.taxon_class_id = '7711'
-                OR b.bioproject_id IN (
-                    'PRJNA533106', 'PRJEB40665', 'PRJEB61747',
-                    'PRJEB43510', 'PRJEB47820', 'PRJNA813333', 'PRJNA489243'
-
-        ));
+                OR b.bioproject_id IN (SELECT mb.bioproject_id FROM main_bioproject mb)
+            );
         """
 
     # Get list from assembly_metadata and parse

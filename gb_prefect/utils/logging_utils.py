@@ -1,9 +1,6 @@
 from __future__ import annotations
 
-import re
 from pathlib import Path
-
-IGNORE = re.compile(r"Cannot infer \$ENSEMBL_VERSION from module's version")
 
 
 def append_log(path: Path, msg: str) -> None:
@@ -13,8 +10,8 @@ def append_log(path: Path, msg: str) -> None:
         fh.write(msg)
 
 
-def filter_stderr(s: str) -> str:
-    """Strip out known-noisy lines (e.g. module version warnings) from stderr output."""
-    if not s:
-        return ""
-    return "\n".join(line for line in s.splitlines() if not IGNORE.search(line)).strip()
+def read_from(path: Path, offset: int) -> str:
+    """Return path's content from byte offset on, e.g. one run's part of a log appended to across reruns."""
+    with path.open("rb") as fh:
+        fh.seek(offset)
+        return fh.read().decode("utf-8", errors="replace")
