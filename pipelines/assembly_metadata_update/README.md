@@ -62,7 +62,7 @@ The pipeline runs in two phases for every GCA accession: an **integrity check** 
 | 9 | `SPECIES_CHECKER` | Fetches the NCBI taxonomy lineage for a new taxon ID not yet in the registry |
 | 10 | `WRITE2DB` | Writes the new taxonomy/species records to the database |
 | 11 | `TAXONOMY` (as `NEW_TAXONOMY`) | Updates taxon ID, scientific name and common name for the newly-registered taxon |
-| 12 | `REPORT_UPDATE` | When `--slack_report` is set, sends a Slack DM to the genebuilder assigned to the assembly for `asm_status` and `refseq_check` updates |
+| 12 | `REPORT_UPDATE` | When `--slack_report` is set, sends a Slack DM to the genebuilder assigned to the assembly for `asm_status` updates only (other checks, RefSeq included, go to `report_track.csv` only) |
 
 Steps 6 run in parallel for every accession that reached Phase 2. Each comparison step updates the database in place when a difference is found and emits a line (`accession, check_type, reporting, previous_value, new_value`) used to build the run report.
 
@@ -125,7 +125,7 @@ Maps genebuilder usernames to Slack user IDs, used by `REPORT_UPDATE` to identif
 
 | Parameter | Default | Description |
 |-----------|---------|-------------|
-| `--slack_report` | `false` | When set, sends a Slack DM to the genebuilder assigned to an assembly whenever its metadata is updated. Requires `--slack_user` and `--slack_params` |
+| `--slack_report` | `false` | When set, sends a Slack DM to the genebuilder assigned to an assembly when its assembly status (`asm_status`) changes. Requires `--slack_user` and `--slack_params` |
 | `--slack_user` | `data/slack_user.json` | Path to the JSON file mapping genebuilder usernames to Slack user IDs |
 | `--slack_params` | `null` | Slack bot connection parameters, as an inline JSON string, e.g. `'{"slack_bot_token": "xoxb-..."}'` |
 

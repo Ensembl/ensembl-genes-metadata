@@ -128,7 +128,9 @@ workflow ASSEMBLY_METADATA_UPDATE {
         }
 
     if (params.slack_report) {
-        REPORT_UPDATE(all_output.report)
+        // Only assembly status changes are sent to Slack (SLACK_CHECK_TYPES in bin/report_update.py);
+        // every other check, RefSeq included, is recorded in report_track.csv only.
+        REPORT_UPDATE(all_output.report.filter { row -> row[1] == 'asm_status' })
     }
 
     integrity_check_results.deleted.collectFile(
