@@ -1,4 +1,4 @@
-# pylint: disable=duplicate-code,too-many-instance-attributes,missing-function-docstring,too-many-public-methods
+#pylint: disable=duplicate-code,too-many-instance-attributes,missing-function-docstring,too-many-public-methods
 """
 Workflow documentation renderer.
 
@@ -66,7 +66,7 @@ def _write(path: Path, text: str) -> None:
 # ---------------------------------------------------------------------
 
 
-def render_workflow(  # pylint: disable=missing-function-docstring
+def render_workflow(#pylint: disable=missing-function-docstring
     workflow: Workflow,
 ) -> str:
 

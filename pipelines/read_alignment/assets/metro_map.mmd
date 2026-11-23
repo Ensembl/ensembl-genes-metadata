@@ -1,0 +1,74 @@
+
+%%metro title: Short Read Alignment Pipeline
+%%metro style: nfcore
+%%metro line: illumina | Illumina STAR | #24B064
+%%metro line: longread | PacBio ONT Minimap2 | #268BD2
+%%metro line: processing | BAM processing | #F39C12
+%%metro line: reporting | Reporting | #8E44AD
+
+graph LR
+    A["CSV samplesheet"]
+    B["FETCH_GENOME"]
+    C["DOWNLOAD_FASTQS"]
+
+    D["STAR_INDEX_PARAMS"]
+    E["STAR_INDEX_GENOME"]
+    F["STAR"]
+    G["CHECK_BAM_STAR"]
+    H["DELETE_FASTQ_STAR"]
+    I["INDEX_BAM_STAR"]
+
+    J["MINIMAP2_INDEX_GENOME"]
+    K["MINIMAP2"]
+    L["CHECK_BAM_MINIMAP"]
+    M["DELETE_FASTQ_MINIMAP"]
+    N["INDEX_BAM_MINIMAP"]
+
+    O["Aligned BAM files"]
+
+    P["MERGE_BAM_PER_TISSUE"]
+    Q["CHECK_BAM_MERGED"]
+    R["INDEX_BAM_MERGED"]
+
+    S["BAM2STRAND"]
+    T["BAM2BIGWIG"]
+    U["BAM2CRAM"]
+    V["INDEX_CRAM"]
+
+    W["WRITE_REPORT"]
+    X["COLLECT_SOFTWARE_VERSIONS"]
+
+    A -->|illumina| B
+    B -->|illumina| C
+    C -->|illumina| D
+    D -->|illumina| E
+    E -->|illumina| F
+    F -->|illumina| G
+    G -->|illumina| H
+    H -->|illumina| I
+    I -->|illumina| O
+
+    C -->|longread| J
+    J -->|longread| K
+    K -->|longread| L
+    L -->|longread| M
+    M -->|longread| N
+    N -->|longread| O
+
+    O -->|processing| P
+    P -->|processing| Q
+    Q -->|processing| R
+
+    R -->|processing| S
+    S -->|processing| T
+    R -->|processing| T
+    R -->|processing| U
+    U -->|processing| V
+
+    O -->|reporting| W
+    R -->|reporting| W
+    S -->|reporting| W
+    T -->|reporting| W
+    V -->|reporting| W
+    W -->|reporting| X
+
