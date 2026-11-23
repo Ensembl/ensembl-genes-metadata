@@ -1,0 +1,111 @@
+{
+  "run_accession": "DRR000618",
+  "ena_indexed_metadata": {
+    "run_accession": "DRR000618",
+    "age": "",
+ 
+    "cell_line": "",
+    "cell_type": "",
+    "center_name": "NIG",
+    
+    "cultivar": "",
+    
+    "description": "Illumina Genome Analyzer II paired end sequencing: Arabidopsis Transcriptome Multiplex-1_No1",
+    "dev_stage": "",
+    "disease": "",
+    
+    "ecotype": "",
+    
+    "experiment_accession": "DRX000325",
+    
+    "experiment_title": "Illumina Genome Analyzer II paired end sequencing: Arabidopsis Transcriptome Multiplex-1_No1",
+    
+    "fastq_ftp": "ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR000618/DRR000618_1.fastq.gz;ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR000618/DRR000618_2.fastq.gz",
+    
+    "fastq_md5": "4ffa5b2ea83a264f58972f58f3c3c3fb;4dc6dbcfd014107abe744d9cce3491c7",
+    
+    "first_created": "2016-03-29",
+    
+    "instrument_model": "Illumina Genome Analyzer II",
+    "instrument_platform": "ILLUMINA",
+    
+    "isolate": "",
+    "isolation_source": "",
+    
+    "library_layout": "PAIRED",
+    
+    "library_name": "Multiplex-1_No1",
+    
+    "library_selection": "PCR",
+    "library_source": "TRANSCRIPTOMIC",
+    "library_strategy": "AMPLICON",
+    "local_environmental_context": "",
+    
+    "sample_accession": "SAMD00012930",
+    
+    "sample_description": "Arabidopsis Transcriptome Multiplex-1_No1",
+    
+    "sample_title": "Arabidopsis Transcriptome Multiplex-1_No1",
+    
+    "scientific_name": "Arabidopsis thaliana",
+    
+    "sex": "",
+    
+    "strain": "",
+    "study_accession": "PRJDA51199",
+    "study_alias": "DRP000209",
+    "study_title": "Arabidopsis Transcriptome",
+    
+
+    
+  },
+
+  "biosample_accession": "SAMD00012930",
+  "biosample_metadata": {
+    "name": "SAMD00012930",
+    "accession": "SAMD00012930",
+    
+    "taxId": 3702,
+    "tissue"
+    "characteristics": {
+      "External Id": [
+        {
+          "text": "SAMD00012930",
+          "tag": "Namespace:BioSample"
+        }
+      ],
+      "INSDC center name": [
+        {
+          "text": "Genetic Strain Stock Center, Plant Genetics Laboratory, National Institute of Genetics, Research Organization of Information and Systems"
+        }
+      ],
+      
+      "organism": [
+        {
+          "text": "Arabidopsis thaliana",
+          "ontologyTerms": [
+            "http://purl.obolibrary.org/obo/NCBITaxon_3702"
+          ]
+        }
+      ],
+      
+      "sample name": [
+        {
+          "text": "DRS000288",
+          "tag": "attribute"
+        }
+      ],
+      "title": [
+        {
+          "text": "Arabidopsis Transcriptome Multiplex-1_No1"
+        }
+      ]
+    },
+    
+    "_links": {
+      "self": {
+        "href": "https://www.ebi.ac.uk/biosamples/samples/SAMD00012930"
+      },
+      
+  }
+}

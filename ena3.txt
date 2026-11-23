@@ -1,0 +1,3100 @@
+{
+  "run_accession": "DRR000618",
+  "ena_indexed_metadata": {
+    "run_accession": "DRR000618",
+    "age": "",
+    "aligned": "",
+    "altitude": "",
+    "assembly_quality": "",
+    "assembly_software": "",
+    "bam_aspera": "",
+    "bam_bytes": "",
+    "bam_file_role": "",
+    "bam_ftp": "",
+    "bam_galaxy": "",
+    "bam_md5": "",
+    "base_count": "3095895600",
+    "binning_software": "",
+    "bio_material": "",
+    "bisulfite_protocol": "",
+    "broad_scale_environmental_context": "",
+    "broker_name": "DRA",
+    "cage_protocol": "",
+    "cell_line": "",
+    "cell_type": "",
+    "center_name": "NIG",
+    "checklist": "",
+    "chip_ab_provider": "",
+    "chip_protocol": "",
+    "chip_target": "",
+    "collected_by": "",
+    "collection_date": "",
+    "collection_date_end": "",
+    "collection_date_start": "",
+    "completeness_score": "",
+    "contamination_score": "",
+    "control_experiment": "",
+    "country": "",
+    "cultivar": "",
+    "culture_collection": "",
+    "datahub": "",
+    "depth": "",
+    "description": "Illumina Genome Analyzer II paired end sequencing: Arabidopsis Transcriptome Multiplex-1_No1",
+    "dev_stage": "",
+    "disease": "",
+    "dnase_protocol": "",
+    "ecotype": "",
+    "elevation": "",
+    "environment_biome": "",
+    "environment_feature": "",
+    "environment_material": "",
+    "environmental_medium": "",
+    "environmental_sample": "",
+    "experiment_accession": "DRX000325",
+    "experiment_alias": "DRX000325",
+    "experiment_target": "",
+    "experiment_title": "Illumina Genome Analyzer II paired end sequencing: Arabidopsis Transcriptome Multiplex-1_No1",
+    "experimental_factor": "",
+    "experimental_protocol": "",
+    "extraction_protocol": "",
+    "faang_library_selection": "",
+    "fastq_aspera": "fasp.sra.ebi.ac.uk:/vol1/fastq/DRR000/DRR000618/DRR000618_1.fastq.gz;fasp.sra.ebi.ac.uk:/vol1/fastq/DRR000/DRR000618/DRR000618_2.fastq.gz",
+    "fastq_bytes": "1161674543;1153194610",
+    "fastq_file_role": "GENERATED_FILE;GENERATED_FILE",
+    "fastq_ftp": "ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR000618/DRR000618_1.fastq.gz;ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR000618/DRR000618_2.fastq.gz",
+    "fastq_galaxy": "ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR000618/DRR000618_1.fastq.gz;ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR000618/DRR000618_2.fastq.gz",
+    "fastq_md5": "4ffa5b2ea83a264f58972f58f3c3c3fb;4dc6dbcfd014107abe744d9cce3491c7",
+    "file_location": "",
+    "first_created": "2016-03-29",
+    "first_public": "2016-03-29",
+    "germline": "",
+    "hi_c_protocol": "",
+    "host": "",
+    "host_body_site": "",
+    "host_genotype": "",
+    "host_gravidity": "",
+    "host_growth_conditions": "",
+    "host_phenotype": "",
+    "host_scientific_name": "",
+    "host_sex": "",
+    "host_status": "",
+    "host_tax_id": "",
+    "identified_by": "",
+    "instrument_model": "Illumina Genome Analyzer II",
+    "instrument_platform": "ILLUMINA",
+    "investigation_type": "",
+    "isolate": "",
+    "isolation_source": "",
+    "last_updated": "2026-10-16",
+    "lat": "",
+    "library_construction_protocol": "none provided",
+    "library_gen_protocol": "",
+    "library_layout": "PAIRED",
+    "library_max_fragment_size": "",
+    "library_min_fragment_size": "",
+    "library_name": "Multiplex-1_No1",
+    "library_pcr_isolation_protocol": "",
+    "library_prep_date": "",
+    "library_prep_date_format": "",
+    "library_prep_latitude": "",
+    "library_prep_location": "",
+    "library_prep_longitude": "",
+    "library_selection": "PCR",
+    "library_source": "TRANSCRIPTOMIC",
+    "library_strategy": "AMPLICON",
+    "local_environmental_context": "",
+    "location": "",
+    "location_end": "",
+    "location_start": "",
+    "lon": "",
+    "marine_region": "",
+    "mating_type": "",
+    "ncbi_reporting_standard": "Generic",
+    "nominal_length": "0",
+    "nominal_sdev": "0",
+    "pcr_isolation_protocol": "",
+    "ph": "",
+    "project_name": "Arabidopsis thaliana strain:tonagata-0004",
+    "protocol_label": "",
+    "read_count": "15479478",
+    "read_strand": "",
+    "restriction_enzyme": "",
+    "restriction_enzyme_target_sequence": "",
+    "restriction_site": "",
+    "rna_integrity_num": "",
+    "rna_prep_3_protocol": "",
+    "rna_prep_5_protocol": "",
+    "rna_purity_230_ratio": "",
+    "rna_purity_280_ratio": "",
+    "rt_prep_protocol": "",
+    "run_alias": "DRR000618",
+    "run_date": "1278889200000",
+    "salinity": "",
+    "sample_accession": "SAMD00012930",
+    "sample_alias": "SAMD00012930",
+    "sample_capture_status": "",
+    "sample_collection": "",
+    "sample_description": "Arabidopsis Transcriptome Multiplex-1_No1",
+    "sample_material": "",
+    "sample_prep_interval": "",
+    "sample_prep_interval_units": "",
+    "sample_storage": "",
+    "sample_storage_processing": "",
+    "sample_title": "Arabidopsis Transcriptome Multiplex-1_No1",
+    "sampling_campaign": "",
+    "sampling_platform": "",
+    "sampling_site": "",
+    "scientific_name": "Arabidopsis thaliana",
+    "secondary_project": "",
+    "secondary_sample_accession": "DRS000288",
+    "secondary_study_accession": "DRP000209",
+    "sequencing_date": "",
+    "sequencing_date_format": "",
+    "sequencing_location": "",
+    "sequencing_longitude": "",
+    "sequencing_method": "",
+    "sequencing_primer_catalog": "",
+    "sequencing_primer_lot": "",
+    "sequencing_primer_provider": "",
+    "serotype": "",
+    "serovar": "",
+    "sex": "",
+    "specimen_voucher": "",
+    "sra_aspera": "",
+    "sra_bytes": "",
+    "sra_file_role": "",
+    "sra_ftp": "",
+    "sra_galaxy": "",
+    "sra_md5": "",
+    "status": "public",
+    "strain": "",
+    "study_accession": "PRJDA51199",
+    "study_alias": "DRP000209",
+    "study_title": "Arabidopsis Transcriptome",
+    "sub_species": "",
+    "sub_strain": "",
+    "submission_accession": "DRA000208",
+    "submission_tool": "",
+    "submitted_aspera": "",
+    "submitted_bytes": "",
+    "submitted_file_role": "",
+    "submitted_format": "",
+    "submitted_ftp": "",
+    "submitted_galaxy": "",
+    "submitted_host_sex": "",
+    "submitted_md5": "",
+    "submitted_read_type": "",
+    "surveillance_target": "",
+    "tag": "",
+    "target_gene": "",
+    "tax_id": "3702",
+    "tax_lineage": "1;131567;2759;33090;35493;131221;3193;58023;78536;58024;3398;1437183;71240;91827;1437201;71275;91836;3699;3700;980083;3701;3702",
+    "taxonomic_classification": "",
+    "taxonomic_identity_marker": "",
+    "temperature": "",
+    "tissue_lib": "",
+    "tissue_type": "",
+    "transposase_protocol": "",
+    "variety": ""
+  },
+  "biosample_accession": "SAMD00012930",
+  "biosample_metadata": {
+    "name": "SAMD00012930",
+    "accession": "SAMD00012930",
+    "domain": "self.BiosampleImportNCBI",
+    "taxId": 3702,
+    "status": "PUBLIC",
+    "release": "2016-03-29T10:11:00Z",
+    "update": "2022-03-28T12:09:59.369Z",
+    "submitted": "2010-08-04T04:14:04.050Z",
+    "characteristics": {
+      "External Id": [
+        {
+          "text": "SAMD00012930",
+          "tag": "Namespace:BioSample"
+        }
+      ],
+      "INSDC center name": [
+        {
+          "text": "Genetic Strain Stock Center, Plant Genetics Laboratory, National Institute of Genetics, Research Organization of Information and Systems"
+        }
+      ],
+      "INSDC first public": [
+        {
+          "text": "2016-03-29T10:11:00Z"
+        }
+      ],
+      "INSDC last update": [
+        {
+          "text": "2016-03-28T21:11:00Z"
+        }
+      ],
+      "INSDC secondary accession": [
+        {
+          "text": "DRS000288"
+        }
+      ],
+      "INSDC status": [
+        {
+          "text": "live"
+        }
+      ],
+      "NCBI submission model": [
+        {
+          "text": "Generic"
+        }
+      ],
+      "NCBI submission package": [
+        {
+          "text": "Generic.1.0"
+        }
+      ],
+      "SRA accession": [
+        {
+          "text": "DRS000288"
+        }
+      ],
+      "organism": [
+        {
+          "text": "Arabidopsis thaliana",
+          "ontologyTerms": [
+            "http://purl.obolibrary.org/obo/NCBITaxon_3702"
+          ]
+        }
+      ],
+      "sample comment": [
+        {
+          "text": "Wild type synergid cell",
+          "tag": "attribute"
+        }
+      ],
+      "sample name": [
+        {
+          "text": "DRS000288",
+          "tag": "attribute"
+        }
+      ],
+      "title": [
+        {
+          "text": "Arabidopsis Transcriptome Multiplex-1_No1"
+        }
+      ]
+    },
+    "externalReferences": [
+      {
+        "url": "https://www.ebi.ac.uk/ena/data/view/SAMD00012930"
+      }
+    ],
+    "submittedVia": "JSON_API",
+    "create": "2010-08-04T04:14:04.050Z",
+    "_links": {
+      "self": {
+        "href": "https://www.ebi.ac.uk/biosamples/samples/SAMD00012930"
+      },
+      "applyCurations": {
+        "href": "https://www.ebi.ac.uk/biosamples/samples/SAMD00012930{?applyCurations}",
+        "templated": true
+      },
+      "curationLinks": {
+        "href": "https://www.ebi.ac.uk/biosamples/samples/SAMD00012930/curationlinks"
+      },
+      "curationLink": {
+        "href": "https://www.ebi.ac.uk/biosamples/samples/SAMD00012930/curationlinks/{hash}",
+        "templated": true
+      },
+      "structuredData": {
+        "href": "https://www.ebi.ac.uk/biosamples/structureddata/SAMD00012930"
+      }
+    }
+  }
+}
+{
+  "run_accession": "DRR000619",
+  "ena_indexed_metadata": {
+    "run_accession": "DRR000619",
+    "age": "",
+    "aligned": "",
+    "altitude": "",
+    "assembly_quality": "",
+    "assembly_software": "",
+    "bam_aspera": "",
+    "bam_bytes": "",
+    "bam_file_role": "",
+    "bam_ftp": "",
+    "bam_galaxy": "",
+    "bam_md5": "",
+    "base_count": "2661792600",
+    "binning_software": "",
+    "bio_material": "",
+    "bisulfite_protocol": "",
+    "broad_scale_environmental_context": "",
+    "broker_name": "DRA",
+    "cage_protocol": "",
+    "cell_line": "",
+    "cell_type": "",
+    "center_name": "NIG",
+    "checklist": "",
+    "chip_ab_provider": "",
+    "chip_protocol": "",
+    "chip_target": "",
+    "collected_by": "",
+    "collection_date": "",
+    "collection_date_end": "",
+    "collection_date_start": "",
+    "completeness_score": "",
+    "contamination_score": "",
+    "control_experiment": "",
+    "country": "",
+    "cultivar": "",
+    "culture_collection": "",
+    "datahub": "",
+    "depth": "",
+    "description": "Illumina Genome Analyzer II paired end sequencing: Arabidopsis Transcriptome Multiplex-1_No3",
+    "dev_stage": "",
+    "disease": "",
+    "dnase_protocol": "",
+    "ecotype": "",
+    "elevation": "",
+    "environment_biome": "",
+    "environment_feature": "",
+    "environment_material": "",
+    "environmental_medium": "",
+    "environmental_sample": "",
+    "experiment_accession": "DRX000326",
+    "experiment_alias": "DRX000326",
+    "experiment_target": "",
+    "experiment_title": "Illumina Genome Analyzer II paired end sequencing: Arabidopsis Transcriptome Multiplex-1_No3",
+    "experimental_factor": "",
+    "experimental_protocol": "",
+    "extraction_protocol": "",
+    "faang_library_selection": "",
+    "fastq_aspera": "fasp.sra.ebi.ac.uk:/vol1/fastq/DRR000/DRR000619/DRR000619_1.fastq.gz;fasp.sra.ebi.ac.uk:/vol1/fastq/DRR000/DRR000619/DRR000619_2.fastq.gz",
+    "fastq_bytes": "1147742024;1170804305",
+    "fastq_file_role": "GENERATED_FILE;GENERATED_FILE",
+    "fastq_ftp": "ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR000619/DRR000619_1.fastq.gz;ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR000619/DRR000619_2.fastq.gz",
+    "fastq_galaxy": "ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR000619/DRR000619_1.fastq.gz;ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR000619/DRR000619_2.fastq.gz",
+    "fastq_md5": "a3e4ab0b69dbee0f4c83dbff6636cb65;a0f4da6686935024cb2ded5eba3f15fa",
+    "file_location": "",
+    "first_created": "2016-03-29",
+    "first_public": "2016-03-29",
+    "germline": "",
+    "hi_c_protocol": "",
+    "host": "",
+    "host_body_site": "",
+    "host_genotype": "",
+    "host_gravidity": "",
+    "host_growth_conditions": "",
+    "host_phenotype": "",
+    "host_scientific_name": "",
+    "host_sex": "",
+    "host_status": "",
+    "host_tax_id": "",
+    "identified_by": "",
+    "instrument_model": "Illumina Genome Analyzer II",
+    "instrument_platform": "ILLUMINA",
+    "investigation_type": "",
+    "isolate": "",
+    "isolation_source": "",
+    "last_updated": "2026-10-16",
+    "lat": "",
+    "library_construction_protocol": "none provided",
+    "library_gen_protocol": "",
+    "library_layout": "PAIRED",
+    "library_max_fragment_size": "",
+    "library_min_fragment_size": "",
+    "library_name": "Multiplex-1_No3",
+    "library_pcr_isolation_protocol": "",
+    "library_prep_date": "",
+    "library_prep_date_format": "",
+    "library_prep_latitude": "",
+    "library_prep_location": "",
+    "library_prep_longitude": "",
+    "library_selection": "PCR",
+    "library_source": "TRANSCRIPTOMIC",
+    "library_strategy": "AMPLICON",
+    "local_environmental_context": "",
+    "location": "",
+    "location_end": "",
+    "location_start": "",
+    "lon": "",
+    "marine_region": "",
+    "mating_type": "",
+    "ncbi_reporting_standard": "Generic",
+    "nominal_length": "0",
+    "nominal_sdev": "0",
+    "pcr_isolation_protocol": "",
+    "ph": "",
+    "project_name": "Arabidopsis thaliana strain:tonagata-0004",
+    "protocol_label": "",
+    "read_count": "13308963",
+    "read_strand": "",
+    "restriction_enzyme": "",
+    "restriction_enzyme_target_sequence": "",
+    "restriction_site": "",
+    "rna_integrity_num": "",
+    "rna_prep_3_protocol": "",
+    "rna_prep_5_protocol": "",
+    "rna_purity_230_ratio": "",
+    "rna_purity_280_ratio": "",
+    "rt_prep_protocol": "",
+    "run_alias": "DRR000619",
+    "run_date": "1278889200000",
+    "salinity": "",
+    "sample_accession": "SAMD00012931",
+    "sample_alias": "SAMD00012931",
+    "sample_capture_status": "",
+    "sample_collection": "",
+    "sample_description": "Arabidopsis Transcriptome Multiplex-1_No3",
+    "sample_material": "",
+    "sample_prep_interval": "",
+    "sample_prep_interval_units": "",
+    "sample_storage": "",
+    "sample_storage_processing": "",
+    "sample_title": "Arabidopsis Transcriptome Multiplex-1_No3",
+    "sampling_campaign": "",
+    "sampling_platform": "",
+    "sampling_site": "",
+    "scientific_name": "Arabidopsis thaliana",
+    "secondary_project": "",
+    "secondary_sample_accession": "DRS000289",
+    "secondary_study_accession": "DRP000209",
+    "sequencing_date": "",
+    "sequencing_date_format": "",
+    "sequencing_location": "",
+    "sequencing_longitude": "",
+    "sequencing_method": "",
+    "sequencing_primer_catalog": "",
+    "sequencing_primer_lot": "",
+    "sequencing_primer_provider": "",
+    "serotype": "",
+    "serovar": "",
+    "sex": "",
+    "specimen_voucher": "",
+    "sra_aspera": "",
+    "sra_bytes": "",
+    "sra_file_role": "",
+    "sra_ftp": "",
+    "sra_galaxy": "",
+    "sra_md5": "",
+    "status": "public",
+    "strain": "",
+    "study_accession": "PRJDA51199",
+    "study_alias": "DRP000209",
+    "study_title": "Arabidopsis Transcriptome",
+    "sub_species": "",
+    "sub_strain": "",
+    "submission_accession": "DRA000208",
+    "submission_tool": "",
+    "submitted_aspera": "",
+    "submitted_bytes": "",
+    "submitted_file_role": "",
+    "submitted_format": "",
+    "submitted_ftp": "",
+    "submitted_galaxy": "",
+    "submitted_host_sex": "",
+    "submitted_md5": "",
+    "submitted_read_type": "",
+    "surveillance_target": "",
+    "tag": "",
+    "target_gene": "",
+    "tax_id": "3702",
+    "tax_lineage": "1;131567;2759;33090;35493;131221;3193;58023;78536;58024;3398;1437183;71240;91827;1437201;71275;91836;3699;3700;980083;3701;3702",
+    "taxonomic_classification": "",
+    "taxonomic_identity_marker": "",
+    "temperature": "",
+    "tissue_lib": "",
+    "tissue_type": "",
+    "transposase_protocol": "",
+    "variety": ""
+  },
+  "biosample_accession": "SAMD00012931",
+  "biosample_metadata": {
+    "name": "SAMD00012931",
+    "accession": "SAMD00012931",
+    "domain": "self.BiosampleImportNCBI",
+    "taxId": 3702,
+    "status": "PUBLIC",
+    "release": "2016-03-29T10:11:00Z",
+    "update": "2022-03-28T12:31:24.578Z",
+    "submitted": "2010-08-17T00:35:29.776Z",
+    "characteristics": {
+      "External Id": [
+        {
+          "text": "SAMD00012931",
+          "tag": "Namespace:BioSample"
+        }
+      ],
+      "INSDC center name": [
+        {
+          "text": "Genetic Strain Stock Center, Plant Genetics Laboratory, National Institute of Genetics, Research Organization of Information and Systems"
+        }
+      ],
+      "INSDC first public": [
+        {
+          "text": "2016-03-29T10:11:00Z"
+        }
+      ],
+      "INSDC last update": [
+        {
+          "text": "2016-03-28T21:11:00Z"
+        }
+      ],
+      "INSDC secondary accession": [
+        {
+          "text": "DRS000289"
+        }
+      ],
+      "INSDC status": [
+        {
+          "text": "live"
+        }
+      ],
+      "NCBI submission model": [
+        {
+          "text": "Generic"
+        }
+      ],
+      "NCBI submission package": [
+        {
+          "text": "Generic.1.0"
+        }
+      ],
+      "SRA accession": [
+        {
+          "text": "DRS000289"
+        }
+      ],
+      "organism": [
+        {
+          "text": "Arabidopsis thaliana",
+          "ontologyTerms": [
+            "http://purl.obolibrary.org/obo/NCBITaxon_3702"
+          ]
+        }
+      ],
+      "sample comment": [
+        {
+          "text": "Mutant synergid cell 30",
+          "tag": "attribute"
+        }
+      ],
+      "sample name": [
+        {
+          "text": "DRS000289",
+          "tag": "attribute"
+        }
+      ],
+      "title": [
+        {
+          "text": "Arabidopsis Transcriptome Multiplex-1_No3"
+        }
+      ]
+    },
+    "externalReferences": [
+      {
+        "url": "https://www.ebi.ac.uk/ena/data/view/SAMD00012931"
+      }
+    ],
+    "submittedVia": "JSON_API",
+    "create": "2010-08-17T00:35:29.776Z",
+    "_links": {
+      "self": {
+        "href": "https://www.ebi.ac.uk/biosamples/samples/SAMD00012931"
+      },
+      "applyCurations": {
+        "href": "https://www.ebi.ac.uk/biosamples/samples/SAMD00012931{?applyCurations}",
+        "templated": true
+      },
+      "curationLinks": {
+        "href": "https://www.ebi.ac.uk/biosamples/samples/SAMD00012931/curationlinks"
+      },
+      "curationLink": {
+        "href": "https://www.ebi.ac.uk/biosamples/samples/SAMD00012931/curationlinks/{hash}",
+        "templated": true
+      },
+      "structuredData": {
+        "href": "https://www.ebi.ac.uk/biosamples/structureddata/SAMD00012931"
+      }
+    }
+  }
+}
+{
+  "run_accession": "DRR000620",
+  "ena_indexed_metadata": {
+    "run_accession": "DRR000620",
+    "age": "",
+    "aligned": "",
+    "altitude": "",
+    "assembly_quality": "",
+    "assembly_software": "",
+    "bam_aspera": "",
+    "bam_bytes": "",
+    "bam_file_role": "",
+    "bam_ftp": "",
+    "bam_galaxy": "",
+    "bam_md5": "",
+    "base_count": "2576059600",
+    "binning_software": "",
+    "bio_material": "",
+    "bisulfite_protocol": "",
+    "broad_scale_environmental_context": "",
+    "broker_name": "DRA",
+    "cage_protocol": "",
+    "cell_line": "",
+    "cell_type": "",
+    "center_name": "NIG",
+    "checklist": "",
+    "chip_ab_provider": "",
+    "chip_protocol": "",
+    "chip_target": "",
+    "collected_by": "",
+    "collection_date": "",
+    "collection_date_end": "",
+    "collection_date_start": "",
+    "completeness_score": "",
+    "contamination_score": "",
+    "control_experiment": "",
+    "country": "",
+    "cultivar": "",
+    "culture_collection": "",
+    "datahub": "",
+    "depth": "",
+    "description": "Illumina Genome Analyzer II paired end sequencing: Arabidopsis Transcriptome Multiplex-1_No4",
+    "dev_stage": "",
+    "disease": "",
+    "dnase_protocol": "",
+    "ecotype": "",
+    "elevation": "",
+    "environment_biome": "",
+    "environment_feature": "",
+    "environment_material": "",
+    "environmental_medium": "",
+    "environmental_sample": "",
+    "experiment_accession": "DRX000327",
+    "experiment_alias": "DRX000327",
+    "experiment_target": "",
+    "experiment_title": "Illumina Genome Analyzer II paired end sequencing: Arabidopsis Transcriptome Multiplex-1_No4",
+    "experimental_factor": "",
+    "experimental_protocol": "",
+    "extraction_protocol": "",
+    "faang_library_selection": "",
+    "fastq_aspera": "fasp.sra.ebi.ac.uk:/vol1/fastq/DRR000/DRR000620/DRR000620_1.fastq.gz;fasp.sra.ebi.ac.uk:/vol1/fastq/DRR000/DRR000620/DRR000620_2.fastq.gz",
+    "fastq_bytes": "1116296320;1126641082",
+    "fastq_file_role": "GENERATED_FILE;GENERATED_FILE",
+    "fastq_ftp": "ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR000620/DRR000620_1.fastq.gz;ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR000620/DRR000620_2.fastq.gz",
+    "fastq_galaxy": "ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR000620/DRR000620_1.fastq.gz;ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR000620/DRR000620_2.fastq.gz",
+    "fastq_md5": "8b96a42907b0aae512f9ea9e5974aa3e;961928c012dd23f549b85e35f7dca283",
+    "file_location": "",
+    "first_created": "2016-03-29",
+    "first_public": "2016-03-29",
+    "germline": "",
+    "hi_c_protocol": "",
+    "host": "",
+    "host_body_site": "",
+    "host_genotype": "",
+    "host_gravidity": "",
+    "host_growth_conditions": "",
+    "host_phenotype": "",
+    "host_scientific_name": "",
+    "host_sex": "",
+    "host_status": "",
+    "host_tax_id": "",
+    "identified_by": "",
+    "instrument_model": "Illumina Genome Analyzer II",
+    "instrument_platform": "ILLUMINA",
+    "investigation_type": "",
+    "isolate": "",
+    "isolation_source": "",
+    "last_updated": "2026-10-16",
+    "lat": "",
+    "library_construction_protocol": "none provided",
+    "library_gen_protocol": "",
+    "library_layout": "PAIRED",
+    "library_max_fragment_size": "",
+    "library_min_fragment_size": "",
+    "library_name": "Multiplex-1_No4",
+    "library_pcr_isolation_protocol": "",
+    "library_prep_date": "",
+    "library_prep_date_format": "",
+    "library_prep_latitude": "",
+    "library_prep_location": "",
+    "library_prep_longitude": "",
+    "library_selection": "PCR",
+    "library_source": "TRANSCRIPTOMIC",
+    "library_strategy": "AMPLICON",
+    "local_environmental_context": "",
+    "location": "",
+    "location_end": "",
+    "location_start": "",
+    "lon": "",
+    "marine_region": "",
+    "mating_type": "",
+    "ncbi_reporting_standard": "Generic",
+    "nominal_length": "0",
+    "nominal_sdev": "0",
+    "pcr_isolation_protocol": "",
+    "ph": "",
+    "project_name": "Arabidopsis thaliana strain:tonagata-0004",
+    "protocol_label": "",
+    "read_count": "12880298",
+    "read_strand": "",
+    "restriction_enzyme": "",
+    "restriction_enzyme_target_sequence": "",
+    "restriction_site": "",
+    "rna_integrity_num": "",
+    "rna_prep_3_protocol": "",
+    "rna_prep_5_protocol": "",
+    "rna_purity_230_ratio": "",
+    "rna_purity_280_ratio": "",
+    "rt_prep_protocol": "",
+    "run_alias": "DRR000620",
+    "run_date": "1278889200000",
+    "salinity": "",
+    "sample_accession": "SAMD00012929",
+    "sample_alias": "SAMD00012929",
+    "sample_capture_status": "",
+    "sample_collection": "",
+    "sample_description": "Arabidopsis Transcriptome Multiplex-1_No4",
+    "sample_material": "",
+    "sample_prep_interval": "",
+    "sample_prep_interval_units": "",
+    "sample_storage": "",
+    "sample_storage_processing": "",
+    "sample_title": "Arabidopsis Transcriptome Multiplex-1_No4",
+    "sampling_campaign": "",
+    "sampling_platform": "",
+    "sampling_site": "",
+    "scientific_name": "Arabidopsis thaliana",
+    "secondary_project": "",
+    "secondary_sample_accession": "DRS000290",
+    "secondary_study_accession": "DRP000209",
+    "sequencing_date": "",
+    "sequencing_date_format": "",
+    "sequencing_location": "",
+    "sequencing_longitude": "",
+    "sequencing_method": "",
+    "sequencing_primer_catalog": "",
+    "sequencing_primer_lot": "",
+    "sequencing_primer_provider": "",
+    "serotype": "",
+    "serovar": "",
+    "sex": "",
+    "specimen_voucher": "",
+    "sra_aspera": "",
+    "sra_bytes": "",
+    "sra_file_role": "",
+    "sra_ftp": "",
+    "sra_galaxy": "",
+    "sra_md5": "",
+    "status": "public",
+    "strain": "",
+    "study_accession": "PRJDA51199",
+    "study_alias": "DRP000209",
+    "study_title": "Arabidopsis Transcriptome",
+    "sub_species": "",
+    "sub_strain": "",
+    "submission_accession": "DRA000208",
+    "submission_tool": "",
+    "submitted_aspera": "",
+    "submitted_bytes": "",
+    "submitted_file_role": "",
+    "submitted_format": "",
+    "submitted_ftp": "",
+    "submitted_galaxy": "",
+    "submitted_host_sex": "",
+    "submitted_md5": "",
+    "submitted_read_type": "",
+    "surveillance_target": "",
+    "tag": "",
+    "target_gene": "",
+    "tax_id": "3702",
+    "tax_lineage": "1;131567;2759;33090;35493;131221;3193;58023;78536;58024;3398;1437183;71240;91827;1437201;71275;91836;3699;3700;980083;3701;3702",
+    "taxonomic_classification": "",
+    "taxonomic_identity_marker": "",
+    "temperature": "",
+    "tissue_lib": "",
+    "tissue_type": "",
+    "transposase_protocol": "",
+    "variety": ""
+  },
+  "biosample_accession": "SAMD00012929",
+  "biosample_metadata": {
+    "name": "SAMD00012929",
+    "accession": "SAMD00012929",
+    "domain": "self.BiosampleImportNCBI",
+    "taxId": 3702,
+    "status": "PUBLIC",
+    "release": "2016-03-29T10:11:00Z",
+    "update": "2022-03-28T12:31:24.583Z",
+    "submitted": "2010-08-17T21:21:08.210Z",
+    "characteristics": {
+      "External Id": [
+        {
+          "text": "SAMD00012929",
+          "tag": "Namespace:BioSample"
+        }
+      ],
+      "INSDC center name": [
+        {
+          "text": "Genetic Strain Stock Center, Plant Genetics Laboratory, National Institute of Genetics, Research Organization of Information and Systems"
+        }
+      ],
+      "INSDC first public": [
+        {
+          "text": "2016-03-29T10:11:00Z"
+        }
+      ],
+      "INSDC last update": [
+        {
+          "text": "2016-03-28T21:11:00Z"
+        }
+      ],
+      "INSDC secondary accession": [
+        {
+          "text": "DRS000290"
+        }
+      ],
+      "INSDC status": [
+        {
+          "text": "live"
+        }
+      ],
+      "NCBI submission model": [
+        {
+          "text": "Generic"
+        }
+      ],
+      "NCBI submission package": [
+        {
+          "text": "Generic.1.0"
+        }
+      ],
+      "SRA accession": [
+        {
+          "text": "DRS000290"
+        }
+      ],
+      "organism": [
+        {
+          "text": "Arabidopsis thaliana",
+          "ontologyTerms": [
+            "http://purl.obolibrary.org/obo/NCBITaxon_3702"
+          ]
+        }
+      ],
+      "sample comment": [
+        {
+          "text": "Mutant synergid cell 100",
+          "tag": "attribute"
+        }
+      ],
+      "sample name": [
+        {
+          "text": "DRS000290",
+          "tag": "attribute"
+        }
+      ],
+      "title": [
+        {
+          "text": "Arabidopsis Transcriptome Multiplex-1_No4"
+        }
+      ]
+    },
+    "externalReferences": [
+      {
+        "url": "https://www.ebi.ac.uk/ena/data/view/SAMD00012929"
+      }
+    ],
+    "submittedVia": "JSON_API",
+    "create": "2010-08-17T21:21:08.210Z",
+    "_links": {
+      "self": {
+        "href": "https://www.ebi.ac.uk/biosamples/samples/SAMD00012929"
+      },
+      "applyCurations": {
+        "href": "https://www.ebi.ac.uk/biosamples/samples/SAMD00012929{?applyCurations}",
+        "templated": true
+      },
+      "curationLinks": {
+        "href": "https://www.ebi.ac.uk/biosamples/samples/SAMD00012929/curationlinks"
+      },
+      "curationLink": {
+        "href": "https://www.ebi.ac.uk/biosamples/samples/SAMD00012929/curationlinks/{hash}",
+        "templated": true
+      },
+      "structuredData": {
+        "href": "https://www.ebi.ac.uk/biosamples/structureddata/SAMD00012929"
+      }
+    }
+  }
+}
+{
+  "run_accession": "DRR000621",
+  "ena_indexed_metadata": {
+    "run_accession": "DRR000621",
+    "age": "",
+    "aligned": "",
+    "altitude": "",
+    "assembly_quality": "",
+    "assembly_software": "",
+    "bam_aspera": "",
+    "bam_bytes": "",
+    "bam_file_role": "",
+    "bam_ftp": "",
+    "bam_galaxy": "",
+    "bam_md5": "",
+    "base_count": "2838078800",
+    "binning_software": "",
+    "bio_material": "",
+    "bisulfite_protocol": "",
+    "broad_scale_environmental_context": "",
+    "broker_name": "DRA",
+    "cage_protocol": "",
+    "cell_line": "",
+    "cell_type": "",
+    "center_name": "NIG",
+    "checklist": "",
+    "chip_ab_provider": "",
+    "chip_protocol": "",
+    "chip_target": "",
+    "collected_by": "",
+    "collection_date": "",
+    "collection_date_end": "",
+    "collection_date_start": "",
+    "completeness_score": "",
+    "contamination_score": "",
+    "control_experiment": "",
+    "country": "",
+    "cultivar": "",
+    "culture_collection": "",
+    "datahub": "",
+    "depth": "",
+    "description": "Illumina Genome Analyzer II paired end sequencing: Arabidopsis Transcriptome Multiplex-1_No5",
+    "dev_stage": "",
+    "disease": "",
+    "dnase_protocol": "",
+    "ecotype": "",
+    "elevation": "",
+    "environment_biome": "",
+    "environment_feature": "",
+    "environment_material": "",
+    "environmental_medium": "",
+    "environmental_sample": "",
+    "experiment_accession": "DRX000328",
+    "experiment_alias": "DRX000328",
+    "experiment_target": "",
+    "experiment_title": "Illumina Genome Analyzer II paired end sequencing: Arabidopsis Transcriptome Multiplex-1_No5",
+    "experimental_factor": "",
+    "experimental_protocol": "",
+    "extraction_protocol": "",
+    "faang_library_selection": "",
+    "fastq_aspera": "fasp.sra.ebi.ac.uk:/vol1/fastq/DRR000/DRR000621/DRR000621_1.fastq.gz;fasp.sra.ebi.ac.uk:/vol1/fastq/DRR000/DRR000621/DRR000621_2.fastq.gz",
+    "fastq_bytes": "1225177918;1232277450",
+    "fastq_file_role": "GENERATED_FILE;GENERATED_FILE",
+    "fastq_ftp": "ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR000621/DRR000621_1.fastq.gz;ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR000621/DRR000621_2.fastq.gz",
+    "fastq_galaxy": "ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR000621/DRR000621_1.fastq.gz;ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR000621/DRR000621_2.fastq.gz",
+    "fastq_md5": "0e439f0514e226992cc527c58ee8ca68;09bad775ec5f59ddb56cab4e46a97003",
+    "file_location": "",
+    "first_created": "2016-03-29",
+    "first_public": "2016-03-29",
+    "germline": "",
+    "hi_c_protocol": "",
+    "host": "",
+    "host_body_site": "",
+    "host_genotype": "",
+    "host_gravidity": "",
+    "host_growth_conditions": "",
+    "host_phenotype": "",
+    "host_scientific_name": "",
+    "host_sex": "",
+    "host_status": "",
+    "host_tax_id": "",
+    "identified_by": "",
+    "instrument_model": "Illumina Genome Analyzer II",
+    "instrument_platform": "ILLUMINA",
+    "investigation_type": "",
+    "isolate": "",
+    "isolation_source": "",
+    "last_updated": "2026-10-16",
+    "lat": "",
+    "library_construction_protocol": "none provided",
+    "library_gen_protocol": "",
+    "library_layout": "PAIRED",
+    "library_max_fragment_size": "",
+    "library_min_fragment_size": "",
+    "library_name": "Multiplex-1_No5",
+    "library_pcr_isolation_protocol": "",
+    "library_prep_date": "",
+    "library_prep_date_format": "",
+    "library_prep_latitude": "",
+    "library_prep_location": "",
+    "library_prep_longitude": "",
+    "library_selection": "PCR",
+    "library_source": "TRANSCRIPTOMIC",
+    "library_strategy": "AMPLICON",
+    "local_environmental_context": "",
+    "location": "",
+    "location_end": "",
+    "location_start": "",
+    "lon": "",
+    "marine_region": "",
+    "mating_type": "",
+    "ncbi_reporting_standard": "Generic",
+    "nominal_length": "0",
+    "nominal_sdev": "0",
+    "pcr_isolation_protocol": "",
+    "ph": "",
+    "project_name": "Arabidopsis thaliana strain:tonagata-0004",
+    "protocol_label": "",
+    "read_count": "14190394",
+    "read_strand": "",
+    "restriction_enzyme": "",
+    "restriction_enzyme_target_sequence": "",
+    "restriction_site": "",
+    "rna_integrity_num": "",
+    "rna_prep_3_protocol": "",
+    "rna_prep_5_protocol": "",
+    "rna_purity_230_ratio": "",
+    "rna_purity_280_ratio": "",
+    "rt_prep_protocol": "",
+    "run_alias": "DRR000621",
+    "run_date": "1278889200000",
+    "salinity": "",
+    "sample_accession": "SAMD00012932",
+    "sample_alias": "SAMD00012932",
+    "sample_capture_status": "",
+    "sample_collection": "",
+    "sample_description": "Arabidopsis Transcriptome Multiplex-1_No5",
+    "sample_material": "",
+    "sample_prep_interval": "",
+    "sample_prep_interval_units": "",
+    "sample_storage": "",
+    "sample_storage_processing": "",
+    "sample_title": "Arabidopsis Transcriptome Multiplex-1_No5",
+    "sampling_campaign": "",
+    "sampling_platform": "",
+    "sampling_site": "",
+    "scientific_name": "Arabidopsis thaliana",
+    "secondary_project": "",
+    "secondary_sample_accession": "DRS000291",
+    "secondary_study_accession": "DRP000209",
+    "sequencing_date": "",
+    "sequencing_date_format": "",
+    "sequencing_location": "",
+    "sequencing_longitude": "",
+    "sequencing_method": "",
+    "sequencing_primer_catalog": "",
+    "sequencing_primer_lot": "",
+    "sequencing_primer_provider": "",
+    "serotype": "",
+    "serovar": "",
+    "sex": "",
+    "specimen_voucher": "",
+    "sra_aspera": "",
+    "sra_bytes": "",
+    "sra_file_role": "",
+    "sra_ftp": "",
+    "sra_galaxy": "",
+    "sra_md5": "",
+    "status": "public",
+    "strain": "",
+    "study_accession": "PRJDA51199",
+    "study_alias": "DRP000209",
+    "study_title": "Arabidopsis Transcriptome",
+    "sub_species": "",
+    "sub_strain": "",
+    "submission_accession": "DRA000208",
+    "submission_tool": "",
+    "submitted_aspera": "",
+    "submitted_bytes": "",
+    "submitted_file_role": "",
+    "submitted_format": "",
+    "submitted_ftp": "",
+    "submitted_galaxy": "",
+    "submitted_host_sex": "",
+    "submitted_md5": "",
+    "submitted_read_type": "",
+    "surveillance_target": "",
+    "tag": "",
+    "target_gene": "",
+    "tax_id": "3702",
+    "tax_lineage": "1;131567;2759;33090;35493;131221;3193;58023;78536;58024;3398;1437183;71240;91827;1437201;71275;91836;3699;3700;980083;3701;3702",
+    "taxonomic_classification": "",
+    "taxonomic_identity_marker": "",
+    "temperature": "",
+    "tissue_lib": "",
+    "tissue_type": "",
+    "transposase_protocol": "",
+    "variety": ""
+  },
+  "biosample_accession": "SAMD00012932",
+  "biosample_metadata": {
+    "name": "SAMD00012932",
+    "accession": "SAMD00012932",
+    "domain": "self.BiosampleImportNCBI",
+    "taxId": 3702,
+    "status": "PUBLIC",
+    "release": "2016-03-29T10:11:00Z",
+    "update": "2022-03-28T12:09:59.710Z",
+    "submitted": "2010-08-04T04:14:04.080Z",
+    "characteristics": {
+      "External Id": [
+        {
+          "text": "SAMD00012932",
+          "tag": "Namespace:BioSample"
+        }
+      ],
+      "INSDC center name": [
+        {
+          "text": "Genetic Strain Stock Center, Plant Genetics Laboratory, National Institute of Genetics, Research Organization of Information and Systems"
+        }
+      ],
+      "INSDC first public": [
+        {
+          "text": "2016-03-29T10:11:00Z"
+        }
+      ],
+      "INSDC last update": [
+        {
+          "text": "2016-03-28T21:11:00Z"
+        }
+      ],
+      "INSDC secondary accession": [
+        {
+          "text": "DRS000291"
+        }
+      ],
+      "INSDC status": [
+        {
+          "text": "live"
+        }
+      ],
+      "NCBI submission model": [
+        {
+          "text": "Generic"
+        }
+      ],
+      "NCBI submission package": [
+        {
+          "text": "Generic.1.0"
+        }
+      ],
+      "SRA accession": [
+        {
+          "text": "DRS000291"
+        }
+      ],
+      "organism": [
+        {
+          "text": "Arabidopsis thaliana",
+          "ontologyTerms": [
+            "http://purl.obolibrary.org/obo/NCBITaxon_3702"
+          ]
+        }
+      ],
+      "sample comment": [
+        {
+          "text": "Wild type egg cell",
+          "tag": "attribute"
+        }
+      ],
+      "sample name": [
+        {
+          "text": "DRS000291",
+          "tag": "attribute"
+        }
+      ],
+      "title": [
+        {
+          "text": "Arabidopsis Transcriptome Multiplex-1_No5"
+        }
+      ]
+    },
+    "externalReferences": [
+      {
+        "url": "https://www.ebi.ac.uk/ena/data/view/SAMD00012932"
+      }
+    ],
+    "submittedVia": "JSON_API",
+    "create": "2010-08-04T04:14:04.080Z",
+    "_links": {
+      "self": {
+        "href": "https://www.ebi.ac.uk/biosamples/samples/SAMD00012932"
+      },
+      "applyCurations": {
+        "href": "https://www.ebi.ac.uk/biosamples/samples/SAMD00012932{?applyCurations}",
+        "templated": true
+      },
+      "curationLinks": {
+        "href": "https://www.ebi.ac.uk/biosamples/samples/SAMD00012932/curationlinks"
+      },
+      "curationLink": {
+        "href": "https://www.ebi.ac.uk/biosamples/samples/SAMD00012932/curationlinks/{hash}",
+        "templated": true
+      },
+      "structuredData": {
+        "href": "https://www.ebi.ac.uk/biosamples/structureddata/SAMD00012932"
+      }
+    }
+  }
+}
+{
+  "run_accession": "DRR016112",
+  "ena_indexed_metadata": {
+    "run_accession": "DRR016112",
+    "age": "",
+    "aligned": "",
+    "altitude": "",
+    "assembly_quality": "",
+    "assembly_software": "",
+    "bam_aspera": "",
+    "bam_bytes": "",
+    "bam_file_role": "",
+    "bam_ftp": "",
+    "bam_galaxy": "",
+    "bam_md5": "",
+    "base_count": "19002582000",
+    "binning_software": "",
+    "bio_material": "",
+    "bisulfite_protocol": "",
+    "broad_scale_environmental_context": "",
+    "broker_name": "",
+    "cage_protocol": "",
+    "cell_line": "",
+    "cell_type": "",
+    "center_name": "TUAGRI",
+    "checklist": "",
+    "chip_ab_provider": "",
+    "chip_protocol": "",
+    "chip_target": "",
+    "collected_by": "",
+    "collection_date": "",
+    "collection_date_end": "",
+    "collection_date_start": "",
+    "completeness_score": "",
+    "contamination_score": "",
+    "control_experiment": "",
+    "country": "",
+    "cultivar": "",
+    "culture_collection": "",
+    "datahub": "",
+    "depth": "",
+    "description": "Illumina HiSeq 2000 sequencing: RNA-sequencing of arabidopsis thaliana WT roots.",
+    "dev_stage": "",
+    "disease": "",
+    "dnase_protocol": "",
+    "ecotype": "",
+    "elevation": "",
+    "environment_biome": "",
+    "environment_feature": "",
+    "environment_material": "",
+    "environmental_medium": "",
+    "environmental_sample": "",
+    "experiment_accession": "DRX014481",
+    "experiment_alias": "DRX014481",
+    "experiment_target": "",
+    "experiment_title": "Illumina HiSeq 2000 sequencing: RNA-sequencing of arabidopsis thaliana WT roots.",
+    "experimental_factor": "",
+    "experimental_protocol": "",
+    "extraction_protocol": "",
+    "faang_library_selection": "",
+    "fastq_aspera": "fasp.sra.ebi.ac.uk:/vol1/fastq/DRR016/DRR016112/DRR016112_1.fastq.gz;fasp.sra.ebi.ac.uk:/vol1/fastq/DRR016/DRR016112/DRR016112_2.fastq.gz",
+    "fastq_bytes": "8817688247;8999493211",
+    "fastq_file_role": "GENERATED_FILE;GENERATED_FILE",
+    "fastq_ftp": "ftp.sra.ebi.ac.uk/vol1/fastq/DRR016/DRR016112/DRR016112_1.fastq.gz;ftp.sra.ebi.ac.uk/vol1/fastq/DRR016/DRR016112/DRR016112_2.fastq.gz",
+    "fastq_galaxy": "ftp.sra.ebi.ac.uk/vol1/fastq/DRR016/DRR016112/DRR016112_1.fastq.gz;ftp.sra.ebi.ac.uk/vol1/fastq/DRR016/DRR016112/DRR016112_2.fastq.gz",
+    "fastq_md5": "a0ee67e5ee540ab6c52811a2ad1d8438;54304acdd45d44b5f81f63266c27e8c7",
+    "file_location": "",
+    "first_created": "2016-05-05",
+    "first_public": "2016-05-05",
+    "germline": "",
+    "hi_c_protocol": "",
+    "host": "",
+    "host_body_site": "",
+    "host_genotype": "",
+    "host_gravidity": "",
+    "host_growth_conditions": "",
+    "host_phenotype": "",
+    "host_scientific_name": "",
+    "host_sex": "",
+    "host_status": "",
+    "host_tax_id": "",
+    "identified_by": "",
+    "instrument_model": "Illumina HiSeq 2000",
+    "instrument_platform": "ILLUMINA",
+    "investigation_type": "",
+    "isolate": "",
+    "isolation_source": "",
+    "last_updated": "2016-06-27",
+    "lat": "",
+    "library_construction_protocol": "",
+    "library_gen_protocol": "",
+    "library_layout": "PAIRED",
+    "library_max_fragment_size": "",
+    "library_min_fragment_size": "",
+    "library_name": "Y1",
+    "library_pcr_isolation_protocol": "",
+    "library_prep_date": "",
+    "library_prep_date_format": "",
+    "library_prep_latitude": "",
+    "library_prep_location": "",
+    "library_prep_longitude": "",
+    "library_selection": "cDNA",
+    "library_source": "TRANSCRIPTOMIC",
+    "library_strategy": "RNA-Seq",
+    "local_environmental_context": "",
+    "location": "",
+    "location_end": "",
+    "location_start": "",
+    "lon": "",
+    "marine_region": "",
+    "mating_type": "",
+    "ncbi_reporting_standard": "Generic",
+    "nominal_length": "",
+    "nominal_sdev": "",
+    "pcr_isolation_protocol": "",
+    "ph": "",
+    "project_name": "Arabidopsis thaliana",
+    "protocol_label": "",
+    "read_count": "95012910",
+    "read_strand": "",
+    "restriction_enzyme": "",
+    "restriction_enzyme_target_sequence": "",
+    "restriction_site": "",
+    "rna_integrity_num": "",
+    "rna_prep_3_protocol": "",
+    "rna_prep_5_protocol": "",
+    "rna_purity_230_ratio": "",
+    "rna_purity_280_ratio": "",
+    "rt_prep_protocol": "",
+    "run_alias": "DRR016112",
+    "run_date": "1348700400000",
+    "salinity": "",
+    "sample_accession": "SAMD00013248",
+    "sample_alias": "SAMD00013248",
+    "sample_capture_status": "",
+    "sample_collection": "",
+    "sample_description": "Arabidopsis wild-type roots grown on MS agar plate for 3 weeks",
+    "sample_material": "",
+    "sample_prep_interval": "",
+    "sample_prep_interval_units": "",
+    "sample_storage": "",
+    "sample_storage_processing": "",
+    "sample_title": "Arabidopsis wild-type roots grown on MS agar plate for 3 weeks",
+    "sampling_campaign": "",
+    "sampling_platform": "",
+    "sampling_site": "",
+    "scientific_name": "Arabidopsis thaliana",
+    "secondary_project": "",
+    "secondary_sample_accession": "DRS014211",
+    "secondary_study_accession": "DRP001756",
+    "sequencing_date": "",
+    "sequencing_date_format": "",
+    "sequencing_location": "",
+    "sequencing_longitude": "",
+    "sequencing_method": "",
+    "sequencing_primer_catalog": "",
+    "sequencing_primer_lot": "",
+    "sequencing_primer_provider": "",
+    "serotype": "",
+    "serovar": "",
+    "sex": "",
+    "specimen_voucher": "",
+    "sra_aspera": "",
+    "sra_bytes": "",
+    "sra_file_role": "",
+    "sra_ftp": "",
+    "sra_galaxy": "",
+    "sra_md5": "",
+    "status": "public",
+    "strain": "",
+    "study_accession": "PRJDB1593",
+    "study_alias": "DRP001756",
+    "study_title": "illumina mRNA-seq analysis for Arabidopsis thaliana max1-1 mutant",
+    "sub_species": "",
+    "sub_strain": "",
+    "submission_accession": "DRA001683",
+    "submission_tool": "",
+    "submitted_aspera": "",
+    "submitted_bytes": "",
+    "submitted_file_role": "",
+    "submitted_format": "",
+    "submitted_ftp": "",
+    "submitted_galaxy": "",
+    "submitted_host_sex": "",
+    "submitted_md5": "",
+    "submitted_read_type": "",
+    "surveillance_target": "",
+    "tag": "",
+    "target_gene": "",
+    "tax_id": "3702",
+    "tax_lineage": "1;131567;2759;33090;35493;131221;3193;58023;78536;58024;3398;1437183;71240;91827;1437201;71275;91836;3699;3700;980083;3701;3702",
+    "taxonomic_classification": "",
+    "taxonomic_identity_marker": "",
+    "temperature": "",
+    "tissue_lib": "",
+    "tissue_type": "",
+    "transposase_protocol": "",
+    "variety": ""
+  },
+  "biosample_accession": "SAMD00013248",
+  "biosample_metadata": {
+    "name": "SAMD00013248",
+    "accession": "SAMD00013248",
+    "domain": "self.BiosampleImportNCBI",
+    "taxId": 3702,
+    "status": "PUBLIC",
+    "release": "2016-02-08T10:37:14Z",
+    "update": "2022-03-29T16:00:22.228Z",
+    "submitted": "2016-02-05T17:05:08.390Z",
+    "characteristics": {
+      "External Id": [
+        {
+          "text": "SAMD00013248",
+          "tag": "Namespace:BioSample"
+        }
+      ],
+      "INSDC center name": [
+        {
+          "text": "Department of Bioscience, Faculty of Applied Bioscience, Tokyo University of Agriculture"
+        }
+      ],
+      "INSDC first public": [
+        {
+          "text": "2016-02-08T10:37:14Z"
+        }
+      ],
+      "INSDC last update": [
+        {
+          "text": "2016-02-07T20:37:14Z"
+        }
+      ],
+      "INSDC secondary accession": [
+        {
+          "text": "DRS014211"
+        }
+      ],
+      "INSDC status": [
+        {
+          "text": "live"
+        }
+      ],
+      "NCBI submission model": [
+        {
+          "text": "Generic"
+        }
+      ],
+      "NCBI submission package": [
+        {
+          "text": "Generic.1.0"
+        }
+      ],
+      "SRA accession": [
+        {
+          "text": "DRS014211"
+        }
+      ],
+      "organism": [
+        {
+          "text": "Arabidopsis thaliana",
+          "ontologyTerms": [
+            "http://purl.obolibrary.org/obo/NCBITaxon_3702"
+          ]
+        }
+      ],
+      "sample comment": [
+        {
+          "text": "For the analysis of gene expression, total RNA was extracted from roots of wild-type plants.",
+          "tag": "attribute"
+        }
+      ],
+      "sample name": [
+        {
+          "text": "DRS014211",
+          "tag": "attribute"
+        }
+      ],
+      "title": [
+        {
+          "text": "Arabidopsis wild-type roots grown on MS agar plate for 3 weeks"
+        }
+      ]
+    },
+    "externalReferences": [
+      {
+        "url": "https://www.ebi.ac.uk/ena/data/view/SAMD00013248"
+      }
+    ],
+    "submittedVia": "JSON_API",
+    "create": "2016-02-05T17:05:08.390Z",
+    "_links": {
+      "self": {
+        "href": "https://www.ebi.ac.uk/biosamples/samples/SAMD00013248"
+      },
+      "applyCurations": {
+        "href": "https://www.ebi.ac.uk/biosamples/samples/SAMD00013248{?applyCurations}",
+        "templated": true
+      },
+      "curationLinks": {
+        "href": "https://www.ebi.ac.uk/biosamples/samples/SAMD00013248/curationlinks"
+      },
+      "curationLink": {
+        "href": "https://www.ebi.ac.uk/biosamples/samples/SAMD00013248/curationlinks/{hash}",
+        "templated": true
+      },
+      "structuredData": {
+        "href": "https://www.ebi.ac.uk/biosamples/structureddata/SAMD00013248"
+      }
+    }
+  }
+}
+{
+  "run_accession": "DRR016113",
+  "ena_indexed_metadata": {
+    "run_accession": "DRR016113",
+    "age": "",
+    "aligned": "",
+    "altitude": "",
+    "assembly_quality": "",
+    "assembly_software": "",
+    "bam_aspera": "",
+    "bam_bytes": "",
+    "bam_file_role": "",
+    "bam_ftp": "",
+    "bam_galaxy": "",
+    "bam_md5": "",
+    "base_count": "32653800600",
+    "binning_software": "",
+    "bio_material": "",
+    "bisulfite_protocol": "",
+    "broad_scale_environmental_context": "",
+    "broker_name": "",
+    "cage_protocol": "",
+    "cell_line": "",
+    "cell_type": "",
+    "center_name": "TUAGRI",
+    "checklist": "",
+    "chip_ab_provider": "",
+    "chip_protocol": "",
+    "chip_target": "",
+    "collected_by": "",
+    "collection_date": "",
+    "collection_date_end": "",
+    "collection_date_start": "",
+    "completeness_score": "",
+    "contamination_score": "",
+    "control_experiment": "",
+    "country": "",
+    "cultivar": "",
+    "culture_collection": "",
+    "datahub": "",
+    "depth": "",
+    "description": "Illumina HiSeq 2000 sequencing: RNA-sequencing of arabidopsis thaliana WT roots.",
+    "dev_stage": "",
+    "disease": "",
+    "dnase_protocol": "",
+    "ecotype": "",
+    "elevation": "",
+    "environment_biome": "",
+    "environment_feature": "",
+    "environment_material": "",
+    "environmental_medium": "",
+    "environmental_sample": "",
+    "experiment_accession": "DRX014482",
+    "experiment_alias": "DRX014482",
+    "experiment_target": "",
+    "experiment_title": "Illumina HiSeq 2000 sequencing: RNA-sequencing of arabidopsis thaliana WT roots.",
+    "experimental_factor": "",
+    "experimental_protocol": "",
+    "extraction_protocol": "",
+    "faang_library_selection": "",
+    "fastq_aspera": "fasp.sra.ebi.ac.uk:/vol1/fastq/DRR016/DRR016113/DRR016113_1.fastq.gz;fasp.sra.ebi.ac.uk:/vol1/fastq/DRR016/DRR016113/DRR016113_2.fastq.gz",
+    "fastq_bytes": "15115922102;15464639097",
+    "fastq_file_role": "GENERATED_FILE;GENERATED_FILE",
+    "fastq_ftp": "ftp.sra.ebi.ac.uk/vol1/fastq/DRR016/DRR016113/DRR016113_1.fastq.gz;ftp.sra.ebi.ac.uk/vol1/fastq/DRR016/DRR016113/DRR016113_2.fastq.gz",
+    "fastq_galaxy": "ftp.sra.ebi.ac.uk/vol1/fastq/DRR016/DRR016113/DRR016113_1.fastq.gz;ftp.sra.ebi.ac.uk/vol1/fastq/DRR016/DRR016113/DRR016113_2.fastq.gz",
+    "fastq_md5": "b2adcc3762652fdf2d2b65fadd66f104;16894a485911694a95abdfe2a5e7b576",
+    "file_location": "",
+    "first_created": "2016-05-05",
+    "first_public": "2016-05-05",
+    "germline": "",
+    "hi_c_protocol": "",
+    "host": "",
+    "host_body_site": "",
+    "host_genotype": "",
+    "host_gravidity": "",
+    "host_growth_conditions": "",
+    "host_phenotype": "",
+    "host_scientific_name": "",
+    "host_sex": "",
+    "host_status": "",
+    "host_tax_id": "",
+    "identified_by": "",
+    "instrument_model": "Illumina HiSeq 2000",
+    "instrument_platform": "ILLUMINA",
+    "investigation_type": "",
+    "isolate": "",
+    "isolation_source": "",
+    "last_updated": "2016-06-27",
+    "lat": "",
+    "library_construction_protocol": "",
+    "library_gen_protocol": "",
+    "library_layout": "PAIRED",
+    "library_max_fragment_size": "",
+    "library_min_fragment_size": "",
+    "library_name": "Y2",
+    "library_pcr_isolation_protocol": "",
+    "library_prep_date": "",
+    "library_prep_date_format": "",
+    "library_prep_latitude": "",
+    "library_prep_location": "",
+    "library_prep_longitude": "",
+    "library_selection": "cDNA",
+    "library_source": "TRANSCRIPTOMIC",
+    "library_strategy": "RNA-Seq",
+    "local_environmental_context": "",
+    "location": "",
+    "location_end": "",
+    "location_start": "",
+    "lon": "",
+    "marine_region": "",
+    "mating_type": "",
+    "ncbi_reporting_standard": "Generic",
+    "nominal_length": "",
+    "nominal_sdev": "",
+    "pcr_isolation_protocol": "",
+    "ph": "",
+    "project_name": "Arabidopsis thaliana",
+    "protocol_label": "",
+    "read_count": "163269003",
+    "read_strand": "",
+    "restriction_enzyme": "",
+    "restriction_enzyme_target_sequence": "",
+    "restriction_site": "",
+    "rna_integrity_num": "",
+    "rna_prep_3_protocol": "",
+    "rna_prep_5_protocol": "",
+    "rna_purity_230_ratio": "",
+    "rna_purity_280_ratio": "",
+    "rt_prep_protocol": "",
+    "run_alias": "DRR016113",
+    "run_date": "1348700400000",
+    "salinity": "",
+    "sample_accession": "SAMD00013248",
+    "sample_alias": "SAMD00013248",
+    "sample_capture_status": "",
+    "sample_collection": "",
+    "sample_description": "Arabidopsis wild-type roots grown on MS agar plate for 3 weeks",
+    "sample_material": "",
+    "sample_prep_interval": "",
+    "sample_prep_interval_units": "",
+    "sample_storage": "",
+    "sample_storage_processing": "",
+    "sample_title": "Arabidopsis wild-type roots grown on MS agar plate for 3 weeks",
+    "sampling_campaign": "",
+    "sampling_platform": "",
+    "sampling_site": "",
+    "scientific_name": "Arabidopsis thaliana",
+    "secondary_project": "",
+    "secondary_sample_accession": "DRS014211",
+    "secondary_study_accession": "DRP001756",
+    "sequencing_date": "",
+    "sequencing_date_format": "",
+    "sequencing_location": "",
+    "sequencing_longitude": "",
+    "sequencing_method": "",
+    "sequencing_primer_catalog": "",
+    "sequencing_primer_lot": "",
+    "sequencing_primer_provider": "",
+    "serotype": "",
+    "serovar": "",
+    "sex": "",
+    "specimen_voucher": "",
+    "sra_aspera": "",
+    "sra_bytes": "",
+    "sra_file_role": "",
+    "sra_ftp": "",
+    "sra_galaxy": "",
+    "sra_md5": "",
+    "status": "public",
+    "strain": "",
+    "study_accession": "PRJDB1593",
+    "study_alias": "DRP001756",
+    "study_title": "illumina mRNA-seq analysis for Arabidopsis thaliana max1-1 mutant",
+    "sub_species": "",
+    "sub_strain": "",
+    "submission_accession": "DRA001683",
+    "submission_tool": "",
+    "submitted_aspera": "",
+    "submitted_bytes": "",
+    "submitted_file_role": "",
+    "submitted_format": "",
+    "submitted_ftp": "",
+    "submitted_galaxy": "",
+    "submitted_host_sex": "",
+    "submitted_md5": "",
+    "submitted_read_type": "",
+    "surveillance_target": "",
+    "tag": "",
+    "target_gene": "",
+    "tax_id": "3702",
+    "tax_lineage": "1;131567;2759;33090;35493;131221;3193;58023;78536;58024;3398;1437183;71240;91827;1437201;71275;91836;3699;3700;980083;3701;3702",
+    "taxonomic_classification": "",
+    "taxonomic_identity_marker": "",
+    "temperature": "",
+    "tissue_lib": "",
+    "tissue_type": "",
+    "transposase_protocol": "",
+    "variety": ""
+  },
+  "biosample_accession": "SAMD00013248",
+  "biosample_metadata": {
+    "name": "SAMD00013248",
+    "accession": "SAMD00013248",
+    "domain": "self.BiosampleImportNCBI",
+    "taxId": 3702,
+    "status": "PUBLIC",
+    "release": "2016-02-08T10:37:14Z",
+    "update": "2022-03-29T16:00:22.228Z",
+    "submitted": "2016-02-05T17:05:08.390Z",
+    "characteristics": {
+      "External Id": [
+        {
+          "text": "SAMD00013248",
+          "tag": "Namespace:BioSample"
+        }
+      ],
+      "INSDC center name": [
+        {
+          "text": "Department of Bioscience, Faculty of Applied Bioscience, Tokyo University of Agriculture"
+        }
+      ],
+      "INSDC first public": [
+        {
+          "text": "2016-02-08T10:37:14Z"
+        }
+      ],
+      "INSDC last update": [
+        {
+          "text": "2016-02-07T20:37:14Z"
+        }
+      ],
+      "INSDC secondary accession": [
+        {
+          "text": "DRS014211"
+        }
+      ],
+      "INSDC status": [
+        {
+          "text": "live"
+        }
+      ],
+      "NCBI submission model": [
+        {
+          "text": "Generic"
+        }
+      ],
+      "NCBI submission package": [
+        {
+          "text": "Generic.1.0"
+        }
+      ],
+      "SRA accession": [
+        {
+          "text": "DRS014211"
+        }
+      ],
+      "organism": [
+        {
+          "text": "Arabidopsis thaliana",
+          "ontologyTerms": [
+            "http://purl.obolibrary.org/obo/NCBITaxon_3702"
+          ]
+        }
+      ],
+      "sample comment": [
+        {
+          "text": "For the analysis of gene expression, total RNA was extracted from roots of wild-type plants.",
+          "tag": "attribute"
+        }
+      ],
+      "sample name": [
+        {
+          "text": "DRS014211",
+          "tag": "attribute"
+        }
+      ],
+      "title": [
+        {
+          "text": "Arabidopsis wild-type roots grown on MS agar plate for 3 weeks"
+        }
+      ]
+    },
+    "externalReferences": [
+      {
+        "url": "https://www.ebi.ac.uk/ena/data/view/SAMD00013248"
+      }
+    ],
+    "submittedVia": "JSON_API",
+    "create": "2016-02-05T17:05:08.390Z",
+    "_links": {
+      "self": {
+        "href": "https://www.ebi.ac.uk/biosamples/samples/SAMD00013248"
+      },
+      "applyCurations": {
+        "href": "https://www.ebi.ac.uk/biosamples/samples/SAMD00013248{?applyCurations}",
+        "templated": true
+      },
+      "curationLinks": {
+        "href": "https://www.ebi.ac.uk/biosamples/samples/SAMD00013248/curationlinks"
+      },
+      "curationLink": {
+        "href": "https://www.ebi.ac.uk/biosamples/samples/SAMD00013248/curationlinks/{hash}",
+        "templated": true
+      },
+      "structuredData": {
+        "href": "https://www.ebi.ac.uk/biosamples/structureddata/SAMD00013248"
+      }
+    }
+  }
+}
+{
+  "run_accession": "DRR016114",
+  "ena_indexed_metadata": {
+    "run_accession": "DRR016114",
+    "age": "",
+    "aligned": "",
+    "altitude": "",
+    "assembly_quality": "",
+    "assembly_software": "",
+    "bam_aspera": "",
+    "bam_bytes": "",
+    "bam_file_role": "",
+    "bam_ftp": "",
+    "bam_galaxy": "",
+    "bam_md5": "",
+    "base_count": "36485551600",
+    "binning_software": "",
+    "bio_material": "",
+    "bisulfite_protocol": "",
+    "broad_scale_environmental_context": "",
+    "broker_name": "",
+    "cage_protocol": "",
+    "cell_line": "",
+    "cell_type": "",
+    "center_name": "TUAGRI",
+    "checklist": "",
+    "chip_ab_provider": "",
+    "chip_protocol": "",
+    "chip_target": "",
+    "collected_by": "",
+    "collection_date": "",
+    "collection_date_end": "",
+    "collection_date_start": "",
+    "completeness_score": "",
+    "contamination_score": "",
+    "control_experiment": "",
+    "country": "",
+    "cultivar": "",
+    "culture_collection": "",
+    "datahub": "",
+    "depth": "",
+    "description": "Illumina HiSeq 2000 sequencing: RNA-sequencing of arabidopsis thaliana max1-1 roots.",
+    "dev_stage": "",
+    "disease": "",
+    "dnase_protocol": "",
+    "ecotype": "",
+    "elevation": "",
+    "environment_biome": "",
+    "environment_feature": "",
+    "environment_material": "",
+    "environmental_medium": "",
+    "environmental_sample": "",
+    "experiment_accession": "DRX014483",
+    "experiment_alias": "DRX014483",
+    "experiment_target": "",
+    "experiment_title": "Illumina HiSeq 2000 sequencing: RNA-sequencing of arabidopsis thaliana max1-1 roots.",
+    "experimental_factor": "",
+    "experimental_protocol": "",
+    "extraction_protocol": "",
+    "faang_library_selection": "",
+    "fastq_aspera": "fasp.sra.ebi.ac.uk:/vol1/fastq/DRR016/DRR016114/DRR016114_1.fastq.gz;fasp.sra.ebi.ac.uk:/vol1/fastq/DRR016/DRR016114/DRR016114_2.fastq.gz",
+    "fastq_bytes": "16934321396;17279271606",
+    "fastq_file_role": "GENERATED_FILE;GENERATED_FILE",
+    "fastq_ftp": "ftp.sra.ebi.ac.uk/vol1/fastq/DRR016/DRR016114/DRR016114_1.fastq.gz;ftp.sra.ebi.ac.uk/vol1/fastq/DRR016/DRR016114/DRR016114_2.fastq.gz",
+    "fastq_galaxy": "ftp.sra.ebi.ac.uk/vol1/fastq/DRR016/DRR016114/DRR016114_1.fastq.gz;ftp.sra.ebi.ac.uk/vol1/fastq/DRR016/DRR016114/DRR016114_2.fastq.gz",
+    "fastq_md5": "bc53a6f5dd59b376d9d930364c0f89bf;1c9d4d3bb917185a2b549455fce8d1a9",
+    "file_location": "",
+    "first_created": "2016-05-05",
+    "first_public": "2016-05-05",
+    "germline": "",
+    "hi_c_protocol": "",
+    "host": "",
+    "host_body_site": "",
+    "host_genotype": "",
+    "host_gravidity": "",
+    "host_growth_conditions": "",
+    "host_phenotype": "",
+    "host_scientific_name": "",
+    "host_sex": "",
+    "host_status": "",
+    "host_tax_id": "",
+    "identified_by": "",
+    "instrument_model": "Illumina HiSeq 2000",
+    "instrument_platform": "ILLUMINA",
+    "investigation_type": "",
+    "isolate": "",
+    "isolation_source": "",
+    "last_updated": "2016-06-27",
+    "lat": "",
+    "library_construction_protocol": "",
+    "library_gen_protocol": "",
+    "library_layout": "PAIRED",
+    "library_max_fragment_size": "",
+    "library_min_fragment_size": "",
+    "library_name": "Y9",
+    "library_pcr_isolation_protocol": "",
+    "library_prep_date": "",
+    "library_prep_date_format": "",
+    "library_prep_latitude": "",
+    "library_prep_location": "",
+    "library_prep_longitude": "",
+    "library_selection": "cDNA",
+    "library_source": "TRANSCRIPTOMIC",
+    "library_strategy": "RNA-Seq",
+    "local_environmental_context": "",
+    "location": "",
+    "location_end": "",
+    "location_start": "",
+    "lon": "",
+    "marine_region": "",
+    "mating_type": "",
+    "ncbi_reporting_standard": "Generic",
+    "nominal_length": "",
+    "nominal_sdev": "",
+    "pcr_isolation_protocol": "",
+    "ph": "",
+    "project_name": "Arabidopsis thaliana",
+    "protocol_label": "",
+    "read_count": "182427758",
+    "read_strand": "",
+    "restriction_enzyme": "",
+    "restriction_enzyme_target_sequence": "",
+    "restriction_site": "",
+    "rna_integrity_num": "",
+    "rna_prep_3_protocol": "",
+    "rna_prep_5_protocol": "",
+    "rna_purity_230_ratio": "",
+    "rna_purity_280_ratio": "",
+    "rt_prep_protocol": "",
+    "run_alias": "DRR016114",
+    "run_date": "1348700400000",
+    "salinity": "",
+    "sample_accession": "SAMD00013247",
+    "sample_alias": "SAMD00013247",
+    "sample_capture_status": "",
+    "sample_collection": "",
+    "sample_description": "Arabidopsis max1-1 roots grown on MS agar plate for 3 weeks",
+    "sample_material": "",
+    "sample_prep_interval": "",
+    "sample_prep_interval_units": "",
+    "sample_storage": "",
+    "sample_storage_processing": "",
+    "sample_title": "Arabidopsis max1-1 roots grown on MS agar plate for 3 weeks",
+    "sampling_campaign": "",
+    "sampling_platform": "",
+    "sampling_site": "",
+    "scientific_name": "Arabidopsis thaliana",
+    "secondary_project": "",
+    "secondary_sample_accession": "DRS014212",
+    "secondary_study_accession": "DRP001756",
+    "sequencing_date": "",
+    "sequencing_date_format": "",
+    "sequencing_location": "",
+    "sequencing_longitude": "",
+    "sequencing_method": "",
+    "sequencing_primer_catalog": "",
+    "sequencing_primer_lot": "",
+    "sequencing_primer_provider": "",
+    "serotype": "",
+    "serovar": "",
+    "sex": "",
+    "specimen_voucher": "",
+    "sra_aspera": "",
+    "sra_bytes": "",
+    "sra_file_role": "",
+    "sra_ftp": "",
+    "sra_galaxy": "",
+    "sra_md5": "",
+    "status": "public",
+    "strain": "",
+    "study_accession": "PRJDB1593",
+    "study_alias": "DRP001756",
+    "study_title": "illumina mRNA-seq analysis for Arabidopsis thaliana max1-1 mutant",
+    "sub_species": "",
+    "sub_strain": "",
+    "submission_accession": "DRA001683",
+    "submission_tool": "",
+    "submitted_aspera": "",
+    "submitted_bytes": "",
+    "submitted_file_role": "",
+    "submitted_format": "",
+    "submitted_ftp": "",
+    "submitted_galaxy": "",
+    "submitted_host_sex": "",
+    "submitted_md5": "",
+    "submitted_read_type": "",
+    "surveillance_target": "",
+    "tag": "",
+    "target_gene": "",
+    "tax_id": "3702",
+    "tax_lineage": "1;131567;2759;33090;35493;131221;3193;58023;78536;58024;3398;1437183;71240;91827;1437201;71275;91836;3699;3700;980083;3701;3702",
+    "taxonomic_classification": "",
+    "taxonomic_identity_marker": "",
+    "temperature": "",
+    "tissue_lib": "",
+    "tissue_type": "",
+    "transposase_protocol": "",
+    "variety": ""
+  },
+  "biosample_accession": "SAMD00013247",
+  "biosample_metadata": {
+    "name": "SAMD00013247",
+    "accession": "SAMD00013247",
+    "domain": "self.BiosampleImportNCBI",
+    "taxId": 3702,
+    "status": "PUBLIC",
+    "release": "2016-02-08T10:37:14Z",
+    "update": "2022-03-29T16:00:22.259Z",
+    "submitted": "2016-02-05T17:05:08.553Z",
+    "characteristics": {
+      "External Id": [
+        {
+          "text": "SAMD00013247",
+          "tag": "Namespace:BioSample"
+        }
+      ],
+      "INSDC center name": [
+        {
+          "text": "Department of Bioscience, Faculty of Applied Bioscience, Tokyo University of Agriculture"
+        }
+      ],
+      "INSDC first public": [
+        {
+          "text": "2016-02-08T10:37:14Z"
+        }
+      ],
+      "INSDC last update": [
+        {
+          "text": "2016-02-07T20:37:14Z"
+        }
+      ],
+      "INSDC secondary accession": [
+        {
+          "text": "DRS014212"
+        }
+      ],
+      "INSDC status": [
+        {
+          "text": "live"
+        }
+      ],
+      "NCBI submission model": [
+        {
+          "text": "Generic"
+        }
+      ],
+      "NCBI submission package": [
+        {
+          "text": "Generic.1.0"
+        }
+      ],
+      "SRA accession": [
+        {
+          "text": "DRS014212"
+        }
+      ],
+      "organism": [
+        {
+          "text": "Arabidopsis thaliana",
+          "ontologyTerms": [
+            "http://purl.obolibrary.org/obo/NCBITaxon_3702"
+          ]
+        }
+      ],
+      "sample comment": [
+        {
+          "text": "For the analysis of gene expression, total RNA was extracted from roots of max1-1 plants.",
+          "tag": "attribute"
+        }
+      ],
+      "sample name": [
+        {
+          "text": "DRS014212",
+          "tag": "attribute"
+        }
+      ],
+      "title": [
+        {
+          "text": "Arabidopsis max1-1 roots grown on MS agar plate for 3 weeks"
+        }
+      ]
+    },
+    "externalReferences": [
+      {
+        "url": "https://www.ebi.ac.uk/ena/data/view/SAMD00013247"
+      }
+    ],
+    "submittedVia": "JSON_API",
+    "create": "2016-02-05T17:05:08.553Z",
+    "_links": {
+      "self": {
+        "href": "https://www.ebi.ac.uk/biosamples/samples/SAMD00013247"
+      },
+      "applyCurations": {
+        "href": "https://www.ebi.ac.uk/biosamples/samples/SAMD00013247{?applyCurations}",
+        "templated": true
+      },
+      "curationLinks": {
+        "href": "https://www.ebi.ac.uk/biosamples/samples/SAMD00013247/curationlinks"
+      },
+      "curationLink": {
+        "href": "https://www.ebi.ac.uk/biosamples/samples/SAMD00013247/curationlinks/{hash}",
+        "templated": true
+      },
+      "structuredData": {
+        "href": "https://www.ebi.ac.uk/biosamples/structureddata/SAMD00013247"
+      }
+    }
+  }
+}
+{
+  "run_accession": "DRR016115",
+  "ena_indexed_metadata": {
+    "run_accession": "DRR016115",
+    "age": "",
+    "aligned": "",
+    "altitude": "",
+    "assembly_quality": "",
+    "assembly_software": "",
+    "bam_aspera": "",
+    "bam_bytes": "",
+    "bam_file_role": "",
+    "bam_ftp": "",
+    "bam_galaxy": "",
+    "bam_md5": "",
+    "base_count": "21950011400",
+    "binning_software": "",
+    "bio_material": "",
+    "bisulfite_protocol": "",
+    "broad_scale_environmental_context": "",
+    "broker_name": "",
+    "cage_protocol": "",
+    "cell_line": "",
+    "cell_type": "",
+    "center_name": "TUAGRI",
+    "checklist": "",
+    "chip_ab_provider": "",
+    "chip_protocol": "",
+    "chip_target": "",
+    "collected_by": "",
+    "collection_date": "",
+    "collection_date_end": "",
+    "collection_date_start": "",
+    "completeness_score": "",
+    "contamination_score": "",
+    "control_experiment": "",
+    "country": "",
+    "cultivar": "",
+    "culture_collection": "",
+    "datahub": "",
+    "depth": "",
+    "description": "Illumina HiSeq 2000 sequencing: RNA-sequencing of arabidopsis thaliana max1-1 roots.",
+    "dev_stage": "",
+    "disease": "",
+    "dnase_protocol": "",
+    "ecotype": "",
+    "elevation": "",
+    "environment_biome": "",
+    "environment_feature": "",
+    "environment_material": "",
+    "environmental_medium": "",
+    "environmental_sample": "",
+    "experiment_accession": "DRX014484",
+    "experiment_alias": "DRX014484",
+    "experiment_target": "",
+    "experiment_title": "Illumina HiSeq 2000 sequencing: RNA-sequencing of arabidopsis thaliana max1-1 roots.",
+    "experimental_factor": "",
+    "experimental_protocol": "",
+    "extraction_protocol": "",
+    "faang_library_selection": "",
+    "fastq_aspera": "fasp.sra.ebi.ac.uk:/vol1/fastq/DRR016/DRR016115/DRR016115_1.fastq.gz;fasp.sra.ebi.ac.uk:/vol1/fastq/DRR016/DRR016115/DRR016115_2.fastq.gz",
+    "fastq_bytes": "10183829592;10398181288",
+    "fastq_file_role": "GENERATED_FILE;GENERATED_FILE",
+    "fastq_ftp": "ftp.sra.ebi.ac.uk/vol1/fastq/DRR016/DRR016115/DRR016115_1.fastq.gz;ftp.sra.ebi.ac.uk/vol1/fastq/DRR016/DRR016115/DRR016115_2.fastq.gz",
+    "fastq_galaxy": "ftp.sra.ebi.ac.uk/vol1/fastq/DRR016/DRR016115/DRR016115_1.fastq.gz;ftp.sra.ebi.ac.uk/vol1/fastq/DRR016/DRR016115/DRR016115_2.fastq.gz",
+    "fastq_md5": "4ef7908f92f5515fa5078f7fe711460c;8f9702b59e5a87367859d78081e04f55",
+    "file_location": "",
+    "first_created": "2016-05-05",
+    "first_public": "2016-05-05",
+    "germline": "",
+    "hi_c_protocol": "",
+    "host": "",
+    "host_body_site": "",
+    "host_genotype": "",
+    "host_gravidity": "",
+    "host_growth_conditions": "",
+    "host_phenotype": "",
+    "host_scientific_name": "",
+    "host_sex": "",
+    "host_status": "",
+    "host_tax_id": "",
+    "identified_by": "",
+    "instrument_model": "Illumina HiSeq 2000",
+    "instrument_platform": "ILLUMINA",
+    "investigation_type": "",
+    "isolate": "",
+    "isolation_source": "",
+    "last_updated": "2016-06-27",
+    "lat": "",
+    "library_construction_protocol": "",
+    "library_gen_protocol": "",
+    "library_layout": "PAIRED",
+    "library_max_fragment_size": "",
+    "library_min_fragment_size": "",
+    "library_name": "Y10",
+    "library_pcr_isolation_protocol": "",
+    "library_prep_date": "",
+    "library_prep_date_format": "",
+    "library_prep_latitude": "",
+    "library_prep_location": "",
+    "library_prep_longitude": "",
+    "library_selection": "cDNA",
+    "library_source": "TRANSCRIPTOMIC",
+    "library_strategy": "RNA-Seq",
+    "local_environmental_context": "",
+    "location": "",
+    "location_end": "",
+    "location_start": "",
+    "lon": "",
+    "marine_region": "",
+    "mating_type": "",
+    "ncbi_reporting_standard": "Generic",
+    "nominal_length": "",
+    "nominal_sdev": "",
+    "pcr_isolation_protocol": "",
+    "ph": "",
+    "project_name": "Arabidopsis thaliana",
+    "protocol_label": "",
+    "read_count": "109750057",
+    "read_strand": "",
+    "restriction_enzyme": "",
+    "restriction_enzyme_target_sequence": "",
+    "restriction_site": "",
+    "rna_integrity_num": "",
+    "rna_prep_3_protocol": "",
+    "rna_prep_5_protocol": "",
+    "rna_purity_230_ratio": "",
+    "rna_purity_280_ratio": "",
+    "rt_prep_protocol": "",
+    "run_alias": "DRR016115",
+    "run_date": "1348700400000",
+    "salinity": "",
+    "sample_accession": "SAMD00013247",
+    "sample_alias": "SAMD00013247",
+    "sample_capture_status": "",
+    "sample_collection": "",
+    "sample_description": "Arabidopsis max1-1 roots grown on MS agar plate for 3 weeks",
+    "sample_material": "",
+    "sample_prep_interval": "",
+    "sample_prep_interval_units": "",
+    "sample_storage": "",
+    "sample_storage_processing": "",
+    "sample_title": "Arabidopsis max1-1 roots grown on MS agar plate for 3 weeks",
+    "sampling_campaign": "",
+    "sampling_platform": "",
+    "sampling_site": "",
+    "scientific_name": "Arabidopsis thaliana",
+    "secondary_project": "",
+    "secondary_sample_accession": "DRS014212",
+    "secondary_study_accession": "DRP001756",
+    "sequencing_date": "",
+    "sequencing_date_format": "",
+    "sequencing_location": "",
+    "sequencing_longitude": "",
+    "sequencing_method": "",
+    "sequencing_primer_catalog": "",
+    "sequencing_primer_lot": "",
+    "sequencing_primer_provider": "",
+    "serotype": "",
+    "serovar": "",
+    "sex": "",
+    "specimen_voucher": "",
+    "sra_aspera": "",
+    "sra_bytes": "",
+    "sra_file_role": "",
+    "sra_ftp": "",
+    "sra_galaxy": "",
+    "sra_md5": "",
+    "status": "public",
+    "strain": "",
+    "study_accession": "PRJDB1593",
+    "study_alias": "DRP001756",
+    "study_title": "illumina mRNA-seq analysis for Arabidopsis thaliana max1-1 mutant",
+    "sub_species": "",
+    "sub_strain": "",
+    "submission_accession": "DRA001683",
+    "submission_tool": "",
+    "submitted_aspera": "",
+    "submitted_bytes": "",
+    "submitted_file_role": "",
+    "submitted_format": "",
+    "submitted_ftp": "",
+    "submitted_galaxy": "",
+    "submitted_host_sex": "",
+    "submitted_md5": "",
+    "submitted_read_type": "",
+    "surveillance_target": "",
+    "tag": "",
+    "target_gene": "",
+    "tax_id": "3702",
+    "tax_lineage": "1;131567;2759;33090;35493;131221;3193;58023;78536;58024;3398;1437183;71240;91827;1437201;71275;91836;3699;3700;980083;3701;3702",
+    "taxonomic_classification": "",
+    "taxonomic_identity_marker": "",
+    "temperature": "",
+    "tissue_lib": "",
+    "tissue_type": "",
+    "transposase_protocol": "",
+    "variety": ""
+  },
+  "biosample_accession": "SAMD00013247",
+  "biosample_metadata": {
+    "name": "SAMD00013247",
+    "accession": "SAMD00013247",
+    "domain": "self.BiosampleImportNCBI",
+    "taxId": 3702,
+    "status": "PUBLIC",
+    "release": "2016-02-08T10:37:14Z",
+    "update": "2022-03-29T16:00:22.259Z",
+    "submitted": "2016-02-05T17:05:08.553Z",
+    "characteristics": {
+      "External Id": [
+        {
+          "text": "SAMD00013247",
+          "tag": "Namespace:BioSample"
+        }
+      ],
+      "INSDC center name": [
+        {
+          "text": "Department of Bioscience, Faculty of Applied Bioscience, Tokyo University of Agriculture"
+        }
+      ],
+      "INSDC first public": [
+        {
+          "text": "2016-02-08T10:37:14Z"
+        }
+      ],
+      "INSDC last update": [
+        {
+          "text": "2016-02-07T20:37:14Z"
+        }
+      ],
+      "INSDC secondary accession": [
+        {
+          "text": "DRS014212"
+        }
+      ],
+      "INSDC status": [
+        {
+          "text": "live"
+        }
+      ],
+      "NCBI submission model": [
+        {
+          "text": "Generic"
+        }
+      ],
+      "NCBI submission package": [
+        {
+          "text": "Generic.1.0"
+        }
+      ],
+      "SRA accession": [
+        {
+          "text": "DRS014212"
+        }
+      ],
+      "organism": [
+        {
+          "text": "Arabidopsis thaliana",
+          "ontologyTerms": [
+            "http://purl.obolibrary.org/obo/NCBITaxon_3702"
+          ]
+        }
+      ],
+      "sample comment": [
+        {
+          "text": "For the analysis of gene expression, total RNA was extracted from roots of max1-1 plants.",
+          "tag": "attribute"
+        }
+      ],
+      "sample name": [
+        {
+          "text": "DRS014212",
+          "tag": "attribute"
+        }
+      ],
+      "title": [
+        {
+          "text": "Arabidopsis max1-1 roots grown on MS agar plate for 3 weeks"
+        }
+      ]
+    },
+    "externalReferences": [
+      {
+        "url": "https://www.ebi.ac.uk/ena/data/view/SAMD00013247"
+      }
+    ],
+    "submittedVia": "JSON_API",
+    "create": "2016-02-05T17:05:08.553Z",
+    "_links": {
+      "self": {
+        "href": "https://www.ebi.ac.uk/biosamples/samples/SAMD00013247"
+      },
+      "applyCurations": {
+        "href": "https://www.ebi.ac.uk/biosamples/samples/SAMD00013247{?applyCurations}",
+        "templated": true
+      },
+      "curationLinks": {
+        "href": "https://www.ebi.ac.uk/biosamples/samples/SAMD00013247/curationlinks"
+      },
+      "curationLink": {
+        "href": "https://www.ebi.ac.uk/biosamples/samples/SAMD00013247/curationlinks/{hash}",
+        "templated": true
+      },
+      "structuredData": {
+        "href": "https://www.ebi.ac.uk/biosamples/structureddata/SAMD00013247"
+      }
+    }
+  }
+}
+{
+  "run_accession": "DRR016116",
+  "ena_indexed_metadata": {
+    "run_accession": "DRR016116",
+    "age": "",
+    "aligned": "",
+    "altitude": "",
+    "assembly_quality": "",
+    "assembly_software": "",
+    "bam_aspera": "",
+    "bam_bytes": "",
+    "bam_file_role": "",
+    "bam_ftp": "",
+    "bam_galaxy": "",
+    "bam_md5": "",
+    "base_count": "33598657800",
+    "binning_software": "",
+    "bio_material": "",
+    "bisulfite_protocol": "",
+    "broad_scale_environmental_context": "",
+    "broker_name": "",
+    "cage_protocol": "",
+    "cell_line": "",
+    "cell_type": "",
+    "center_name": "TUAGRI",
+    "checklist": "",
+    "chip_ab_provider": "",
+    "chip_protocol": "",
+    "chip_target": "",
+    "collected_by": "",
+    "collection_date": "",
+    "collection_date_end": "",
+    "collection_date_start": "",
+    "completeness_score": "",
+    "contamination_score": "",
+    "control_experiment": "",
+    "country": "",
+    "cultivar": "",
+    "culture_collection": "",
+    "datahub": "",
+    "depth": "",
+    "description": "Illumina HiSeq 2000 sequencing: RNA-sequencing of arabidopsis thaliana max1-1 roots.",
+    "dev_stage": "",
+    "disease": "",
+    "dnase_protocol": "",
+    "ecotype": "",
+    "elevation": "",
+    "environment_biome": "",
+    "environment_feature": "",
+    "environment_material": "",
+    "environmental_medium": "",
+    "environmental_sample": "",
+    "experiment_accession": "DRX014485",
+    "experiment_alias": "DRX014485",
+    "experiment_target": "",
+    "experiment_title": "Illumina HiSeq 2000 sequencing: RNA-sequencing of arabidopsis thaliana max1-1 roots.",
+    "experimental_factor": "",
+    "experimental_protocol": "",
+    "extraction_protocol": "",
+    "faang_library_selection": "",
+    "fastq_aspera": "fasp.sra.ebi.ac.uk:/vol1/fastq/DRR016/DRR016116/DRR016116_1.fastq.gz;fasp.sra.ebi.ac.uk:/vol1/fastq/DRR016/DRR016116/DRR016116_2.fastq.gz",
+    "fastq_bytes": "15569652746;15880237623",
+    "fastq_file_role": "GENERATED_FILE;GENERATED_FILE",
+    "fastq_ftp": "ftp.sra.ebi.ac.uk/vol1/fastq/DRR016/DRR016116/DRR016116_1.fastq.gz;ftp.sra.ebi.ac.uk/vol1/fastq/DRR016/DRR016116/DRR016116_2.fastq.gz",
+    "fastq_galaxy": "ftp.sra.ebi.ac.uk/vol1/fastq/DRR016/DRR016116/DRR016116_1.fastq.gz;ftp.sra.ebi.ac.uk/vol1/fastq/DRR016/DRR016116/DRR016116_2.fastq.gz",
+    "fastq_md5": "38546d2c9c46d5213c90435cb99a7822;7211e012a72cb20d27dde0e6e189d8a5",
+    "file_location": "",
+    "first_created": "2016-05-05",
+    "first_public": "2016-05-05",
+    "germline": "",
+    "hi_c_protocol": "",
+    "host": "",
+    "host_body_site": "",
+    "host_genotype": "",
+    "host_gravidity": "",
+    "host_growth_conditions": "",
+    "host_phenotype": "",
+    "host_scientific_name": "",
+    "host_sex": "",
+    "host_status": "",
+    "host_tax_id": "",
+    "identified_by": "",
+    "instrument_model": "Illumina HiSeq 2000",
+    "instrument_platform": "ILLUMINA",
+    "investigation_type": "",
+    "isolate": "",
+    "isolation_source": "",
+    "last_updated": "2016-06-27",
+    "lat": "",
+    "library_construction_protocol": "",
+    "library_gen_protocol": "",
+    "library_layout": "PAIRED",
+    "library_max_fragment_size": "",
+    "library_min_fragment_size": "",
+    "library_name": "Y11",
+    "library_pcr_isolation_protocol": "",
+    "library_prep_date": "",
+    "library_prep_date_format": "",
+    "library_prep_latitude": "",
+    "library_prep_location": "",
+    "library_prep_longitude": "",
+    "library_selection": "cDNA",
+    "library_source": "TRANSCRIPTOMIC",
+    "library_strategy": "RNA-Seq",
+    "local_environmental_context": "",
+    "location": "",
+    "location_end": "",
+    "location_start": "",
+    "lon": "",
+    "marine_region": "",
+    "mating_type": "",
+    "ncbi_reporting_standard": "Generic",
+    "nominal_length": "",
+    "nominal_sdev": "",
+    "pcr_isolation_protocol": "",
+    "ph": "",
+    "project_name": "Arabidopsis thaliana",
+    "protocol_label": "",
+    "read_count": "167993289",
+    "read_strand": "",
+    "restriction_enzyme": "",
+    "restriction_enzyme_target_sequence": "",
+    "restriction_site": "",
+    "rna_integrity_num": "",
+    "rna_prep_3_protocol": "",
+    "rna_prep_5_protocol": "",
+    "rna_purity_230_ratio": "",
+    "rna_purity_280_ratio": "",
+    "rt_prep_protocol": "",
+    "run_alias": "DRR016116",
+    "run_date": "1348700400000",
+    "salinity": "",
+    "sample_accession": "SAMD00013247",
+    "sample_alias": "SAMD00013247",
+    "sample_capture_status": "",
+    "sample_collection": "",
+    "sample_description": "Arabidopsis max1-1 roots grown on MS agar plate for 3 weeks",
+    "sample_material": "",
+    "sample_prep_interval": "",
+    "sample_prep_interval_units": "",
+    "sample_storage": "",
+    "sample_storage_processing": "",
+    "sample_title": "Arabidopsis max1-1 roots grown on MS agar plate for 3 weeks",
+    "sampling_campaign": "",
+    "sampling_platform": "",
+    "sampling_site": "",
+    "scientific_name": "Arabidopsis thaliana",
+    "secondary_project": "",
+    "secondary_sample_accession": "DRS014212",
+    "secondary_study_accession": "DRP001756",
+    "sequencing_date": "",
+    "sequencing_date_format": "",
+    "sequencing_location": "",
+    "sequencing_longitude": "",
+    "sequencing_method": "",
+    "sequencing_primer_catalog": "",
+    "sequencing_primer_lot": "",
+    "sequencing_primer_provider": "",
+    "serotype": "",
+    "serovar": "",
+    "sex": "",
+    "specimen_voucher": "",
+    "sra_aspera": "",
+    "sra_bytes": "",
+    "sra_file_role": "",
+    "sra_ftp": "",
+    "sra_galaxy": "",
+    "sra_md5": "",
+    "status": "public",
+    "strain": "",
+    "study_accession": "PRJDB1593",
+    "study_alias": "DRP001756",
+    "study_title": "illumina mRNA-seq analysis for Arabidopsis thaliana max1-1 mutant",
+    "sub_species": "",
+    "sub_strain": "",
+    "submission_accession": "DRA001683",
+    "submission_tool": "",
+    "submitted_aspera": "",
+    "submitted_bytes": "",
+    "submitted_file_role": "",
+    "submitted_format": "",
+    "submitted_ftp": "",
+    "submitted_galaxy": "",
+    "submitted_host_sex": "",
+    "submitted_md5": "",
+    "submitted_read_type": "",
+    "surveillance_target": "",
+    "tag": "",
+    "target_gene": "",
+    "tax_id": "3702",
+    "tax_lineage": "1;131567;2759;33090;35493;131221;3193;58023;78536;58024;3398;1437183;71240;91827;1437201;71275;91836;3699;3700;980083;3701;3702",
+    "taxonomic_classification": "",
+    "taxonomic_identity_marker": "",
+    "temperature": "",
+    "tissue_lib": "",
+    "tissue_type": "",
+    "transposase_protocol": "",
+    "variety": ""
+  },
+  "biosample_accession": "SAMD00013247",
+  "biosample_metadata": {
+    "name": "SAMD00013247",
+    "accession": "SAMD00013247",
+    "domain": "self.BiosampleImportNCBI",
+    "taxId": 3702,
+    "status": "PUBLIC",
+    "release": "2016-02-08T10:37:14Z",
+    "update": "2022-03-29T16:00:22.259Z",
+    "submitted": "2016-02-05T17:05:08.553Z",
+    "characteristics": {
+      "External Id": [
+        {
+          "text": "SAMD00013247",
+          "tag": "Namespace:BioSample"
+        }
+      ],
+      "INSDC center name": [
+        {
+          "text": "Department of Bioscience, Faculty of Applied Bioscience, Tokyo University of Agriculture"
+        }
+      ],
+      "INSDC first public": [
+        {
+          "text": "2016-02-08T10:37:14Z"
+        }
+      ],
+      "INSDC last update": [
+        {
+          "text": "2016-02-07T20:37:14Z"
+        }
+      ],
+      "INSDC secondary accession": [
+        {
+          "text": "DRS014212"
+        }
+      ],
+      "INSDC status": [
+        {
+          "text": "live"
+        }
+      ],
+      "NCBI submission model": [
+        {
+          "text": "Generic"
+        }
+      ],
+      "NCBI submission package": [
+        {
+          "text": "Generic.1.0"
+        }
+      ],
+      "SRA accession": [
+        {
+          "text": "DRS014212"
+        }
+      ],
+      "organism": [
+        {
+          "text": "Arabidopsis thaliana",
+          "ontologyTerms": [
+            "http://purl.obolibrary.org/obo/NCBITaxon_3702"
+          ]
+        }
+      ],
+      "sample comment": [
+        {
+          "text": "For the analysis of gene expression, total RNA was extracted from roots of max1-1 plants.",
+          "tag": "attribute"
+        }
+      ],
+      "sample name": [
+        {
+          "text": "DRS014212",
+          "tag": "attribute"
+        }
+      ],
+      "title": [
+        {
+          "text": "Arabidopsis max1-1 roots grown on MS agar plate for 3 weeks"
+        }
+      ]
+    },
+    "externalReferences": [
+      {
+        "url": "https://www.ebi.ac.uk/ena/data/view/SAMD00013247"
+      }
+    ],
+    "submittedVia": "JSON_API",
+    "create": "2016-02-05T17:05:08.553Z",
+    "_links": {
+      "self": {
+        "href": "https://www.ebi.ac.uk/biosamples/samples/SAMD00013247"
+      },
+      "applyCurations": {
+        "href": "https://www.ebi.ac.uk/biosamples/samples/SAMD00013247{?applyCurations}",
+        "templated": true
+      },
+      "curationLinks": {
+        "href": "https://www.ebi.ac.uk/biosamples/samples/SAMD00013247/curationlinks"
+      },
+      "curationLink": {
+        "href": "https://www.ebi.ac.uk/biosamples/samples/SAMD00013247/curationlinks/{hash}",
+        "templated": true
+      },
+      "structuredData": {
+        "href": "https://www.ebi.ac.uk/biosamples/structureddata/SAMD00013247"
+      }
+    }
+  }
+}
+{
+  "run_accession": "DRR016125",
+  "ena_indexed_metadata": {
+    "run_accession": "DRR016125",
+    "age": "",
+    "aligned": "",
+    "altitude": "",
+    "assembly_quality": "",
+    "assembly_software": "",
+    "bam_aspera": "",
+    "bam_bytes": "",
+    "bam_file_role": "",
+    "bam_ftp": "",
+    "bam_galaxy": "",
+    "bam_md5": "",
+    "base_count": "2453878022",
+    "binning_software": "",
+    "bio_material": "",
+    "bisulfite_protocol": "",
+    "broad_scale_environmental_context": "",
+    "broker_name": "",
+    "cage_protocol": "",
+    "cell_line": "",
+    "cell_type": "",
+    "center_name": "PS_SNU",
+    "checklist": "",
+    "chip_ab_provider": "",
+    "chip_protocol": "",
+    "chip_target": "",
+    "collected_by": "",
+    "collection_date": "",
+    "collection_date_end": "",
+    "collection_date_start": "",
+    "completeness_score": "",
+    "contamination_score": "",
+    "control_experiment": "",
+    "country": "",
+    "cultivar": "",
+    "culture_collection": "",
+    "datahub": "",
+    "depth": "",
+    "description": "Illumina HiSeq 2500 paired end sequencing: RNA-seq of Arabidopsis wildtype plants under mock conditions",
+    "dev_stage": "",
+    "disease": "",
+    "dnase_protocol": "",
+    "ecotype": "",
+    "elevation": "",
+    "environment_biome": "",
+    "environment_feature": "",
+    "environment_material": "",
+    "environmental_medium": "",
+    "environmental_sample": "",
+    "experiment_accession": "DRX014494",
+    "experiment_alias": "DRX014494",
+    "experiment_target": "",
+    "experiment_title": "Illumina HiSeq 2500 paired end sequencing: RNA-seq of Arabidopsis wildtype plants under mock conditions",
+    "experimental_factor": "",
+    "experimental_protocol": "",
+    "extraction_protocol": "",
+    "faang_library_selection": "",
+    "fastq_aspera": "fasp.sra.ebi.ac.uk:/vol1/fastq/DRR016/DRR016125/DRR016125_1.fastq.gz;fasp.sra.ebi.ac.uk:/vol1/fastq/DRR016/DRR016125/DRR016125_2.fastq.gz",
+    "fastq_bytes": "967794560;1001146319",
+    "fastq_file_role": "GENERATED_FILE;GENERATED_FILE",
+    "fastq_ftp": "ftp.sra.ebi.ac.uk/vol1/fastq/DRR016/DRR016125/DRR016125_1.fastq.gz;ftp.sra.ebi.ac.uk/vol1/fastq/DRR016/DRR016125/DRR016125_2.fastq.gz",
+    "fastq_galaxy": "ftp.sra.ebi.ac.uk/vol1/fastq/DRR016/DRR016125/DRR016125_1.fastq.gz;ftp.sra.ebi.ac.uk/vol1/fastq/DRR016/DRR016125/DRR016125_2.fastq.gz",
+    "fastq_md5": "36beaacaff3a9903d5c57a2c73525ae8;d3f0203f534e35fa370b2a6c5e238944",
+    "file_location": "",
+    "first_created": "2015-05-02",
+    "first_public": "2015-05-02",
+    "germline": "",
+    "hi_c_protocol": "",
+    "host": "",
+    "host_body_site": "",
+    "host_genotype": "",
+    "host_gravidity": "",
+    "host_growth_conditions": "",
+    "host_phenotype": "",
+    "host_scientific_name": "",
+    "host_sex": "",
+    "host_status": "",
+    "host_tax_id": "",
+    "identified_by": "",
+    "instrument_model": "Illumina HiSeq 2500",
+    "instrument_platform": "ILLUMINA",
+    "investigation_type": "",
+    "isolate": "",
+    "isolation_source": "",
+    "last_updated": "2015-06-19",
+    "lat": "",
+    "library_construction_protocol": "Manually constructed according to descrived at Zhong et al. 2011 [PMID: 21807852]. Three libraries was constructed for each experiment for biological triplicates.",
+    "library_gen_protocol": "",
+    "library_layout": "PAIRED",
+    "library_max_fragment_size": "",
+    "library_min_fragment_size": "",
+    "library_name": "",
+    "library_pcr_isolation_protocol": "",
+    "library_prep_date": "",
+    "library_prep_date_format": "",
+    "library_prep_latitude": "",
+    "library_prep_location": "",
+    "library_prep_longitude": "",
+    "library_selection": "size fractionation",
+    "library_source": "TRANSCRIPTOMIC",
+    "library_strategy": "RNA-Seq",
+    "local_environmental_context": "",
+    "location": "",
+    "location_end": "",
+    "location_start": "",
+    "lon": "",
+    "marine_region": "",
+    "mating_type": "",
+    "ncbi_reporting_standard": "Generic",
+    "nominal_length": "200",
+    "nominal_sdev": "40",
+    "pcr_isolation_protocol": "",
+    "ph": "",
+    "project_name": "Arabidopsis thaliana",
+    "protocol_label": "",
+    "read_count": "12147911",
+    "read_strand": "",
+    "restriction_enzyme": "",
+    "restriction_enzyme_target_sequence": "",
+    "restriction_site": "",
+    "rna_integrity_num": "",
+    "rna_prep_3_protocol": "",
+    "rna_prep_5_protocol": "",
+    "rna_purity_230_ratio": "",
+    "rna_purity_280_ratio": "",
+    "rt_prep_protocol": "",
+    "run_alias": "DRR016125",
+    "run_date": "1391472000000",
+    "salinity": "",
+    "sample_accession": "SAMD00012350",
+    "sample_alias": "SAMD00012350",
+    "sample_capture_status": "",
+    "sample_collection": "",
+    "sample_description": "RNA-seq of Arabidopsis wildtype plants under ABA and osmotic conditions",
+    "sample_material": "",
+    "sample_prep_interval": "",
+    "sample_prep_interval_units": "",
+    "sample_storage": "",
+    "sample_storage_processing": "",
+    "sample_title": "RNA-seq of Arabidopsis wildtype plants under ABA and osmotic conditions",
+    "sampling_campaign": "",
+    "sampling_platform": "",
+    "sampling_site": "",
+    "scientific_name": "Arabidopsis thaliana",
+    "secondary_project": "",
+    "secondary_sample_accession": "DRS014221",
+    "secondary_study_accession": "DRP001761",
+    "sequencing_date": "",
+    "sequencing_date_format": "",
+    "sequencing_location": "",
+    "sequencing_longitude": "",
+    "sequencing_method": "",
+    "sequencing_primer_catalog": "",
+    "sequencing_primer_lot": "",
+    "sequencing_primer_provider": "",
+    "serotype": "",
+    "serovar": "",
+    "sex": "",
+    "specimen_voucher": "",
+    "sra_aspera": "",
+    "sra_bytes": "",
+    "sra_file_role": "",
+    "sra_ftp": "",
+    "sra_galaxy": "",
+    "sra_md5": "",
+    "status": "public",
+    "strain": "",
+    "study_accession": "PRJDB2508",
+    "study_alias": "PRJDB2508",
+    "study_title": "RNA-seq of ros1dml2 3 triple mutant under ABA and osmotic stress treatment",
+    "sub_species": "",
+    "sub_strain": "",
+    "submission_accession": "DRA001688",
+    "submission_tool": "",
+    "submitted_aspera": "",
+    "submitted_bytes": "",
+    "submitted_file_role": "",
+    "submitted_format": "",
+    "submitted_ftp": "",
+    "submitted_galaxy": "",
+    "submitted_host_sex": "",
+    "submitted_md5": "",
+    "submitted_read_type": "",
+    "surveillance_target": "",
+    "tag": "",
+    "target_gene": "",
+    "tax_id": "3702",
+    "tax_lineage": "1;131567;2759;33090;35493;131221;3193;58023;78536;58024;3398;1437183;71240;91827;1437201;71275;91836;3699;3700;980083;3701;3702",
+    "taxonomic_classification": "",
+    "taxonomic_identity_marker": "",
+    "temperature": "",
+    "tissue_lib": "",
+    "tissue_type": "",
+    "transposase_protocol": "",
+    "variety": ""
+  },
+  "biosample_accession": "SAMD00012350",
+  "biosample_metadata": {
+    "name": "SAMD00012350",
+    "accession": "SAMD00012350",
+    "domain": "self.BiosampleImportNCBI",
+    "taxId": 3702,
+    "status": "PUBLIC",
+    "release": "2015-05-01T09:20:13Z",
+    "update": "2022-03-29T10:10:14.359Z",
+    "submitted": "2015-05-01T14:47:03.573Z",
+    "characteristics": {
+      "External Id": [
+        {
+          "text": "SAMD00012350",
+          "tag": "Namespace:BioSample"
+        }
+      ],
+      "INSDC center name": [
+        {
+          "text": "Plant Developmental Genetics Laboratory, Department of Plant Science, Seoul National University"
+        }
+      ],
+      "INSDC first public": [
+        {
+          "text": "2015-05-01T09:20:13Z"
+        }
+      ],
+      "INSDC last update": [
+        {
+          "text": "2015-04-30T20:20:13Z"
+        }
+      ],
+      "INSDC secondary accession": [
+        {
+          "text": "DRS014221"
+        }
+      ],
+      "INSDC status": [
+        {
+          "text": "live"
+        }
+      ],
+      "NCBI submission model": [
+        {
+          "text": "Generic"
+        }
+      ],
+      "NCBI submission package": [
+        {
+          "text": "Generic.1.0"
+        }
+      ],
+      "SRA accession": [
+        {
+          "text": "DRS014221"
+        }
+      ],
+      "organism": [
+        {
+          "text": "Arabidopsis thaliana",
+          "ontologyTerms": [
+            "http://purl.obolibrary.org/obo/NCBITaxon_3702"
+          ]
+        }
+      ],
+      "sample comment": [
+        {
+          "text": "Arabidopsis thaliana ecotype Col was used in this experiment. Seedlings grown on Murashige-Skoog media for 12 days were collected and incubated at various stress conditions. The total RNA was extracted by TRIzol(R) with helps of manufacture's manual. Following DNase treatment was adapted to purify the RNA.",
+          "tag": "attribute"
+        }
+      ],
+      "sample name": [
+        {
+          "text": "DRS014221",
+          "tag": "attribute"
+        }
+      ],
+      "title": [
+        {
+          "text": "RNA-seq of Arabidopsis wildtype plants under ABA and osmotic conditions"
+        }
+      ]
+    },
+    "externalReferences": [
+      {
+        "url": "https://www.ebi.ac.uk/ena/data/view/SAMD00012350"
+      }
+    ],
+    "submittedVia": "JSON_API",
+    "create": "2015-05-01T14:47:03.573Z",
+    "_links": {
+      "self": {
+        "href": "https://www.ebi.ac.uk/biosamples/samples/SAMD00012350"
+      },
+      "applyCurations": {
+        "href": "https://www.ebi.ac.uk/biosamples/samples/SAMD00012350{?applyCurations}",
+        "templated": true
+      },
+      "curationLinks": {
+        "href": "https://www.ebi.ac.uk/biosamples/samples/SAMD00012350/curationlinks"
+      },
+      "curationLink": {
+        "href": "https://www.ebi.ac.uk/biosamples/samples/SAMD00012350/curationlinks/{hash}",
+        "templated": true
+      },
+      "structuredData": {
+        "href": "https://www.ebi.ac.uk/biosamples/structureddata/SAMD00012350"
+      }
+    }
+  }
+}

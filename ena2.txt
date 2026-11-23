@@ -1,0 +1,1770 @@
+{
+  "run_accession": "SRR24349370",
+  "ena_indexed_metadata": {
+    "run_accession": "SRR24349370",
+    "age": "",
+    "aligned": "",
+    "altitude": "",
+    "assembly_quality": "",
+    "assembly_software": "",
+    "bam_aspera": "",
+    "bam_bytes": "",
+    "bam_file_role": "",
+    "bam_ftp": "",
+    "bam_galaxy": "",
+    "bam_md5": "",
+    "base_count": "15601917658",
+    "binning_software": "",
+    "bio_material": "",
+    "bisulfite_protocol": "",
+    "broad_scale_environmental_context": "",
+    "broker_name": "",
+    "cage_protocol": "",
+    "cell_line": "",
+    "cell_type": "",
+    "center_name": "SUB13184932",
+    "checklist": "",
+    "chip_ab_provider": "",
+    "chip_protocol": "",
+    "chip_target": "",
+    "collected_by": "Karrie Rose",
+    "collection_date": "2021",
+    "collection_date_end": "2021-12-31",
+    "collection_date_start": "2021-01-01",
+    "completeness_score": "",
+    "contamination_score": "",
+    "control_experiment": "",
+    "country": "",
+    "cultivar": "",
+    "culture_collection": "",
+    "datahub": "",
+    "depth": "",
+    "description": "Illumina NovaSeq 6000 sequencing: Eastern Quoll Spleen RNA-Seq",
+    "dev_stage": "Adult",
+    "disease": "",
+    "dnase_protocol": "",
+    "ecotype": "",
+    "elevation": "",
+    "environment_biome": "",
+    "environment_feature": "",
+    "environment_material": "",
+    "environmental_medium": "",
+    "environmental_sample": "",
+    "experiment_accession": "SRX20142175",
+    "experiment_alias": "Dviv_Spleen",
+    "experiment_target": "",
+    "experiment_title": "Illumina NovaSeq 6000 sequencing: Eastern Quoll Spleen RNA-Seq",
+    "experimental_factor": "",
+    "experimental_protocol": "",
+    "extraction_protocol": "",
+    "faang_library_selection": "",
+    "fastq_aspera": "fasp.sra.ebi.ac.uk:/vol1/fastq/SRR243/070/SRR24349370/SRR24349370_1.fastq.gz;fasp.sra.ebi.ac.uk:/vol1/fastq/SRR243/070/SRR24349370/SRR24349370_2.fastq.gz",
+    "fastq_bytes": "2725258086;2723746486",
+    "fastq_file_role": "GENERATED_FILE;GENERATED_FILE",
+    "fastq_ftp": "ftp.sra.ebi.ac.uk/vol1/fastq/SRR243/070/SRR24349370/SRR24349370_1.fastq.gz;ftp.sra.ebi.ac.uk/vol1/fastq/SRR243/070/SRR24349370/SRR24349370_2.fastq.gz",
+    "fastq_galaxy": "ftp.sra.ebi.ac.uk/vol1/fastq/SRR243/070/SRR24349370/SRR24349370_1.fastq.gz;ftp.sra.ebi.ac.uk/vol1/fastq/SRR243/070/SRR24349370/SRR24349370_2.fastq.gz",
+    "fastq_md5": "f403f44557966df5f9d404a2fb972635;57c0afa3d7f337a3f9f97a879c6d8cce",
+    "file_location": "",
+    "first_created": "2024-02-15",
+    "first_public": "2024-02-15",
+    "germline": "",
+    "hi_c_protocol": "",
+    "host": "",
+    "host_body_site": "",
+    "host_genotype": "",
+    "host_gravidity": "",
+    "host_growth_conditions": "",
+    "host_phenotype": "",
+    "host_scientific_name": "",
+    "host_sex": "",
+    "host_status": "",
+    "host_tax_id": "",
+    "identified_by": "",
+    "instrument_model": "Illumina NovaSeq 6000",
+    "instrument_platform": "ILLUMINA",
+    "investigation_type": "",
+    "isolate": "",
+    "isolation_source": "",
+    "last_updated": "2024-02-15",
+    "lat": "",
+    "library_construction_protocol": "",
+    "library_gen_protocol": "",
+    "library_layout": "PAIRED",
+    "library_max_fragment_size": "",
+    "library_min_fragment_size": "",
+    "library_name": "Dviv_Spleen",
+    "library_pcr_isolation_protocol": "",
+    "library_prep_date": "",
+    "library_prep_date_format": "",
+    "library_prep_latitude": "",
+    "library_prep_location": "",
+    "library_prep_longitude": "",
+    "library_selection": "Oligo-dT",
+    "library_source": "TRANSCRIPTOMIC",
+    "library_strategy": "RNA-Seq",
+    "local_environmental_context": "",
+    "location": "",
+    "location_end": "",
+    "location_start": "",
+    "lon": "",
+    "marine_region": "",
+    "mating_type": "",
+    "ncbi_reporting_standard": "Model organism or animal",
+    "nominal_length": "",
+    "nominal_sdev": "",
+    "pcr_isolation_protocol": "",
+    "ph": "",
+    "project_name": "",
+    "protocol_label": "",
+    "read_count": "51661979",
+    "read_strand": "",
+    "restriction_enzyme": "",
+    "restriction_enzyme_target_sequence": "",
+    "restriction_site": "",
+    "rna_integrity_num": "",
+    "rna_prep_3_protocol": "",
+    "rna_prep_5_protocol": "",
+    "rna_purity_230_ratio": "",
+    "rna_purity_280_ratio": "",
+    "rt_prep_protocol": "",
+    "run_alias": "Dviv_Spleen_1.fastq.gz",
+    "run_date": "",
+    "salinity": "",
+    "sample_accession": "SAMN34433663",
+    "sample_alias": "Eastern Quoll Spleen",
+    "sample_capture_status": "",
+    "sample_collection": "",
+    "sample_description": "Eastern Quoll Spleen RNA-Seq",
+    "sample_material": "",
+    "sample_prep_interval": "",
+    "sample_prep_interval_units": "",
+    "sample_storage": "",
+    "sample_storage_processing": "",
+    "sample_title": "Eastern Quoll Spleen RNA-Seq",
+    "sampling_campaign": "",
+    "sampling_platform": "",
+    "sampling_site": "",
+    "scientific_name": "Dasyurus viverrinus",
+    "secondary_project": "",
+    "secondary_sample_accession": "SRS17470446",
+    "secondary_study_accession": "SRP435115",
+    "sequencing_date": "",
+    "sequencing_date_format": "",
+    "sequencing_location": "",
+    "sequencing_longitude": "",
+    "sequencing_method": "",
+    "sequencing_primer_catalog": "",
+    "sequencing_primer_lot": "",
+    "sequencing_primer_provider": "",
+    "serotype": "",
+    "serovar": "",
+    "sex": "female",
+    "specimen_voucher": "",
+    "sra_aspera": "",
+    "sra_bytes": "",
+    "sra_file_role": "",
+    "sra_ftp": "",
+    "sra_galaxy": "",
+    "sra_md5": "",
+    "status": "public",
+    "strain": "Captive Bred (Tasmanian Stock)",
+    "study_accession": "PRJNA963007",
+    "study_alias": "PRJNA963007",
+    "study_title": "Transcriptome Sequencing of the Eastern Quoll",
+    "sub_species": "",
+    "sub_strain": "",
+    "submission_accession": "SRA1629480",
+    "submission_tool": "",
+    "submitted_aspera": "",
+    "submitted_bytes": "",
+    "submitted_file_role": "",
+    "submitted_format": "",
+    "submitted_ftp": "",
+    "submitted_galaxy": "",
+    "submitted_host_sex": "",
+    "submitted_md5": "",
+    "submitted_read_type": "",
+    "surveillance_target": "",
+    "tag": "env_tax:terrestrial;env_tax",
+    "target_gene": "",
+    "tax_id": "9279",
+    "tax_lineage": "1;131567;2759;33154;33208;6072;33213;33511;7711;89593;7742;7776;117570;117571;8287;1338369;32523;32524;40674;32525;9263;38608;9277;9278;9279",
+    "taxonomic_classification": "",
+    "taxonomic_identity_marker": "",
+    "temperature": "",
+    "tissue_lib": "",
+    "tissue_type": "Spleen",
+    "transposase_protocol": "",
+    "variety": ""
+  },
+  "biosample_accession": "SAMN34433663",
+  "biosample_metadata": {
+    "name": "Eastern Quoll Spleen",
+    "accession": "SAMN34433663",
+    "sraAccession": "SRS17470446",
+    "webinSubmissionAccountId": "Webin-40894",
+    "taxId": 9279,
+    "status": "PUBLIC",
+    "release": "2024-02-13T00:00:00Z",
+    "update": "2025-01-10T17:00:57.865Z",
+    "submitted": "2023-04-28T21:11:03.430Z",
+    "characteristics": {
+      "External Id": [
+        {
+          "text": "SAMN34433663",
+          "tag": "Namespace:BioSample"
+        }
+      ],
+      "INSDC center name": [
+        {
+          "text": "The University of Melbourne"
+        }
+      ],
+      "INSDC first public": [
+        {
+          "text": "2024-02-13T00:00:00Z"
+        }
+      ],
+      "INSDC last update": [
+        {
+          "text": "2024-02-13T17:30:02.848Z"
+        }
+      ],
+      "INSDC secondary accession": [
+        {
+          "text": "SRS17470446"
+        }
+      ],
+      "INSDC status": [
+        {
+          "text": "live"
+        }
+      ],
+      "NCBI submission model": [
+        {
+          "text": "Model organism or animal"
+        }
+      ],
+      "NCBI submission package": [
+        {
+          "text": "Model.organism.animal.1.0"
+        }
+      ],
+      "SRA accession": [
+        {
+          "text": "SRS17470446"
+        }
+      ],
+      "biomaterial_provider": [
+        {
+          "text": "Aussie Ark",
+          "tag": "attribute"
+        }
+      ],
+      "collected_by": [
+        {
+          "text": "Karrie Rose",
+          "tag": "attribute"
+        }
+      ],
+      "collection_date": [
+        {
+          "text": "2021",
+          "tag": "attribute"
+        }
+      ],
+      "dev_stage": [
+        {
+          "text": "Adult",
+          "tag": "attribute"
+        }
+      ],
+      "health_state": [
+        {
+          "text": "Poor",
+          "tag": "attribute"
+        }
+      ],
+      "organism": [
+        {
+          "text": "Dasyurus viverrinus",
+          "ontologyTerms": [
+            "http://purl.obolibrary.org/obo/NCBITaxon_9279"
+          ]
+        }
+      ],
+      "sex": [
+        {
+          "text": "female",
+          "tag": "attribute"
+        }
+      ],
+      "store_cond": [
+        {
+          "text": "Flash Frozen",
+          "tag": "attribute"
+        }
+      ],
+      "strain": [
+        {
+          "text": "Captive Bred (Tasmanian Stock)",
+          "tag": "attribute"
+        }
+      ],
+      "tissue": [
+        {
+          "text": "Spleen",
+          "tag": "attribute"
+        }
+      ],
+      "title": [
+        {
+          "text": "Eastern Quoll Spleen RNA-Seq"
+        }
+      ]
+    },
+    "externalReferences": [
+      {
+        "url": "https://www.ebi.ac.uk/ena/browser/view/SAMN34433663",
+        "duo": []
+      }
+    ],
+    "submittedVia": "PIPELINE_IMPORT",
+    "create": "2023-04-28T21:11:03.430Z",
+    "_links": {
+      "self": {
+        "href": "https://www.ebi.ac.uk/biosamples/samples/SAMN34433663"
+      },
+      "applyCurations": {
+        "href": "https://www.ebi.ac.uk/biosamples/samples/SAMN34433663{?applyCurations}",
+        "templated": true
+      },
+      "curationLinks": {
+        "href": "https://www.ebi.ac.uk/biosamples/samples/SAMN34433663/curationlinks"
+      },
+      "curationLink": {
+        "href": "https://www.ebi.ac.uk/biosamples/samples/SAMN34433663/curationlinks/{hash}",
+        "templated": true
+      },
+      "structuredData": {
+        "href": "https://www.ebi.ac.uk/biosamples/structureddata/SAMN34433663"
+      }
+    }
+  }
+}
+{
+  "run_accession": "SRR24349371",
+  "ena_indexed_metadata": {
+    "run_accession": "SRR24349371",
+    "age": "",
+    "aligned": "",
+    "altitude": "",
+    "assembly_quality": "",
+    "assembly_software": "",
+    "bam_aspera": "",
+    "bam_bytes": "",
+    "bam_file_role": "",
+    "bam_ftp": "",
+    "bam_galaxy": "",
+    "bam_md5": "",
+    "base_count": "19979012340",
+    "binning_software": "",
+    "bio_material": "",
+    "bisulfite_protocol": "",
+    "broad_scale_environmental_context": "",
+    "broker_name": "",
+    "cage_protocol": "",
+    "cell_line": "",
+    "cell_type": "",
+    "center_name": "SUB13184932",
+    "checklist": "",
+    "chip_ab_provider": "",
+    "chip_protocol": "",
+    "chip_target": "",
+    "collected_by": "Karrie Rose",
+    "collection_date": "2021",
+    "collection_date_end": "2021-12-31",
+    "collection_date_start": "2021-01-01",
+    "completeness_score": "",
+    "contamination_score": "",
+    "control_experiment": "",
+    "country": "",
+    "cultivar": "",
+    "culture_collection": "",
+    "datahub": "",
+    "depth": "",
+    "description": "Illumina NovaSeq 6000 sequencing: Eastern Quoll Liver RNA-Seq",
+    "dev_stage": "Adult",
+    "disease": "",
+    "dnase_protocol": "",
+    "ecotype": "",
+    "elevation": "",
+    "environment_biome": "",
+    "environment_feature": "",
+    "environment_material": "",
+    "environmental_medium": "",
+    "environmental_sample": "",
+    "experiment_accession": "SRX20142174",
+    "experiment_alias": "Dviv_Liver",
+    "experiment_target": "",
+    "experiment_title": "Illumina NovaSeq 6000 sequencing: Eastern Quoll Liver RNA-Seq",
+    "experimental_factor": "",
+    "experimental_protocol": "",
+    "extraction_protocol": "",
+    "faang_library_selection": "",
+    "fastq_aspera": "fasp.sra.ebi.ac.uk:/vol1/fastq/SRR243/071/SRR24349371/SRR24349371_1.fastq.gz;fasp.sra.ebi.ac.uk:/vol1/fastq/SRR243/071/SRR24349371/SRR24349371_2.fastq.gz",
+    "fastq_bytes": "3203927564;3212252450",
+    "fastq_file_role": "GENERATED_FILE;GENERATED_FILE",
+    "fastq_ftp": "ftp.sra.ebi.ac.uk/vol1/fastq/SRR243/071/SRR24349371/SRR24349371_1.fastq.gz;ftp.sra.ebi.ac.uk/vol1/fastq/SRR243/071/SRR24349371/SRR24349371_2.fastq.gz",
+    "fastq_galaxy": "ftp.sra.ebi.ac.uk/vol1/fastq/SRR243/071/SRR24349371/SRR24349371_1.fastq.gz;ftp.sra.ebi.ac.uk/vol1/fastq/SRR243/071/SRR24349371/SRR24349371_2.fastq.gz",
+    "fastq_md5": "8fd740c706a00cc25348f23e0251545e;9d63245e096346c65dfe71b60d3100a9",
+    "file_location": "",
+    "first_created": "2024-02-25",
+    "first_public": "2024-02-25",
+    "germline": "",
+    "hi_c_protocol": "",
+    "host": "",
+    "host_body_site": "",
+    "host_genotype": "",
+    "host_gravidity": "",
+    "host_growth_conditions": "",
+    "host_phenotype": "",
+    "host_scientific_name": "",
+    "host_sex": "",
+    "host_status": "",
+    "host_tax_id": "",
+    "identified_by": "",
+    "instrument_model": "Illumina NovaSeq 6000",
+    "instrument_platform": "ILLUMINA",
+    "investigation_type": "",
+    "isolate": "",
+    "isolation_source": "",
+    "last_updated": "2024-02-26",
+    "lat": "",
+    "library_construction_protocol": "",
+    "library_gen_protocol": "",
+    "library_layout": "PAIRED",
+    "library_max_fragment_size": "",
+    "library_min_fragment_size": "",
+    "library_name": "Dviv_Liver",
+    "library_pcr_isolation_protocol": "",
+    "library_prep_date": "",
+    "library_prep_date_format": "",
+    "library_prep_latitude": "",
+    "library_prep_location": "",
+    "library_prep_longitude": "",
+    "library_selection": "Oligo-dT",
+    "library_source": "TRANSCRIPTOMIC",
+    "library_strategy": "RNA-Seq",
+    "local_environmental_context": "",
+    "location": "",
+    "location_end": "",
+    "location_start": "",
+    "lon": "",
+    "marine_region": "",
+    "mating_type": "",
+    "ncbi_reporting_standard": "Model organism or animal",
+    "nominal_length": "",
+    "nominal_sdev": "",
+    "pcr_isolation_protocol": "",
+    "ph": "",
+    "project_name": "",
+    "protocol_label": "",
+    "read_count": "66155670",
+    "read_strand": "",
+    "restriction_enzyme": "",
+    "restriction_enzyme_target_sequence": "",
+    "restriction_site": "",
+    "rna_integrity_num": "",
+    "rna_prep_3_protocol": "",
+    "rna_prep_5_protocol": "",
+    "rna_purity_230_ratio": "",
+    "rna_purity_280_ratio": "",
+    "rt_prep_protocol": "",
+    "run_alias": "Dviv_Liver_1.fastq.gz",
+    "run_date": "",
+    "salinity": "",
+    "sample_accession": "SAMN34433662",
+    "sample_alias": "Eastern Quoll Liver",
+    "sample_capture_status": "",
+    "sample_collection": "",
+    "sample_description": "Eastern Quoll Liver RNA-Seq",
+    "sample_material": "",
+    "sample_prep_interval": "",
+    "sample_prep_interval_units": "",
+    "sample_storage": "",
+    "sample_storage_processing": "",
+    "sample_title": "Eastern Quoll Liver RNA-Seq",
+    "sampling_campaign": "",
+    "sampling_platform": "",
+    "sampling_site": "",
+    "scientific_name": "Dasyurus viverrinus",
+    "secondary_project": "",
+    "secondary_sample_accession": "SRS17470445",
+    "secondary_study_accession": "SRP435115",
+    "sequencing_date": "",
+    "sequencing_date_format": "",
+    "sequencing_location": "",
+    "sequencing_longitude": "",
+    "sequencing_method": "",
+    "sequencing_primer_catalog": "",
+    "sequencing_primer_lot": "",
+    "sequencing_primer_provider": "",
+    "serotype": "",
+    "serovar": "",
+    "sex": "female",
+    "specimen_voucher": "",
+    "sra_aspera": "",
+    "sra_bytes": "",
+    "sra_file_role": "",
+    "sra_ftp": "",
+    "sra_galaxy": "",
+    "sra_md5": "",
+    "status": "public",
+    "strain": "Captive Bred (Tasmanian Stock)",
+    "study_accession": "PRJNA963007",
+    "study_alias": "PRJNA963007",
+    "study_title": "Transcriptome Sequencing of the Eastern Quoll",
+    "sub_species": "",
+    "sub_strain": "",
+    "submission_accession": "SRA1629480",
+    "submission_tool": "",
+    "submitted_aspera": "",
+    "submitted_bytes": "",
+    "submitted_file_role": "",
+    "submitted_format": "",
+    "submitted_ftp": "",
+    "submitted_galaxy": "",
+    "submitted_host_sex": "",
+    "submitted_md5": "",
+    "submitted_read_type": "",
+    "surveillance_target": "",
+    "tag": "env_tax:terrestrial;env_tax",
+    "target_gene": "",
+    "tax_id": "9279",
+    "tax_lineage": "1;131567;2759;33154;33208;6072;33213;33511;7711;89593;7742;7776;117570;117571;8287;1338369;32523;32524;40674;32525;9263;38608;9277;9278;9279",
+    "taxonomic_classification": "",
+    "taxonomic_identity_marker": "",
+    "temperature": "",
+    "tissue_lib": "",
+    "tissue_type": "Liver",
+    "transposase_protocol": "",
+    "variety": ""
+  },
+  "biosample_accession": "SAMN34433662",
+  "biosample_metadata": {
+    "name": "Eastern Quoll Liver",
+    "accession": "SAMN34433662",
+    "sraAccession": "SRS17470445",
+    "webinSubmissionAccountId": "Webin-40894",
+    "taxId": 9279,
+    "status": "PUBLIC",
+    "release": "2024-02-13T00:00:00Z",
+    "update": "2025-01-10T17:00:57.505Z",
+    "submitted": "2023-04-28T21:11:03.416Z",
+    "characteristics": {
+      "External Id": [
+        {
+          "text": "SAMN34433662",
+          "tag": "Namespace:BioSample"
+        }
+      ],
+      "INSDC center name": [
+        {
+          "text": "The University of Melbourne"
+        }
+      ],
+      "INSDC first public": [
+        {
+          "text": "2024-02-13T00:00:00Z"
+        }
+      ],
+      "INSDC last update": [
+        {
+          "text": "2024-02-13T17:30:02.884Z"
+        }
+      ],
+      "INSDC secondary accession": [
+        {
+          "text": "SRS17470445"
+        }
+      ],
+      "INSDC status": [
+        {
+          "text": "live"
+        }
+      ],
+      "NCBI submission model": [
+        {
+          "text": "Model organism or animal"
+        }
+      ],
+      "NCBI submission package": [
+        {
+          "text": "Model.organism.animal.1.0"
+        }
+      ],
+      "SRA accession": [
+        {
+          "text": "SRS17470445"
+        }
+      ],
+      "biomaterial_provider": [
+        {
+          "text": "Aussie Ark",
+          "tag": "attribute"
+        }
+      ],
+      "collected_by": [
+        {
+          "text": "Karrie Rose",
+          "tag": "attribute"
+        }
+      ],
+      "collection_date": [
+        {
+          "text": "2021",
+          "tag": "attribute"
+        }
+      ],
+      "dev_stage": [
+        {
+          "text": "Adult",
+          "tag": "attribute"
+        }
+      ],
+      "health_state": [
+        {
+          "text": "Poor",
+          "tag": "attribute"
+        }
+      ],
+      "organism": [
+        {
+          "text": "Dasyurus viverrinus",
+          "ontologyTerms": [
+            "http://purl.obolibrary.org/obo/NCBITaxon_9279"
+          ]
+        }
+      ],
+      "sex": [
+        {
+          "text": "female",
+          "tag": "attribute"
+        }
+      ],
+      "store_cond": [
+        {
+          "text": "Flash Frozen",
+          "tag": "attribute"
+        }
+      ],
+      "strain": [
+        {
+          "text": "Captive Bred (Tasmanian Stock)",
+          "tag": "attribute"
+        }
+      ],
+      "tissue": [
+        {
+          "text": "Liver",
+          "tag": "attribute"
+        }
+      ],
+      "title": [
+        {
+          "text": "Eastern Quoll Liver RNA-Seq"
+        }
+      ]
+    },
+    "externalReferences": [
+      {
+        "url": "https://www.ebi.ac.uk/ena/browser/view/SAMN34433662",
+        "duo": []
+      }
+    ],
+    "submittedVia": "PIPELINE_IMPORT",
+    "create": "2023-04-28T21:11:03.416Z",
+    "_links": {
+      "self": {
+        "href": "https://www.ebi.ac.uk/biosamples/samples/SAMN34433662"
+      },
+      "applyCurations": {
+        "href": "https://www.ebi.ac.uk/biosamples/samples/SAMN34433662{?applyCurations}",
+        "templated": true
+      },
+      "curationLinks": {
+        "href": "https://www.ebi.ac.uk/biosamples/samples/SAMN34433662/curationlinks"
+      },
+      "curationLink": {
+        "href": "https://www.ebi.ac.uk/biosamples/samples/SAMN34433662/curationlinks/{hash}",
+        "templated": true
+      },
+      "structuredData": {
+        "href": "https://www.ebi.ac.uk/biosamples/structureddata/SAMN34433662"
+      }
+    }
+  }
+}
+{
+  "run_accession": "SRR24349372",
+  "ena_indexed_metadata": {
+    "run_accession": "SRR24349372",
+    "age": "",
+    "aligned": "",
+    "altitude": "",
+    "assembly_quality": "",
+    "assembly_software": "",
+    "bam_aspera": "",
+    "bam_bytes": "",
+    "bam_file_role": "",
+    "bam_ftp": "",
+    "bam_galaxy": "",
+    "bam_md5": "",
+    "base_count": "17579071794",
+    "binning_software": "",
+    "bio_material": "",
+    "bisulfite_protocol": "",
+    "broad_scale_environmental_context": "",
+    "broker_name": "",
+    "cage_protocol": "",
+    "cell_line": "",
+    "cell_type": "",
+    "center_name": "SUB13184932",
+    "checklist": "",
+    "chip_ab_provider": "",
+    "chip_protocol": "",
+    "chip_target": "",
+    "collected_by": "Karrie Rose",
+    "collection_date": "2021",
+    "collection_date_end": "2021-12-31",
+    "collection_date_start": "2021-01-01",
+    "completeness_score": "",
+    "contamination_score": "",
+    "control_experiment": "",
+    "country": "",
+    "cultivar": "",
+    "culture_collection": "",
+    "datahub": "",
+    "depth": "",
+    "description": "Illumina NovaSeq 6000 sequencing: Eastern Quoll Kidney RNA-Seq",
+    "dev_stage": "Adult",
+    "disease": "",
+    "dnase_protocol": "",
+    "ecotype": "",
+    "elevation": "",
+    "environment_biome": "",
+    "environment_feature": "",
+    "environment_material": "",
+    "environmental_medium": "",
+    "environmental_sample": "",
+    "experiment_accession": "SRX20142173",
+    "experiment_alias": "Dviv_Kidney",
+    "experiment_target": "",
+    "experiment_title": "Illumina NovaSeq 6000 sequencing: Eastern Quoll Kidney RNA-Seq",
+    "experimental_factor": "",
+    "experimental_protocol": "",
+    "extraction_protocol": "",
+    "faang_library_selection": "",
+    "fastq_aspera": "fasp.sra.ebi.ac.uk:/vol1/fastq/SRR243/072/SRR24349372/SRR24349372_1.fastq.gz;fasp.sra.ebi.ac.uk:/vol1/fastq/SRR243/072/SRR24349372/SRR24349372_2.fastq.gz",
+    "fastq_bytes": "2805618768;2811432274",
+    "fastq_file_role": "GENERATED_FILE;GENERATED_FILE",
+    "fastq_ftp": "ftp.sra.ebi.ac.uk/vol1/fastq/SRR243/072/SRR24349372/SRR24349372_1.fastq.gz;ftp.sra.ebi.ac.uk/vol1/fastq/SRR243/072/SRR24349372/SRR24349372_2.fastq.gz",
+    "fastq_galaxy": "ftp.sra.ebi.ac.uk/vol1/fastq/SRR243/072/SRR24349372/SRR24349372_1.fastq.gz;ftp.sra.ebi.ac.uk/vol1/fastq/SRR243/072/SRR24349372/SRR24349372_2.fastq.gz",
+    "fastq_md5": "315a8472f3211a7742207557f8bd4925;c6ab5182125771f19c670d0b0c01ecd9",
+    "file_location": "",
+    "first_created": "2024-02-15",
+    "first_public": "2024-02-15",
+    "germline": "",
+    "hi_c_protocol": "",
+    "host": "",
+    "host_body_site": "",
+    "host_genotype": "",
+    "host_gravidity": "",
+    "host_growth_conditions": "",
+    "host_phenotype": "",
+    "host_scientific_name": "",
+    "host_sex": "",
+    "host_status": "",
+    "host_tax_id": "",
+    "identified_by": "",
+    "instrument_model": "Illumina NovaSeq 6000",
+    "instrument_platform": "ILLUMINA",
+    "investigation_type": "",
+    "isolate": "",
+    "isolation_source": "",
+    "last_updated": "2024-02-15",
+    "lat": "",
+    "library_construction_protocol": "",
+    "library_gen_protocol": "",
+    "library_layout": "PAIRED",
+    "library_max_fragment_size": "",
+    "library_min_fragment_size": "",
+    "library_name": "Dviv_Kidney",
+    "library_pcr_isolation_protocol": "",
+    "library_prep_date": "",
+    "library_prep_date_format": "",
+    "library_prep_latitude": "",
+    "library_prep_location": "",
+    "library_prep_longitude": "",
+    "library_selection": "Oligo-dT",
+    "library_source": "TRANSCRIPTOMIC",
+    "library_strategy": "RNA-Seq",
+    "local_environmental_context": "",
+    "location": "",
+    "location_end": "",
+    "location_start": "",
+    "lon": "",
+    "marine_region": "",
+    "mating_type": "",
+    "ncbi_reporting_standard": "Model organism or animal",
+    "nominal_length": "",
+    "nominal_sdev": "",
+    "pcr_isolation_protocol": "",
+    "ph": "",
+    "project_name": "",
+    "protocol_label": "",
+    "read_count": "58208847",
+    "read_strand": "",
+    "restriction_enzyme": "",
+    "restriction_enzyme_target_sequence": "",
+    "restriction_site": "",
+    "rna_integrity_num": "",
+    "rna_prep_3_protocol": "",
+    "rna_prep_5_protocol": "",
+    "rna_purity_230_ratio": "",
+    "rna_purity_280_ratio": "",
+    "rt_prep_protocol": "",
+    "run_alias": "Dviv_Kidney_1.fastq.gz",
+    "run_date": "",
+    "salinity": "",
+    "sample_accession": "SAMN34433661",
+    "sample_alias": "Eastern Quoll Kidney",
+    "sample_capture_status": "",
+    "sample_collection": "",
+    "sample_description": "Eastern Quoll Kidney RNA-Seq",
+    "sample_material": "",
+    "sample_prep_interval": "",
+    "sample_prep_interval_units": "",
+    "sample_storage": "",
+    "sample_storage_processing": "",
+    "sample_title": "Eastern Quoll Kidney RNA-Seq",
+    "sampling_campaign": "",
+    "sampling_platform": "",
+    "sampling_site": "",
+    "scientific_name": "Dasyurus viverrinus",
+    "secondary_project": "",
+    "secondary_sample_accession": "SRS17470444",
+    "secondary_study_accession": "SRP435115",
+    "sequencing_date": "",
+    "sequencing_date_format": "",
+    "sequencing_location": "",
+    "sequencing_longitude": "",
+    "sequencing_method": "",
+    "sequencing_primer_catalog": "",
+    "sequencing_primer_lot": "",
+    "sequencing_primer_provider": "",
+    "serotype": "",
+    "serovar": "",
+    "sex": "female",
+    "specimen_voucher": "",
+    "sra_aspera": "",
+    "sra_bytes": "",
+    "sra_file_role": "",
+    "sra_ftp": "",
+    "sra_galaxy": "",
+    "sra_md5": "",
+    "status": "public",
+    "strain": "Captive Bred (Tasmanian Stock)",
+    "study_accession": "PRJNA963007",
+    "study_alias": "PRJNA963007",
+    "study_title": "Transcriptome Sequencing of the Eastern Quoll",
+    "sub_species": "",
+    "sub_strain": "",
+    "submission_accession": "SRA1629480",
+    "submission_tool": "",
+    "submitted_aspera": "",
+    "submitted_bytes": "",
+    "submitted_file_role": "",
+    "submitted_format": "",
+    "submitted_ftp": "",
+    "submitted_galaxy": "",
+    "submitted_host_sex": "",
+    "submitted_md5": "",
+    "submitted_read_type": "",
+    "surveillance_target": "",
+    "tag": "env_tax:terrestrial;env_tax",
+    "target_gene": "",
+    "tax_id": "9279",
+    "tax_lineage": "1;131567;2759;33154;33208;6072;33213;33511;7711;89593;7742;7776;117570;117571;8287;1338369;32523;32524;40674;32525;9263;38608;9277;9278;9279",
+    "taxonomic_classification": "",
+    "taxonomic_identity_marker": "",
+    "temperature": "",
+    "tissue_lib": "",
+    "tissue_type": "Kidney",
+    "transposase_protocol": "",
+    "variety": ""
+  },
+  "biosample_accession": "SAMN34433661",
+  "biosample_metadata": {
+    "name": "Eastern Quoll Kidney",
+    "accession": "SAMN34433661",
+    "sraAccession": "SRS17470444",
+    "webinSubmissionAccountId": "Webin-40894",
+    "taxId": 9279,
+    "status": "PUBLIC",
+    "release": "2024-02-13T00:00:00Z",
+    "update": "2025-01-10T17:00:55.233Z",
+    "submitted": "2023-04-28T21:11:03.403Z",
+    "characteristics": {
+      "External Id": [
+        {
+          "text": "SAMN34433661",
+          "tag": "Namespace:BioSample"
+        }
+      ],
+      "INSDC center name": [
+        {
+          "text": "The University of Melbourne"
+        }
+      ],
+      "INSDC first public": [
+        {
+          "text": "2024-02-13T00:00:00Z"
+        }
+      ],
+      "INSDC last update": [
+        {
+          "text": "2024-02-13T17:30:02.917Z"
+        }
+      ],
+      "INSDC secondary accession": [
+        {
+          "text": "SRS17470444"
+        }
+      ],
+      "INSDC status": [
+        {
+          "text": "live"
+        }
+      ],
+      "NCBI submission model": [
+        {
+          "text": "Model organism or animal"
+        }
+      ],
+      "NCBI submission package": [
+        {
+          "text": "Model.organism.animal.1.0"
+        }
+      ],
+      "SRA accession": [
+        {
+          "text": "SRS17470444"
+        }
+      ],
+      "biomaterial_provider": [
+        {
+          "text": "Aussie Ark",
+          "tag": "attribute"
+        }
+      ],
+      "collected_by": [
+        {
+          "text": "Karrie Rose",
+          "tag": "attribute"
+        }
+      ],
+      "collection_date": [
+        {
+          "text": "2021",
+          "tag": "attribute"
+        }
+      ],
+      "dev_stage": [
+        {
+          "text": "Adult",
+          "tag": "attribute"
+        }
+      ],
+      "health_state": [
+        {
+          "text": "Poor",
+          "tag": "attribute"
+        }
+      ],
+      "organism": [
+        {
+          "text": "Dasyurus viverrinus",
+          "ontologyTerms": [
+            "http://purl.obolibrary.org/obo/NCBITaxon_9279"
+          ]
+        }
+      ],
+      "sex": [
+        {
+          "text": "female",
+          "tag": "attribute"
+        }
+      ],
+      "store_cond": [
+        {
+          "text": "Flash Frozen",
+          "tag": "attribute"
+        }
+      ],
+      "strain": [
+        {
+          "text": "Captive Bred (Tasmanian Stock)",
+          "tag": "attribute"
+        }
+      ],
+      "tissue": [
+        {
+          "text": "Kidney",
+          "tag": "attribute"
+        }
+      ],
+      "title": [
+        {
+          "text": "Eastern Quoll Kidney RNA-Seq"
+        }
+      ]
+    },
+    "externalReferences": [
+      {
+        "url": "https://www.ebi.ac.uk/ena/browser/view/SAMN34433661",
+        "duo": []
+      }
+    ],
+    "submittedVia": "PIPELINE_IMPORT",
+    "create": "2023-04-28T21:11:03.403Z",
+    "_links": {
+      "self": {
+        "href": "https://www.ebi.ac.uk/biosamples/samples/SAMN34433661"
+      },
+      "applyCurations": {
+        "href": "https://www.ebi.ac.uk/biosamples/samples/SAMN34433661{?applyCurations}",
+        "templated": true
+      },
+      "curationLinks": {
+        "href": "https://www.ebi.ac.uk/biosamples/samples/SAMN34433661/curationlinks"
+      },
+      "curationLink": {
+        "href": "https://www.ebi.ac.uk/biosamples/samples/SAMN34433661/curationlinks/{hash}",
+        "templated": true
+      },
+      "structuredData": {
+        "href": "https://www.ebi.ac.uk/biosamples/structureddata/SAMN34433661"
+      }
+    }
+  }
+}
+{
+  "run_accession": "SRR24349373",
+  "ena_indexed_metadata": {
+    "run_accession": "SRR24349373",
+    "age": "",
+    "aligned": "",
+    "altitude": "",
+    "assembly_quality": "",
+    "assembly_software": "",
+    "bam_aspera": "",
+    "bam_bytes": "",
+    "bam_file_role": "",
+    "bam_ftp": "",
+    "bam_galaxy": "",
+    "bam_md5": "",
+    "base_count": "17069331430",
+    "binning_software": "",
+    "bio_material": "",
+    "bisulfite_protocol": "",
+    "broad_scale_environmental_context": "",
+    "broker_name": "",
+    "cage_protocol": "",
+    "cell_line": "",
+    "cell_type": "",
+    "center_name": "SUB13184932",
+    "checklist": "",
+    "chip_ab_provider": "",
+    "chip_protocol": "",
+    "chip_target": "",
+    "collected_by": "Karrie Rose",
+    "collection_date": "2021",
+    "collection_date_end": "2021-12-31",
+    "collection_date_start": "2021-01-01",
+    "completeness_score": "",
+    "contamination_score": "",
+    "control_experiment": "",
+    "country": "",
+    "cultivar": "",
+    "culture_collection": "",
+    "datahub": "",
+    "depth": "",
+    "description": "Illumina NovaSeq 6000 sequencing: Eastern Quoll Heart RNA-Seq",
+    "dev_stage": "Adult",
+    "disease": "",
+    "dnase_protocol": "",
+    "ecotype": "",
+    "elevation": "",
+    "environment_biome": "",
+    "environment_feature": "",
+    "environment_material": "",
+    "environmental_medium": "",
+    "environmental_sample": "",
+    "experiment_accession": "SRX20142172",
+    "experiment_alias": "Dviv_Heart",
+    "experiment_target": "",
+    "experiment_title": "Illumina NovaSeq 6000 sequencing: Eastern Quoll Heart RNA-Seq",
+    "experimental_factor": "",
+    "experimental_protocol": "",
+    "extraction_protocol": "",
+    "faang_library_selection": "",
+    "fastq_aspera": "fasp.sra.ebi.ac.uk:/vol1/fastq/SRR243/073/SRR24349373/SRR24349373_1.fastq.gz;fasp.sra.ebi.ac.uk:/vol1/fastq/SRR243/073/SRR24349373/SRR24349373_2.fastq.gz",
+    "fastq_bytes": "2744479451;2759018139",
+    "fastq_file_role": "GENERATED_FILE;GENERATED_FILE",
+    "fastq_ftp": "ftp.sra.ebi.ac.uk/vol1/fastq/SRR243/073/SRR24349373/SRR24349373_1.fastq.gz;ftp.sra.ebi.ac.uk/vol1/fastq/SRR243/073/SRR24349373/SRR24349373_2.fastq.gz",
+    "fastq_galaxy": "ftp.sra.ebi.ac.uk/vol1/fastq/SRR243/073/SRR24349373/SRR24349373_1.fastq.gz;ftp.sra.ebi.ac.uk/vol1/fastq/SRR243/073/SRR24349373/SRR24349373_2.fastq.gz",
+    "fastq_md5": "3a132f25b0c73c1b4024294596ae2c93;26510b3c274485da69485c59035dc408",
+    "file_location": "",
+    "first_created": "2024-02-15",
+    "first_public": "2024-02-15",
+    "germline": "",
+    "hi_c_protocol": "",
+    "host": "",
+    "host_body_site": "",
+    "host_genotype": "",
+    "host_gravidity": "",
+    "host_growth_conditions": "",
+    "host_phenotype": "",
+    "host_scientific_name": "",
+    "host_sex": "",
+    "host_status": "",
+    "host_tax_id": "",
+    "identified_by": "",
+    "instrument_model": "Illumina NovaSeq 6000",
+    "instrument_platform": "ILLUMINA",
+    "investigation_type": "",
+    "isolate": "",
+    "isolation_source": "",
+    "last_updated": "2024-02-15",
+    "lat": "",
+    "library_construction_protocol": "",
+    "library_gen_protocol": "",
+    "library_layout": "PAIRED",
+    "library_max_fragment_size": "",
+    "library_min_fragment_size": "",
+    "library_name": "Dviv_Heart",
+    "library_pcr_isolation_protocol": "",
+    "library_prep_date": "",
+    "library_prep_date_format": "",
+    "library_prep_latitude": "",
+    "library_prep_location": "",
+    "library_prep_longitude": "",
+    "library_selection": "Oligo-dT",
+    "library_source": "TRANSCRIPTOMIC",
+    "library_strategy": "RNA-Seq",
+    "local_environmental_context": "",
+    "location": "",
+    "location_end": "",
+    "location_start": "",
+    "lon": "",
+    "marine_region": "",
+    "mating_type": "",
+    "ncbi_reporting_standard": "Model organism or animal",
+    "nominal_length": "",
+    "nominal_sdev": "",
+    "pcr_isolation_protocol": "",
+    "ph": "",
+    "project_name": "",
+    "protocol_label": "",
+    "read_count": "56520965",
+    "read_strand": "",
+    "restriction_enzyme": "",
+    "restriction_enzyme_target_sequence": "",
+    "restriction_site": "",
+    "rna_integrity_num": "",
+    "rna_prep_3_protocol": "",
+    "rna_prep_5_protocol": "",
+    "rna_purity_230_ratio": "",
+    "rna_purity_280_ratio": "",
+    "rt_prep_protocol": "",
+    "run_alias": "Dviv_Heart_1.fastq.gz",
+    "run_date": "",
+    "salinity": "",
+    "sample_accession": "SAMN34433660",
+    "sample_alias": "Eastern Quoll Heart",
+    "sample_capture_status": "",
+    "sample_collection": "",
+    "sample_description": "Eastern Quoll Heart RNA-Seq",
+    "sample_material": "",
+    "sample_prep_interval": "",
+    "sample_prep_interval_units": "",
+    "sample_storage": "",
+    "sample_storage_processing": "",
+    "sample_title": "Eastern Quoll Heart RNA-Seq",
+    "sampling_campaign": "",
+    "sampling_platform": "",
+    "sampling_site": "",
+    "scientific_name": "Dasyurus viverrinus",
+    "secondary_project": "",
+    "secondary_sample_accession": "SRS17470443",
+    "secondary_study_accession": "SRP435115",
+    "sequencing_date": "",
+    "sequencing_date_format": "",
+    "sequencing_location": "",
+    "sequencing_longitude": "",
+    "sequencing_method": "",
+    "sequencing_primer_catalog": "",
+    "sequencing_primer_lot": "",
+    "sequencing_primer_provider": "",
+    "serotype": "",
+    "serovar": "",
+    "sex": "female",
+    "specimen_voucher": "",
+    "sra_aspera": "",
+    "sra_bytes": "",
+    "sra_file_role": "",
+    "sra_ftp": "",
+    "sra_galaxy": "",
+    "sra_md5": "",
+    "status": "public",
+    "strain": "Captive Bred (Tasmanian Stock)",
+    "study_accession": "PRJNA963007",
+    "study_alias": "PRJNA963007",
+    "study_title": "Transcriptome Sequencing of the Eastern Quoll",
+    "sub_species": "",
+    "sub_strain": "",
+    "submission_accession": "SRA1629480",
+    "submission_tool": "",
+    "submitted_aspera": "",
+    "submitted_bytes": "",
+    "submitted_file_role": "",
+    "submitted_format": "",
+    "submitted_ftp": "",
+    "submitted_galaxy": "",
+    "submitted_host_sex": "",
+    "submitted_md5": "",
+    "submitted_read_type": "",
+    "surveillance_target": "",
+    "tag": "env_tax:terrestrial;env_tax",
+    "target_gene": "",
+    "tax_id": "9279",
+    "tax_lineage": "1;131567;2759;33154;33208;6072;33213;33511;7711;89593;7742;7776;117570;117571;8287;1338369;32523;32524;40674;32525;9263;38608;9277;9278;9279",
+    "taxonomic_classification": "",
+    "taxonomic_identity_marker": "",
+    "temperature": "",
+    "tissue_lib": "",
+    "tissue_type": "Heart",
+    "transposase_protocol": "",
+    "variety": ""
+  },
+  "biosample_accession": "SAMN34433660",
+  "biosample_metadata": {
+    "name": "Eastern Quoll Heart",
+    "accession": "SAMN34433660",
+    "sraAccession": "SRS17470443",
+    "webinSubmissionAccountId": "Webin-40894",
+    "taxId": 9279,
+    "status": "PUBLIC",
+    "release": "2024-02-13T00:00:00Z",
+    "update": "2025-01-10T17:00:54.894Z",
+    "submitted": "2023-04-28T21:11:03.390Z",
+    "characteristics": {
+      "External Id": [
+        {
+          "text": "SAMN34433660",
+          "tag": "Namespace:BioSample"
+        }
+      ],
+      "INSDC center name": [
+        {
+          "text": "The University of Melbourne"
+        }
+      ],
+      "INSDC first public": [
+        {
+          "text": "2024-02-13T00:00:00Z"
+        }
+      ],
+      "INSDC last update": [
+        {
+          "text": "2024-02-13T17:30:02.772Z"
+        }
+      ],
+      "INSDC secondary accession": [
+        {
+          "text": "SRS17470443"
+        }
+      ],
+      "INSDC status": [
+        {
+          "text": "live"
+        }
+      ],
+      "NCBI submission model": [
+        {
+          "text": "Model organism or animal"
+        }
+      ],
+      "NCBI submission package": [
+        {
+          "text": "Model.organism.animal.1.0"
+        }
+      ],
+      "SRA accession": [
+        {
+          "text": "SRS17470443"
+        }
+      ],
+      "biomaterial_provider": [
+        {
+          "text": "Aussie Ark",
+          "tag": "attribute"
+        }
+      ],
+      "collected_by": [
+        {
+          "text": "Karrie Rose",
+          "tag": "attribute"
+        }
+      ],
+      "collection_date": [
+        {
+          "text": "2021",
+          "tag": "attribute"
+        }
+      ],
+      "dev_stage": [
+        {
+          "text": "Adult",
+          "tag": "attribute"
+        }
+      ],
+      "health_state": [
+        {
+          "text": "Poor",
+          "tag": "attribute"
+        }
+      ],
+      "organism": [
+        {
+          "text": "Dasyurus viverrinus",
+          "ontologyTerms": [
+            "http://purl.obolibrary.org/obo/NCBITaxon_9279"
+          ]
+        }
+      ],
+      "sex": [
+        {
+          "text": "female",
+          "tag": "attribute"
+        }
+      ],
+      "store_cond": [
+        {
+          "text": "Flash Frozen",
+          "tag": "attribute"
+        }
+      ],
+      "strain": [
+        {
+          "text": "Captive Bred (Tasmanian Stock)",
+          "tag": "attribute"
+        }
+      ],
+      "tissue": [
+        {
+          "text": "Heart",
+          "tag": "attribute"
+        }
+      ],
+      "title": [
+        {
+          "text": "Eastern Quoll Heart RNA-Seq"
+        }
+      ]
+    },
+    "externalReferences": [
+      {
+        "url": "https://www.ebi.ac.uk/ena/browser/view/SAMN34433660",
+        "duo": []
+      }
+    ],
+    "submittedVia": "PIPELINE_IMPORT",
+    "create": "2023-04-28T21:11:03.390Z",
+    "_links": {
+      "self": {
+        "href": "https://www.ebi.ac.uk/biosamples/samples/SAMN34433660"
+      },
+      "applyCurations": {
+        "href": "https://www.ebi.ac.uk/biosamples/samples/SAMN34433660{?applyCurations}",
+        "templated": true
+      },
+      "curationLinks": {
+        "href": "https://www.ebi.ac.uk/biosamples/samples/SAMN34433660/curationlinks"
+      },
+      "curationLink": {
+        "href": "https://www.ebi.ac.uk/biosamples/samples/SAMN34433660/curationlinks/{hash}",
+        "templated": true
+      },
+      "structuredData": {
+        "href": "https://www.ebi.ac.uk/biosamples/structureddata/SAMN34433660"
+      }
+    }
+  }
+}
+{
+  "run_accession": "SRR24349374",
+  "ena_indexed_metadata": {
+    "run_accession": "SRR24349374",
+    "age": "",
+    "aligned": "",
+    "altitude": "",
+    "assembly_quality": "",
+    "assembly_software": "",
+    "bam_aspera": "",
+    "bam_bytes": "",
+    "bam_file_role": "",
+    "bam_ftp": "",
+    "bam_galaxy": "",
+    "bam_md5": "",
+    "base_count": "17548056998",
+    "binning_software": "",
+    "bio_material": "",
+    "bisulfite_protocol": "",
+    "broad_scale_environmental_context": "",
+    "broker_name": "",
+    "cage_protocol": "",
+    "cell_line": "",
+    "cell_type": "",
+    "center_name": "SUB13184932",
+    "checklist": "",
+    "chip_ab_provider": "",
+    "chip_protocol": "",
+    "chip_target": "",
+    "collected_by": "Karrie Rose",
+    "collection_date": "2021",
+    "collection_date_end": "2021-12-31",
+    "collection_date_start": "2021-01-01",
+    "completeness_score": "",
+    "contamination_score": "",
+    "control_experiment": "",
+    "country": "",
+    "cultivar": "",
+    "culture_collection": "",
+    "datahub": "",
+    "depth": "",
+    "description": "Illumina NovaSeq 6000 sequencing: Eastern Quoll Primary Fibroblasts RNA-Seq",
+    "dev_stage": "Adult",
+    "disease": "",
+    "dnase_protocol": "",
+    "ecotype": "",
+    "elevation": "",
+    "environment_biome": "",
+    "environment_feature": "",
+    "environment_material": "",
+    "environmental_medium": "",
+    "environmental_sample": "",
+    "experiment_accession": "SRX20142171",
+    "experiment_alias": "Dviv_Fibroblast",
+    "experiment_target": "",
+    "experiment_title": "Illumina NovaSeq 6000 sequencing: Eastern Quoll Primary Fibroblasts RNA-Seq",
+    "experimental_factor": "",
+    "experimental_protocol": "",
+    "extraction_protocol": "",
+    "faang_library_selection": "",
+    "fastq_aspera": "fasp.sra.ebi.ac.uk:/vol1/fastq/SRR243/074/SRR24349374/SRR24349374_1.fastq.gz;fasp.sra.ebi.ac.uk:/vol1/fastq/SRR243/074/SRR24349374/SRR24349374_2.fastq.gz",
+    "fastq_bytes": "3086632437;3090138823",
+    "fastq_file_role": "GENERATED_FILE;GENERATED_FILE",
+    "fastq_ftp": "ftp.sra.ebi.ac.uk/vol1/fastq/SRR243/074/SRR24349374/SRR24349374_1.fastq.gz;ftp.sra.ebi.ac.uk/vol1/fastq/SRR243/074/SRR24349374/SRR24349374_2.fastq.gz",
+    "fastq_galaxy": "ftp.sra.ebi.ac.uk/vol1/fastq/SRR243/074/SRR24349374/SRR24349374_1.fastq.gz;ftp.sra.ebi.ac.uk/vol1/fastq/SRR243/074/SRR24349374/SRR24349374_2.fastq.gz",
+    "fastq_md5": "f4391df90bca1896cfb04cb8224fb167;7cb4b6e0baf58a7ccce09e85a365eacc",
+    "file_location": "",
+    "first_created": "2024-02-15",
+    "first_public": "2024-02-15",
+    "germline": "",
+    "hi_c_protocol": "",
+    "host": "",
+    "host_body_site": "",
+    "host_genotype": "",
+    "host_gravidity": "",
+    "host_growth_conditions": "",
+    "host_phenotype": "",
+    "host_scientific_name": "",
+    "host_sex": "",
+    "host_status": "",
+    "host_tax_id": "",
+    "identified_by": "",
+    "instrument_model": "Illumina NovaSeq 6000",
+    "instrument_platform": "ILLUMINA",
+    "investigation_type": "",
+    "isolate": "",
+    "isolation_source": "",
+    "last_updated": "2024-02-15",
+    "lat": "",
+    "library_construction_protocol": "",
+    "library_gen_protocol": "",
+    "library_layout": "PAIRED",
+    "library_max_fragment_size": "",
+    "library_min_fragment_size": "",
+    "library_name": "Dviv_Fibroblast",
+    "library_pcr_isolation_protocol": "",
+    "library_prep_date": "",
+    "library_prep_date_format": "",
+    "library_prep_latitude": "",
+    "library_prep_location": "",
+    "library_prep_longitude": "",
+    "library_selection": "Oligo-dT",
+    "library_source": "TRANSCRIPTOMIC",
+    "library_strategy": "RNA-Seq",
+    "local_environmental_context": "",
+    "location": "",
+    "location_end": "",
+    "location_start": "",
+    "lon": "",
+    "marine_region": "",
+    "mating_type": "",
+    "ncbi_reporting_standard": "Model organism or animal",
+    "nominal_length": "",
+    "nominal_sdev": "",
+    "pcr_isolation_protocol": "",
+    "ph": "",
+    "project_name": "",
+    "protocol_label": "",
+    "read_count": "58106149",
+    "read_strand": "",
+    "restriction_enzyme": "",
+    "restriction_enzyme_target_sequence": "",
+    "restriction_site": "",
+    "rna_integrity_num": "",
+    "rna_prep_3_protocol": "",
+    "rna_prep_5_protocol": "",
+    "rna_purity_230_ratio": "",
+    "rna_purity_280_ratio": "",
+    "rt_prep_protocol": "",
+    "run_alias": "Dviv_Fibroblast_1.fastq.gz",
+    "run_date": "",
+    "salinity": "",
+    "sample_accession": "SAMN34433659",
+    "sample_alias": "Eastern Quoll Primary Fibroblasts",
+    "sample_capture_status": "",
+    "sample_collection": "",
+    "sample_description": "Eastern Quoll Primary Fibroblasts RNA-Seq",
+    "sample_material": "",
+    "sample_prep_interval": "",
+    "sample_prep_interval_units": "",
+    "sample_storage": "",
+    "sample_storage_processing": "",
+    "sample_title": "Eastern Quoll Primary Fibroblasts RNA-Seq",
+    "sampling_campaign": "",
+    "sampling_platform": "",
+    "sampling_site": "",
+    "scientific_name": "Dasyurus viverrinus",
+    "secondary_project": "",
+    "secondary_sample_accession": "SRS17470442",
+    "secondary_study_accession": "SRP435115",
+    "sequencing_date": "",
+    "sequencing_date_format": "",
+    "sequencing_location": "",
+    "sequencing_longitude": "",
+    "sequencing_method": "",
+    "sequencing_primer_catalog": "",
+    "sequencing_primer_lot": "",
+    "sequencing_primer_provider": "",
+    "serotype": "",
+    "serovar": "",
+    "sex": "female",
+    "specimen_voucher": "",
+    "sra_aspera": "",
+    "sra_bytes": "",
+    "sra_file_role": "",
+    "sra_ftp": "",
+    "sra_galaxy": "",
+    "sra_md5": "",
+    "status": "public",
+    "strain": "Captive Bred (Tasmanian Stock)",
+    "study_accession": "PRJNA963007",
+    "study_alias": "PRJNA963007",
+    "study_title": "Transcriptome Sequencing of the Eastern Quoll",
+    "sub_species": "",
+    "sub_strain": "",
+    "submission_accession": "SRA1629480",
+    "submission_tool": "",
+    "submitted_aspera": "",
+    "submitted_bytes": "",
+    "submitted_file_role": "",
+    "submitted_format": "",
+    "submitted_ftp": "",
+    "submitted_galaxy": "",
+    "submitted_host_sex": "",
+    "submitted_md5": "",
+    "submitted_read_type": "",
+    "surveillance_target": "",
+    "tag": "env_tax:terrestrial;env_tax",
+    "target_gene": "",
+    "tax_id": "9279",
+    "tax_lineage": "1;131567;2759;33154;33208;6072;33213;33511;7711;89593;7742;7776;117570;117571;8287;1338369;32523;32524;40674;32525;9263;38608;9277;9278;9279",
+    "taxonomic_classification": "",
+    "taxonomic_identity_marker": "",
+    "temperature": "",
+    "tissue_lib": "",
+    "tissue_type": "Dermis",
+    "transposase_protocol": "",
+    "variety": ""
+  },
+  "biosample_accession": "SAMN34433659",
+  "biosample_metadata": {
+    "name": "Eastern Quoll Primary Fibroblasts",
+    "accession": "SAMN34433659",
+    "sraAccession": "SRS17470442",
+    "webinSubmissionAccountId": "Webin-40894",
+    "taxId": 9279,
+    "status": "PUBLIC",
+    "release": "2024-02-13T00:00:00Z",
+    "update": "2025-01-10T17:00:52.599Z",
+    "submitted": "2023-04-28T21:11:03.370Z",
+    "characteristics": {
+      "External Id": [
+        {
+          "text": "SAMN34433659",
+          "tag": "Namespace:BioSample"
+        }
+      ],
+      "INSDC center name": [
+        {
+          "text": "The University of Melbourne"
+        }
+      ],
+      "INSDC first public": [
+        {
+          "text": "2024-02-13T00:00:00Z"
+        }
+      ],
+      "INSDC last update": [
+        {
+          "text": "2024-02-13T17:30:02.946Z"
+        }
+      ],
+      "INSDC secondary accession": [
+        {
+          "text": "SRS17470442"
+        }
+      ],
+      "INSDC status": [
+        {
+          "text": "live"
+        }
+      ],
+      "NCBI submission model": [
+        {
+          "text": "Model organism or animal"
+        }
+      ],
+      "NCBI submission package": [
+        {
+          "text": "Model.organism.animal.1.0"
+        }
+      ],
+      "SRA accession": [
+        {
+          "text": "SRS17470442"
+        }
+      ],
+      "biomaterial_provider": [
+        {
+          "text": "Aussie Ark",
+          "tag": "attribute"
+        }
+      ],
+      "collected_by": [
+        {
+          "text": "Karrie Rose",
+          "tag": "attribute"
+        }
+      ],
+      "collection_date": [
+        {
+          "text": "2021",
+          "tag": "attribute"
+        }
+      ],
+      "dev_stage": [
+        {
+          "text": "Adult",
+          "tag": "attribute"
+        }
+      ],
+      "health_state": [
+        {
+          "text": "Poor",
+          "tag": "attribute"
+        }
+      ],
+      "organism": [
+        {
+          "text": "Dasyurus viverrinus",
+          "ontologyTerms": [
+            "http://purl.obolibrary.org/obo/NCBITaxon_9279"
+          ]
+        }
+      ],
+      "sex": [
+        {
+          "text": "female",
+          "tag": "attribute"
+        }
+      ],
+      "store_cond": [
+        {
+          "text": "Flash Frozen",
+          "tag": "attribute"
+        }
+      ],
+      "strain": [
+        {
+          "text": "Captive Bred (Tasmanian Stock)",
+          "tag": "attribute"
+        }
+      ],
+      "tissue": [
+        {
+          "text": "Dermis",
+          "tag": "attribute"
+        }
+      ],
+      "title": [
+        {
+          "text": "Eastern Quoll Primary Fibroblasts RNA-Seq"
+        }
+      ]
+    },
+    "externalReferences": [
+      {
+        "url": "https://www.ebi.ac.uk/ena/browser/view/SAMN34433659",
+        "duo": []
+      }
+    ],
+    "submittedVia": "PIPELINE_IMPORT",
+    "create": "2023-04-28T21:11:03.370Z",
+    "_links": {
+      "self": {
+        "href": "https://www.ebi.ac.uk/biosamples/samples/SAMN34433659"
+      },
+      "applyCurations": {
+        "href": "https://www.ebi.ac.uk/biosamples/samples/SAMN34433659{?applyCurations}",
+        "templated": true
+      },
+      "curationLinks": {
+        "href": "https://www.ebi.ac.uk/biosamples/samples/SAMN34433659/curationlinks"
+      },
+      "curationLink": {
+        "href": "https://www.ebi.ac.uk/biosamples/samples/SAMN34433659/curationlinks/{hash}",
+        "templated": true
+      },
+      "structuredData": {
+        "href": "https://www.ebi.ac.uk/biosamples/structureddata/SAMN34433659"
+      }
+    }
+  }
+}
