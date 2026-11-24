@@ -10,6 +10,7 @@ Flows only need:
 """
 
 import json
+from dataclasses import dataclass
 from typing import Any, Optional
 
 from prefect.blocks.system import Secret  # type: ignore
@@ -19,16 +20,27 @@ from gb_prefect.models.pipeline_options import PipelineCredentials
 __all__ = [
     "DEFAULT_METADATA_SECRET_BLOCK",
     "DEFAULT_SLACK_SECRET_BLOCK",
+    "DEFAULT_ENA_WEBIN_SECRET_BLOCK",
     "NOT_LOADED_ON_DRY_RUN",
     "PipelineCredentials",
+    "WebinCredentials",
     "resolve_credentials",
+    "resolve_webin_credentials",
 ]
 
 DEFAULT_METADATA_SECRET_BLOCK = "gb-metadata-db-params"
 DEFAULT_SLACK_SECRET_BLOCK = "gb-slack-params"
+DEFAULT_ENA_WEBIN_SECRET_BLOCK = "ena-webin-password"
 
 # Stands in for credentials on a dry run, where nothing is loaded and no params file is written.
 NOT_LOADED_ON_DRY_RUN = "<NOT_LOADED_ON_DRY_RUN>"
+
+
+@dataclass(frozen=True)
+class WebinCredentials:
+    """ENA Webin password loaded from a Prefect Secret block."""
+
+    password: str
 
 
 def _secret_to_json_string(value: Any) -> str:
@@ -65,9 +77,30 @@ def resolve_credentials(
 
     # Return credentials from secret blocks
     metadata_block = metadata_secret_block or DEFAULT_METADATA_SECRET_BLOCK
-    metadata_params_string = _secret_to_json_string(Secret.load(metadata_block).get())
+    metadata_params_string = _secret_to_json_string(Secret.load(metadata_block).get())  # type: ignore[union-attr]
     slack_params = None
     if slack_report:
         slack_block = slack_secret_block or DEFAULT_SLACK_SECRET_BLOCK
-        slack_params = _secret_to_json_string(Secret.load(slack_block).get())
+        slack_params = _secret_to_json_string(Secret.load(slack_block).get())  # type: ignore[union-attr]
     return PipelineCredentials(metadata_params_string=metadata_params_string, slack_params=slack_params)
+
+
+def resolve_webin_credentials(
+    credentials: Optional[WebinCredentials] = None,
+    *,
+    dry_run: bool = False,
+    webin_secret_block: Optional[str] = None,
+) -> WebinCredentials:
+    """Resolve the ENA Webin password without putting it in a deployment parameter."""
+    if credentials is not None:
+        return credentials
+    if dry_run:
+        return WebinCredentials(password=NOT_LOADED_ON_DRY_RUN)
+    block = webin_secret_block or DEFAULT_ENA_WEBIN_SECRET_BLOCK
+    value = Secret.load(block).get()  # type: ignore[union-attr]
+    if value is None:
+        raise ValueError(f"Prefect Secret block '{block}' contains no Webin password")
+    password = value if isinstance(value, str) else str(value)
+    if not password:
+        raise ValueError(f"Prefect Secret block '{block}' contains an empty Webin password")
+    return WebinCredentials(password=password)

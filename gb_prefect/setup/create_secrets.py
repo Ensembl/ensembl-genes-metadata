@@ -32,7 +32,11 @@ from pathlib import Path
 
 from prefect.blocks.system import Secret  # type: ignore
 
-from gb_prefect.utils.credentials_utils import DEFAULT_METADATA_SECRET_BLOCK, DEFAULT_SLACK_SECRET_BLOCK
+from gb_prefect.utils.credentials_utils import (
+    DEFAULT_ENA_WEBIN_SECRET_BLOCK,
+    DEFAULT_METADATA_SECRET_BLOCK,
+    DEFAULT_SLACK_SECRET_BLOCK,
+)
 from gb_prefect.utils.metro_utils import METRO_TOKEN_SECRET_BLOCK
 
 
@@ -52,12 +56,23 @@ def save_metro_token(block_name: str, overwrite: bool) -> None:
     print(f"Saved Secret block '{block_name}'")
 
 
+def save_webin_password(block_name: str, overwrite: bool) -> None:
+    """Prompt for and store the ENA Webin password without echoing or using argv."""
+    password = getpass.getpass("ENA Webin password: ").strip()
+    if not password:
+        raise SystemExit("No password given; nothing saved.")
+    Secret(value=password).save(block_name, overwrite=overwrite)
+    print(f"Saved Secret block '{block_name}'")
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--metadata-json", help="JSON file with metadata DB connection parameters.")
     parser.add_argument("--slack-json", help="JSON file with Slack bot connection parameters.")
     parser.add_argument("--metadata-block", default=DEFAULT_METADATA_SECRET_BLOCK)
     parser.add_argument("--slack-block", default=DEFAULT_SLACK_SECRET_BLOCK)
+    parser.add_argument("--webin-password", action="store_true", help="Prompt for the ENA Webin password.")
+    parser.add_argument("--webin-block", default=DEFAULT_ENA_WEBIN_SECRET_BLOCK)
     parser.add_argument(
         "--metro-token",
         action="store_true",
@@ -69,11 +84,13 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    if not args.metadata_json and not args.slack_json and not args.metro_token:
-        parser.error("Pass at least one of --metadata-json / --slack-json / --metro-token.")
+    if not args.metadata_json and not args.slack_json and not args.webin_password and not args.metro_token:
+        parser.error("Pass at least one of --metadata-json / --slack-json / --webin-password / --metro-token.")
     if args.metadata_json:
         save_secret_from_json(args.metadata_json, args.metadata_block, args.overwrite)
     if args.slack_json:
         save_secret_from_json(args.slack_json, args.slack_block, args.overwrite)
     if args.metro_token:
         save_metro_token(args.metro_block, args.overwrite)
+    if args.webin_password:
+        save_webin_password(args.webin_block, args.overwrite)

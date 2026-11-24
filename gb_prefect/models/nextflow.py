@@ -33,6 +33,8 @@ class NextflowRun:  # pylint: disable=too-many-instance-attributes
         outdir: Launch directory of the run
         params: Pipeline parameters passed on the command line.
         secret_params: Sensitive parameters.
+        secret_store: Sensitive values written to a private Nextflow secrets store.
+        env: Non-sensitive environment variables for the Nextflow process.
         config: Config file passed with -C, relative to enscode. -C makes Nextflow use ONLY this
             file: the pipeline's own nextflow.config is not loaded unless this is that file.
         csv_input: Optional rows written to a CSV and passed as csv_input.param.
@@ -54,6 +56,8 @@ class NextflowRun:  # pylint: disable=too-many-instance-attributes
     outdir: str
     params: Mapping[str, Any] = field(default_factory=dict)
     secret_params: Mapping[str, Any] = field(default_factory=dict)
+    secret_store: Mapping[str, str] = field(default_factory=dict)
+    env: Mapping[str, str] = field(default_factory=dict)
     config: Optional[str] = None
     csv_input: Optional[CsvInput] = None
     profile: Optional[str] = None
@@ -83,6 +87,9 @@ class NextflowRun:  # pylint: disable=too-many-instance-attributes
             raise ValueError(
                 f"csv_input.param {self.csv_input.param!r} is also given in params/secret_params"
             )
+        overlap = set(self.env) & set(self.secret_store)
+        if overlap:
+            raise ValueError(f"Environment variable(s) in both env and secret_store: {sorted(overlap)}")
 
 
 @dataclass(frozen=True)

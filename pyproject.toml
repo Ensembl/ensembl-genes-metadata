@@ -59,6 +59,7 @@ packages = [
     "gb_prefect.flows",
     "gb_prefect.flows.assembly_metadata",
     "gb_prefect.flows.statistics",
+    "gb_prefect.flows.rnaseq",
     "gb_prefect.tasks",
     "gb_prefect.utils",
     "gb_prefect.models",

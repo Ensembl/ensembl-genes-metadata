@@ -15,6 +15,7 @@ from gb_prefect.nextflow.command import (
     redact,
     run_paths,
     secret_strings,
+    write_secret_store,
     write_csv_input,
     write_params_file,
 )
@@ -67,7 +68,7 @@ def run_nextflow_pipeline(
     paths = run_paths(run)
     Path(run.outdir).mkdir(parents=True, exist_ok=True)
     log_start = paths.log.stat().st_size if paths.log.exists() else 0
-    secrets = secret_strings(run.secret_params)
+    secrets = secret_strings(run.secret_params) + [value for value in run.secret_store.values() if value]
     files = {}
 
     # Initialize CSV input file
@@ -86,6 +87,12 @@ def run_nextflow_pipeline(
         if not dry_run:
             write_params_file(params_file, run.secret_params)
             append_log(paths.log, f"[{datetime.now()}] INFO: Wrote params file {params_file}.\n")
+
+    if run.secret_store and not dry_run:
+        secret_store = Path(run.outdir) / ".nextflow_home" / "secrets" / "store.json"
+        write_secret_store(secret_store, run.secret_store)
+        files["secret_store"] = str(secret_store)
+        append_log(paths.log, f"[{datetime.now()}] INFO: Wrote private Nextflow secret store.\n")
 
     # Register the run with the nf-metro server for a live map (never stops the run)
     if not dry_run:
