@@ -9,6 +9,8 @@ tutorial for what you want to add:
 
 - [Add a Nextflow flow](add-nextflow-flow.md): run a Nextflow pipeline (this repo's or
   `ensembl-genes-nf`'s).
+- [RNA-seq evidence orchestration](rnaseq-evidence.md): dispatch track preparation and ENA
+  submission at GCA/release scale.
 - [Add a script flow](add-script-flow.md): run a Python (or any) script, or Python code directly.
 
 Then, as needed: [Deploying flows](deploying.md), [Credentials](credentials.md),

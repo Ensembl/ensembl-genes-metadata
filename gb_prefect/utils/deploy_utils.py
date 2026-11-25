@@ -42,6 +42,8 @@ class FlowDeployment:  # pylint: disable=too-many-instance-attributes
         separate_outdir: The flow's output normally lives apart from the shared --outdir (e.g.
             BUSCO's per-GCA run directories): a warning is printed if it isn't given its own
             with --flow-outdir.
+        include_outdir: Add --outdir as a flow parameter. Some flows use a job manifest with its
+            own explicit output root and only need --outdir for the Slurm worker's working dir.
         runs_nextflow: True for a flow running a Nextflow pipeline on a slurm-cli pool. False
             for an orchestration flow on a process pool (e.g. the BUSCO dispatchers): it gets only
             its own parameters (no outdir/enscode), and its one job variable points the process
@@ -62,6 +64,7 @@ class FlowDeployment:  # pylint: disable=too-many-instance-attributes
     concurrency_limit: Optional[int] = None
     parameters: Mapping[str, Any] = field(default_factory=dict)
     separate_outdir: bool = False
+    include_outdir: bool = True
     runs_nextflow: bool = True
     takes_outdir: bool = False
 
@@ -174,11 +177,15 @@ def build_deployment(
     def override(value: Optional[int], default: int) -> int:
         return default if value is None else value
 
+    parameters = {"enscode": args.enscode, **flow_deployment.parameters}
+    if flow_deployment.include_outdir:
+        parameters = {"outdir": outdir, **parameters}
+
     spec: Dict[str, Any] = {
         "name": f"{flow_deployment.name}{args.name_suffix}",
         "entrypoint": flow_deployment.entrypoint,
         "work_pool_name": args.work_pool or args.pools[flow_deployment.work_pool],
-        "parameters": {"outdir": outdir, "enscode": args.enscode, **flow_deployment.parameters},
+        "parameters": parameters,
         "job_variables": {
             "cpu": override(args.cpu, flow_deployment.cpu),
             "memory": override(args.memory, flow_deployment.memory),

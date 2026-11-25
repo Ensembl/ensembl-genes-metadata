@@ -109,7 +109,10 @@ def nextflow_argv(run: NextflowRun, params_file: Optional[Path], csv_file: Optio
 
 def nextflow_env(run: NextflowRun) -> Dict[str, str]:
     """Return the environment variables a run sets on top of the inherited environment."""
-    return {"ENSCODE": run.enscode, "NXF_DISABLE_CHECK_LATEST": "true"}
+    env = {"ENSCODE": run.enscode, "NXF_DISABLE_CHECK_LATEST": "true", **run.env}
+    if run.secret_store:
+        env["NXF_HOME"] = str(Path(run.outdir) / ".nextflow_home")
+    return env
 
 
 def build_command_script(run: NextflowRun, params_file: Optional[Path], csv_file: Optional[Path]) -> str:
@@ -145,6 +148,15 @@ def write_params_file(path: Path, secret_params: Mapping[str, Any]) -> None:
     os.fchmod(fd, 0o600)
     with os.fdopen(fd, "w", encoding="utf-8") as fh:
         json.dump(dict(secret_params), fh)
+
+
+def write_secret_store(path: Path, secret_store: Mapping[str, str]) -> None:
+    """Write a private Nextflow secrets store without exposing values in argv."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    os.fchmod(fd, 0o600)
+    with os.fdopen(fd, "w", encoding="utf-8") as fh:
+        json.dump([{"name": key, "value": value} for key, value in secret_store.items()], fh, indent=2)
 
 
 def write_csv_input(path: Path, csv_input: CsvInput) -> None:

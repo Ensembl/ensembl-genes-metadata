@@ -9,6 +9,8 @@
 
 #Python
 __pycache__/
+.venv/
+*.egg-info/
 
 #idea
 .codex
