@@ -161,6 +161,7 @@ FLOWS = {
         memory=8,
         time_limit=24,
         separate_outdir=True,
+        include_outdir=False,
     ),
     "rnaseq_ena": FlowDeployment(
         name="RNAseq_ena_submission",
@@ -172,6 +173,7 @@ FLOWS = {
         memory=4,
         time_limit=24,
         separate_outdir=True,
+        include_outdir=False,
     ),
     "rnaseq_dispatch": FlowDeployment(
         name="RNAseq_evidence_dispatch",

@@ -6,6 +6,8 @@ from pathlib import Path
 import pytest
 
 from gb_prefect.flows.rnaseq.dispatch import rnaseq_evidence_dispatch_flow
+from gb_prefect.flows.rnaseq.ena_submission import rnaseq_ena_submission_flow
+from gb_prefect.flows.rnaseq.track_preparation import rnaseq_track_preparation_flow
 from gb_prefect.models.evidence import (
     EvidenceJob,
     EvidenceKind,
@@ -16,6 +18,8 @@ from gb_prefect.models.evidence import (
 )
 from gb_prefect.nextflow.command import nextflow_env, write_secret_store
 from gb_prefect.pipelines.rnaseq_evidence import ena_submission_run, track_preparation_run
+from gb_prefect.setup.deploy_flows import FLOWS
+from gb_prefect.utils.deploy_utils import build_deployment
 
 
 def _job(tmp_path: Path, kind: EvidenceKind, job_id: str) -> EvidenceJob:
@@ -70,6 +74,37 @@ def test_specs_keep_pipeline_fanout_inside_nextflow(tmp_path):
     assert nextflow_env(ena_run)["NXF_HOME"].endswith("/ena-job/ena/.nextflow_home")
 
 
+def test_rnaseq_deployments_match_flow_parameters():
+    args = SimpleNamespace(
+        name_suffix="_test",
+        outdir="/tmp/prefect-output",
+        flow_outdir={},
+        work_pool=None,
+        pools={"rnaseq_track": "track-test", "rnaseq_ena": "ena-test"},
+        enscode="/tmp/enscode",
+        cpu=1,
+        memory=2,
+        time_limit=1,
+        partition=None,
+        job_dir="slurm_jobs",
+        nextflow_module="nextflow/25.04.6",
+        asm_venv="/tmp/venv",
+        branch="test",
+    )
+    deployments = (
+        (FLOWS["rnaseq_track"], rnaseq_track_preparation_flow),
+        (FLOWS["rnaseq_ena"], rnaseq_ena_submission_flow),
+    )
+
+    for flow_deployment, flow_object in deployments:
+        spec = build_deployment(flow_deployment, args)
+        assert "outdir" not in spec["parameters"]
+        parameters = {"job_file": "/tmp/job.json", **spec["parameters"]}
+        if flow_deployment is FLOWS["rnaseq_ena"]:
+            parameters["webin_user"] = "Webin-TEST"
+        flow_object.validate_parameters(parameters)
+
+
 def test_secret_store_is_private_and_json_compatible(tmp_path):
     path = tmp_path / ".nextflow_home" / "secrets" / "store.json"
     write_secret_store(path, {"ENA_WEBIN_PASSWORD": "p@ssword"})
@@ -106,12 +141,13 @@ def test_dispatch_forwards_webin_user_and_claims_job(tmp_path, monkeypatch):
 
     monkeypatch.setattr("gb_prefect.flows.rnaseq.dispatch.run_deployment", fake_run_deployment)
     result = rnaseq_evidence_dispatch_flow.fn(
-        str(manifest), dry_run=False, max_jobs_per_kind=1, webin_user="Webin-123"
+        str(manifest), dry_run=False, child_dry_run=True, max_jobs_per_kind=1, webin_user="Webin-123"
     )
 
     assert result["triggered"] == ["ena:ena-job:child-run"]
     assert calls[0]["parameters"]["webin_user"] == "Webin-123"
-    assert read_state(ena)["status"] == "dispatched"
+    assert calls[0]["parameters"]["dry_run"] is True
+    assert read_state(ena)["status"] == "planned"
 
 
 def test_real_dispatch_requires_webin_user_for_ena_jobs(tmp_path):

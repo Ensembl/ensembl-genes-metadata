@@ -54,9 +54,10 @@ def _trigger(
     job: EvidenceJob,
     idempotency_key: str,
     webin_user: Optional[str],
+    child_dry_run: bool,
 ) -> str:
     """Trigger a child deployment without blocking the dispatcher Slurm/process slot."""
-    parameters = {"job_file": job_file}
+    parameters = {"job_file": job_file, "dry_run": child_dry_run}
     if job.kind is EvidenceKind.ENA:
         if not webin_user:
             raise ValueError("webin_user is required when dispatching ENA jobs")
@@ -93,6 +94,7 @@ def rnaseq_evidence_dispatch_flow(
     track_deployment: str = DEFAULT_TRACK_DEPLOYMENT,
     ena_deployment: str = DEFAULT_ENA_DEPLOYMENT,
     dry_run: bool = False,
+    child_dry_run: bool = False,
     max_jobs_per_kind: Optional[int] = None,
     webin_user: Optional[str] = None,
 ) -> Dict[str, List[str]]:
@@ -131,9 +133,17 @@ def rnaseq_evidence_dispatch_flow(
                 result["triggered"].append(f"{kind.value}:{job.job_id}")
                 continue
             job_file = _job_file(job_manifest, job)
-            transition_state(job, EvidenceStatus.DISPATCHED, flow_run_id=dispatcher_id)
+            if not child_dry_run:
+                transition_state(job, EvidenceStatus.DISPATCHED, flow_run_id=dispatcher_id)
             try:
-                child_id = _trigger(deployment, job_file, job, f"{dispatcher_id}-{job.job_id}", webin_user)
+                child_id = _trigger(
+                    deployment,
+                    job_file,
+                    job,
+                    f"{dispatcher_id}-{job.job_id}",
+                    webin_user,
+                    child_dry_run,
+                )
             except TriggerError as err:
                 if not err.run_may_exist:
                     transition_state(job, EvidenceStatus.FAILED, flow_run_id=dispatcher_id, error=str(err))

@@ -78,9 +78,12 @@ Create a manifest with `gb_prefect.models.evidence.EvidenceJob` and
 python -c "from gb_prefect.flows.rnaseq.ena_submission import rnaseq_ena_submission_flow as f; f(job_file='/abs/jobs/ena.json', webin_user='Webin-XXXXX', dry_run=True)"
 ```
 
-The dispatcher can be run with `dry_run=true` or with an explicit `max_jobs_per_kind` in a test
-environment. In production it reads the free slots of each child deployment's work pool and uses
-an idempotency key scoped to the dispatcher run and job ID.
+Use `dry_run=true` to preview dispatcher selection without triggering children. To test the full
+dispatch path without running Nextflow, use `child_dry_run=true` and an explicit
+`max_jobs_per_kind`; the dispatcher triggers each child with `dry_run=true`, so it builds the
+Nextflow command but does not execute it. In production, omit `child_dry_run` and it reads free
+slots from each child deployment's work pool, using an idempotency key scoped to dispatcher run
+and job ID.
 
 TEST and PROD remain separate policy decisions. A successful TEST job does not automatically
 promote to PROD, and source BAM/BAI or CRAM/CRAI files remain retained until accessions, receipts,
